@@ -142,18 +142,21 @@ async function handleSubmit() {
     await formRef.value?.validate()
 
     if (props.task) {
-      // 更新任务
+      // 更新任务 - 创建新的纯对象，避免克隆响应式对象
       const updatedTask: Task = {
-        ...props.task,
+        id: props.task.id,
+        projectId: props.task.projectId,
         title: formData.value.title,
         description: formData.value.description,
         status: formData.value.status,
         priority: formData.value.priority,
-        tags: formData.value.tags,
+        tags: [...formData.value.tags], // 创建新数组
         estimatedEffort: formData.value.estimatedEffort || undefined,
         dueDate: formData.value.dueDate ? new Date(formData.value.dueDate).getTime() : undefined,
-        technicalPoints: formData.value.technicalPoints.length > 0 ? formData.value.technicalPoints : undefined,
-        referenceLinks: formData.value.referenceLinks.length > 0 ? formData.value.referenceLinks : undefined,
+        technicalPoints: formData.value.technicalPoints.length > 0 ? [...formData.value.technicalPoints] : undefined,
+        referenceLinks: formData.value.referenceLinks.length > 0 ? [...formData.value.referenceLinks] : undefined,
+        order: props.task.order,
+        createdAt: props.task.createdAt,
         updatedAt: Date.now(),
       }
       taskStore.updateTask(props.task.id, updatedTask)
@@ -168,11 +171,11 @@ async function handleSubmit() {
         description: formData.value.description,
         status: formData.value.status,
         priority: formData.value.priority,
-        tags: formData.value.tags,
+        tags: [...formData.value.tags], // 创建新数组
         estimatedEffort: formData.value.estimatedEffort || undefined,
         dueDate: formData.value.dueDate ? new Date(formData.value.dueDate).getTime() : undefined,
-        technicalPoints: formData.value.technicalPoints.length > 0 ? formData.value.technicalPoints : undefined,
-        referenceLinks: formData.value.referenceLinks.length > 0 ? formData.value.referenceLinks : undefined,
+        technicalPoints: formData.value.technicalPoints.length > 0 ? [...formData.value.technicalPoints] : undefined,
+        referenceLinks: formData.value.referenceLinks.length > 0 ? [...formData.value.referenceLinks] : undefined,
         order: taskStore.tasks.length,
         createdAt: Date.now(),
         updatedAt: Date.now(),

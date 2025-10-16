@@ -58,8 +58,25 @@ const getTasksByStatus = (status: TaskStatus) => {
 const onDragEnd = async (status: TaskStatus) => {
   const tasks = getTasksByStatus(status)
   tasks.forEach((task: Task, index: number) => {
+    // 创建纯对象用于保存，避免克隆响应式对象
+    const updatedTask: Task = {
+      id: task.id,
+      projectId: task.projectId,
+      title: task.title,
+      description: task.description,
+      status: status,
+      priority: task.priority,
+      tags: [...task.tags],
+      estimatedEffort: task.estimatedEffort,
+      dueDate: task.dueDate,
+      technicalPoints: task.technicalPoints ? [...task.technicalPoints] : undefined,
+      referenceLinks: task.referenceLinks ? [...task.referenceLinks] : undefined,
+      order: index,
+      createdAt: task.createdAt,
+      updatedAt: Date.now(),
+    }
     taskStore.updateTask(task.id, { order: index, status })
-    dbStore.saveTask({ ...task, order: index, status })
+    dbStore.saveTask(updatedTask)
   })
 }
 

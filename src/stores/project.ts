@@ -25,9 +25,14 @@ export const useProjectStore = defineStore('project', () => {
   function updateProject(id: string, updates: Partial<Project>) {
     const index = projects.value.findIndex(p => p.id === id)
     if (index !== -1) {
+      const current = projects.value[index]
       projects.value[index] = {
-        ...projects.value[index],
-        ...updates,
+        id: current.id,
+        name: updates.name ?? current.name,
+        description: updates.description ?? current.description,
+        status: updates.status ?? current.status,
+        techStack: updates.techStack ? [...updates.techStack] : [...current.techStack],
+        createdAt: current.createdAt,
         updatedAt: Date.now()
       }
     }

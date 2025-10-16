@@ -90,13 +90,14 @@ async function handleSubmit() {
     await formRef.value?.validate()
 
     if (props.project) {
-      // 更新项目
+      // 更新项目 - 创建新的纯对象，避免克隆响应式对象
       const updatedProject: Project = {
-        ...props.project,
+        id: props.project.id,
         name: formData.value.name,
         description: formData.value.description,
         status: formData.value.status,
-        techStack: formData.value.techStack,
+        techStack: [...formData.value.techStack], // 创建新数组
+        createdAt: props.project.createdAt,
         updatedAt: Date.now(),
       }
       projectStore.updateProject(props.project.id, updatedProject)
@@ -109,7 +110,7 @@ async function handleSubmit() {
         name: formData.value.name,
         description: formData.value.description,
         status: formData.value.status,
-        techStack: formData.value.techStack,
+        techStack: [...formData.value.techStack], // 创建新数组
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }

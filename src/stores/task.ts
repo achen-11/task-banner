@@ -35,9 +35,21 @@ export const useTaskStore = defineStore('task', () => {
   function updateTask(id: string, updates: Partial<Task>) {
     const index = tasks.value.findIndex(t => t.id === id)
     if (index !== -1) {
+      const current = tasks.value[index]
       tasks.value[index] = {
-        ...tasks.value[index],
-        ...updates,
+        id: current.id,
+        projectId: updates.projectId ?? current.projectId,
+        title: updates.title ?? current.title,
+        description: updates.description ?? current.description,
+        status: updates.status ?? current.status,
+        priority: updates.priority ?? current.priority,
+        tags: updates.tags ? [...updates.tags] : [...current.tags],
+        estimatedEffort: updates.estimatedEffort !== undefined ? updates.estimatedEffort : current.estimatedEffort,
+        dueDate: updates.dueDate !== undefined ? updates.dueDate : current.dueDate,
+        technicalPoints: updates.technicalPoints ? [...updates.technicalPoints] : (current.technicalPoints ? [...current.technicalPoints] : undefined),
+        referenceLinks: updates.referenceLinks ? [...updates.referenceLinks] : (current.referenceLinks ? [...current.referenceLinks] : undefined),
+        order: updates.order ?? current.order,
+        createdAt: current.createdAt,
         updatedAt: Date.now()
       }
     }
