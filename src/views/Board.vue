@@ -1,29 +1,285 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import draggable from 'vuedraggable'
 import { useProjectStore } from '@/stores/project'
-import { computed } from 'vue'
+import { useTaskStore } from '@/stores/task'
+import { useDBStore } from '@/stores/db'
+import type { Task, TaskStatus } from '@/types'
+import TaskDialog from '@/components/TaskDialog.vue'
+import ExportDialog from '@/components/ExportDialog.vue'
 
 const route = useRoute()
+const router = useRouter()
 const projectStore = useProjectStore()
+const taskStore = useTaskStore()
+const dbStore = useDBStore()
 
 const projectId = computed(() => route.params.projectId as string)
 const project = computed(() => projectStore.getProjectById(projectId.value))
+
+const showTaskDialog = ref(false)
+const showExportDialog = ref(false)
+const editingTask = ref<Task | null>(null)
+const selectedTasks = ref<Set<string>>(new Set())
+
+// 任务列状态配置
+const columns = [
+  { status: 'todo' as TaskStatus, label: '待办', color: 'bg-gray-100' },
+  { status: 'in_progress' as TaskStatus, label: '进行中', color: 'bg-blue-100' },
+  { status: 'completed' as TaskStatus, label: '已完成', color: 'bg-green-100' },
+  { status: 'sent_to_ai' as TaskStatus, label: '已发送AI', color: 'bg-purple-100' },
+  { status: 'needs_optimization' as TaskStatus, label: '需优化', color: 'bg-orange-100' },
+]
+
+// 优先级颜色映射
+const priorityColorMap: Record<string, string> = {
+  low: 'text-gray-600',
+  medium: 'text-blue-600',
+  high: 'text-orange-600',
+  urgent: 'text-red-600',
+}
+
+// 优先级标签映射
+const priorityLabelMap: Record<string, string> = {
+  low: '低',
+  medium: '中',
+  high: '高',
+  urgent: '紧急',
+}
+
+// 按状态获取任务
+const getTasksByStatus = (status: TaskStatus) => {
+  return taskStore.getTasksByStatus(projectId.value, status)
+}
+
+// 拖拽结束处理
+const onDragEnd = async (status: TaskStatus) => {
+  const tasks = getTasksByStatus(status)
+  tasks.forEach((task: Task, index: number) => {
+    taskStore.updateTask(task.id, { order: index, status })
+    dbStore.saveTask({ ...task, order: index, status })
+  })
+}
+
+// 创建任务
+const createTask = () => {
+  editingTask.value = null
+  showTaskDialog.value = true
+}
+
+// 编辑任务
+const editTask = (task: Task) => {
+  editingTask.value = task
+  showTaskDialog.value = true
+}
+
+// 删除任务
+const deleteTask = async (task: Task) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除任务"${task.title}"吗？`,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+
+    taskStore.deleteTask(task.id)
+    await dbStore.removeTask(task.id)
+    ElMessage.success('任务删除成功')
+  } catch (error) {
+    // 用户取消删除
+  }
+}
+
+// 切换任务选中状态
+const toggleTaskSelection = (taskId: string) => {
+  if (selectedTasks.value.has(taskId)) {
+    selectedTasks.value.delete(taskId)
+  } else {
+    selectedTasks.value.add(taskId)
+  }
+}
+
+// 获取选中的任务列表
+const getSelectedTasks = computed(() => {
+  return taskStore.tasks.filter(task => selectedTasks.value.has(task.id))
+})
+
+// 批量导出任务
+const exportTasks = () => {
+  if (selectedTasks.value.size === 0) {
+    ElMessage.warning('请先选择要导出的任务')
+    return
+  }
+  showExportDialog.value = true
+}
+
+// 返回项目列表
+const goBack = () => {
+  router.push('/projects')
+}
+
+const handleTaskDialogSuccess = () => {
+  // 任务创建/更新成功
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
-      <div v-if="project" class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ project.name }}</h1>
-        <p class="text-gray-600">{{ project.description }}</p>
+    <div class="container mx-auto px-4 py-6">
+      <!-- 顶部工具栏 -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-4">
+            <el-button @click="goBack">
+              ← 返回
+            </el-button>
+            <div v-if="project">
+              <h1 class="text-3xl font-bold text-gray-900">{{ project.name }}</h1>
+              <p class="text-gray-600 mt-1">{{ project.description }}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <el-button
+              v-if="selectedTasks.size > 0"
+              type="success"
+              @click="exportTasks"
+            >
+              导出选中 ({{ selectedTasks.size }})
+            </el-button>
+            <el-button type="primary" @click="createTask">
+              新建任务
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 技术栈标签 -->
+        <div v-if="project" class="flex gap-2">
+          <el-tag
+            v-for="tech in project.techStack"
+            :key="tech"
+            type="info"
+            size="small"
+          >
+            {{ tech }}
+          </el-tag>
+        </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow-sm p-8 text-center">
-        <p class="text-gray-500">任务看板功能即将实现...</p>
+      <!-- 看板列 -->
+      <div class="grid grid-cols-5 gap-4">
+        <div
+          v-for="column in columns"
+          :key="column.status"
+          class="flex flex-col"
+        >
+          <div :class="['rounded-t-lg p-3 font-semibold', column.color]">
+            <div class="flex justify-between items-center">
+              <span>{{ column.label }}</span>
+              <span class="text-sm">{{ getTasksByStatus(column.status).length }}</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-b-lg p-2 flex-1 min-h-[600px] shadow-sm">
+            <draggable
+              :list="getTasksByStatus(column.status)"
+              group="tasks"
+              item-key="id"
+              class="space-y-2 min-h-full"
+              @end="onDragEnd(column.status)"
+            >
+              <template #item="{ element: task }">
+                <div
+                  :class="[
+                    'bg-white border-2 rounded-lg p-3 cursor-move hover:shadow-md transition-shadow',
+                    selectedTasks.has(task.id) ? 'border-blue-500' : 'border-gray-200'
+                  ]"
+                  @click="toggleTaskSelection(task.id)"
+                >
+                  <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-semibold text-gray-900 text-sm flex-1 line-clamp-2">
+                      {{ task.title }}
+                    </h3>
+                    <el-checkbox
+                      :model-value="selectedTasks.has(task.id)"
+                      @click.stop
+                      @change="toggleTaskSelection(task.id)"
+                    />
+                  </div>
+
+                  <p class="text-gray-600 text-xs mb-3 line-clamp-2">
+                    {{ task.description }}
+                  </p>
+
+                  <div class="flex flex-wrap gap-1 mb-2">
+                    <el-tag
+                      v-for="tag in task.tags"
+                      :key="tag"
+                      size="small"
+                      type="info"
+                    >
+                      {{ tag }}
+                    </el-tag>
+                  </div>
+
+                  <div class="flex justify-between items-center text-xs">
+                    <span :class="priorityColorMap[task.priority]">
+                      {{ priorityLabelMap[task.priority] }}
+                    </span>
+                    <div class="flex gap-1" @click.stop>
+                      <el-button
+                        size="small"
+                        text
+                        type="primary"
+                        @click="editTask(task)"
+                      >
+                        编辑
+                      </el-button>
+                      <el-button
+                        size="small"
+                        text
+                        type="danger"
+                        @click="deleteTask(task)"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </draggable>
+          </div>
+        </div>
       </div>
+
+      <!-- 任务对话框 -->
+      <TaskDialog
+        v-model:visible="showTaskDialog"
+        :project-id="projectId"
+        :task="editingTask"
+        @success="handleTaskDialogSuccess"
+      />
+
+      <!-- 导出对话框 -->
+      <ExportDialog
+        v-model:visible="showExportDialog"
+        :tasks="getSelectedTasks"
+        :project="project || null"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 </style>
