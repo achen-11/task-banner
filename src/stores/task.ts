@@ -44,10 +44,10 @@ export const useTaskStore = defineStore('task', () => {
         status: updates.status ?? current.status,
         priority: updates.priority ?? current.priority,
         tags: updates.tags ? [...updates.tags] : [...current.tags],
-        estimatedEffort: updates.estimatedEffort !== undefined ? updates.estimatedEffort : current.estimatedEffort,
-        dueDate: updates.dueDate !== undefined ? updates.dueDate : current.dueDate,
         technicalPoints: updates.technicalPoints ? [...updates.technicalPoints] : (current.technicalPoints ? [...current.technicalPoints] : undefined),
         referenceLinks: updates.referenceLinks ? [...updates.referenceLinks] : (current.referenceLinks ? [...current.referenceLinks] : undefined),
+        progress: updates.progress ?? current.progress ?? 0,
+        changelog: updates.changelog ? [...updates.changelog] : (current.changelog ? [...current.changelog] : []),
         order: updates.order ?? current.order,
         createdAt: current.createdAt,
         updatedAt: Date.now()

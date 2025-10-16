@@ -9,6 +9,7 @@ import { useDBStore } from '@/stores/db'
 import type { Task, TaskStatus } from '@/types'
 import TaskDialog from '@/components/TaskDialog.vue'
 import ExportDialog from '@/components/ExportDialog.vue'
+import ImportDialog from '@/components/ImportDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const project = computed(() => projectStore.getProjectById(projectId.value))
 
 const showTaskDialog = ref(false)
 const showExportDialog = ref(false)
+const showImportDialog = ref(false)
 const editingTask = ref<Task | null>(null)
 const selectedTasks = ref<Set<string>>(new Set())
 
@@ -49,6 +51,22 @@ const priorityLabelMap: Record<string, string> = {
   urgent: '紧急',
 }
 
+// 预定义标签颜色映射
+const tagColorMap: Record<string, string> = {
+  '功能': 'primary',
+  'UI': 'success',
+  '优化': 'warning',
+  'Bug': 'danger',
+  '文档': 'info',
+  '测试': '',
+  '重构': '',
+}
+
+// 获取标签颜色类型
+const getTagType = (tag: string): '' | 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  return (tagColorMap[tag] || '') as '' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+}
+
 // 按状态获取任务
 const getTasksByStatus = (status: TaskStatus) => {
   return taskStore.getTasksByStatus(projectId.value, status)
@@ -67,10 +85,10 @@ const onDragEnd = async (status: TaskStatus) => {
       status: status,
       priority: task.priority,
       tags: [...task.tags],
-      estimatedEffort: task.estimatedEffort,
-      dueDate: task.dueDate,
       technicalPoints: task.technicalPoints ? [...task.technicalPoints] : undefined,
       referenceLinks: task.referenceLinks ? [...task.referenceLinks] : undefined,
+      progress: task.progress || 0,
+      changelog: task.changelog ? [...task.changelog] : [],
       order: index,
       createdAt: task.createdAt,
       updatedAt: Date.now(),
@@ -136,6 +154,18 @@ const exportTasks = () => {
   showExportDialog.value = true
 }
 
+// 导入任务
+const importTasks = () => {
+  showImportDialog.value = true
+}
+
+// 导入成功处理
+const handleImportSuccess = (importedTasks: Task[]) => {
+  ElMessage.success(`成功导入 ${importedTasks.length} 个任务`)
+  // 清空选中状态
+  selectedTasks.value.clear()
+}
+
 // 返回项目列表
 const goBack = () => {
   router.push('/projects')
@@ -162,6 +192,12 @@ const handleTaskDialogSuccess = () => {
             </div>
           </div>
           <div class="flex gap-2">
+            <el-button
+              type="info"
+              @click="importTasks"
+            >
+              导入任务
+            </el-button>
             <el-button
               v-if="selectedTasks.size > 0"
               type="success"
@@ -229,7 +265,7 @@ const handleTaskDialogSuccess = () => {
                     />
                   </div>
 
-                  <p class="text-gray-600 text-xs mb-3 line-clamp-2">
+                  <p class="text-gray-600 text-xs mb-3 line-clamp-3" :title="task.description">
                     {{ task.description }}
                   </p>
 
@@ -238,7 +274,7 @@ const handleTaskDialogSuccess = () => {
                       v-for="tag in task.tags"
                       :key="tag"
                       size="small"
-                      type="info"
+                      :type="getTagType(tag)"
                     >
                       {{ tag }}
                     </el-tag>
@@ -288,6 +324,13 @@ const handleTaskDialogSuccess = () => {
         :tasks="getSelectedTasks"
         :project="project || null"
       />
+
+      <!-- 导入对话框 -->
+      <ImportDialog
+        v-model:visible="showImportDialog"
+        :project-id="projectId"
+        @success="handleImportSuccess"
+      />
     </div>
   </div>
 </template>
@@ -298,5 +341,13 @@ const handleTaskDialogSuccess = () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

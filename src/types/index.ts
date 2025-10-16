@@ -18,6 +18,15 @@ export interface Project {
   updatedAt: number
 }
 
+// 变更日志条目接口
+export interface ChangeLogEntry {
+  timestamp: number
+  field: string
+  oldValue: string
+  newValue: string
+  action: string
+}
+
 // 任务接口
 export interface Task {
   id: string
@@ -27,10 +36,10 @@ export interface Task {
   status: TaskStatus
   priority: Priority
   tags: string[]
-  estimatedEffort?: string
-  dueDate?: number
   technicalPoints?: string[]
   referenceLinks?: string[]
+  progress: number // 0-100
+  changelog: ChangeLogEntry[]
   order: number
   createdAt: number
   updatedAt: number

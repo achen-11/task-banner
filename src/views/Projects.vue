@@ -99,12 +99,16 @@ const handleDialogSuccess = () => {
         <div
           v-for="project in projectStore.projects"
           :key="project.id"
-          class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all cursor-pointer border-2 border-transparent hover:border-blue-200"
+          class="project-card"
           @click="openProject(project.id)"
         >
-          <div class="flex justify-between items-start mb-3">
-            <h3 class="text-xl font-semibold text-gray-900 flex-1">{{ project.name }}</h3>
-            <div class="flex gap-1" @click.stop>
+          <div class="project-card-header">
+            <div class="project-icon">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+              </svg>
+            </div>
+            <div class="project-actions" @click.stop>
               <el-button
                 type="primary"
                 text
@@ -124,26 +128,37 @@ const handleDialogSuccess = () => {
             </div>
           </div>
 
-          <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+          <h3 class="project-title">{{ project.name }}</h3>
+
+          <p class="project-description">
             {{ project.description || '暂无描述' }}
           </p>
 
-          <div class="flex flex-wrap gap-2 mb-4 min-h-[28px]">
+          <div class="project-tags">
             <el-tag
               v-for="tech in project.techStack"
               :key="tech"
               size="small"
-              type="info"
+              effect="plain"
             >
               {{ tech }}
             </el-tag>
           </div>
 
-          <div class="flex justify-between items-center text-sm pt-4 border-t border-gray-100">
-            <el-tag :type="project.status === 'active' ? 'success' : project.status === 'completed' ? '' : 'warning'" size="small">
+          <div class="project-footer">
+            <el-tag
+              :type="project.status === 'active' ? 'success' : project.status === 'completed' ? '' : 'warning'"
+              size="small"
+              effect="dark"
+            >
               {{ statusLabelMap[project.status] }}
             </el-tag>
-            <span class="text-gray-500">任务: {{ getTaskCount(project.id) }}</span>
+            <div class="task-count">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+              <span>{{ getTaskCount(project.id) }} 个任务</span>
+            </div>
           </div>
         </div>
       </div>
@@ -169,5 +184,114 @@ const handleDialogSuccess = () => {
 .icon-large {
   width: 96px;
   height: 96px;
+}
+
+.project-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.project-card:hover::before {
+  transform: scaleX(1);
+}
+
+.project-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.project-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.project-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.project-card:hover .project-actions {
+  opacity: 1;
+}
+
+.project-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.project-description {
+  color: #718096;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 42px;
+}
+
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  min-height: 28px;
+}
+
+.project-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.task-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #718096;
+  font-size: 13px;
+  font-weight: 500;
 }
 </style>

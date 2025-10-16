@@ -43,20 +43,18 @@ export function exportTasksToMarkdown(tasks: Task[], project: Project): string {
       lines.push(`### ${priorityLabels[priority]}\n`)
 
       priorityTasks.forEach((task, index) => {
+        // 添加任务 ID 作为隐藏元数据 (HTML 注释)
+        lines.push(`<!-- task-id: ${task.id} -->`)
         lines.push(`#### ${index + 1}. ${task.title}\n`)
 
         // 任务基本信息
         lines.push(`**状态：** ${getStatusLabel(task.status)}`)
-        if (task.estimatedEffort) {
-          lines.push(`**预计工作量：** ${task.estimatedEffort}`)
-        }
-        if (task.dueDate) {
-          const dueDate = new Date(task.dueDate).toLocaleDateString('zh-CN')
-          lines.push(`**截止日期：** ${dueDate}`)
-        }
+        lines.push(`**进度：** ${task.progress}%`)
         if (task.tags.length > 0) {
           lines.push(`**标签：** ${task.tags.join(', ')}`)
         }
+        lines.push(`**创建时间：** ${new Date(task.createdAt).toLocaleString('zh-CN')}`)
+        lines.push(`**更新时间：** ${new Date(task.updatedAt).toLocaleString('zh-CN')}`)
         lines.push('')
 
         // 任务描述
@@ -148,4 +146,131 @@ export function downloadAsFile(content: string, filename: string) {
   link.download = filename
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * 从 Markdown 导入任务
+ * @param markdown Markdown 文本
+ * @param projectId 目标项目 ID
+ * @param existingTaskIds 已存在的任务 ID 列表（用于检测冲突）
+ * @returns 解析出的任务列表
+ */
+export function importTasksFromMarkdown(
+  markdown: string,
+  projectId: string,
+  existingTaskIds: string[] = []
+): Partial<Task>[] {
+  const tasks: Partial<Task>[] = []
+  const lines = markdown.split('\n')
+
+  let currentTask: Partial<Task> | null = null
+  let currentSection: 'description' | 'technicalPoints' | 'referenceLinks' | null = null
+  let lastTaskId: string | null = null
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+
+    // 提取任务 ID (从 HTML 注释)
+    const taskIdMatch = line.match(/<!--\s*task-id:\s*(\S+)\s*-->/)
+    if (taskIdMatch) {
+      lastTaskId = taskIdMatch[1]
+      // 如果 ID 已存在，生成新 ID
+      if (existingTaskIds.includes(lastTaskId)) {
+        lastTaskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      }
+      continue
+    }
+
+    // 检测任务标题 (#### 1. 标题)
+    const titleMatch = line.match(/^####\s*\d+\.\s*(.+)$/)
+    if (titleMatch) {
+      // 保存上一个任务
+      if (currentTask && currentTask.title) {
+        tasks.push(currentTask)
+      }
+
+      // 创建新任务
+      currentTask = {
+        id: lastTaskId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        projectId,
+        title: titleMatch[1].trim(),
+        description: '',
+        status: 'todo',
+        priority: 'medium',
+        tags: [],
+        technicalPoints: [],
+        referenceLinks: [],
+        progress: 0,
+        changelog: [],
+        order: tasks.length,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }
+      currentSection = null
+      lastTaskId = null
+      continue
+    }
+
+    // 如果没有当前任务，跳过
+    if (!currentTask) continue
+
+    // 解析任务属性
+    if (line.startsWith('**状态：**')) {
+      const statusText = line.replace('**状态：**', '').trim()
+      currentTask.status = parseStatusFromLabel(statusText)
+    } else if (line.startsWith('**进度：**')) {
+      const progressMatch = line.match(/(\d+)%/)
+      if (progressMatch) {
+        currentTask.progress = parseInt(progressMatch[1])
+      }
+    } else if (line.startsWith('**标签：**')) {
+      const tagsText = line.replace('**标签：**', '').trim()
+      currentTask.tags = tagsText.split(',').map(t => t.trim()).filter(t => t)
+    } else if (line.startsWith('**任务描述：**')) {
+      currentSection = 'description'
+    } else if (line.startsWith('**技术要点：**')) {
+      currentSection = 'technicalPoints'
+    } else if (line.startsWith('**参考资料：**')) {
+      currentSection = 'referenceLinks'
+    } else if (line === '---' || line.startsWith('###')) {
+      // 任务结束标记
+      currentSection = null
+    } else if (currentSection && line) {
+      // 添加内容到当前章节
+      if (currentSection === 'description') {
+        currentTask.description += (currentTask.description ? '\n' : '') + line
+      } else if (currentSection === 'technicalPoints') {
+        const pointMatch = line.match(/^\d+\.\s*(.+)$/)
+        if (pointMatch && currentTask.technicalPoints) {
+          currentTask.technicalPoints.push(pointMatch[1].trim())
+        }
+      } else if (currentSection === 'referenceLinks') {
+        const linkMatch = line.match(/^\d+\.\s*(.+)$/)
+        if (linkMatch && currentTask.referenceLinks) {
+          currentTask.referenceLinks.push(linkMatch[1].trim())
+        }
+      }
+    }
+  }
+
+  // 保存最后一个任务
+  if (currentTask && currentTask.title) {
+    tasks.push(currentTask)
+  }
+
+  return tasks
+}
+
+/**
+ * 从状态标签解析状态值
+ */
+function parseStatusFromLabel(label: string): Task['status'] {
+  const statusMap: Record<string, Task['status']> = {
+    '待办': 'todo',
+    '进行中': 'in_progress',
+    '已完成': 'completed',
+    '已发送AI': 'sent_to_ai',
+    '需优化': 'needs_optimization',
+  }
+  return statusMap[label] || 'todo'
 }

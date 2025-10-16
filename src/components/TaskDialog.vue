@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { Task, TaskStatus, Priority } from '@/types'
+import type { Task, TaskStatus, Priority, ChangeLogEntry } from '@/types'
 import { generateId } from '@/utils'
 import { useTaskStore } from '@/stores/task'
 import { useDBStore } from '@/stores/db'
@@ -30,15 +30,25 @@ const formData = ref({
   status: 'todo' as TaskStatus,
   priority: 'medium' as Priority,
   tags: [] as string[],
-  estimatedEffort: '',
-  dueDate: '',
   technicalPoints: [] as string[],
   referenceLinks: [] as string[],
+  progress: 0,
 })
 
 const tagInput = ref('')
 const techPointInput = ref('')
 const refLinkInput = ref('')
+
+// 预定义标签选项
+const predefinedTags = [
+  { label: '功能', value: '功能', color: 'primary' },
+  { label: 'UI', value: 'UI', color: 'success' },
+  { label: '优化', value: '优化', color: 'warning' },
+  { label: 'Bug', value: 'Bug', color: 'danger' },
+  { label: '文档', value: '文档', color: 'info' },
+  { label: '测试', value: '测试', color: '' },
+  { label: '重构', value: '重构', color: '' },
+]
 
 const statusOptions = [
   { label: '待办', value: 'todo' },
@@ -75,10 +85,9 @@ watch(() => props.visible, (newVal) => {
         status: props.task.status,
         priority: props.task.priority,
         tags: [...props.task.tags],
-        estimatedEffort: props.task.estimatedEffort || '',
-        dueDate: props.task.dueDate ? new Date(props.task.dueDate).toISOString().split('T')[0] : '',
         technicalPoints: props.task.technicalPoints ? [...props.task.technicalPoints] : [],
         referenceLinks: props.task.referenceLinks ? [...props.task.referenceLinks] : [],
+        progress: props.task.progress || 0,
       }
     } else {
       resetForm()
@@ -93,10 +102,9 @@ function resetForm() {
     status: 'todo',
     priority: 'medium',
     tags: [],
-    estimatedEffort: '',
-    dueDate: '',
     technicalPoints: [],
     referenceLinks: [],
+    progress: 0,
   }
   tagInput.value = ''
   techPointInput.value = ''
@@ -104,6 +112,14 @@ function resetForm() {
   formRef.value?.clearValidate()
 }
 
+// 快速添加预定义标签
+function addPredefinedTag(tag: string) {
+  if (!formData.value.tags.includes(tag)) {
+    formData.value.tags.push(tag)
+  }
+}
+
+// 添加自定义标签
 function addTag() {
   if (tagInput.value.trim() && !formData.value.tags.includes(tagInput.value.trim())) {
     formData.value.tags.push(tagInput.value.trim())
@@ -113,6 +129,72 @@ function addTag() {
 
 function removeTag(index: number) {
   formData.value.tags.splice(index, 1)
+}
+
+// 判断标签是否已选中
+function isTagSelected(tag: string) {
+  return formData.value.tags.includes(tag)
+}
+
+// 获取标签颜色类型
+function getTagType(tag: string) {
+  const predefined = predefinedTags.find(t => t.value === tag)
+  return predefined?.color || ''
+}
+
+// 创建变更日志条目
+function createChangeLogEntry(field: string, oldValue: any, newValue: any, action: string): ChangeLogEntry {
+  return {
+    timestamp: Date.now(),
+    field,
+    oldValue: String(oldValue),
+    newValue: String(newValue),
+    action,
+  }
+}
+
+// 检测并记录字段变更
+function detectChanges(oldTask: Task): ChangeLogEntry[] {
+  const changes: ChangeLogEntry[] = []
+
+  if (oldTask.title !== formData.value.title) {
+    changes.push(createChangeLogEntry('标题', oldTask.title, formData.value.title, '修改了标题'))
+  }
+
+  if (oldTask.description !== formData.value.description) {
+    changes.push(createChangeLogEntry('描述', oldTask.description, formData.value.description, '修改了描述'))
+  }
+
+  if (oldTask.status !== formData.value.status) {
+    const statusMap: Record<string, string> = {
+      'todo': '待办',
+      'in_progress': '进行中',
+      'completed': '已完成',
+      'sent_to_ai': '已发送AI',
+      'needs_optimization': '需优化',
+    }
+    changes.push(createChangeLogEntry('状态', statusMap[oldTask.status], statusMap[formData.value.status], '修改了状态'))
+  }
+
+  if (oldTask.priority !== formData.value.priority) {
+    const priorityMap: Record<string, string> = {
+      'low': '低',
+      'medium': '中',
+      'high': '高',
+      'urgent': '紧急',
+    }
+    changes.push(createChangeLogEntry('优先级', priorityMap[oldTask.priority], priorityMap[formData.value.priority], '修改了优先级'))
+  }
+
+  if (oldTask.progress !== formData.value.progress) {
+    changes.push(createChangeLogEntry('进度', `${oldTask.progress}%`, `${formData.value.progress}%`, '修改了进度'))
+  }
+
+  if (JSON.stringify(oldTask.tags) !== JSON.stringify(formData.value.tags)) {
+    changes.push(createChangeLogEntry('标签', oldTask.tags.join(', '), formData.value.tags.join(', '), '修改了标签'))
+  }
+
+  return changes
 }
 
 function addTechPoint() {
@@ -142,6 +224,10 @@ async function handleSubmit() {
     await formRef.value?.validate()
 
     if (props.task) {
+      // 检测变更
+      const changes = detectChanges(props.task)
+      const updatedChangelog = [...props.task.changelog, ...changes]
+
       // 更新任务 - 创建新的纯对象，避免克隆响应式对象
       const updatedTask: Task = {
         id: props.task.id,
@@ -151,10 +237,10 @@ async function handleSubmit() {
         status: formData.value.status,
         priority: formData.value.priority,
         tags: [...formData.value.tags], // 创建新数组
-        estimatedEffort: formData.value.estimatedEffort || undefined,
-        dueDate: formData.value.dueDate ? new Date(formData.value.dueDate).getTime() : undefined,
         technicalPoints: formData.value.technicalPoints.length > 0 ? [...formData.value.technicalPoints] : undefined,
         referenceLinks: formData.value.referenceLinks.length > 0 ? [...formData.value.referenceLinks] : undefined,
+        progress: formData.value.progress,
+        changelog: updatedChangelog,
         order: props.task.order,
         createdAt: props.task.createdAt,
         updatedAt: Date.now(),
@@ -172,10 +258,10 @@ async function handleSubmit() {
         status: formData.value.status,
         priority: formData.value.priority,
         tags: [...formData.value.tags], // 创建新数组
-        estimatedEffort: formData.value.estimatedEffort || undefined,
-        dueDate: formData.value.dueDate ? new Date(formData.value.dueDate).getTime() : undefined,
         technicalPoints: formData.value.technicalPoints.length > 0 ? [...formData.value.technicalPoints] : undefined,
         referenceLinks: formData.value.referenceLinks.length > 0 ? [...formData.value.referenceLinks] : undefined,
+        progress: formData.value.progress,
+        changelog: [createChangeLogEntry('任务', '', '创建任务', '创建了任务')],
         order: taskStore.tasks.length,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -201,10 +287,11 @@ function handleClose() {
 </script>
 
 <template>
-  <el-dialog
+  <el-drawer
     :model-value="visible"
     :title="task ? '编辑任务' : '创建任务'"
-    width="700px"
+    size="700px"
+    direction="rtl"
     @close="handleClose"
   >
     <el-form
@@ -257,47 +344,74 @@ function handleClose() {
         </el-form-item>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <el-form-item label="预计工作量">
-          <el-input
-            v-model="formData.estimatedEffort"
-            placeholder="如: 2小时, 1天"
-          />
-        </el-form-item>
-
-        <el-form-item label="截止日期">
-          <el-date-picker
-            v-model="formData.dueDate"
-            type="date"
-            placeholder="选择日期"
-            class="w-full"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-      </div>
+      <!-- 任务进度 -->
+      <el-form-item label="任务进度">
+        <div class="w-full">
+          <div class="flex items-center gap-4">
+            <el-slider
+              v-model="formData.progress"
+              :min="0"
+              :max="100"
+              :step="5"
+              :show-tooltip="true"
+              class="flex-1"
+            />
+            <span class="text-lg font-semibold min-w-[60px] text-right">{{ formData.progress }}%</span>
+          </div>
+        </div>
+      </el-form-item>
 
       <el-form-item label="标签">
         <div class="w-full">
-          <div class="flex gap-2 mb-2">
-            <el-input
-              v-model="tagInput"
-              placeholder="输入标签并回车添加"
-              @keyup.enter="addTag"
-            />
-            <el-button @click="addTag">添加</el-button>
+          <!-- 快速选择预定义标签 -->
+          <div class="mb-3">
+            <div class="text-sm text-gray-600 mb-2">快速选择：</div>
+            <div class="flex flex-wrap gap-2">
+              <el-tag
+                v-for="tag in predefinedTags"
+                :key="tag.value"
+                :type="isTagSelected(tag.value) ? tag.color : 'info'"
+                :effect="isTagSelected(tag.value) ? 'dark' : 'plain'"
+                class="cursor-pointer"
+                @click="addPredefinedTag(tag.value)"
+              >
+                {{ tag.label }}
+                <span v-if="isTagSelected(tag.value)">✓</span>
+              </el-tag>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <el-tag
-              v-for="(tag, index) in formData.tags"
-              :key="tag"
-              closable
-              @close="removeTag(index)"
-            >
-              {{ tag }}
-            </el-tag>
-            <span v-if="formData.tags.length === 0" class="text-gray-400 text-sm">
-              暂无标签
-            </span>
+
+          <!-- 自定义标签输入 -->
+          <div class="mb-2">
+            <div class="text-sm text-gray-600 mb-2">自定义标签：</div>
+            <div class="flex gap-2">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入自定义标签并回车添加"
+                size="small"
+                @keyup.enter="addTag"
+              />
+              <el-button size="small" @click="addTag">添加</el-button>
+            </div>
+          </div>
+
+          <!-- 已选择的标签 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-2">已选择：</div>
+            <div class="flex flex-wrap gap-2">
+              <el-tag
+                v-for="(tag, index) in formData.tags"
+                :key="tag"
+                :type="getTagType(tag)"
+                closable
+                @close="removeTag(index)"
+              >
+                {{ tag }}
+              </el-tag>
+              <span v-if="formData.tags.length === 0" class="text-gray-400 text-sm">
+                暂无标签
+              </span>
+            </div>
           </div>
         </div>
       </el-form-item>
@@ -359,15 +473,51 @@ function handleClose() {
           </div>
         </div>
       </el-form-item>
+
+      <!-- 变更日志 -->
+      <el-form-item v-if="task && task.changelog && task.changelog.length > 0" label="变更日志">
+        <div class="w-full">
+          <el-collapse>
+            <el-collapse-item title="查看变更历史" name="changelog">
+              <div class="changelog-list">
+                <div
+                  v-for="(entry, index) in task.changelog"
+                  :key="index"
+                  class="changelog-entry"
+                >
+                  <div class="flex items-start gap-3">
+                    <div class="changelog-icon">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                    <div class="flex-1">
+                      <div class="changelog-action">{{ entry.action }}</div>
+                      <div class="changelog-details" v-if="entry.oldValue || entry.newValue">
+                        <span v-if="entry.oldValue" class="old-value">{{ entry.oldValue }}</span>
+                        <span v-if="entry.oldValue && entry.newValue" class="arrow">→</span>
+                        <span v-if="entry.newValue" class="new-value">{{ entry.newValue }}</span>
+                      </div>
+                      <div class="changelog-time">{{ new Date(entry.timestamp).toLocaleString('zh-CN') }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+      </el-form-item>
     </el-form>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleSubmit">
-        {{ task ? '保存' : '创建' }}
-      </el-button>
+      <div class="drawer-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">
+          {{ task ? '保存' : '创建' }}
+        </el-button>
+      </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <style scoped>
@@ -375,5 +525,80 @@ function handleClose() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.cursor-pointer:hover {
+  transform: translateY(-2px);
+}
+
+.cursor-pointer:active {
+  transform: translateY(0);
+}
+
+.drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+/* 变更日志样式 */
+.changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.changelog-entry {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.changelog-icon {
+  color: #3b82f6;
+  margin-top: 2px;
+}
+
+.changelog-action {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.changelog-details {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.old-value {
+  text-decoration: line-through;
+  color: #ef4444;
+}
+
+.arrow {
+  color: #9ca3af;
+  font-weight: bold;
+}
+
+.new-value {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.changelog-time {
+  font-size: 12px;
+  color: #9ca3af;
 }
 </style>
