@@ -135,29 +135,32 @@ const goToProjects = () => {
 
 .stat-card {
   background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  border-color: #d1d5db;
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .stat-content {
@@ -166,26 +169,27 @@ const goToProjects = () => {
 
 .action-card {
   background: white;
-  border-radius: 20px;
-  padding: 48px;
+  border-radius: 24px;
+  padding: 56px;
   text-align: center;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 .cta-button {
-  height: 48px;
-  padding: 0 32px;
+  height: 52px;
+  padding: 0 36px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 .cta-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 12px -2px rgba(102, 126, 234, 0.3);
 }
 </style>

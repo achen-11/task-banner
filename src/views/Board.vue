@@ -189,10 +189,10 @@ const handleTaskDialogSuccess = () => {
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-6">
+    <div class="container mx-auto px-6 py-8">
       <!-- 顶部工具栏 -->
-      <div class="mb-6">
-        <div class="flex items-center justify-between mb-4">
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-4">
             <el-button @click="goBack">
               ← 返回
@@ -236,37 +236,37 @@ const handleTaskDialogSuccess = () => {
       </div>
 
       <!-- 看板列 -->
-      <div class="grid grid-cols-5 gap-4">
+      <div class="grid grid-cols-5 gap-6">
         <div
           v-for="column in columns"
           :key="column.status"
           class="flex flex-col"
         >
-          <div :class="['rounded-t-lg p-3 font-semibold', column.color]">
+          <div :class="['rounded-t-xl p-4 font-semibold', column.color]">
             <div class="flex justify-between items-center">
               <span>{{ column.label }}</span>
-              <span class="text-sm">{{ getTasksByStatus(column.status).length }}</span>
+              <span class="text-sm opacity-75">{{ getTasksByStatus(column.status).length }}</span>
             </div>
           </div>
 
-          <div class="bg-white rounded-b-lg p-2 flex-1 min-h-[600px] shadow-sm">
+          <div class="bg-white rounded-b-xl p-3 flex-1 min-h-[600px] shadow-sm">
             <draggable
               :list="getTasksByStatus(column.status)"
               group="tasks"
               item-key="id"
-              class="space-y-2 min-h-full"
+              class="space-y-3 min-h-full"
               @end="onDragEnd(column.status)"
             >
               <template #item="{ element: task }">
                 <div
                   :class="[
-                    'bg-white border-2 rounded-lg p-3 cursor-move hover:shadow-md transition-shadow',
-                    selectedTasks.has(task.id) ? 'border-blue-500' : 'border-gray-200'
+                    'bg-white border rounded-xl p-4 cursor-move hover:shadow-lg transition-all duration-200',
+                    selectedTasks.has(task.id) ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
                   ]"
                   @click="toggleTaskSelection(task.id)"
                 >
-                  <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-semibold text-gray-900 text-sm flex-1 line-clamp-2">
+                  <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-semibold text-gray-900 text-base flex-1 line-clamp-2 leading-relaxed">
                       {{ task.title }}
                     </h3>
                     <el-checkbox
@@ -276,11 +276,11 @@ const handleTaskDialogSuccess = () => {
                     />
                   </div>
 
-                  <p class="text-gray-600 text-xs mb-3 line-clamp-3" :title="task.description">
+                  <p class="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed" :title="task.description">
                     {{ task.description }}
                   </p>
 
-                  <div class="flex flex-wrap gap-1 mb-2">
+                  <div class="flex flex-wrap gap-2 mb-3">
                     <el-tag
                       v-for="tag in task.tags"
                       :key="tag"
@@ -288,6 +288,15 @@ const handleTaskDialogSuccess = () => {
                       :type="getTagType(tag)"
                     >
                       {{ tag }}
+                    </el-tag>
+                    <!-- 迭代标记 -->
+                    <el-tag
+                      v-if="task.changelog && task.changelog.length > 0"
+                      size="small"
+                      effect="dark"
+                      class="iteration-badge"
+                    >
+                      🔄 v{{ task.changelog.length }}
                     </el-tag>
                   </div>
 
@@ -360,5 +369,11 @@ const handleTaskDialogSuccess = () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.iteration-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  font-weight: 600;
 }
 </style>

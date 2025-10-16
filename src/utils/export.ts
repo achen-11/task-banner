@@ -24,6 +24,23 @@ export function exportTasksToMarkdown(tasks: Task[], project: Project): string {
     lines.push('')
   }
 
+  // 添加AI指令
+  lines.push(`## 🤖 AI 协作指引\n`)
+  lines.push(`### 任务处理流程`)
+  lines.push(`1. **阅读任务**：仔细阅读下方的任务需求，理解每个任务的目标、技术要点和参考资料`)
+  lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
+  lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
+  lines.push(`4. **更新任务信息**：`)
+  lines.push(`   - 更新任务描述，补充实现细节`)
+  lines.push(`   - 如有修改文件，在技术要点中注明`)
+  lines.push(`   - 添加相关的参考链接（如果有）`)
+  lines.push(`5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容\n`)
+  lines.push(`### ⚠️ 重要提醒`)
+  lines.push(`- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`)
+  lines.push(`- 保持 Markdown 结构完整，不要删除任何标题层级`)
+  lines.push(`- 任务完成后，可以在任务描述末尾添加实现说明\n`)
+
+  lines.push(`---\n`)
   lines.push(`## 任务列表\n`)
   lines.push(`共 ${tasks.length} 个任务\n`)
 
@@ -49,7 +66,7 @@ export function exportTasksToMarkdown(tasks: Task[], project: Project): string {
 
         // 任务基本信息
         lines.push(`**状态：** ${getStatusLabel(task.status)}`)
-        lines.push(`**进度：** ${task.progress}%`)
+        lines.push(`**优先级：** ${getPriorityLabel(task.priority)}`)
         if (task.tags.length > 0) {
           lines.push(`**标签：** ${task.tags.join(', ')}`)
         }
@@ -104,6 +121,19 @@ function getStatusLabel(status: string): string {
     needs_optimization: '需优化',
   }
   return statusLabels[status] || status
+}
+
+/**
+ * 获取优先级标签
+ */
+function getPriorityLabel(priority: string): string {
+  const priorityLabels: Record<string, string> = {
+    low: '低',
+    medium: '中',
+    high: '高',
+    urgent: '紧急',
+  }
+  return priorityLabels[priority] || priority
 }
 
 /**
@@ -218,11 +248,9 @@ export function importTasksFromMarkdown(
     if (line.startsWith('**状态：**')) {
       const statusText = line.replace('**状态：**', '').trim()
       currentTask.status = parseStatusFromLabel(statusText)
-    } else if (line.startsWith('**进度：**')) {
-      const progressMatch = line.match(/(\d+)%/)
-      if (progressMatch) {
-        currentTask.progress = parseInt(progressMatch[1])
-      }
+    } else if (line.startsWith('**优先级：**')) {
+      const priorityText = line.replace('**优先级：**', '').trim()
+      currentTask.priority = parsePriorityFromLabel(priorityText)
     } else if (line.startsWith('**标签：**')) {
       const tagsText = line.replace('**标签：**', '').trim()
       currentTask.tags = tagsText.split(',').map(t => t.trim()).filter(t => t)
@@ -273,4 +301,17 @@ function parseStatusFromLabel(label: string): Task['status'] {
     '需优化': 'needs_optimization',
   }
   return statusMap[label] || 'todo'
+}
+
+/**
+ * 从优先级标签解析优先级值
+ */
+function parsePriorityFromLabel(label: string): Task['priority'] {
+  const priorityMap: Record<string, Task['priority']> = {
+    '低': 'low',
+    '中': 'medium',
+    '高': 'high',
+    '紧急': 'urgent',
+  }
+  return priorityMap[label] || 'medium'
 }

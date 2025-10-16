@@ -72,7 +72,7 @@ const handleDialogSuccess = () => {
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-6 py-10">
       <div class="flex justify-between items-center mb-8">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">项目列表</h1>
@@ -95,7 +95,7 @@ const handleDialogSuccess = () => {
         </el-button>
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div
           v-for="project in projectStore.projects"
           :key="project.id"
@@ -188,12 +188,12 @@ const handleDialogSuccess = () => {
 
 .project-card {
   background: white;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 20px;
+  padding: 28px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
 }
@@ -216,9 +216,9 @@ const handleDialogSuccess = () => {
 }
 
 .project-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  border-color: #d1d5db;
 }
 
 .project-card-header {
@@ -229,14 +229,15 @@ const handleDialogSuccess = () => {
 }
 
 .project-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 .project-actions {
@@ -251,23 +252,24 @@ const handleDialogSuccess = () => {
 }
 
 .project-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #1a202c;
-  margin-bottom: 12px;
-  line-height: 1.3;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
 }
 
 .project-description {
   color: #718096;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 16px;
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 20px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 42px;
+  min-height: 48px;
 }
 
 .project-tags {

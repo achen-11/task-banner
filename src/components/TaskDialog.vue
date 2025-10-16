@@ -356,23 +356,6 @@ function handleClose() {
         </el-form-item>
       </div>
 
-      <!-- 任务进度 -->
-      <el-form-item label="任务进度">
-        <div class="w-full">
-          <div class="flex items-center gap-4">
-            <el-slider
-              v-model="formData.progress"
-              :min="0"
-              :max="100"
-              :step="5"
-              :show-tooltip="true"
-              class="flex-1"
-            />
-            <span class="text-lg font-semibold min-w-[60px] text-right">{{ formData.progress }}%</span>
-          </div>
-        </div>
-      </el-form-item>
-
       <el-form-item label="标签">
         <div class="w-full">
           <!-- 快速选择预定义标签 -->
@@ -486,37 +469,39 @@ function handleClose() {
         </div>
       </el-form-item>
 
-      <!-- 变更日志 -->
-      <el-form-item v-if="task && task.changelog && task.changelog.length > 0" label="变更日志">
+      <!-- 迭代历史 -->
+      <el-form-item v-if="task && task.changelog && task.changelog.length > 0" label="迭代历史">
         <div class="w-full">
-          <el-collapse>
-            <el-collapse-item title="查看变更历史" name="changelog">
-              <div class="changelog-list">
-                <div
-                  v-for="(entry, index) in task.changelog"
-                  :key="index"
-                  class="changelog-entry"
-                >
-                  <div class="flex items-start gap-3">
-                    <div class="changelog-icon">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
-                    <div class="flex-1">
-                      <div class="changelog-action">{{ entry.action }}</div>
-                      <div class="changelog-details" v-if="entry.oldValue || entry.newValue">
-                        <span v-if="entry.oldValue" class="old-value">{{ entry.oldValue }}</span>
-                        <span v-if="entry.oldValue && entry.newValue" class="arrow">→</span>
-                        <span v-if="entry.newValue" class="new-value">{{ entry.newValue }}</span>
-                      </div>
-                      <div class="changelog-time">{{ new Date(entry.timestamp).toLocaleString('zh-CN') }}</div>
-                    </div>
-                  </div>
+          <div class="iteration-header">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <span class="iteration-title">此任务已迭代 {{ task.changelog.length }} 次</span>
+          </div>
+
+          <div class="iteration-list">
+            <div
+              v-for="(entry, index) in [...task.changelog].reverse()"
+              :key="index"
+              class="iteration-entry"
+            >
+              <div class="iteration-number">v{{ task.changelog.length - index }}</div>
+              <div class="iteration-content">
+                <div class="iteration-action">{{ entry.action }}</div>
+                <div class="iteration-details" v-if="entry.oldValue || entry.newValue">
+                  <span v-if="entry.oldValue" class="old-value">{{ entry.oldValue }}</span>
+                  <span v-if="entry.oldValue && entry.newValue" class="arrow">→</span>
+                  <span v-if="entry.newValue" class="new-value">{{ entry.newValue }}</span>
+                </div>
+                <div class="iteration-time">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  {{ new Date(entry.timestamp).toLocaleString('zh-CN') }}
                 </div>
               </div>
-            </el-collapse-item>
-          </el-collapse>
+            </div>
+          </div>
         </div>
       </el-form-item>
     </el-form>
@@ -559,35 +544,92 @@ function handleClose() {
   padding: 16px 0;
 }
 
-/* 变更日志样式 */
-.changelog-list {
+/* 迭代历史样式 */
+.iteration-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
+}
+
+.iteration-title {
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.iteration-list {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  position: relative;
+  padding-left: 32px;
+}
+
+.iteration-list::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.iteration-entry {
+  display: flex;
+  align-items: start;
   gap: 12px;
+  position: relative;
 }
 
-.changelog-entry {
-  padding: 12px;
+.iteration-number {
+  position: absolute;
+  left: -32px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  z-index: 1;
+}
+
+.iteration-content {
+  flex: 1;
+  padding: 14px 16px;
   background: #f9fafb;
-  border-radius: 8px;
-  border-left: 3px solid #3b82f6;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
 
-.changelog-icon {
-  color: #3b82f6;
-  margin-top: 2px;
+.iteration-content:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateX(2px);
 }
 
-.changelog-action {
+.iteration-action {
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
-.changelog-details {
+.iteration-details {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -597,6 +639,9 @@ function handleClose() {
 .old-value {
   text-decoration: line-through;
   color: #ef4444;
+  background: #fee2e2;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .arrow {
@@ -607,10 +652,16 @@ function handleClose() {
 .new-value {
   color: #10b981;
   font-weight: 500;
+  background: #d1fae5;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.changelog-time {
+.iteration-time {
   font-size: 12px;
   color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>
