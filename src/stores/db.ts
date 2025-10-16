@@ -2,12 +2,14 @@ import { defineStore } from 'pinia'
 import { db, initializeDB, exportAllData, importAllData } from '@/db'
 import { useProjectStore } from './project'
 import { useTaskStore } from './task'
+import { migrateTasksToLatestVersion } from '@/utils/migration'
 
 export const useDBStore = defineStore('db', () => {
   // 初始化数据库
   async function initialize() {
     await initializeDB()
     await loadAllData()
+    // 注意：数据迁移已经在 loadAllData 中自动处理
   }
 
   // 从数据库加载所有数据到 store
@@ -22,10 +24,16 @@ export const useDBStore = defineStore('db', () => {
         projectStore.addProject(project)
       })
 
-      // 加载任务
+      // 加载任务并修复缺失字段
       const tasks = await db.tasks.toArray()
-      tasks.forEach(task => {
-        taskStore.addTask(task)
+      tasks.forEach((task: any) => {
+        // 确保每个任务都有必需的字段
+        const normalizedTask = {
+          ...task,
+          progress: task.progress !== undefined ? task.progress : 0,
+          changelog: Array.isArray(task.changelog) ? task.changelog : []
+        }
+        taskStore.addTask(normalizedTask)
       })
 
       console.log('Data loaded from database')

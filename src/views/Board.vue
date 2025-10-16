@@ -76,6 +76,17 @@ const getTasksByStatus = (status: TaskStatus) => {
 const onDragEnd = async (status: TaskStatus) => {
   const tasks = getTasksByStatus(status)
   tasks.forEach((task: Task, index: number) => {
+    // 深度克隆 changelog
+    const clonedChangelog = Array.isArray(task.changelog)
+      ? task.changelog.map(entry => ({
+          timestamp: entry.timestamp,
+          field: entry.field,
+          oldValue: entry.oldValue,
+          newValue: entry.newValue,
+          action: entry.action
+        }))
+      : []
+
     // 创建纯对象用于保存，避免克隆响应式对象
     const updatedTask: Task = {
       id: task.id,
@@ -87,8 +98,8 @@ const onDragEnd = async (status: TaskStatus) => {
       tags: [...task.tags],
       technicalPoints: task.technicalPoints ? [...task.technicalPoints] : undefined,
       referenceLinks: task.referenceLinks ? [...task.referenceLinks] : undefined,
-      progress: task.progress || 0,
-      changelog: task.changelog ? [...task.changelog] : [],
+      progress: task.progress !== undefined ? task.progress : 0,
+      changelog: clonedChangelog,
       order: index,
       createdAt: task.createdAt,
       updatedAt: Date.now(),

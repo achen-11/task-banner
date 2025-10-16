@@ -226,7 +226,19 @@ async function handleSubmit() {
     if (props.task) {
       // 检测变更
       const changes = detectChanges(props.task)
-      const updatedChangelog = [...props.task.changelog, ...changes]
+      // 处理向后兼容：如果 changelog 不存在，初始化为空数组
+      const existingChangelog = props.task.changelog || []
+
+      // 深度克隆 changelog 以避免响应式对象
+      const clonedExistingChangelog = existingChangelog.map(entry => ({
+        timestamp: entry.timestamp,
+        field: entry.field,
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        action: entry.action
+      }))
+
+      const updatedChangelog = [...clonedExistingChangelog, ...changes]
 
       // 更新任务 - 创建新的纯对象，避免克隆响应式对象
       const updatedTask: Task = {

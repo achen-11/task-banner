@@ -36,6 +36,22 @@ export const useTaskStore = defineStore('task', () => {
     const index = tasks.value.findIndex(t => t.id === id)
     if (index !== -1) {
       const current = tasks.value[index]
+
+      // 深度克隆 changelog 以避免响应式对象问题
+      const getClonedChangelog = (changelog: any[]) => {
+        return changelog.map(entry => ({
+          timestamp: entry.timestamp,
+          field: entry.field,
+          oldValue: entry.oldValue,
+          newValue: entry.newValue,
+          action: entry.action
+        }))
+      }
+
+      const newChangelog = updates.changelog
+        ? getClonedChangelog(updates.changelog)
+        : (current.changelog ? getClonedChangelog(current.changelog) : [])
+
       tasks.value[index] = {
         id: current.id,
         projectId: updates.projectId ?? current.projectId,
@@ -46,8 +62,8 @@ export const useTaskStore = defineStore('task', () => {
         tags: updates.tags ? [...updates.tags] : [...current.tags],
         technicalPoints: updates.technicalPoints ? [...updates.technicalPoints] : (current.technicalPoints ? [...current.technicalPoints] : undefined),
         referenceLinks: updates.referenceLinks ? [...updates.referenceLinks] : (current.referenceLinks ? [...current.referenceLinks] : undefined),
-        progress: updates.progress ?? current.progress ?? 0,
-        changelog: updates.changelog ? [...updates.changelog] : (current.changelog ? [...current.changelog] : []),
+        progress: updates.progress !== undefined ? updates.progress : (current.progress ?? 0),
+        changelog: newChangelog,
         order: updates.order ?? current.order,
         createdAt: current.createdAt,
         updatedAt: Date.now()
