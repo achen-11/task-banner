@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { Task, TaskStatus, Priority, ChangeLogEntry } from '@/types'
 import { generateId } from '@/utils'
 import { useTaskStore } from '@/stores/task'
 import { useDBStore } from '@/stores/db'
+import { marked } from 'marked'
 
 interface Props {
   visible: boolean
@@ -38,6 +39,15 @@ const formData = ref({
 const tagInput = ref('')
 const techPointInput = ref('')
 const refLinkInput = ref('')
+
+// Markdown 预览模式
+const isPreviewMode = ref(false)
+
+// 渲染 Markdown
+const renderedMarkdown = computed(() => {
+  if (!formData.value.description) return ''
+  return marked(formData.value.description, { breaks: true })
+})
 
 // 预定义标签选项
 const predefinedTags = [
@@ -420,28 +430,72 @@ onUnmounted(() => {
           </el-form-item>
 
           <el-form-item label="任务描述" prop="description">
-            <el-input
-              v-model="formData.description"
-              type="textarea"
-              placeholder="支持 Markdown 格式"
-              :rows="15"
-              maxlength="2000"
-              show-word-limit
-            />
+            <div class="description-container">
+              <!-- 模式切换按钮 -->
+              <div class="description-toolbar">
+                <div class="toolbar-tabs">
+                  <button
+                    :class="['toolbar-tab', { 'active': !isPreviewMode }]"
+                    @click.prevent="isPreviewMode = false"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    编辑
+                  </button>
+                  <button
+                    :class="['toolbar-tab', { 'active': isPreviewMode }]"
+                    @click.prevent="isPreviewMode = true"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    预览
+                  </button>
+                </div>
+                <div class="toolbar-hint">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  支持 Markdown 格式
+                </div>
+              </div>
+
+              <!-- 编辑模式 -->
+              <el-input
+                v-show="!isPreviewMode"
+                v-model="formData.description"
+                type="textarea"
+                placeholder="支持 Markdown 格式，如：**粗体** *斜体* `代码` [链接](url)"
+                :rows="15"
+                maxlength="2000"
+                show-word-limit
+                class="description-textarea"
+              />
+
+              <!-- 预览模式 -->
+              <div
+                v-show="isPreviewMode"
+                class="markdown-preview"
+                v-html="renderedMarkdown"
+              />
+            </div>
           </el-form-item>
         </el-form>
       </div>
 
       <!-- 右侧：迭代历史 -->
-      <div v-if="task && task.changelog && task.changelog.length > 0" class="iteration-section">
+      <div class="iteration-section">
         <div class="iteration-header">
           <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
-          <span class="iteration-title">迭代历史 ({{ task.changelog.length }}次)</span>
+          <span class="iteration-title">迭代历史 {{ task && task.changelog ? `(${task.changelog.length}次)` : '' }}</span>
         </div>
 
-        <div class="iteration-list">
+        <!-- 有迭代历史 -->
+        <div v-if="task && task.changelog && task.changelog.length > 0" class="iteration-list">
           <div
             v-for="(entry, index) in [...task.changelog].reverse()"
             :key="index"
@@ -461,6 +515,39 @@ onUnmounted(() => {
                 </svg>
                 {{ new Date(entry.timestamp).toLocaleString('zh-CN') }}
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 无迭代历史时的占位内容 -->
+        <div v-else class="iteration-placeholder">
+          <div class="placeholder-icon">
+            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div class="placeholder-text">
+            <p class="placeholder-title">暂无迭代历史</p>
+            <p class="placeholder-desc">保存任务后，所有修改记录将在此显示</p>
+          </div>
+          <div class="placeholder-tips">
+            <div class="tip-item">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              <span>自动记录每次修改</span>
+            </div>
+            <div class="tip-item">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>追踪完整时间线</span>
+            </div>
+            <div class="tip-item">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>版本对比一目了然</span>
             </div>
           </div>
         </div>
@@ -528,12 +615,13 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 24px;
-  height: 100%;
+  height: calc(100vh - 180px); /* 减去头部和底部的高度 */
+  overflow: hidden; /* 防止整体滚动 */
 }
 
 .task-form-section {
-  flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* 独立滚动 */
+  padding-right: 8px;
 }
 
 .iteration-section {
@@ -542,6 +630,7 @@ onUnmounted(() => {
   flex-direction: column;
   border-left: 1px solid #e5e7eb;
   padding-left: 24px;
+  overflow: hidden; /* 防止整体滚动 */
 }
 
 .drawer-footer {
@@ -673,5 +762,278 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* 占位内容样式 */
+.iteration-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  overflow-y: auto; /* 独立滚动（虽然占位内容通常不需要滚动） */
+}
+
+.placeholder-icon {
+  margin-bottom: 20px;
+  color: #d1d5db;
+}
+
+.placeholder-text {
+  margin-bottom: 24px;
+}
+
+.placeholder-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+}
+
+.placeholder-desc {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.placeholder-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.tip-item svg {
+  flex-shrink: 0;
+  color: #8b5cf6;
+}
+
+/* 描述编辑器样式 */
+.description-container {
+  width: 100%;
+}
+
+.description-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.toolbar-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.toolbar-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-tab:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.toolbar-tab.active {
+  background: white;
+  color: #667eea;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.description-textarea {
+  border-radius: 0 0 6px 6px !important;
+}
+
+.description-textarea :deep(textarea) {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+.markdown-preview {
+  min-height: 360px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+.markdown-preview:empty::before {
+  content: '暂无内容';
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Markdown 渲染样式 */
+.markdown-preview :deep(h1),
+.markdown-preview :deep(h2),
+.markdown-preview :deep(h3),
+.markdown-preview :deep(h4),
+.markdown-preview :deep(h5),
+.markdown-preview :deep(h6) {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-preview :deep(h1) {
+  font-size: 1.875em;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview :deep(h2) {
+  font-size: 1.5em;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview :deep(h3) {
+  font-size: 1.25em;
+}
+
+.markdown-preview :deep(h4) {
+  font-size: 1.125em;
+}
+
+.markdown-preview :deep(p) {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.markdown-preview :deep(ul),
+.markdown-preview :deep(ol) {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.markdown-preview :deep(li) {
+  margin-top: 0.25em;
+}
+
+.markdown-preview :deep(code) {
+  padding: 0.2em 0.4em;
+  background: #f3f4f6;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.875em;
+}
+
+.markdown-preview :deep(pre) {
+  padding: 1em;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.markdown-preview :deep(pre code) {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.markdown-preview :deep(blockquote) {
+  margin: 0 0 1em 0;
+  padding-left: 1em;
+  border-left: 4px solid #667eea;
+  color: #6b7280;
+}
+
+.markdown-preview :deep(a) {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.markdown-preview :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-preview :deep(strong) {
+  font-weight: 600;
+}
+
+.markdown-preview :deep(em) {
+  font-style: italic;
+}
+
+.markdown-preview :deep(hr) {
+  height: 0;
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.markdown-preview :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.markdown-preview :deep(table th),
+.markdown-preview :deep(table td) {
+  padding: 6px 13px;
+  border: 1px solid #e5e7eb;
+}
+
+.markdown-preview :deep(table th) {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.markdown-preview :deep(table tr:nth-child(even)) {
+  background: #f9fafb;
+}
+
+.markdown-preview :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
 }
 </style>
