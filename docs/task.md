@@ -25,48 +25,53 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1760620799443-nxjscxmu4 -->
-#### 1. UI优化
+<!-- task-id: 1760621447947-14pwke5lh -->
+#### 1. 核心-任务回填
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/16 21:19:59
-**更新时间：** 2025/10/17 09:14:30
+**创建时间：** 2025/10/16 21:30:47
+**更新时间：** 2025/10/17 09:35:00
 
 **任务描述：**
 
-- [x] 页面布局参考docs/Images/image.png
-- [x] w-number, 如 w-5, h-5, 这些类不知为何是无效的, 检查tailwindcss 配置, 这必须支持
+- [x] 导入失败
+- [x] 我拿着 ai 编辑后返回的 markdown (我放在了docs/task-UI 优化.md, 你可以进行阅读)进行导入, 收到报错: 请检查 markdown 错误,
+但我看任务看板原来是有更新的!, 任务内容和状态确实更新了
 
 **实现细节：**
 
-1. **侧边栏布局实现** (参考 image.png)
-   - 创建了 `src/components/Sidebar.vue` 组件，实现 Notion 风格的侧边栏
-   - 创建了 `src/layouts/MainLayout.vue` 布局包装器
-   - 更新 `src/router/index.ts` 使用嵌套路由结构
-   - 侧边栏特性：
-     - 固定宽度 260px，固定定位
-     - Platform 区域：主页、项目列表导航
-     - Projects 区域：显示最近 5 个项目，支持快速跳转
-     - 顶部公司信息、底部用户信息
-     - 使用 `#f7f7f5` 背景色，`#e5e5e5` 边框色
+**问题根因分析：**
+这是之前 DataCloneError 问题的延续。在 `ImportDialog.vue` 导入任务时：
+1. 任务通过 `taskStore.updateTask()` 成功更新到状态管理器（所以界面上显示更新了）
+2. 但在调用 `dbStore.saveTask()` 保存到 IndexedDB 时失败
+3. 失败原因：合并 changelog 时使用了 spread 运算符 `[...existingTask.changelog, ...changes]`
+4. `existingTask.changelog` 包含 Vue 的 Proxy 对象，无法被 IndexedDB 的 structured clone algorithm 序列化
+5. 导致 catch 块捕获异常，显示 "导入失败，请检查 Markdown 格式"
 
-2. **TailwindCSS v4 配置修复**
-   - 问题根因：项目使用 TailwindCSS v4，但配置仍使用 v3 格式
-   - 更新 `src/style.css`：
-     - 将 `@tailwind base/components/utilities` 改为 `@import "tailwindcss"`
-     - 添加 `@source` 指令指定扫描路径
-     - 使用 `@theme` 进行主题自定义
-   - 现在 `w-5`, `h-5` 等所有 TailwindCSS 工具类均正常工作
+**解决方案：**
+在 `src/components/ImportDialog.vue` 中添加深度克隆逻辑（第 83-92 行）：
+```typescript
+// 深度克隆现有 changelog 以避免 Proxy 对象
+const clonedExistingChangelog = Array.isArray(existingTask.changelog)
+  ? existingTask.changelog.map(entry => ({
+      timestamp: entry.timestamp,
+      field: entry.field,
+      oldValue: entry.oldValue,
+      newValue: entry.newValue,
+      action: entry.action
+    }))
+  : []
+```
+
+现在导入 AI 编辑后的 markdown 不会再报错，能够正确保存到数据库。
 
 **修改文件：**
-- 新增：`src/components/Sidebar.vue`
-- 新增：`src/layouts/MainLayout.vue`
-- 修改：`src/router/index.ts` (添加嵌套路由)
-- 修改：`src/style.css` (TailwindCSS v4 配置)
+- 修改：`src/components/ImportDialog.vue` (添加 changelog 深度克隆)
+
 
 ---
 
 
-> 📅 导出时间：2025/10/17 09:14:30
+> 📅 导出时间：2025/10/17 09:35:00
 > 🤖 由 Task Banner 生成

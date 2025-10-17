@@ -80,6 +80,17 @@ async function handleImport() {
         // 更新模式：查找并更新现有任务
         const existingTask = taskStore.getTaskById(fullTask.id)
         if (existingTask) {
+          // 深度克隆现有 changelog 以避免 Proxy 对象
+          const clonedExistingChangelog = Array.isArray(existingTask.changelog)
+            ? existingTask.changelog.map(entry => ({
+                timestamp: entry.timestamp,
+                field: entry.field,
+                oldValue: entry.oldValue,
+                newValue: entry.newValue,
+                action: entry.action
+              }))
+            : []
+
           // 添加变更日志
           const changes = [{
             timestamp: Date.now(),
@@ -88,7 +99,8 @@ async function handleImport() {
             newValue: '任务已通过AI回填更新',
             action: 'AI回填更新了任务内容'
           }]
-          fullTask.changelog = [...existingTask.changelog, ...changes]
+
+          fullTask.changelog = [...clonedExistingChangelog, ...changes]
 
           taskStore.updateTask(fullTask.id, fullTask)
           await dbStore.saveTask(fullTask)
