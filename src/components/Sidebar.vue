@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 
@@ -9,6 +9,16 @@ const projectStore = useProjectStore()
 
 const platformExpanded = ref(true)
 const projectsExpanded = ref(true)
+const isCollapsed = ref(false) // 侧边栏是否收起
+
+const emit = defineEmits<{
+  (e: 'update:collapsed', value: boolean): void
+}>()
+
+// 监听收起状态变化并通知父组件
+watch(isCollapsed, (newValue) => {
+  emit('update:collapsed', newValue)
+})
 
 const menuItems = [
   {
@@ -29,9 +39,19 @@ const isActive = (path: string) => {
 </script>
 
 <template>
-  <div class="sidebar">
+  <div :class="['sidebar', { 'sidebar-collapsed': isCollapsed }]">
+    <!-- 收起/展开按钮 -->
+    <button class="collapse-button" @click="isCollapsed = !isCollapsed">
+      <svg v-if="!isCollapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+      </svg>
+      <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+      </svg>
+    </button>
+
     <!-- 顶部 -->
-    <div class="sidebar-header">
+    <div class="sidebar-header" v-if="!isCollapsed">
       <div class="company-info">
         <div class="company-logo">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +71,7 @@ const isActive = (path: string) => {
     </div>
 
     <!-- 主导航区域 -->
-    <div class="sidebar-nav">
+    <div class="sidebar-nav" v-if="!isCollapsed">
       <!-- Platform 区域 -->
       <div class="nav-section">
         <div class="nav-section-header">
@@ -103,7 +123,7 @@ const isActive = (path: string) => {
     </div>
 
     <!-- 底部用户信息 -->
-    <div class="sidebar-footer">
+    <div class="sidebar-footer" v-if="!isCollapsed">
       <div class="user-info">
         <div class="user-avatar">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,6 +155,35 @@ const isActive = (path: string) => {
   position: fixed;
   left: 0;
   top: 0;
+  transition: width 0.3s ease;
+}
+
+.sidebar-collapsed {
+  width: 60px;
+}
+
+.collapse-button {
+  position: absolute;
+  top: 16px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+  color: #6b6b6b;
+}
+
+.collapse-button:hover {
+  background: #f7f7f5;
+  color: #1a1a1a;
+  transform: scale(1.1);
 }
 
 .sidebar-header {

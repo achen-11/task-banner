@@ -155,12 +155,6 @@ const getTagType = (tag: string) => {
 
 <template>
   <div class="list-view">
-    <!-- 顶部欢迎信息 -->
-    <div class="welcome-section">
-      <h2 class="welcome-title">Welcome back!</h2>
-      <p class="welcome-subtitle">Here's a list of your tasks for this month!</p>
-    </div>
-
     <!-- 搜索和筛选栏 -->
     <div class="filter-bar">
       <div class="filter-left">
@@ -237,8 +231,9 @@ const getTagType = (tag: string) => {
           v-for="task in paginatedTasks"
           :key="task.id"
           class="table-row"
+          @click="emit('edit', task)"
         >
-          <div class="body-cell checkbox-cell">
+          <div class="body-cell checkbox-cell" @click.stop>
             <el-checkbox
               :model-value="selectedTasks.has(task.id)"
               @change="emit('toggleSelection', task.id)"
@@ -279,7 +274,7 @@ const getTagType = (tag: string) => {
             </div>
           </div>
 
-          <div class="body-cell actions-cell">
+          <div class="body-cell actions-cell" @click.stop>
             <el-dropdown>
               <span class="actions-trigger">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,22 +362,6 @@ const getTagType = (tag: string) => {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
-.welcome-section {
-  margin-bottom: 24px;
-}
-
-.welcome-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 4px;
-}
-
-.welcome-subtitle {
-  font-size: 14px;
-  color: #6b6b6b;
-}
-
 .filter-bar {
   display: flex;
   justify-content: space-between;
@@ -451,6 +430,7 @@ const getTagType = (tag: string) => {
   grid-template-columns: 40px 120px 1fr 150px 120px 40px;
   border-bottom: 1px solid #e5e5e5;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .table-row:hover {

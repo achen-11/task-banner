@@ -33,7 +33,6 @@ const columns = [
   { status: 'todo' as TaskStatus, label: '待办', color: 'bg-gray-100' },
   { status: 'in_progress' as TaskStatus, label: '进行中', color: 'bg-blue-100' },
   { status: 'completed' as TaskStatus, label: '已完成', color: 'bg-green-100' },
-  { status: 'sent_to_ai' as TaskStatus, label: '已发送AI', color: 'bg-purple-100' },
   { status: 'needs_optimization' as TaskStatus, label: '需优化', color: 'bg-orange-100' },
 ]
 
@@ -275,7 +274,7 @@ const handleTaskDialogSuccess = () => {
       </div>
 
       <!-- 看板视图 -->
-      <div v-if="viewMode === 'board'" class="grid grid-cols-5 gap-6">
+      <div v-if="viewMode === 'board'" class="grid grid-cols-4 gap-6">
         <div
           v-for="column in columns"
           :key="column.status"
