@@ -25,53 +25,63 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1760621447947-14pwke5lh -->
-#### 1. 核心-任务回填
+<!-- task-id: 1760664762253-f4cq92cus -->
+#### 1. UI 优化-列表视图
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/16 21:30:47
-**更新时间：** 2025/10/17 09:35:00
+**创建时间：** 2025/10/17 09:32:42
+**更新时间：** 2025/10/17 09:45:00
 
 **任务描述：**
 
-- [x] 导入失败
-- [x] 我拿着 ai 编辑后返回的 markdown (我放在了docs/task-UI 优化.md, 你可以进行阅读)进行导入, 收到报错: 请检查 markdown 错误,
-但我看任务看板原来是有更新的!, 任务内容和状态确实更新了
+- [x] 支持任务列表视图 (参考图片: docs/Images/list.png)
 
 **实现细节：**
 
-**问题根因分析：**
-这是之前 DataCloneError 问题的延续。在 `ImportDialog.vue` 导入任务时：
-1. 任务通过 `taskStore.updateTask()` 成功更新到状态管理器（所以界面上显示更新了）
-2. 但在调用 `dbStore.saveTask()` 保存到 IndexedDB 时失败
-3. 失败原因：合并 changelog 时使用了 spread 运算符 `[...existingTask.changelog, ...changes]`
-4. `existingTask.changelog` 包含 Vue 的 Proxy 对象，无法被 IndexedDB 的 structured clone algorithm 序列化
-5. 导致 catch 块捕获异常，显示 "导入失败，请检查 Markdown 格式"
+参考设计图 `docs/Images/list.png`，实现了完整的表格式任务列表视图，主要功能包括：
 
-**解决方案：**
-在 `src/components/ImportDialog.vue` 中添加深度克隆逻辑（第 83-92 行）：
-```typescript
-// 深度克隆现有 changelog 以避免 Proxy 对象
-const clonedExistingChangelog = Array.isArray(existingTask.changelog)
-  ? existingTask.changelog.map(entry => ({
-      timestamp: entry.timestamp,
-      field: entry.field,
-      oldValue: entry.oldValue,
-      newValue: entry.newValue,
-      action: entry.action
-    }))
-  : []
-```
+**1. 视图切换功能**
+- 在 Board.vue 顶部工具栏添加视图切换按钮组
+- 看板图标 (grid) 和列表图标 (lines)
+- 支持在看板视图和列表视图之间无缝切换
 
-现在导入 AI 编辑后的 markdown 不会再报错，能够正确保存到数据库。
+**2. ListView 组件特性**
+- **欢迎信息**：顶部显示 "Welcome back!" 和任务说明
+- **搜索和筛选**：
+  - 搜索框：支持按标题和描述搜索任务
+  - 状态筛选器：按待办、进行中、已完成等状态过滤
+  - 优先级筛选器：按低、中、高、紧急优先级过滤
+
+- **表格显示**：
+  - 复选框列：支持多选任务
+  - Task ID 列：显示简化的任务 ID（如 TASK-1760）
+  - Title 列：显示标签和任务标题，支持排序
+  - Status 列：显示状态图标和文本，支持排序
+  - Priority 列：显示优先级箭头和文本，支持排序
+  - 操作列：下拉菜单提供编辑和删除功能
+
+- **排序功能**：
+  - 点击表头可按 Title、Status、Priority 排序
+  - 支持升序/降序切换
+  - 显示排序指示箭头
+
+- **分页功能**：
+  - 左侧显示已选任务数量
+  - 可选择每页显示 10/20/50/100 条
+  - 显示当前页码和总页数
+  - 提供首页、上一页、下一页、末页导航按钮
+
+**3. 状态和优先级图标**
+- 状态图标：○ 待办、◐ 进行中、✓ 已完成、◎ 已发送AI、⚠ 需优化
+- 优先级图标：↓ 低、→ 中、↑ 高、⇡ 紧急
 
 **修改文件：**
-- 修改：`src/components/ImportDialog.vue` (添加 changelog 深度克隆)
-
+- 新增：`src/components/ListView.vue` (列表视图组件，480+ 行)
+- 修改：`src/views/Board.vue` (添加视图切换和列表视图集成)
 
 ---
 
 
-> 📅 导出时间：2025/10/17 09:35:00
+> 📅 导出时间：2025/10/17 09:45:00
 > 🤖 由 Task Banner 生成

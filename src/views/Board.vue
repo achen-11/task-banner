@@ -10,6 +10,7 @@ import type { Task, TaskStatus } from '@/types'
 import TaskDialog from '@/components/TaskDialog.vue'
 import ExportDialog from '@/components/ExportDialog.vue'
 import ImportDialog from '@/components/ImportDialog.vue'
+import ListView from '@/components/ListView.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +26,7 @@ const showExportDialog = ref(false)
 const showImportDialog = ref(false)
 const editingTask = ref<Task | null>(null)
 const selectedTasks = ref<Set<string>>(new Set())
+const viewMode = ref<'board' | 'list'>('board') // 视图模式：看板或列表
 
 // 任务列状态配置
 const columns = [
@@ -151,10 +153,27 @@ const toggleTaskSelection = (taskId: string) => {
   }
 }
 
+// 获取当前项目的所有任务
+const allProjectTasks = computed(() => {
+  return taskStore.getTasksByProject(projectId.value)
+})
+
 // 获取选中的任务列表
 const getSelectedTasks = computed(() => {
   return taskStore.tasks.filter(task => selectedTasks.value.has(task.id))
 })
+
+// 切换全选
+const toggleAllSelection = () => {
+  const allIds = allProjectTasks.value.map(t => t.id)
+  if (allIds.every(id => selectedTasks.value.has(id))) {
+    // 如果全选了，则取消全选
+    allIds.forEach(id => selectedTasks.value.delete(id))
+  } else {
+    // 否则全选
+    allIds.forEach(id => selectedTasks.value.add(id))
+  }
+}
 
 // 批量导出任务
 const exportTasks = () => {
@@ -203,6 +222,26 @@ const handleTaskDialogSuccess = () => {
             </div>
           </div>
           <div class="flex gap-2">
+            <!-- 视图切换按钮 -->
+            <el-button-group>
+              <el-button
+                :type="viewMode === 'board' ? 'primary' : ''"
+                @click="viewMode = 'board'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"></path>
+                </svg>
+              </el-button>
+              <el-button
+                :type="viewMode === 'list' ? 'primary' : ''"
+                @click="viewMode = 'list'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+              </el-button>
+            </el-button-group>
+
             <el-button
               type="info"
               @click="importTasks"
@@ -235,8 +274,8 @@ const handleTaskDialogSuccess = () => {
         </div>
       </div>
 
-      <!-- 看板列 -->
-      <div class="grid grid-cols-5 gap-6">
+      <!-- 看板视图 -->
+      <div v-if="viewMode === 'board'" class="grid grid-cols-5 gap-6">
         <div
           v-for="column in columns"
           :key="column.status"
@@ -329,6 +368,17 @@ const handleTaskDialogSuccess = () => {
           </div>
         </div>
       </div>
+
+      <!-- 列表视图 -->
+      <ListView
+        v-if="viewMode === 'list'"
+        :tasks="allProjectTasks"
+        :selected-tasks="selectedTasks"
+        @toggle-selection="toggleTaskSelection"
+        @toggle-all-selection="toggleAllSelection"
+        @edit="editTask"
+        @delete="deleteTask"
+      />
 
       <!-- 任务对话框 -->
       <TaskDialog
