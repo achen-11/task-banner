@@ -321,17 +321,6 @@ function handleClose() {
         />
       </el-form-item>
 
-      <el-form-item label="任务描述" prop="description">
-        <el-input
-          v-model="formData.description"
-          type="textarea"
-          placeholder="支持 Markdown 格式"
-          :rows="6"
-          maxlength="2000"
-          show-word-limit
-        />
-      </el-form-item>
-
       <div class="grid grid-cols-2 gap-4">
         <el-form-item label="任务状态" prop="status">
           <el-select v-model="formData.status" placeholder="请选择状态" class="w-full">
@@ -356,115 +345,65 @@ function handleClose() {
         </el-form-item>
       </div>
 
+      <el-form-item label="任务描述" prop="description">
+        <el-input
+          v-model="formData.description"
+          type="textarea"
+          placeholder="支持 Markdown 格式"
+          :rows="8"
+          maxlength="2000"
+          show-word-limit
+        />
+      </el-form-item>
+
       <el-form-item label="标签">
         <div class="w-full">
-          <!-- 快速选择预定义标签 -->
-          <div class="mb-3">
-            <div class="text-sm text-gray-600 mb-2">快速选择：</div>
-            <div class="flex flex-wrap gap-2">
-              <el-tag
-                v-for="tag in predefinedTags"
-                :key="tag.value"
-                :type="isTagSelected(tag.value) ? tag.color : 'info'"
-                :effect="isTagSelected(tag.value) ? 'dark' : 'plain'"
-                class="cursor-pointer"
-                @click="addPredefinedTag(tag.value)"
-              >
-                {{ tag.label }}
-                <span v-if="isTagSelected(tag.value)">✓</span>
-              </el-tag>
-            </div>
-          </div>
-
-          <!-- 自定义标签输入 -->
-          <div class="mb-2">
-            <div class="text-sm text-gray-600 mb-2">自定义标签：</div>
-            <div class="flex gap-2">
-              <el-input
-                v-model="tagInput"
-                placeholder="输入自定义标签并回车添加"
-                size="small"
-                @keyup.enter="addTag"
-              />
-              <el-button size="small" @click="addTag">添加</el-button>
-            </div>
-          </div>
-
-          <!-- 已选择的标签 -->
-          <div>
-            <div class="text-sm text-gray-600 mb-2">已选择：</div>
-            <div class="flex flex-wrap gap-2">
-              <el-tag
-                v-for="(tag, index) in formData.tags"
-                :key="tag"
-                :type="getTagType(tag)"
-                closable
-                @close="removeTag(index)"
-              >
-                {{ tag }}
-              </el-tag>
-              <span v-if="formData.tags.length === 0" class="text-gray-400 text-sm">
-                暂无标签
-              </span>
-            </div>
-          </div>
-        </div>
-      </el-form-item>
-
-      <el-form-item label="技术要点">
-        <div class="w-full">
-          <div class="flex gap-2 mb-2">
-            <el-input
-              v-model="techPointInput"
-              placeholder="输入技术要点并回车添加"
-              @keyup.enter="addTechPoint"
-            />
-            <el-button @click="addTechPoint">添加</el-button>
-          </div>
-          <div class="flex flex-col gap-1">
-            <div
-              v-for="(point, index) in formData.technicalPoints"
-              :key="index"
-              class="flex items-center gap-2"
+          <div class="flex flex-wrap gap-2">
+            <!-- 快速选择预定义标签 -->
+            <el-tag
+              v-for="tag in predefinedTags"
+              :key="tag.value"
+              :type="isTagSelected(tag.value) ? tag.color : 'info'"
+              :effect="isTagSelected(tag.value) ? 'dark' : 'plain'"
+              class="cursor-pointer tag-selectable"
+              :closable="isTagSelected(tag.value)"
+              @click="addPredefinedTag(tag.value)"
+              @close="removeTag(formData.tags.indexOf(tag.value))"
             >
-              <span class="flex-1 text-sm">{{ index + 1 }}. {{ point }}</span>
-              <el-button size="small" text type="danger" @click="removeTechPoint(index)">
-                删除
-              </el-button>
-            </div>
-            <span v-if="formData.technicalPoints.length === 0" class="text-gray-400 text-sm">
-              暂无技术要点
-            </span>
-          </div>
-        </div>
-      </el-form-item>
+              {{ tag.label }}
+            </el-tag>
 
-      <el-form-item label="参考链接">
-        <div class="w-full">
-          <div class="flex gap-2 mb-2">
-            <el-input
-              v-model="refLinkInput"
-              placeholder="输入参考链接并回车添加"
-              @keyup.enter="addRefLink"
-            />
-            <el-button @click="addRefLink">添加</el-button>
-          </div>
-          <div class="flex flex-col gap-1">
-            <div
-              v-for="(link, index) in formData.referenceLinks"
-              :key="index"
-              class="flex items-center gap-2"
+            <!-- 自定义标签 -->
+            <el-tag
+              v-for="(tag, index) in formData.tags.filter(t => !predefinedTags.some(pt => pt.value === t))"
+              :key="tag"
+              closable
+              @close="removeTag(formData.tags.indexOf(tag))"
             >
-              <a :href="link" target="_blank" class="flex-1 text-sm text-blue-600 hover:underline truncate">
-                {{ link }}
-              </a>
-              <el-button size="small" text type="danger" @click="removeRefLink(index)">
-                删除
-              </el-button>
-            </div>
-            <span v-if="formData.referenceLinks.length === 0" class="text-gray-400 text-sm">
-              暂无参考链接
-            </span>
+              {{ tag }}
+            </el-tag>
+
+            <!-- 添加自定义标签按钮 -->
+            <el-popover
+              placement="bottom"
+              :width="200"
+              trigger="click"
+            >
+              <template #reference>
+                <el-tag class="cursor-pointer add-tag-btn">
+                  <span class="add-icon">+</span>
+                </el-tag>
+              </template>
+              <div class="flex gap-2">
+                <el-input
+                  v-model="tagInput"
+                  placeholder="自定义标签"
+                  size="small"
+                  @keyup.enter="addTag"
+                />
+                <el-button size="small" type="primary" @click="addTag">添加</el-button>
+              </div>
+            </el-popover>
           </div>
         </div>
       </el-form-item>
@@ -535,6 +474,31 @@ function handleClose() {
 
 .cursor-pointer:active {
   transform: translateY(0);
+}
+
+.tag-selectable {
+  transition: all 0.2s ease;
+}
+
+.tag-selectable:hover {
+  transform: scale(1.05);
+}
+
+.add-tag-btn {
+  border: 2px dashed #d1d5db;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.add-tag-btn:hover {
+  border-color: #9ca3af;
+  transform: scale(1.05);
+}
+
+.add-icon {
+  font-size: 16px;
+  font-weight: bold;
+  color: #6b7280;
 }
 
 .drawer-footer {

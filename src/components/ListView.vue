@@ -203,7 +203,6 @@ const getTagType = (tag: string) => {
             @change="toggleAllSelection"
           />
         </div>
-        <div class="header-cell task-id-cell">Task</div>
         <div class="header-cell title-cell" @click="toggleSort('title')">
           <span>Title</span>
           <span v-if="sortField === 'title'" class="sort-icon">
@@ -230,7 +229,7 @@ const getTagType = (tag: string) => {
         <div
           v-for="task in paginatedTasks"
           :key="task.id"
-          class="table-row"
+          :class="['table-row', { 'task-completed': task.status === 'completed' }]"
           @click="emit('edit', task)"
         >
           <div class="body-cell checkbox-cell" @click.stop>
@@ -238,10 +237,6 @@ const getTagType = (tag: string) => {
               :model-value="selectedTasks.has(task.id)"
               @change="emit('toggleSelection', task.id)"
             />
-          </div>
-
-          <div class="body-cell task-id-cell">
-            <span class="task-id">TASK-{{ task.id.split('-')[0] }}</span>
           </div>
 
           <div class="body-cell title-cell">
@@ -261,7 +256,7 @@ const getTagType = (tag: string) => {
           </div>
 
           <div class="body-cell status-cell">
-            <div class="status-badge">
+            <div :class="['status-badge', `status-${task.status}`]">
               <span class="status-icon">{{ statusIconMap[task.status] }}</span>
               <span>{{ statusLabelMap[task.status] }}</span>
             </div>
@@ -393,7 +388,7 @@ const getTagType = (tag: string) => {
 
 .table-header {
   display: grid;
-  grid-template-columns: 40px 120px 1fr 150px 120px 40px;
+  grid-template-columns: 40px 1fr 150px 120px 40px;
   background: #f7f7f5;
   border-bottom: 1px solid #e5e5e5;
   font-size: 12px;
@@ -427,9 +422,9 @@ const getTagType = (tag: string) => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 40px 120px 1fr 150px 120px 40px;
+  grid-template-columns: 40px 1fr 150px 120px 40px;
   border-bottom: 1px solid #e5e5e5;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   cursor: pointer;
 }
 
@@ -439,6 +434,21 @@ const getTagType = (tag: string) => {
 
 .table-row:last-child {
   border-bottom: none;
+}
+
+.table-row.task-completed {
+  background: #f5f5f4;
+  opacity: 0.75;
+}
+
+.table-row.task-completed:hover {
+  background: #e7e5e4;
+  opacity: 0.85;
+}
+
+.table-row.task-completed .task-title {
+  text-decoration: line-through;
+  color: #9ca3af;
 }
 
 .body-cell {
@@ -489,6 +499,36 @@ const getTagType = (tag: string) => {
 .status-icon,
 .priority-icon {
   font-size: 16px;
+}
+
+/* 状态颜色 */
+.status-badge.status-completed {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.status-badge.status-completed .status-icon {
+  color: #10b981;
+  font-size: 18px;
+}
+
+.status-badge.status-in_progress {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.status-badge.status-todo {
+  color: #6b7280;
+}
+
+.status-badge.status-sent_to_ai {
+  color: #8b5cf6;
+  font-weight: 500;
+}
+
+.status-badge.status-needs_optimization {
+  color: #f59e0b;
+  font-weight: 500;
 }
 
 .actions-trigger {

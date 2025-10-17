@@ -30,6 +30,6 @@ provide('sidebarCollapsed', sidebarCollapsed)
 }
 
 .main-content.sidebar-collapsed {
-  margin-left: 60px;
+  margin-left: 0;
 }
 </style>

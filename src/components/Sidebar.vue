@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 
@@ -18,6 +18,23 @@ const emit = defineEmits<{
 // 监听收起状态变化并通知父组件
 watch(isCollapsed, (newValue) => {
   emit('update:collapsed', newValue)
+})
+
+// 快捷键处理
+function handleKeyDown(event: KeyboardEvent) {
+  // Cmd+B (Mac) 或 Ctrl+B (Windows/Linux)
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    event.preventDefault()
+    isCollapsed.value = !isCollapsed.value
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 const menuItems = [
@@ -166,10 +183,11 @@ const isActive = (path: string) => {
 }
 
 .sidebar-collapsed {
-  width: 60px;
+  width: 0;
+  border-right: none;
 }
 
-.collapse-button {
+.sidebar:not(.sidebar-collapsed) .collapse-button {
   position: absolute;
   top: 16px;
   right: -12px;
@@ -182,8 +200,26 @@ const isActive = (path: string) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  color: #6b6b6b;
+}
+
+.sidebar.sidebar-collapsed .collapse-button {
+  position: fixed;
+  top: 16px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
   color: #6b6b6b;
 }
 
