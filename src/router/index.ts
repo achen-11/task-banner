@@ -24,6 +24,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Board',
         component: () => import('@/views/Board.vue'),
         meta: { title: '任务看板' }
+      },
+      {
+        path: 'data-management',
+        name: 'DataManagement',
+        component: () => import('@/views/DataManagement.vue'),
+        meta: { title: '数据管理' }
       }
     ]
   },

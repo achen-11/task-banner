@@ -26,7 +26,7 @@ const showExportDialog = ref(false)
 const showImportDialog = ref(false)
 const editingTask = ref<Task | null>(null)
 const selectedTasks = ref<Set<string>>(new Set())
-const viewMode = ref<'board' | 'list'>('board') // 视图模式：看板或列表
+const viewMode = ref<'board' | 'list'>('list') // 视图模式：看板或列表
 
 // 任务列状态配置
 const columns = [
