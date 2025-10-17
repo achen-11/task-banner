@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { Task, TaskStatus, Priority, ChangeLogEntry } from '@/types'
 import { generateId } from '@/utils'
@@ -296,154 +296,176 @@ function handleClose() {
     resetForm()
   }, 300)
 }
+
+// 快捷键处理
+function handleKeyDown(event: KeyboardEvent) {
+  // Cmd+S (Mac) 或 Ctrl+S (Windows/Linux) 保存
+  if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+    event.preventDefault()
+    if (props.visible) {
+      handleSubmit()
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <template>
   <el-drawer
     :model-value="visible"
     :title="task ? '编辑任务' : '创建任务'"
-    size="700px"
+    size="1000px"
     direction="rtl"
     @close="handleClose"
   >
-    <el-form
-      ref="formRef"
-      :model="formData"
-      :rules="rules"
-      label-width="100px"
-    >
-      <el-form-item label="任务标题" prop="title">
-        <el-input
-          v-model="formData.title"
-          placeholder="请输入任务标题"
-          maxlength="100"
-          show-word-limit
-        />
-      </el-form-item>
-
-      <div class="grid grid-cols-2 gap-4">
-        <el-form-item label="任务状态" prop="status">
-          <el-select v-model="formData.status" placeholder="请选择状态" class="w-full">
-            <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+    <div class="drawer-content">
+      <!-- 左侧：任务信息 -->
+      <div class="task-form-section">
+        <el-form
+          ref="formRef"
+          :model="formData"
+          :rules="rules"
+          label-width="100px"
+        >
+          <el-form-item label="任务标题" prop="title">
+            <el-input
+              v-model="formData.title"
+              placeholder="请输入任务标题"
+              maxlength="100"
+              show-word-limit
             />
-          </el-select>
-        </el-form-item>
+          </el-form-item>
 
-        <el-form-item label="优先级" prop="priority">
-          <el-select v-model="formData.priority" placeholder="请选择优先级" class="w-full">
-            <el-option
-              v-for="item in priorityOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+          <div class="grid grid-cols-2 gap-4">
+            <el-form-item label="任务状态" prop="status">
+              <el-select v-model="formData.status" placeholder="请选择状态" class="w-full">
+                <el-option
+                  v-for="item in statusOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="优先级" prop="priority">
+              <el-select v-model="formData.priority" placeholder="请选择优先级" class="w-full">
+                <el-option
+                  v-for="item in priorityOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+
+          <el-form-item label="标签">
+            <div class="w-full">
+              <div class="flex flex-wrap gap-2">
+                <!-- 快速选择预定义标签 -->
+                <el-tag
+                  v-for="tag in predefinedTags"
+                  :key="tag.value"
+                  :type="isTagSelected(tag.value) ? tag.color : 'info'"
+                  :effect="isTagSelected(tag.value) ? 'dark' : 'plain'"
+                  class="cursor-pointer tag-selectable"
+                  :closable="isTagSelected(tag.value)"
+                  @click="addPredefinedTag(tag.value)"
+                  @close="removeTag(formData.tags.indexOf(tag.value))"
+                >
+                  {{ tag.label }}
+                </el-tag>
+
+                <!-- 自定义标签 -->
+                <el-tag
+                  v-for="(tag, index) in formData.tags.filter(t => !predefinedTags.some(pt => pt.value === t))"
+                  :key="tag"
+                  closable
+                  @close="removeTag(formData.tags.indexOf(tag))"
+                >
+                  {{ tag }}
+                </el-tag>
+
+                <!-- 添加自定义标签按钮 -->
+                <el-popover
+                  placement="bottom"
+                  :width="200"
+                  trigger="click"
+                >
+                  <template #reference>
+                    <el-tag class="cursor-pointer add-tag-btn">
+                      <span class="add-icon">+</span>
+                    </el-tag>
+                  </template>
+                  <div class="flex gap-2">
+                    <el-input
+                      v-model="tagInput"
+                      placeholder="自定义标签"
+                      size="small"
+                      @keyup.enter="addTag"
+                    />
+                    <el-button size="small" type="primary" @click="addTag">添加</el-button>
+                  </div>
+                </el-popover>
+              </div>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="任务描述" prop="description">
+            <el-input
+              v-model="formData.description"
+              type="textarea"
+              placeholder="支持 Markdown 格式"
+              :rows="15"
+              maxlength="2000"
+              show-word-limit
             />
-          </el-select>
-        </el-form-item>
+          </el-form-item>
+        </el-form>
       </div>
 
-      <el-form-item label="任务描述" prop="description">
-        <el-input
-          v-model="formData.description"
-          type="textarea"
-          placeholder="支持 Markdown 格式"
-          :rows="8"
-          maxlength="2000"
-          show-word-limit
-        />
-      </el-form-item>
-
-      <el-form-item label="标签">
-        <div class="w-full">
-          <div class="flex flex-wrap gap-2">
-            <!-- 快速选择预定义标签 -->
-            <el-tag
-              v-for="tag in predefinedTags"
-              :key="tag.value"
-              :type="isTagSelected(tag.value) ? tag.color : 'info'"
-              :effect="isTagSelected(tag.value) ? 'dark' : 'plain'"
-              class="cursor-pointer tag-selectable"
-              :closable="isTagSelected(tag.value)"
-              @click="addPredefinedTag(tag.value)"
-              @close="removeTag(formData.tags.indexOf(tag.value))"
-            >
-              {{ tag.label }}
-            </el-tag>
-
-            <!-- 自定义标签 -->
-            <el-tag
-              v-for="(tag, index) in formData.tags.filter(t => !predefinedTags.some(pt => pt.value === t))"
-              :key="tag"
-              closable
-              @close="removeTag(formData.tags.indexOf(tag))"
-            >
-              {{ tag }}
-            </el-tag>
-
-            <!-- 添加自定义标签按钮 -->
-            <el-popover
-              placement="bottom"
-              :width="200"
-              trigger="click"
-            >
-              <template #reference>
-                <el-tag class="cursor-pointer add-tag-btn">
-                  <span class="add-icon">+</span>
-                </el-tag>
-              </template>
-              <div class="flex gap-2">
-                <el-input
-                  v-model="tagInput"
-                  placeholder="自定义标签"
-                  size="small"
-                  @keyup.enter="addTag"
-                />
-                <el-button size="small" type="primary" @click="addTag">添加</el-button>
-              </div>
-            </el-popover>
-          </div>
+      <!-- 右侧：迭代历史 -->
+      <div v-if="task && task.changelog && task.changelog.length > 0" class="iteration-section">
+        <div class="iteration-header">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          <span class="iteration-title">迭代历史 ({{ task.changelog.length }}次)</span>
         </div>
-      </el-form-item>
 
-      <!-- 迭代历史 -->
-      <el-form-item v-if="task && task.changelog && task.changelog.length > 0" label="迭代历史">
-        <div class="w-full">
-          <div class="iteration-header">
-            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-            </svg>
-            <span class="iteration-title">此任务已迭代 {{ task.changelog.length }} 次</span>
-          </div>
-
-          <div class="iteration-list">
-            <div
-              v-for="(entry, index) in [...task.changelog].reverse()"
-              :key="index"
-              class="iteration-entry"
-            >
-              <div class="iteration-number">v{{ task.changelog.length - index }}</div>
-              <div class="iteration-content">
-                <div class="iteration-action">{{ entry.action }}</div>
-                <div class="iteration-details" v-if="entry.oldValue || entry.newValue">
-                  <span v-if="entry.oldValue" class="old-value">{{ entry.oldValue }}</span>
-                  <span v-if="entry.oldValue && entry.newValue" class="arrow">→</span>
-                  <span v-if="entry.newValue" class="new-value">{{ entry.newValue }}</span>
-                </div>
-                <div class="iteration-time">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  {{ new Date(entry.timestamp).toLocaleString('zh-CN') }}
-                </div>
+        <div class="iteration-list">
+          <div
+            v-for="(entry, index) in [...task.changelog].reverse()"
+            :key="index"
+            class="iteration-entry"
+          >
+            <div class="iteration-number">v{{ task.changelog.length - index }}</div>
+            <div class="iteration-content">
+              <div class="iteration-action">{{ entry.action }}</div>
+              <div class="iteration-details" v-if="entry.oldValue || entry.newValue">
+                <span v-if="entry.oldValue" class="old-value">{{ entry.oldValue }}</span>
+                <span v-if="entry.oldValue && entry.newValue" class="arrow">→</span>
+                <span v-if="entry.newValue" class="new-value">{{ entry.newValue }}</span>
+              </div>
+              <div class="iteration-time">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ new Date(entry.timestamp).toLocaleString('zh-CN') }}
               </div>
             </div>
           </div>
         </div>
-      </el-form-item>
-    </el-form>
+      </div>
+    </div>
 
     <template #footer>
       <div class="drawer-footer">
@@ -501,6 +523,27 @@ function handleClose() {
   color: #6b7280;
 }
 
+/* 抽屉内容布局 */
+.drawer-content {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  height: 100%;
+}
+
+.task-form-section {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.iteration-section {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e5e7eb;
+  padding-left: 24px;
+}
+
 .drawer-footer {
   display: flex;
   justify-content: flex-end;
@@ -518,6 +561,7 @@ function handleClose() {
   border-radius: 10px;
   margin-bottom: 16px;
   box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
+  flex-shrink: 0;
 }
 
 .iteration-title {
@@ -532,6 +576,8 @@ function handleClose() {
   gap: 16px;
   position: relative;
   padding-left: 32px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .iteration-list::before {
