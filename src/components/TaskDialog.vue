@@ -43,6 +43,9 @@ const tagInput = ref('')
 const techPointInput = ref('')
 const refLinkInput = ref('')
 
+// 当前任务（用于新建后切换为编辑模式）
+const currentTask = ref<Task | null>(null)
+
 // Markdown 预览模式
 const isPreviewMode = ref(false)
 
@@ -92,6 +95,7 @@ watch(() => props.visible, (newVal) => {
   if (newVal) {
     if (props.task) {
       // 编辑模式
+      currentTask.value = props.task
       formData.value = {
         title: props.task.title,
         description: props.task.description,
@@ -103,6 +107,7 @@ watch(() => props.visible, (newVal) => {
         progress: props.task.progress || 0,
       }
     } else {
+      currentTask.value = null
       resetForm()
     }
   }
@@ -272,6 +277,10 @@ async function handleSubmit() {
       }
       taskStore.updateTask(props.task.id, updatedTask)
       await dbStore.saveTask(updatedTask)
+
+      // 更新 currentTask，保持最新状态
+      currentTask.value = updatedTask
+
       ElMessage.success('任务更新成功')
     } else {
       // 创建新任务
@@ -293,6 +302,10 @@ async function handleSubmit() {
       }
       taskStore.addTask(newTask)
       await dbStore.saveTask(newTask)
+
+      // 创建成功后，更新 currentTask，切换为编辑模式
+      currentTask.value = newTask
+
       ElMessage.success('任务创建成功')
     }
 
@@ -321,9 +334,9 @@ async function handleExportCurrentTask() {
     return
   }
 
-  // 如果是编辑模式，导出当前任务
-  if (props.task) {
-    const markdown = exportTasksToMarkdown([props.task], project)
+  // 使用 currentTask（包含新创建的任务）
+  if (currentTask.value) {
+    const markdown = exportTasksToMarkdown([currentTask.value], project)
     const success = await copyToClipboard(markdown)
 
     if (success) {
@@ -366,7 +379,7 @@ onUnmounted(() => {
 <template>
   <el-drawer
     :model-value="visible"
-    :title="task ? '编辑任务' : '创建任务'"
+    :title="currentTask ? '编辑任务' : '创建任务'"
     size="1000px"
     direction="rtl"
     @close="handleClose"
@@ -527,17 +540,17 @@ onUnmounted(() => {
           <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
-          <span class="iteration-title">迭代历史 {{ task && task.changelog ? `(${task.changelog.length}次)` : '' }}</span>
+          <span class="iteration-title">迭代历史 {{ currentTask && currentTask.changelog ? `(${currentTask.changelog.length}次)` : '' }}</span>
         </div>
 
         <!-- 有迭代历史 -->
-        <div v-if="task && task.changelog && task.changelog.length > 0" class="iteration-list">
+        <div v-if="currentTask && currentTask.changelog && currentTask.changelog.length > 0" class="iteration-list">
           <div
-            v-for="(entry, index) in [...task.changelog].reverse()"
+            v-for="(entry, index) in [...currentTask.changelog].reverse()"
             :key="index"
             class="iteration-entry"
           >
-            <div class="iteration-number">v{{ task.changelog.length - index }}</div>
+            <div class="iteration-number">v{{ currentTask.changelog.length - index }}</div>
             <div class="iteration-content">
               <div class="iteration-action">{{ entry.action }}</div>
               <div class="iteration-details" v-if="entry.oldValue || entry.newValue">
@@ -594,7 +607,7 @@ onUnmounted(() => {
       <div class="drawer-footer">
         <el-button @click="handleClose">取消</el-button>
         <el-button type="primary" @click="handleSubmit">
-          {{ task ? '保存' : '创建' }}
+          {{ currentTask ? '保存' : '创建' }}
         </el-button>
       </div>
     </template>

@@ -242,19 +242,46 @@ const handleImportShortcut = async () => {
       return
     }
 
-    // 尝试解析任务
-    const existingTaskIds = taskStore.tasks.map(t => t.id)
-    const parsedTasks = importTasksFromMarkdown(clipboardText, projectId.value, existingTaskIds)
+    // 尝试解析任务（不传递 existingTaskIds，保留原始 task-id）
+    const parsedTasks = importTasksFromMarkdown(clipboardText, projectId.value, [])
 
     if (parsedTasks.length === 0) {
       ElMessage.error('无法识别剪贴板内容，请确保格式正确')
       return
     }
 
-    // 显示确认对话框，列出任务标题
-    const taskTitles = parsedTasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')
+    // 检查哪些任务是更新，哪些是新建
+    const existingTaskMap = new Map(taskStore.tasks.map(t => [t.id, t]))
+    const tasksToUpdate: Partial<Task>[] = []
+    const tasksToCreate: Partial<Task>[] = []
+
+    parsedTasks.forEach(taskData => {
+      if (taskData.id && existingTaskMap.has(taskData.id)) {
+        tasksToUpdate.push(taskData)
+      } else {
+        tasksToCreate.push(taskData)
+      }
+    })
+
+    // 显示确认对话框，列出任务标题和操作
+    const confirmLines: string[] = []
+    if (tasksToUpdate.length > 0) {
+      confirmLines.push(`📝 更新 ${tasksToUpdate.length} 个任务：`)
+      tasksToUpdate.forEach((t, i) => {
+        confirmLines.push(`  ${i + 1}. ${t.title}`)
+      })
+    }
+    if (tasksToCreate.length > 0) {
+      if (tasksToUpdate.length > 0) confirmLines.push('')
+      confirmLines.push(`✨ 新建 ${tasksToCreate.length} 个任务：`)
+      tasksToCreate.forEach((t, i) => {
+        confirmLines.push(`  ${i + 1}. ${t.title}`)
+      })
+    }
+    confirmLines.push('\n按回车确认导入')
+
     await ElMessageBox.confirm(
-      `检测到 ${parsedTasks.length} 个任务：\n\n${taskTitles}\n\n按回车确认导入`,
+      confirmLines.join('\n'),
       '确认导入',
       {
         confirmButtonText: '确认导入',
@@ -264,8 +291,27 @@ const handleImportShortcut = async () => {
       }
     )
 
-    // 导入任务
-    for (const taskData of parsedTasks) {
+    // 更新已存在的任务
+    for (const taskData of tasksToUpdate) {
+      const existingTask = existingTaskMap.get(taskData.id!)!
+      const updatedTask: Task = {
+        ...existingTask,
+        title: taskData.title || existingTask.title,
+        description: taskData.description || existingTask.description,
+        status: taskData.status || existingTask.status,
+        priority: taskData.priority || existingTask.priority,
+        tags: taskData.tags || existingTask.tags,
+        technicalPoints: taskData.technicalPoints || existingTask.technicalPoints,
+        referenceLinks: taskData.referenceLinks || existingTask.referenceLinks,
+        progress: taskData.progress !== undefined ? taskData.progress : existingTask.progress,
+        updatedAt: Date.now(),
+      }
+      taskStore.updateTask(taskData.id!, updatedTask)
+      await dbStore.saveTask(updatedTask)
+    }
+
+    // 创建新任务
+    for (const taskData of tasksToCreate) {
       const task: Task = {
         ...(taskData as Task),
         id: taskData.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -278,7 +324,10 @@ const handleImportShortcut = async () => {
       await dbStore.saveTask(task)
     }
 
-    ElMessage.success(`成功导入 ${parsedTasks.length} 个任务`)
+    const message = []
+    if (tasksToUpdate.length > 0) message.push(`更新 ${tasksToUpdate.length} 个`)
+    if (tasksToCreate.length > 0) message.push(`新建 ${tasksToCreate.length} 个`)
+    ElMessage.success(`成功${message.join('，')}任务`)
     selectedTasks.value.clear()
   } catch (error: any) {
     if (error === 'cancel' || error === 'close') {
@@ -292,8 +341,13 @@ const handleImportShortcut = async () => {
 
 // 快捷键处理
 function handleKeyDown(event: KeyboardEvent) {
+  // Cmd+N (Mac) 或 Ctrl+N (Windows/Linux) 新建任务
+  if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
+    event.preventDefault()
+    createTask()
+  }
   // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux) 导出
-  if ((event.metaKey || event.ctrlKey) && event.key === 'e') {
+  else if ((event.metaKey || event.ctrlKey) && event.key === 'e') {
     event.preventDefault()
     handleExportShortcut()
   }
