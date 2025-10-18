@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
@@ -11,6 +11,7 @@ import TaskDialog from '@/components/TaskDialog.vue'
 import ExportDialog from '@/components/ExportDialog.vue'
 import ImportDialog from '@/components/ImportDialog.vue'
 import ListView from '@/components/ListView.vue'
+import { exportTasksToMarkdown, copyToClipboard, importTasksFromMarkdown } from '@/utils/export'
 
 const route = useRoute()
 const router = useRouter()
@@ -203,6 +204,113 @@ const goBack = () => {
 const handleTaskDialogSuccess = () => {
   // 任务创建/更新成功
 }
+
+// Cmd+E 导出选中任务
+const handleExportShortcut = async () => {
+  // 如果 TaskDialog 打开，则由 TaskDialog 处理
+  if (showTaskDialog.value) {
+    return
+  }
+
+  // 导出选中的任务
+  if (selectedTasks.value.size === 0) {
+    ElMessage.warning('请先选择要导出的任务')
+    return
+  }
+
+  const tasks = getSelectedTasks.value
+  if (!project.value) return
+
+  const markdown = exportTasksToMarkdown(tasks, project.value)
+  const success = await copyToClipboard(markdown)
+
+  if (success) {
+    ElMessage.success(`已复制 ${tasks.length} 个任务到剪贴板`)
+  } else {
+    ElMessage.error('复制失败，请重试')
+  }
+}
+
+// Cmd+I 导入任务（带二次确认）
+const handleImportShortcut = async () => {
+  try {
+    // 读取剪贴板
+    const clipboardText = await navigator.clipboard.readText()
+
+    if (!clipboardText.trim()) {
+      ElMessage.warning('剪贴板为空')
+      return
+    }
+
+    // 尝试解析任务
+    const existingTaskIds = taskStore.tasks.map(t => t.id)
+    const parsedTasks = importTasksFromMarkdown(clipboardText, projectId.value, existingTaskIds)
+
+    if (parsedTasks.length === 0) {
+      ElMessage.error('无法识别剪贴板内容，请确保格式正确')
+      return
+    }
+
+    // 显示确认对话框，列出任务标题
+    const taskTitles = parsedTasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')
+    await ElMessageBox.confirm(
+      `检测到 ${parsedTasks.length} 个任务：\n\n${taskTitles}\n\n按回车确认导入`,
+      '确认导入',
+      {
+        confirmButtonText: '确认导入',
+        cancelButtonText: '取消',
+        type: 'info',
+        distinguishCancelAndClose: true,
+      }
+    )
+
+    // 导入任务
+    for (const taskData of parsedTasks) {
+      const task: Task = {
+        ...(taskData as Task),
+        id: taskData.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        projectId: projectId.value,
+        changelog: taskData.changelog || [],
+        createdAt: taskData.createdAt || Date.now(),
+        updatedAt: Date.now(),
+      }
+      taskStore.addTask(task)
+      await dbStore.saveTask(task)
+    }
+
+    ElMessage.success(`成功导入 ${parsedTasks.length} 个任务`)
+    selectedTasks.value.clear()
+  } catch (error: any) {
+    if (error === 'cancel' || error === 'close') {
+      // 用户取消
+      return
+    }
+    console.error('导入失败:', error)
+    ElMessage.error('导入失败，请检查剪贴板内容格式')
+  }
+}
+
+// 快捷键处理
+function handleKeyDown(event: KeyboardEvent) {
+  // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux) 导出
+  if ((event.metaKey || event.ctrlKey) && event.key === 'e') {
+    event.preventDefault()
+    handleExportShortcut()
+  }
+  // Cmd+I (Mac) 或 Ctrl+I (Windows/Linux) 导入
+  else if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    event.preventDefault()
+    handleImportShortcut()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <template>

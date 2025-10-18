@@ -25,49 +25,121 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1760670751993-o9hhwklrm -->
-#### 1. 任务详情
+<!-- task-id: 1760770655943-fgxazzhwr -->
+#### 1. 工作流程优化-方案二
 
 **状态：** 已完成
 **优先级：** 中
-**标签：** UI, 功能
-**创建时间：** 2025/10/17 11:12:31
-**更新时间：** 2025/10/17 15:30:00
+**创建时间：** 2025/10/18 14:57:35
+**更新时间：** 2025/10/18 16:30:00
 
 **任务描述：**
 
-- [x] 创建任务时, 右侧迭代历史应该填充些内容, 否则就太空了
-- [x] 任务信息和迭代历史应该作为两个独立滚动容器, 即双方互不影响滚动
-- [x] 任务描述支持 markdown 格式的渲染和编辑
+#### 🎯 方案二：一键快捷操作
+
+**核心思路：** 简化复制粘贴操作，提供快捷键和一键功能
+
+**具体功能：**
+1. **一键导出并复制** (Cmd/Ctrl + E)
+   - 导出任务到 task.md 格式并自动复制到剪贴板
+   - 省去手动复制步骤
+
+2. **一键导入剪贴板内容** (Cmd/Ctrl + I)
+   - 直接读取剪贴板的 task.md 内容并导入
+   - 省去手动粘贴步骤
+
+3. **任务列表右键菜单**
+   - 右键任务 → "发送到 AI"（合并选中, 点击导出的两步操作）
+
+**优化后的流程：**
+```
+旧流程 10 步 → 新流程 6 步
+
+1. 打开站点，新建/编辑任务
+2. Cmd+E 导出并复制 ✅ (替代步骤 4-5)
+3. 告知 AI 阅读 task.md
+4. AI 完成任务
+5. Cmd+I 一键导入 ✅ (替代步骤 9-10)
+6. 完成
+```
+
+**优点：** ✅ 无需额外权限，简单易用
+**缺点：** ⚠️ 仍需手动操作，但已大幅简化
+
+-----
+以上为 ai 建议, 基本可以采纳, 我来做更详细的需求描述
+- [x] cmd+e 要分场景
+- [x] 1. 在任务列表或者看板视图时, cmd+e 的对象是选中的任务
+- [x] 2. 当有打开任务的任务详情时(taskDialog), cmd+e 的对象是当前任务
+- [x] 3. cmd+s 时不用关闭抽屉, 工作流程为 cmd+s, cmd+e 直接导出当前任务到剪切板
+- [x] 一键导入最好做一个二次确认, 剪切板内容参差不齐, 识别失败时弹出提示即可; 识别成功时弹窗任务标题, 再回车确认则可以进行导入
 
 **实现细节：**
 
-1. **迭代历史占位内容**
-   - 在 `TaskDialog.vue` 中添加了 `.iteration-placeholder` 组件
-   - 当没有迭代历史时显示美观的占位内容
-   - 包含图标、提示文本和三个功能说明 tip
-   - 样式采用渐变色和卡片设计，与整体 UI 风格保持一致
+1. **Cmd+E 分场景导出**
+   - **Board.vue 实现：**
+     - 添加全局快捷键监听 (onMounted/onUnmounted)
+     - `handleExportShortcut()` 函数导出选中的任务
+     - 如果 TaskDialog 打开，则由 TaskDialog 处理
+     - 使用 `exportTasksToMarkdown()` 和 `copyToClipboard()` 工具函数
+     - 成功后显示提示："已复制 X 个任务到剪贴板"
 
-2. **双滚动容器实现**
-   - `.drawer-content` 设置固定高度 `calc(100vh - 180px)` 和 `overflow: hidden`
-   - `.task-form-section` 设置 `overflow-y: auto` 实现独立滚动
-   - `.iteration-section` 设置 `overflow: hidden`，内部的 `.iteration-list` 和 `.iteration-placeholder` 分别设置 `overflow-y: auto; flex: 1`
-   - 左右两侧滚动互不影响，提升用户体验
+   - **TaskDialog.vue 实现：**
+     - 添加 `handleExportCurrentTask()` 函数
+     - 仅在编辑模式（props.task 存在）时导出当前任务
+     - 新建任务需要先保存后才能导出
+     - 快捷键 Cmd+E 绑定到此函数
 
-3. **Markdown 支持**
-   - 安装了 `marked` 库用于 Markdown 渲染
-   - 添加编辑/预览模式切换工具栏
-   - 编辑模式：显示 textarea 支持 Markdown 语法输入
-   - 预览模式：实时渲染 Markdown 内容，支持标题、列表、代码块、引用、链接、表格等
-   - 添加完整的 Markdown 样式，包括代码高亮、表格样式、链接样式等
-   - 工具栏提供清晰的模式指示和 Markdown 格式提示
+2. **Cmd+S 保存不关闭抽屉**
+   - **TaskDialog.vue 修改：**
+     - `handleSubmit()` 函数中注释掉 `handleClose()` 调用
+     - 保存成功后抽屉保持打开状态
+     - 用户可以继续编辑或使用 Cmd+E 导出
+     - 完美配合工作流程：Cmd+S 保存 → Cmd+E 导出
+
+3. **Cmd+I 导入带二次确认**
+   - **Board.vue 实现：**
+     - `handleImportShortcut()` 异步函数
+     - 使用 `navigator.clipboard.readText()` 读取剪贴板
+     - 使用 `importTasksFromMarkdown()` 解析任务
+     - 解析失败时显示错误提示
+     - 解析成功时使用 `ElMessageBox.confirm()` 二次确认
+     - 确认对话框显示任务标题列表
+     - 支持回车确认导入
+     - 成功后显示提示："成功导入 X 个任务"
+
+4. **工具函数复用**
+   - 复用现有的 `exportTasksToMarkdown()` 导出函数
+   - 复用现有的 `importTasksFromMarkdown()` 解析函数
+   - 复用现有的 `copyToClipboard()` 剪贴板函数
+   - 所有工具函数位于 `src/utils/export.ts`
 
 **修改文件：**
-- `src/components/TaskDialog.vue` - 主要实现文件
-- `package.json` - 添加 marked 依赖
+- `src/views/Board.vue` - 添加 Cmd+E/Cmd+I 快捷键监听
+- `src/components/TaskDialog.vue` - 添加 Cmd+E 导出，修改 Cmd+S 行为
+- `src/utils/export.ts` - 工具函数（已存在，无需修改）
+
+**使用说明：**
+
+1. **导出选中任务：**
+   - 在看板或列表视图中，勾选要导出的任务
+   - 按 Cmd+E (Mac) 或 Ctrl+E (Windows)
+   - 任务自动复制到剪贴板，可直接粘贴给 AI
+
+2. **导出当前任务：**
+   - 打开任务详情（编辑任务）
+   - 编辑任务内容
+   - 按 Cmd+S 保存（抽屉不关闭）
+   - 按 Cmd+E 导出到剪贴板
+
+3. **导入任务：**
+   - 复制 AI 返回的 task.md 内容
+   - 在看板或列表视图中，按 Cmd+I
+   - 查看确认对话框中的任务列表
+   - 按回车或点击"确认导入"完成导入
 
 ---
 
 
-> 📅 导出时间：2025/10/17 15:30:00
+> 📅 导出时间：2025/10/18 16:30:00
 > 🤖 由 Task Banner 生成

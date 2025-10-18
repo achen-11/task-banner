@@ -5,7 +5,9 @@ import type { Task, TaskStatus, Priority, ChangeLogEntry } from '@/types'
 import { generateId } from '@/utils'
 import { useTaskStore } from '@/stores/task'
 import { useDBStore } from '@/stores/db'
+import { useProjectStore } from '@/stores/project'
 import { marked } from 'marked'
+import { exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 
 interface Props {
   visible: boolean
@@ -23,6 +25,7 @@ const emit = defineEmits<Emits>()
 
 const taskStore = useTaskStore()
 const dbStore = useDBStore()
+const projectStore = useProjectStore()
 
 const formRef = ref()
 const formData = ref({
@@ -294,7 +297,8 @@ async function handleSubmit() {
     }
 
     emit('success')
-    handleClose()
+    // Cmd+S 保存后不关闭抽屉，用户可以继续编辑或使用 Cmd+E 导出
+    // handleClose() - 注释掉自动关闭
   } catch (error) {
     console.error('Form validation failed:', error)
   }
@@ -307,6 +311,31 @@ function handleClose() {
   }, 300)
 }
 
+// Cmd+E 导出当前任务
+async function handleExportCurrentTask() {
+  if (!props.visible) return
+
+  const project = projectStore.getProjectById(props.projectId)
+  if (!project) {
+    ElMessage.error('未找到项目信息')
+    return
+  }
+
+  // 如果是编辑模式，导出当前任务
+  if (props.task) {
+    const markdown = exportTasksToMarkdown([props.task], project)
+    const success = await copyToClipboard(markdown)
+
+    if (success) {
+      ElMessage.success('已复制当前任务到剪贴板')
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } else {
+    ElMessage.warning('请先保存任务后再导出')
+  }
+}
+
 // 快捷键处理
 function handleKeyDown(event: KeyboardEvent) {
   // Cmd+S (Mac) 或 Ctrl+S (Windows/Linux) 保存
@@ -314,6 +343,13 @@ function handleKeyDown(event: KeyboardEvent) {
     event.preventDefault()
     if (props.visible) {
       handleSubmit()
+    }
+  }
+  // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux) 导出当前任务
+  else if ((event.metaKey || event.ctrlKey) && event.key === 'e') {
+    event.preventDefault()
+    if (props.visible) {
+      handleExportCurrentTask()
     }
   }
 }
