@@ -21,86 +21,126 @@
 
 ## 任务列表
 
-共 2 个任务
+共 3 个任务
 
-### 🟡 中优先级
+### ✅ 已完成
 
-<!-- task-id: 1760771642308-q5wsxisvw -->
-#### 1. 工作流程优化 Bug
-
-**状态：** 已完成
-**优先级：** 中
-**标签：** Bug
-**创建时间：** 2025/10/18 15:14:02
-**更新时间：** 2025/10/18 16:45:00
-
-**任务描述：**
-
-- [x] 需要支持 cmd+n 新建任务
-- [x] cmd+i 导入任务有问题, cmd+i 是ai 完成任务后更新任务的, 现在看起来是新建了一条任务, 并更新状态而已; 应该要做到, 识别任务, 回填状态, 内容(任务描述), 更新(而不是新建)
-
-**实现细节：**
-
-1. **Cmd+N 新建任务**
-   - 在 `Board.vue` 的 `handleKeyDown` 函数中添加 Cmd+N 快捷键
-   - 调用 `createTask()` 函数打开任务对话框
-   - 快捷键位于最前面，优先级最高
-
-2. **Cmd+I 导入逻辑优化**
-   - 修改 `handleImportShortcut()` 函数
-   - 解析任务时不传递 `existingTaskIds`，保留原始 task-id
-   - 通过 task-id 判断任务是否已存在
-   - 存在则更新，不存在则新建
-   - 确认对话框分别显示"更新 X 个任务"和"新建 X 个任务"
-   - 更新时保留 changelog、createdAt 等元数据
-   - 成功后显示："成功更新 X 个，新建 X 个任务"
-
-**修改文件：**
-- `src/views/Board.vue` (Board.vue:245-340, 343-348)
-
----
-
-<!-- task-id: 1760771750380-5k39zfebj -->
-#### 2. 保存任务 bug
+<!-- task-id: 1760772643910-osnbu5p0i -->
+#### 1. cmd+i 导入失败
 
 **状态：** 已完成
 **优先级：** 中
-**标签：** Bug
-**创建时间：** 2025/10/18 15:15:50
-**更新时间：** 2025/10/18 16:45:00
+**创建时间：** 2025/10/18 15:30:43
+**更新时间：** 2025/10/18 15:52:00
 
 **任务描述：**
 
-- [x] 在创建任务时, cmd+s之后虽然可以成功新建, 但当前打开的抽屉依然是"创建任务", 应该变为编辑, 并且可以使用 cmd+e 进行导出
+- [x] 修复 cmd+i 导入时的 DataCloneError 错误
 
-**实现细节：**
+**问题分析：**
 
-1. **添加 currentTask 状态**
-   - 在 `TaskDialog.vue` 中添加 `currentTask` ref
-   - 用于跟踪当前正在编辑的任务（包括新建后的任务）
-   - 编辑模式时，`currentTask` = `props.task`
-   - 创建模式时，`currentTask` = `null`
+复制整个 task.md 后执行 cmd+i 时会报错：
+```
+DataCloneError: Failed to execute 'put' on 'IDBObjectStore': [object Array] could not be cloned.
+```
 
-2. **创建任务后更新状态**
-   - 在 `handleSubmit()` 创建任务成功后
-   - 将新创建的任务赋值给 `currentTask.value`
-   - 这样抽屉自动切换为"编辑任务"模式
+原因是 IndexedDB 无法序列化 Vue Proxy 对象。导入任务时，数组字段（tags、technicalPoints、changelog）仍被 Vue 的响应式 Proxy 包裹。
 
-3. **动态更新界面**
-   - 抽屉标题：`currentTask ? '编辑任务' : '创建任务'`
-   - 保存按钮：`currentTask ? '保存' : '创建'`
-   - 迭代历史：显示 `currentTask.changelog`
-   - Cmd+E 导出：使用 `currentTask` 而不是 `props.task`
+**实现方案：**
 
-4. **保持最新状态**
-   - 编辑任务保存后，也更新 `currentTask`
-   - 确保 Cmd+E 导出的始终是最新内容
+在 `src/views/Board.vue` 的导入逻辑中，对所有数组和对象字段进行深度克隆：
+
+```typescript
+// 更新现有任务时
+const updatedTask: Task = {
+  ...existingTask,
+  // 深度克隆数组，避免 Vue Proxy 序列化问题
+  tags: taskData.tags ? [...taskData.tags] : [...existingTask.tags],
+  technicalPoints: taskData.technicalPoints ? [...taskData.technicalPoints] :
+    (existingTask.technicalPoints ? [...existingTask.technicalPoints] : undefined),
+  referenceLinks: taskData.referenceLinks ? [...taskData.referenceLinks] :
+    (existingTask.referenceLinks ? [...existingTask.referenceLinks] : undefined),
+  // 深度克隆 changelog
+  changelog: existingTask.changelog ? existingTask.changelog.map(entry => ({
+    timestamp: entry.timestamp,
+    field: entry.field,
+    oldValue: entry.oldValue,
+    newValue: entry.newValue,
+    action: entry.action
+  })) : [],
+  updatedAt: Date.now(),
+}
+```
 
 **修改文件：**
-- `src/components/TaskDialog.vue` (TaskDialog.vue:47, 98, 282, 303, 334, 378, 539, 543, 606)
+- `src/views/Board.vue:270-340` - 导入逻辑深度克隆优化
+
+---
+
+<!-- task-id: 1760772681446-cpel358wt -->
+#### 2. 任务列表-排序优化
+
+**状态：** 已完成
+**优先级：** 中
+**创建时间：** 2025/10/18 15:31:21
+**更新时间：** 2025/10/18 15:52:00
+
+**任务描述：**
+
+- [x] 列表视图默认按 待办任务在前的排序方式
+
+**实现方案：**
+
+在 `src/components/ListView.vue` 中修改默认排序配置：
+
+```typescript
+// 默认排序字段改为 status
+const sortField = ref<'title' | 'status' | 'priority' | 'createdAt'>('status')
+// 默认升序排列（待办任务在前）
+const sortOrder = ref<'asc' | 'desc'>('asc')
+```
+
+状态排序顺序：待办 → 进行中 → 需优化 → 已发送AI → 已完成
+
+**修改文件：**
+- `src/components/ListView.vue:28-29` - 默认排序配置
+- `src/components/ListView.vue:75-80` - 状态排序逻辑
+
+---
+
+<!-- task-id: 1760772753443-rkudi52ll -->
+#### 3. 创建任务快捷键替换
+
+**状态：** 已完成
+**优先级：** 中
+**标签：** 优化
+**创建时间：** 2025/10/18 15:32:33
+**更新时间：** 2025/10/18 15:52:00
+
+**任务描述：**
+
+- [x] 由 Cmd+N 替换为 Option+N（macOS）/ Alt+N（Windows）
+
+**实现方案：**
+
+在 `src/views/Board.vue` 的键盘事件处理中，将创建任务快捷键从 Cmd/Ctrl+N 改为 Option/Alt+N，避免与浏览器默认的"新建窗口"快捷键冲突：
+
+```typescript
+function handleKeyDown(event: KeyboardEvent) {
+  // 创建任务 - 使用 Alt/Option + N
+  if (event.altKey && event.key === 'n') {
+    event.preventDefault()
+    createTask()
+  }
+  // ... 其他快捷键
+}
+```
+
+**修改文件：**
+- `src/views/Board.vue:370-373` - 键盘快捷键处理逻辑
 
 ---
 
 
-> 📅 导出时间：2025/10/18 16:45:00
+> 📅 导出时间：2025/10/18 15:52:00
 > 🤖 由 Task Banner 生成

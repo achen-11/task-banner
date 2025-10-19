@@ -300,10 +300,19 @@ const handleImportShortcut = async () => {
         description: taskData.description || existingTask.description,
         status: taskData.status || existingTask.status,
         priority: taskData.priority || existingTask.priority,
-        tags: taskData.tags || existingTask.tags,
-        technicalPoints: taskData.technicalPoints || existingTask.technicalPoints,
-        referenceLinks: taskData.referenceLinks || existingTask.referenceLinks,
+        // 确保数组是纯 JavaScript 数组，避免 DataCloneError
+        tags: taskData.tags ? [...taskData.tags] : [...existingTask.tags],
+        technicalPoints: taskData.technicalPoints ? [...taskData.technicalPoints] : (existingTask.technicalPoints ? [...existingTask.technicalPoints] : undefined),
+        referenceLinks: taskData.referenceLinks ? [...taskData.referenceLinks] : (existingTask.referenceLinks ? [...existingTask.referenceLinks] : undefined),
         progress: taskData.progress !== undefined ? taskData.progress : existingTask.progress,
+        // 确保 changelog 也是纯数组
+        changelog: existingTask.changelog ? existingTask.changelog.map(entry => ({
+          timestamp: entry.timestamp,
+          field: entry.field,
+          oldValue: entry.oldValue,
+          newValue: entry.newValue,
+          action: entry.action
+        })) : [],
         updatedAt: Date.now(),
       }
       taskStore.updateTask(taskData.id!, updatedTask)
@@ -313,10 +322,26 @@ const handleImportShortcut = async () => {
     // 创建新任务
     for (const taskData of tasksToCreate) {
       const task: Task = {
-        ...(taskData as Task),
         id: taskData.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         projectId: projectId.value,
-        changelog: taskData.changelog || [],
+        title: taskData.title || '',
+        description: taskData.description || '',
+        status: taskData.status || 'todo',
+        priority: taskData.priority || 'medium',
+        // 确保数组是纯 JavaScript 数组
+        tags: taskData.tags ? [...taskData.tags] : [],
+        technicalPoints: taskData.technicalPoints ? [...taskData.technicalPoints] : undefined,
+        referenceLinks: taskData.referenceLinks ? [...taskData.referenceLinks] : undefined,
+        progress: taskData.progress || 0,
+        // 确保 changelog 是纯数组
+        changelog: taskData.changelog ? taskData.changelog.map(entry => ({
+          timestamp: entry.timestamp || Date.now(),
+          field: entry.field || '',
+          oldValue: entry.oldValue || '',
+          newValue: entry.newValue || '',
+          action: entry.action || ''
+        })) : [],
+        order: taskData.order || taskStore.tasks.length,
         createdAt: taskData.createdAt || Date.now(),
         updatedAt: Date.now(),
       }
@@ -341,9 +366,11 @@ const handleImportShortcut = async () => {
 
 // 快捷键处理
 function handleKeyDown(event: KeyboardEvent) {
-  // Cmd+N (Mac) 或 Ctrl+N (Windows/Linux) 新建任务
-  if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
+  // Option+N (Mac) 或 Alt+N (Windows/Linux) 新建任务
+  console.log(event)
+  if (event.altKey && event.code === 'KeyN') {
     event.preventDefault()
+    console.log('createTask')
     createTask()
   }
   // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux) 导出

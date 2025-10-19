@@ -23,9 +23,9 @@ const searchText = ref('')
 const statusFilter = ref<TaskStatus | 'all'>('all')
 const priorityFilter = ref<'all' | 'low' | 'medium' | 'high' | 'urgent'>('all')
 
-// 排序
-const sortField = ref<'title' | 'status' | 'priority' | 'createdAt'>('createdAt')
-const sortOrder = ref<'asc' | 'desc'>('desc')
+// 排序 - 默认按状态排序，待办任务在前
+const sortField = ref<'title' | 'status' | 'priority' | 'createdAt'>('status')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 // 分页
 const currentPage = ref(1)
@@ -100,7 +100,9 @@ const filteredTasks = computed(() => {
     if (sortField.value === 'title') {
       comparison = a.title.localeCompare(b.title)
     } else if (sortField.value === 'status') {
-      comparison = a.status.localeCompare(b.status)
+      // 状态排序：待办 → 进行中 → 需优化 → 已发送AI → 已完成
+      const statusOrder = ['todo', 'in_progress', 'needs_optimization', 'sent_to_ai', 'completed']
+      comparison = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
     } else if (sortField.value === 'priority') {
       const priorityOrder = ['low', 'medium', 'high', 'urgent']
       comparison = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority)
