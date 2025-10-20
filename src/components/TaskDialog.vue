@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { Task, TaskStatus, Priority, ChangeLogEntry } from '@/types'
 import { generateId } from '@/utils'
@@ -17,7 +17,7 @@ interface Props {
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'success'): void
+  (e: 'success', taskId: string): void
 }
 
 const props = defineProps<Props>()
@@ -28,6 +28,7 @@ const dbStore = useDBStore()
 const projectStore = useProjectStore()
 
 const formRef = ref()
+const titleInputRef = ref()
 const formData = ref({
   title: '',
   description: '',
@@ -91,10 +92,10 @@ const rules = {
   ],
 }
 
-watch(() => props.visible, (newVal) => {
+watch(() => props.visible, async (newVal) => {
   if (newVal) {
     if (props.task) {
-      // 编辑模式
+      // 编辑模式：加载任务内容
       currentTask.value = props.task
       formData.value = {
         title: props.task.title,
@@ -107,8 +108,17 @@ watch(() => props.visible, (newVal) => {
         progress: props.task.progress || 0,
       }
     } else {
+      // 创建模式：保留表单缓存，不清空
+      // 这样可以避免误触 ESC 导致内容丢失
       currentTask.value = null
-      resetForm()
+      // 不调用 resetForm()，保留用户输入的缓存
+    }
+
+    // 等待 DOM 更新后，聚焦并选中标题输入框
+    await nextTick()
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+      titleInputRef.value.select()
     }
   }
 })
@@ -237,15 +247,17 @@ function removeRefLink(index: number) {
   formData.value.referenceLinks.splice(index, 1)
 }
 
-async function handleSubmit() {
+async function handleSubmit(): Promise<boolean> {
   try {
     await formRef.value?.validate()
 
-    if (props.task) {
+    // 使用 currentTask 而不是 props.task 来判断是更新还是创建
+    // 这样在创建任务后再次保存时，会正确执行更新逻辑
+    if (currentTask.value) {
       // 检测变更
-      const changes = detectChanges(props.task)
+      const changes = detectChanges(currentTask.value)
       // 处理向后兼容：如果 changelog 不存在，初始化为空数组
-      const existingChangelog = props.task.changelog || []
+      const existingChangelog = currentTask.value.changelog || []
 
       // 深度克隆 changelog 以避免响应式对象
       const clonedExistingChangelog = existingChangelog.map(entry => ({
@@ -260,8 +272,8 @@ async function handleSubmit() {
 
       // 更新任务 - 创建新的纯对象，避免克隆响应式对象
       const updatedTask: Task = {
-        id: props.task.id,
-        projectId: props.task.projectId,
+        id: currentTask.value.id,
+        projectId: currentTask.value.projectId,
         title: formData.value.title,
         description: formData.value.description,
         status: formData.value.status,
@@ -271,17 +283,19 @@ async function handleSubmit() {
         referenceLinks: formData.value.referenceLinks.length > 0 ? [...formData.value.referenceLinks] : undefined,
         progress: formData.value.progress,
         changelog: updatedChangelog,
-        order: props.task.order,
-        createdAt: props.task.createdAt,
+        order: currentTask.value.order,
+        createdAt: currentTask.value.createdAt,
         updatedAt: Date.now(),
       }
-      taskStore.updateTask(props.task.id, updatedTask)
+      taskStore.updateTask(currentTask.value.id, updatedTask)
       await dbStore.saveTask(updatedTask)
 
       // 更新 currentTask，保持最新状态
       currentTask.value = updatedTask
 
       ElMessage.success('任务更新成功')
+      // 触发 success 事件，传递任务 ID 用于自动选中
+      emit('success', currentTask.value.id)
     } else {
       // 创建新任务
       const newTask: Task = {
@@ -307,21 +321,41 @@ async function handleSubmit() {
       currentTask.value = newTask
 
       ElMessage.success('任务创建成功')
+      // 触发 success 事件，传递任务 ID 用于自动选中
+      emit('success', newTask.id)
     }
-
-    emit('success')
     // Cmd+S 保存后不关闭抽屉，用户可以继续编辑或使用 Cmd+E 导出
     // handleClose() - 注释掉自动关闭
+    return true
   } catch (error) {
     console.error('Form validation failed:', error)
+    return false
+  }
+}
+
+// 保存并新建：保存当前任务后，清空表单并切换到创建模式
+async function handleSubmitAndNew() {
+  const success = await handleSubmit()
+  if (success) {
+    // 保存成功后，清空表单并切换到创建模式
+    resetForm()
+    currentTask.value = null
+
+    // 聚焦到标题输入框
+    await nextTick()
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+      titleInputRef.value.select()
+    }
+
+    ElMessage.success('已保存，可以继续创建新任务')
   }
 }
 
 function handleClose() {
   emit('update:visible', false)
-  setTimeout(() => {
-    resetForm()
-  }, 300)
+  // 不再自动清空表单，保留用户输入的缓存
+  // 用户可以使用 Cmd+Shift+K 快捷键手动清空
 }
 
 // Cmd+E 导出当前任务
@@ -351,8 +385,16 @@ async function handleExportCurrentTask() {
 
 // 快捷键处理
 function handleKeyDown(event: KeyboardEvent) {
+  // Cmd+Shift+S (Mac) 或 Ctrl+Shift+S (Windows/Linux) 保存并新建
+  // 这个要在 Cmd+S 之前判断，因为 Cmd+Shift+S 也会匹配 Cmd+S
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'S') {
+    event.preventDefault()
+    if (props.visible) {
+      handleSubmitAndNew()
+    }
+  }
   // Cmd+S (Mac) 或 Ctrl+S (Windows/Linux) 保存
-  if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+  else if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     event.preventDefault()
     if (props.visible) {
       handleSubmit()
@@ -363,6 +405,14 @@ function handleKeyDown(event: KeyboardEvent) {
     event.preventDefault()
     if (props.visible) {
       handleExportCurrentTask()
+    }
+  }
+  // Cmd+Shift+K (Mac) 或 Ctrl+Shift+K (Windows/Linux) 清空表单缓存
+  else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'k') {
+    event.preventDefault()
+    if (props.visible) {
+      resetForm()
+      ElMessage.success('已清空表单内容')
     }
   }
 }
@@ -395,6 +445,7 @@ onUnmounted(() => {
         >
           <el-form-item label="任务标题" prop="title">
             <el-input
+              ref="titleInputRef"
               v-model="formData.title"
               placeholder="请输入任务标题"
               maxlength="100"

@@ -25,122 +25,231 @@
 
 ### ✅ 已完成
 
-<!-- task-id: 1760772643910-osnbu5p0i -->
-#### 1. cmd+i 导入失败
+# <!-- task-id: 1760835554684-bgf5v7ik2 -->
+#### 1. 创建任务缓存
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/18 15:30:43
-**更新时间：** 2025/10/18 15:52:00
+**创建时间：** 2025/10/19 08:59:14
+**更新时间：** 2025/10/19 09:45:00
 
 **任务描述：**
 
-- [x] 修复 cmd+i 导入时的 DataCloneError 错误
-
-**问题分析：**
-
-复制整个 task.md 后执行 cmd+i 时会报错：
-```
-DataCloneError: Failed to execute 'put' on 'IDBObjectStore': [object Array] could not be cloned.
-```
-
-原因是 IndexedDB 无法序列化 Vue Proxy 对象。导入任务时，数组字段（tags、technicalPoints、changelog）仍被 Vue 的响应式 Proxy 包裹。
+场景: 创建任务时有时候会误触 esc 或者误关闭弹窗, 此时会丢失所有已填写的内容
+- [x] 关闭弹窗时不清空内容，可以做一个快捷键来清空
 
 **实现方案：**
 
-在 `src/views/Board.vue` 的导入逻辑中，对所有数组和对象字段进行深度克隆：
+1. **修改关闭逻辑**：移除 `handleClose()` 函数中的 `resetForm()` 调用，关闭弹窗时保留表单内容
+2. **修改 watch 逻辑**：只在编辑模式（props.task 存在）时加载任务内容，创建模式时保留缓存
+3. **添加清空快捷键**：Cmd+Shift+K（macOS）/ Ctrl+Shift+K（Windows）手动清空表单
 
 ```typescript
-// 更新现有任务时
-const updatedTask: Task = {
-  ...existingTask,
-  // 深度克隆数组，避免 Vue Proxy 序列化问题
-  tags: taskData.tags ? [...taskData.tags] : [...existingTask.tags],
-  technicalPoints: taskData.technicalPoints ? [...taskData.technicalPoints] :
-    (existingTask.technicalPoints ? [...existingTask.technicalPoints] : undefined),
-  referenceLinks: taskData.referenceLinks ? [...taskData.referenceLinks] :
-    (existingTask.referenceLinks ? [...existingTask.referenceLinks] : undefined),
-  // 深度克隆 changelog
-  changelog: existingTask.changelog ? existingTask.changelog.map(entry => ({
-    timestamp: entry.timestamp,
-    field: entry.field,
-    oldValue: entry.oldValue,
-    newValue: entry.newValue,
-    action: entry.action
-  })) : [],
-  updatedAt: Date.now(),
+function handleClose() {
+  emit('update:visible', false)
+  // 不再自动清空表单，保留用户输入的缓存
+  // 用户可以使用 Cmd+Shift+K 快捷键手动清空
 }
+
+watch(() => props.visible, async (newVal) => {
+  if (newVal) {
+    if (props.task) {
+      // 编辑模式：加载任务内容
+      currentTask.value = props.task
+      formData.value = { /* ... */ }
+    } else {
+      // 创建模式：保留表单缓存，不清空
+      currentTask.value = null
+      // 不调用 resetForm()，保留用户输入的缓存
+    }
+  }
+})
 ```
 
 **修改文件：**
-- `src/views/Board.vue:270-340` - 导入逻辑深度克隆优化
+- `src/components/TaskDialog.vue:322-326` - 移除自动清空逻辑
+- `src/components/TaskDialog.vue:95-124` - 修改 watch 逻辑
+- `src/components/TaskDialog.vue:408-415` - 添加 Cmd+Shift+K 清空快捷键
 
 ---
 
-<!-- task-id: 1760772681446-cpel358wt -->
-#### 2. 任务列表-排序优化
-
-**状态：** 已完成
-**优先级：** 中
-**创建时间：** 2025/10/18 15:31:21
-**更新时间：** 2025/10/18 15:52:00
-
-**任务描述：**
-
-- [x] 列表视图默认按 待办任务在前的排序方式
-
-**实现方案：**
-
-在 `src/components/ListView.vue` 中修改默认排序配置：
-
-```typescript
-// 默认排序字段改为 status
-const sortField = ref<'title' | 'status' | 'priority' | 'createdAt'>('status')
-// 默认升序排列（待办任务在前）
-const sortOrder = ref<'asc' | 'desc'>('asc')
-```
-
-状态排序顺序：待办 → 进行中 → 需优化 → 已发送AI → 已完成
-
-**修改文件：**
-- `src/components/ListView.vue:28-29` - 默认排序配置
-- `src/components/ListView.vue:75-80` - 状态排序逻辑
-
----
-
-<!-- task-id: 1760772753443-rkudi52ll -->
-#### 3. 创建任务快捷键替换
+# <!-- task-id: 1760835824552-b2bnvxwdq -->
+#### 2. 快捷操作优化
 
 **状态：** 已完成
 **优先级：** 中
 **标签：** 优化
-**创建时间：** 2025/10/18 15:32:33
-**更新时间：** 2025/10/18 15:52:00
+**创建时间：** 2025/10/19 09:03:44
+**更新时间：** 2025/10/19 09:45:00
 
 **任务描述：**
 
-- [x] 由 Cmd+N 替换为 Option+N（macOS）/ Alt+N（Windows）
+- [x] 1. 任务详情抽屉打开时，默认选中任务标题
+- [x] 2. 添加保存并新建快捷键（Cmd+Shift+S）
+- [x] 3. 保存后自动选中任务（方便 ESC 后直接 Cmd+E 导出）
 
 **实现方案：**
 
-在 `src/views/Board.vue` 的键盘事件处理中，将创建任务快捷键从 Cmd/Ctrl+N 改为 Option/Alt+N，避免与浏览器默认的"新建窗口"快捷键冲突：
+#### 1. 默认选中标题
+
+在抽屉打开时自动聚焦并选中标题输入框：
 
 ```typescript
-function handleKeyDown(event: KeyboardEvent) {
-  // 创建任务 - 使用 Alt/Option + N
-  if (event.altKey && event.key === 'n') {
-    event.preventDefault()
-    createTask()
+// 添加 titleInputRef
+const titleInputRef = ref()
+
+// 在 watch 中添加聚焦逻辑
+watch(() => props.visible, async (newVal) => {
+  if (newVal) {
+    // ... 加载任务数据
+
+    // 等待 DOM 更新后，聚焦并选中标题输入框
+    await nextTick()
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+      titleInputRef.value.select()
+    }
   }
-  // ... 其他快捷键
+})
+```
+
+#### 2. 保存并新建快捷键
+
+添加 Cmd+Shift+S 快捷键，保存当前任务后清空表单并切换到创建模式：
+
+```typescript
+// 保存并新建函数
+async function handleSubmitAndNew() {
+  const success = await handleSubmit()
+  if (success) {
+    resetForm()
+    currentTask.value = null
+
+    await nextTick()
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+      titleInputRef.value.select()
+    }
+
+    ElMessage.success('已保存，可以继续创建新任务')
+  }
+}
+
+// 快捷键处理（需要在 Cmd+S 之前判断）
+if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'S') {
+  event.preventDefault()
+  if (props.visible) {
+    handleSubmitAndNew()
+  }
+}
+```
+
+#### 3. 保存后自动选中
+
+修改 TaskDialog 的 success 事件，传递任务 ID：
+
+```typescript
+// TaskDialog.vue - 修改 emit 定义
+interface Emits {
+  (e: 'update:visible', value: boolean): void
+  (e: 'success', taskId: string): void
+}
+
+// 保存成功后传递任务 ID
+emit('success', currentTask.value.id)
+```
+
+在 Board.vue 中接收并选中任务：
+
+```typescript
+const handleTaskDialogSuccess = (taskId: string) => {
+  // 清空之前的选中状态，只选中当前任务
+  selectedTasks.value.clear()
+  selectedTasks.value.add(taskId)
 }
 ```
 
 **修改文件：**
-- `src/views/Board.vue:370-373` - 键盘快捷键处理逻辑
+- `src/components/TaskDialog.vue:2` - 添加 nextTick 导入
+- `src/components/TaskDialog.vue:31` - 添加 titleInputRef
+- `src/components/TaskDialog.vue:117-122` - 添加聚焦逻辑
+- `src/components/TaskDialog.vue:417` - 添加 ref="titleInputRef"
+- `src/components/TaskDialog.vue:250` - handleSubmit 返回 boolean
+- `src/components/TaskDialog.vue:334-351` - 添加 handleSubmitAndNew 函数
+- `src/components/TaskDialog.vue:386-393` - 添加 Cmd+Shift+S 快捷键
+- `src/components/TaskDialog.vue:18-21` - 修改 Emits 接口
+- `src/components/TaskDialog.vue:298,325` - emit success 时传递 taskId
+- `src/views/Board.vue:204-209` - 修改 handleTaskDialogSuccess 接收并选中任务
+
+---
+
+# <!-- task-id: 1760835990443-pghe0plzm -->
+#### 3. 保存任务 bug
+
+**状态：** 已完成
+**优先级：** 中
+**标签：** Bug
+**创建时间：** 2025/10/19 09:06:30
+**更新时间：** 2025/10/19 09:45:00
+
+**任务描述：**
+
+创建任务 -> cmd+s
+预期: 创建任务，并且任务详情变为编辑任务（已实现）
+此时，再 cmd+s
+预期: 保存并更新任务
+实际: 又创建了一个新的任务（bug，需修复）
+
+**问题分析：**
+
+在 `handleSubmit()` 函数中，判断是创建还是更新任务的条件是 `if (props.task)`。但是在创建任务后：
+- `props.task` 仍然是 `null`（因为是从父组件传递的，父组件没有更新）
+- 只有 `currentTask.value` 被更新为新创建的任务
+
+所以再次保存时，条件 `if (props.task)` 为 false，导致又走了创建逻辑。
+
+**解决方案：**
+
+将判断条件从 `if (props.task)` 改为 `if (currentTask.value)`：
+
+```typescript
+async function handleSubmit(): Promise<boolean> {
+  try {
+    await formRef.value?.validate()
+
+    // 使用 currentTask 而不是 props.task 来判断是更新还是创建
+    // 这样在创建任务后再次保存时，会正确执行更新逻辑
+    if (currentTask.value) {
+      // 更新任务
+      const changes = detectChanges(currentTask.value)
+      const existingChangelog = currentTask.value.changelog || []
+      // ... 使用 currentTask.value 的所有字段
+
+      const updatedTask: Task = {
+        id: currentTask.value.id,
+        projectId: currentTask.value.projectId,
+        // ... 其他字段
+      }
+      taskStore.updateTask(currentTask.value.id, updatedTask)
+      // ...
+    } else {
+      // 创建新任务
+      // ...
+      currentTask.value = newTask  // 创建后更新 currentTask
+    }
+
+    return true
+  } catch (error) {
+    return false
+  }
+}
+```
+
+**修改文件：**
+- `src/components/TaskDialog.vue:246-298` - 将所有 `props.task` 改为 `currentTask.value`
 
 ---
 
 
-> 📅 导出时间：2025/10/18 15:52:00
+> 📅 导出时间：2025/10/19 09:45:00
 > 🤖 由 Task Banner 生成

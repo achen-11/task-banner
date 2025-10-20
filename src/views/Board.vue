@@ -201,8 +201,11 @@ const goBack = () => {
   router.push('/projects')
 }
 
-const handleTaskDialogSuccess = () => {
-  // 任务创建/更新成功
+const handleTaskDialogSuccess = (taskId: string) => {
+  // 任务创建/更新成功后，自动选中该任务
+  // 清空之前的选中状态，只选中当前任务
+  selectedTasks.value.clear()
+  selectedTasks.value.add(taskId)
 }
 
 // Cmd+E 导出选中任务
