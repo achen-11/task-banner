@@ -21,235 +21,138 @@
 
 ## 任务列表
 
-共 3 个任务
+共 5 个任务，全部已完成 ✅
 
-### ✅ 已完成
+### ✅ 已完成任务
 
-# <!-- task-id: 1760835554684-bgf5v7ik2 -->
-#### 1. 创建任务缓存
-
-**状态：** 已完成
-**优先级：** 中
-**创建时间：** 2025/10/19 08:59:14
-**更新时间：** 2025/10/19 09:45:00
-
-**任务描述：**
-
-场景: 创建任务时有时候会误触 esc 或者误关闭弹窗, 此时会丢失所有已填写的内容
-- [x] 关闭弹窗时不清空内容，可以做一个快捷键来清空
-
-**实现方案：**
-
-1. **修改关闭逻辑**：移除 `handleClose()` 函数中的 `resetForm()` 调用，关闭弹窗时保留表单内容
-2. **修改 watch 逻辑**：只在编辑模式（props.task 存在）时加载任务内容，创建模式时保留缓存
-3. **添加清空快捷键**：Cmd+Shift+K（macOS）/ Ctrl+Shift+K（Windows）手动清空表单
-
-```typescript
-function handleClose() {
-  emit('update:visible', false)
-  // 不再自动清空表单，保留用户输入的缓存
-  // 用户可以使用 Cmd+Shift+K 快捷键手动清空
-}
-
-watch(() => props.visible, async (newVal) => {
-  if (newVal) {
-    if (props.task) {
-      // 编辑模式：加载任务内容
-      currentTask.value = props.task
-      formData.value = { /* ... */ }
-    } else {
-      // 创建模式：保留表单缓存，不清空
-      currentTask.value = null
-      // 不调用 resetForm()，保留用户输入的缓存
-    }
-  }
-})
-```
-
-**修改文件：**
-- `src/components/TaskDialog.vue:322-326` - 移除自动清空逻辑
-- `src/components/TaskDialog.vue:95-124` - 修改 watch 逻辑
-- `src/components/TaskDialog.vue:408-415` - 添加 Cmd+Shift+K 清空快捷键
-
----
-
-# <!-- task-id: 1760835824552-b2bnvxwdq -->
-#### 2. 快捷操作优化
-
-**状态：** 已完成
-**优先级：** 中
-**标签：** 优化
-**创建时间：** 2025/10/19 09:03:44
-**更新时间：** 2025/10/19 09:45:00
-
-**任务描述：**
-
-- [x] 1. 任务详情抽屉打开时，默认选中任务标题
-- [x] 2. 添加保存并新建快捷键（Cmd+Shift+S）
-- [x] 3. 保存后自动选中任务（方便 ESC 后直接 Cmd+E 导出）
-
-**实现方案：**
-
-#### 1. 默认选中标题
-
-在抽屉打开时自动聚焦并选中标题输入框：
-
-```typescript
-// 添加 titleInputRef
-const titleInputRef = ref()
-
-// 在 watch 中添加聚焦逻辑
-watch(() => props.visible, async (newVal) => {
-  if (newVal) {
-    // ... 加载任务数据
-
-    // 等待 DOM 更新后，聚焦并选中标题输入框
-    await nextTick()
-    if (titleInputRef.value) {
-      titleInputRef.value.focus()
-      titleInputRef.value.select()
-    }
-  }
-})
-```
-
-#### 2. 保存并新建快捷键
-
-添加 Cmd+Shift+S 快捷键，保存当前任务后清空表单并切换到创建模式：
-
-```typescript
-// 保存并新建函数
-async function handleSubmitAndNew() {
-  const success = await handleSubmit()
-  if (success) {
-    resetForm()
-    currentTask.value = null
-
-    await nextTick()
-    if (titleInputRef.value) {
-      titleInputRef.value.focus()
-      titleInputRef.value.select()
-    }
-
-    ElMessage.success('已保存，可以继续创建新任务')
-  }
-}
-
-// 快捷键处理（需要在 Cmd+S 之前判断）
-if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'S') {
-  event.preventDefault()
-  if (props.visible) {
-    handleSubmitAndNew()
-  }
-}
-```
-
-#### 3. 保存后自动选中
-
-修改 TaskDialog 的 success 事件，传递任务 ID：
-
-```typescript
-// TaskDialog.vue - 修改 emit 定义
-interface Emits {
-  (e: 'update:visible', value: boolean): void
-  (e: 'success', taskId: string): void
-}
-
-// 保存成功后传递任务 ID
-emit('success', currentTask.value.id)
-```
-
-在 Board.vue 中接收并选中任务：
-
-```typescript
-const handleTaskDialogSuccess = (taskId: string) => {
-  // 清空之前的选中状态，只选中当前任务
-  selectedTasks.value.clear()
-  selectedTasks.value.add(taskId)
-}
-```
-
-**修改文件：**
-- `src/components/TaskDialog.vue:2` - 添加 nextTick 导入
-- `src/components/TaskDialog.vue:31` - 添加 titleInputRef
-- `src/components/TaskDialog.vue:117-122` - 添加聚焦逻辑
-- `src/components/TaskDialog.vue:417` - 添加 ref="titleInputRef"
-- `src/components/TaskDialog.vue:250` - handleSubmit 返回 boolean
-- `src/components/TaskDialog.vue:334-351` - 添加 handleSubmitAndNew 函数
-- `src/components/TaskDialog.vue:386-393` - 添加 Cmd+Shift+S 快捷键
-- `src/components/TaskDialog.vue:18-21` - 修改 Emits 接口
-- `src/components/TaskDialog.vue:298,325` - emit success 时传递 taskId
-- `src/views/Board.vue:204-209` - 修改 handleTaskDialogSuccess 接收并选中任务
-
----
-
-# <!-- task-id: 1760835990443-pghe0plzm -->
-#### 3. 保存任务 bug
+<!-- task-id: 1760835990443-pghe0plzm -->
+#### 1. 保存任务 bug
 
 **状态：** 已完成
 **优先级：** 中
 **标签：** Bug
 **创建时间：** 2025/10/19 09:06:30
-**更新时间：** 2025/10/19 09:45:00
+**更新时间：** 2025/10/20 22:30:00
 
 **任务描述：**
 
 创建任务 -> cmd+s
-预期: 创建任务，并且任务详情变为编辑任务（已实现）
-此时，再 cmd+s
+预期: 创建任务, 并且任务详情变为编辑任务 (已实现)
+此时, 再 cmd+s
 预期: 保存并更新任务
-实际: 又创建了一个新的任务（bug，需修复）
+实际: 又创建了一个新的任务 (bug, 需修复)
 
-**问题分析：**
+**✅ 实现说明：**
+- 已在 TaskDialog.vue 中修复该问题
+- 使用 `currentTask` 状态而不是 `props.task` 来判断是更新还是创建
+- 创建任务后更新 `currentTask.value = newTask` 使其切换为编辑模式
+- 相关文件：`src/components/TaskDialog.vue`
 
-在 `handleSubmit()` 函数中，判断是创建还是更新任务的条件是 `if (props.task)`。但是在创建任务后：
-- `props.task` 仍然是 `null`（因为是从父组件传递的，父组件没有更新）
-- 只有 `currentTask.value` 被更新为新创建的任务
+---
 
-所以再次保存时，条件 `if (props.task)` 为 false，导致又走了创建逻辑。
+<!-- task-id: 1760836110449-4xudopk19 -->
+#### 2. build 检查
 
-**解决方案：**
+**状态：** 已完成
+**优先级：** 中
+**标签：** 优化
+**创建时间：** 2025/10/19 09:08:30
+**更新时间：** 2025/10/20 22:30:00
 
-将判断条件从 `if (props.task)` 改为 `if (currentTask.value)`：
+**任务描述：**
 
-```typescript
-async function handleSubmit(): Promise<boolean> {
-  try {
-    await formRef.value?.validate()
+- [x] 目前 build 会有很多 ts 报错, 修复并保证可以 build
 
-    // 使用 currentTask 而不是 props.task 来判断是更新还是创建
-    // 这样在创建任务后再次保存时，会正确执行更新逻辑
-    if (currentTask.value) {
-      // 更新任务
-      const changes = detectChanges(currentTask.value)
-      const existingChangelog = currentTask.value.changelog || []
-      // ... 使用 currentTask.value 的所有字段
+**✅ 实现说明：**
+- 修复了所有 TypeScript 编译错误
+- 移除了未使用的导入和变量声明（共 13 处）
+- 修复了引用已删除变量的错误
+- 项目现在可以成功编译，无任何 TypeScript 错误
+- 涉及文件：
+  - `src/components/ListView.vue` - 移除未使用的 ElMessage, ElMessageBox 导入
+  - `src/components/Sidebar.vue` - 移除未使用的 computed, route 等变量
+  - `src/components/TaskDialog.vue` - 移除未使用的函数和引用
+  - `src/stores/db.ts` - 移除未使用的导入
+  - `src/views/DataManagement.vue` - 移除未使用的图标导入
 
-      const updatedTask: Task = {
-        id: currentTask.value.id,
-        projectId: currentTask.value.projectId,
-        // ... 其他字段
-      }
-      taskStore.updateTask(currentTask.value.id, updatedTask)
-      // ...
-    } else {
-      // 创建新任务
-      // ...
-      currentTask.value = newTask  // 创建后更新 currentTask
-    }
+---
 
-    return true
-  } catch (error) {
-    return false
-  }
-}
-```
+<!-- task-id: 1760836275454-v38bkire8 -->
+#### 3. UI 优化
 
-**修改文件：**
-- `src/components/TaskDialog.vue:246-298` - 将所有 `props.task` 改为 `currentTask.value`
+**状态：** 已完成
+**优先级：** 中
+**标签：** UI
+**创建时间：** 2025/10/19 09:11:15
+**更新时间：** 2025/10/20 22:30:00
+
+**任务描述：**
+
+# 菜单
+- [x] Projects 右侧新增 Add icon, 允许创建项目
+
+**✅ 实现说明：**
+- 在 Projects 页面的"新建项目"按钮中添加了 Plus 图标
+- 在"创建第一个项目"按钮中也添加了一致的图标
+- 添加了 CSS 样式确保图标正确显示
+- 相关文件：`src/views/Projects.vue`
+
+---
+
+<!-- task-id: 1760945192737-xn3qdj98f -->
+#### 4. 列表视图优化
+
+**状态：** 已完成
+**优先级：** 中
+**标签：** 功能
+**创建时间：** 2025/10/20 15:26:32
+**更新时间：** 2025/10/20 22:30:00
+
+**任务描述：**
+
+- [x] 新增创建日期和更新日期列
+- [x] 临时注释优先级列
+
+**✅ 实现说明：**
+- 在列表视图中添加了"Created"和"Updated"两列
+- 实现了智能日期格式化（相对时间显示：刚刚、X分钟前、X小时前、X天前）
+- 添加了对 `createdAt` 和 `updatedAt` 字段的排序支持
+- 注释掉了优先级列（header 和 body cell）
+- 更新了 grid-template-columns 以适应新的列布局
+- 相关文件：`src/components/ListView.vue`
+
+---
+
+<!-- task-id: 1760969328300-5mrbs7joj -->
+#### 5. 快捷键面板
+
+**状态：** 已完成
+**优先级：** 中
+**标签：** 功能
+**创建时间：** 2025/10/20 22:08:48
+**更新时间：** 2025/10/20 22:30:00
+
+**任务描述：**
+
+- [x] 右下角新增一个按钮 用来唤一个快捷键面板, 展示系统快捷键
+- [x] 在合适的地方都加上快捷键提示
+
+**✅ 实现说明：**
+- 创建了 KeyboardShortcutsPanel 组件，显示所有系统快捷键
+- 右下角悬浮按钮，点击可展开/收起快捷键面板
+- 自动检测操作系统，显示对应的快捷键符号（Mac: ⌘ / Windows: Ctrl）
+- 快捷键按分类展示（全局、看板视图、任务编辑）
+- 包含的快捷键：
+  - 全局：Cmd+B (切换侧边栏)
+  - 看板：Option+N (新建任务)、Cmd+E (导出)、Cmd+I (导入)
+  - 任务编辑：Cmd+S (保存)、Cmd+Shift+S (保存并新建)、Cmd+E (导出当前任务)、Cmd+Shift+K (清空表单)
+- 添加了漂亮的动画效果和遮罩层
+- 相关文件：
+  - `src/components/KeyboardShortcutsPanel.vue` (新建)
+  - `src/App.vue` (添加全局组件)
 
 ---
 
 
-> 📅 导出时间：2025/10/19 09:45:00
+> 📅 导出时间：2025/10/20 22:09:18
 > 🤖 由 Task Banner 生成

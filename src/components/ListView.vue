@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Task, TaskStatus } from '@/types'
 
 interface Props {
@@ -24,7 +23,7 @@ const statusFilter = ref<TaskStatus | 'all'>('all')
 const priorityFilter = ref<'all' | 'low' | 'medium' | 'high' | 'urgent'>('all')
 
 // 排序 - 默认按状态排序，待办任务在前
-const sortField = ref<'title' | 'status' | 'priority' | 'createdAt'>('status')
+const sortField = ref<'title' | 'status' | 'priority' | 'createdAt' | 'updatedAt'>('status')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
 // 分页
@@ -108,6 +107,8 @@ const filteredTasks = computed(() => {
       comparison = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority)
     } else if (sortField.value === 'createdAt') {
       comparison = a.createdAt - b.createdAt
+    } else if (sortField.value === 'updatedAt') {
+      comparison = a.updatedAt - b.updatedAt
     }
 
     return sortOrder.value === 'asc' ? comparison : -comparison
@@ -152,6 +153,36 @@ const toggleAllSelection = () => {
 // 获取标签类型
 const getTagType = (tag: string) => {
   return tagTypeMap[tag] || ''
+}
+
+// 格式化日期
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now.getTime() - timestamp
+
+  // 小于1分钟
+  if (diff < 60000) {
+    return '刚刚'
+  }
+  // 小于1小时
+  if (diff < 3600000) {
+    return `${Math.floor(diff / 60000)}分钟前`
+  }
+  // 小于24小时
+  if (diff < 86400000) {
+    return `${Math.floor(diff / 3600000)}小时前`
+  }
+  // 小于7天
+  if (diff < 604800000) {
+    return `${Math.floor(diff / 86400000)}天前`
+  }
+  // 其他情况显示完整日期
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
 }
 </script>
 
@@ -217,9 +248,21 @@ const getTagType = (tag: string) => {
             {{ sortOrder === 'asc' ? '↑' : '↓' }}
           </span>
         </div>
-        <div class="header-cell priority-cell" @click="toggleSort('priority')">
+        <!-- <div class="header-cell priority-cell" @click="toggleSort('priority')">
           <span>Priority</span>
           <span v-if="sortField === 'priority'" class="sort-icon">
+            {{ sortOrder === 'asc' ? '↑' : '↓' }}
+          </span>
+        </div> -->
+        <div class="header-cell date-cell" @click="toggleSort('createdAt')">
+          <span>Created</span>
+          <span v-if="sortField === 'createdAt'" class="sort-icon">
+            {{ sortOrder === 'asc' ? '↑' : '↓' }}
+          </span>
+        </div>
+        <div class="header-cell date-cell" @click="toggleSort('updatedAt')">
+          <span>Updated</span>
+          <span v-if="sortField === 'updatedAt'" class="sort-icon">
             {{ sortOrder === 'asc' ? '↑' : '↓' }}
           </span>
         </div>
@@ -264,11 +307,19 @@ const getTagType = (tag: string) => {
             </div>
           </div>
 
-          <div class="body-cell priority-cell">
+          <!-- <div class="body-cell priority-cell">
             <div class="priority-badge">
               <span class="priority-icon">{{ priorityIconMap[task.priority] }}</span>
               <span>{{ priorityLabelMap[task.priority] }}</span>
             </div>
+          </div> -->
+
+          <div class="body-cell date-cell">
+            <span class="date-text">{{ formatDate(task.createdAt) }}</span>
+          </div>
+
+          <div class="body-cell date-cell">
+            <span class="date-text">{{ formatDate(task.updatedAt) }}</span>
           </div>
 
           <div class="body-cell actions-cell" @click.stop>
@@ -390,7 +441,7 @@ const getTagType = (tag: string) => {
 
 .table-header {
   display: grid;
-  grid-template-columns: 40px 1fr 150px 120px 40px;
+  grid-template-columns: 40px 1fr 150px 120px 120px 40px;
   background: #f7f7f5;
   border-bottom: 1px solid #e5e5e5;
   font-size: 12px;
@@ -424,7 +475,7 @@ const getTagType = (tag: string) => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 40px 1fr 150px 120px 40px;
+  grid-template-columns: 40px 1fr 150px 120px 120px 40px;
   border-bottom: 1px solid #e5e5e5;
   transition: all 0.2s;
   cursor: pointer;
@@ -531,6 +582,16 @@ const getTagType = (tag: string) => {
 .status-badge.status-needs_optimization {
   color: #f59e0b;
   font-weight: 500;
+}
+
+.date-cell {
+  overflow: hidden;
+}
+
+.date-text {
+  font-size: 13px;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .actions-trigger {

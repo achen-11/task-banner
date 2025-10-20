@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { db, initializeDB, exportAllData, importAllData } from '@/db'
 import { useProjectStore } from './project'
 import { useTaskStore } from './task'
-import { migrateTasksToLatestVersion } from '@/utils/migration'
 
 export const useDBStore = defineStore('db', () => {
   // 初始化数据库

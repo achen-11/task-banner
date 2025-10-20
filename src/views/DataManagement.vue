@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Upload, Delete, Warning } from '@element-plus/icons-vue'
+import { Download, Upload, Delete } from '@element-plus/icons-vue'
 import { db, exportAllData, importAllData } from '@/db'
 import { useProjectStore } from '@/stores/project'
 import { useTaskStore } from '@/stores/task'

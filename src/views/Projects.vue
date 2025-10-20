@@ -79,6 +79,9 @@ const handleDialogSuccess = () => {
           <p class="text-gray-600 mt-2">共 {{ projectStore.projects.length }} 个项目</p>
         </div>
         <el-button type="primary" size="large" @click="createProject">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
           新建项目
         </el-button>
       </div>
@@ -91,6 +94,9 @@ const handleDialogSuccess = () => {
         </div>
         <p class="text-gray-500 text-lg mb-4">还没有项目</p>
         <el-button type="primary" @click="createProject">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
           创建第一个项目
         </el-button>
       </div>
@@ -184,6 +190,24 @@ const handleDialogSuccess = () => {
 .icon-large {
   width: 96px;
   height: 96px;
+}
+
+/* 按钮内图标样式 */
+.el-button svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
 }
 
 .project-card {

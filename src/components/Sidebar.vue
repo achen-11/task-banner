@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 
 const router = useRouter()
-const route = useRoute()
 const projectStore = useProjectStore()
 
-const platformExpanded = ref(true)
-const projectsExpanded = ref(true)
 const isCollapsed = ref(false) // 侧边栏是否收起
 
 const emit = defineEmits<{
@@ -36,23 +33,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
-
-const menuItems = [
-  {
-    category: 'Platform',
-    expanded: platformExpanded,
-    items: [
-      { icon: 'box', label: 'Playground', path: '/playground', hasSubmenu: true },
-      { icon: 'clock', label: 'History', path: '/history', submenu: true },
-      { icon: 'star', label: 'Starred', path: '/starred', submenu: true },
-      { icon: 'settings', label: 'Settings', path: '/settings', submenu: true },
-    ]
-  }
-]
-
-const isActive = (path: string) => {
-  return route.path === path
-}
 </script>
 
 <template>

@@ -41,8 +41,6 @@ const formData = ref({
 })
 
 const tagInput = ref('')
-const techPointInput = ref('')
-const refLinkInput = ref('')
 
 // 当前任务（用于新建后切换为编辑模式）
 const currentTask = ref<Task | null>(null)
@@ -135,8 +133,6 @@ function resetForm() {
     progress: 0,
   }
   tagInput.value = ''
-  techPointInput.value = ''
-  refLinkInput.value = ''
   formRef.value?.clearValidate()
 }
 
@@ -162,12 +158,6 @@ function removeTag(index: number) {
 // 判断标签是否已选中
 function isTagSelected(tag: string) {
   return formData.value.tags.includes(tag)
-}
-
-// 获取标签颜色类型
-function getTagType(tag: string) {
-  const predefined = predefinedTags.find(t => t.value === tag)
-  return predefined?.color || ''
 }
 
 // 创建变更日志条目
@@ -223,28 +213,6 @@ function detectChanges(oldTask: Task): ChangeLogEntry[] {
   }
 
   return changes
-}
-
-function addTechPoint() {
-  if (techPointInput.value.trim() && !formData.value.technicalPoints.includes(techPointInput.value.trim())) {
-    formData.value.technicalPoints.push(techPointInput.value.trim())
-    techPointInput.value = ''
-  }
-}
-
-function removeTechPoint(index: number) {
-  formData.value.technicalPoints.splice(index, 1)
-}
-
-function addRefLink() {
-  if (refLinkInput.value.trim() && !formData.value.referenceLinks.includes(refLinkInput.value.trim())) {
-    formData.value.referenceLinks.push(refLinkInput.value.trim())
-    refLinkInput.value = ''
-  }
-}
-
-function removeRefLink(index: number) {
-  formData.value.referenceLinks.splice(index, 1)
 }
 
 async function handleSubmit(): Promise<boolean> {
@@ -496,7 +464,7 @@ onUnmounted(() => {
 
                 <!-- 自定义标签 -->
                 <el-tag
-                  v-for="(tag, index) in formData.tags.filter(t => !predefinedTags.some(pt => pt.value === t))"
+                  v-for="tag in formData.tags.filter(t => !predefinedTags.some(pt => pt.value === t))"
                   :key="tag"
                   closable
                   @close="removeTag(formData.tags.indexOf(tag))"
