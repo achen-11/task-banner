@@ -13,6 +13,7 @@ const shortcuts = [
   {
     category: '全局',
     items: [
+      { keys: [`${modKey}+K`], description: '打开全局搜索' },
       { keys: [`${modKey}+B`], description: '收起/展开侧边栏' },
     ]
   },

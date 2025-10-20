@@ -191,6 +191,145 @@ export function importTasksFromMarkdown(
   existingTaskIds: string[] = []
 ): Partial<Task>[] {
   const tasks: Partial<Task>[] = []
+
+  // 首先尝试基于 task-id 注释分割文本
+  // 匹配 <!-- task-id: xxx --> (可能前面有 # 或其他字符)
+  const taskIdRegex = /(?:^|\n)(?:#\s*)?<!--\s*task-id:\s*(\S+)\s*-->/g
+
+  // 找到所有 task-id 及其位置
+  const taskIdMatches: Array<{ id: string; index: number }> = []
+  let match
+  while ((match = taskIdRegex.exec(markdown)) !== null) {
+    taskIdMatches.push({
+      id: match[1],
+      index: match.index
+    })
+  }
+
+  // 如果没有找到任何 task-id，使用旧的序号分割方式
+  if (taskIdMatches.length === 0) {
+    return importTasksFromMarkdownLegacy(markdown, projectId, existingTaskIds)
+  }
+
+  // 按 task-id 分割并解析每个任务
+  for (let i = 0; i < taskIdMatches.length; i++) {
+    const currentMatch = taskIdMatches[i]
+    const nextMatch = taskIdMatches[i + 1]
+
+    // 提取当前任务的内容（从当前 task-id 到下一个 task-id 或文本结尾）
+    const taskContent = markdown.substring(
+      currentMatch.index,
+      nextMatch ? nextMatch.index : markdown.length
+    )
+
+    // 解析单个任务
+    const task = parseSingleTask(taskContent, projectId, currentMatch.id, existingTaskIds, tasks.length)
+    if (task && task.title) {
+      tasks.push(task)
+    }
+  }
+
+  return tasks
+}
+
+/**
+ * 解析单个任务内容
+ */
+function parseSingleTask(
+  content: string,
+  projectId: string,
+  taskId: string,
+  existingTaskIds: string[],
+  order: number
+): Partial<Task> | null {
+  const lines = content.split('\n')
+
+  // 如果 task-id 已存在，保留原 ID（用于更新）
+  const finalTaskId = taskId
+
+  const task: Partial<Task> = {
+    id: finalTaskId,
+    projectId,
+    title: '',
+    description: '',
+    status: 'todo',
+    priority: 'medium',
+    tags: [],
+    technicalPoints: [],
+    referenceLinks: [],
+    progress: 0,
+    changelog: [],
+    order,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }
+
+  let currentSection: 'description' | 'technicalPoints' | 'referenceLinks' | null = null
+
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+
+    // 跳过 task-id 注释行
+    if (trimmedLine.includes('<!-- task-id:')) {
+      continue
+    }
+
+    // 提取任务标题 (支持 #### N. 标题 或 #### 标题)
+    const titleMatch = trimmedLine.match(/^####\s*(?:\d+\.\s*)?(.+)$/)
+    if (titleMatch && !task.title) {
+      task.title = titleMatch[1].trim()
+      continue
+    }
+
+    // 解析任务属性
+    if (trimmedLine.startsWith('**状态：**')) {
+      const statusText = trimmedLine.replace('**状态：**', '').trim()
+      task.status = parseStatusFromLabel(statusText)
+    } else if (trimmedLine.startsWith('**优先级：**')) {
+      const priorityText = trimmedLine.replace('**优先级：**', '').trim()
+      task.priority = parsePriorityFromLabel(priorityText)
+    } else if (trimmedLine.startsWith('**标签：**')) {
+      const tagsText = trimmedLine.replace('**标签：**', '').trim()
+      task.tags = tagsText.split(',').map(t => t.trim()).filter(t => t)
+    } else if (trimmedLine.startsWith('**任务描述：**')) {
+      currentSection = 'description'
+    } else if (trimmedLine.startsWith('**技术要点：**')) {
+      currentSection = 'technicalPoints'
+    } else if (trimmedLine.startsWith('**参考资料：**') || trimmedLine.startsWith('**参考链接：**')) {
+      currentSection = 'referenceLinks'
+    } else if (trimmedLine === '---' || trimmedLine.startsWith('###') || trimmedLine.startsWith('**✅')) {
+      // 任务结束或新的小节开始
+      currentSection = null
+    } else if (currentSection && trimmedLine) {
+      // 添加内容到当前章节
+      if (currentSection === 'description') {
+        task.description += (task.description ? '\n' : '') + trimmedLine
+      } else if (currentSection === 'technicalPoints') {
+        const pointMatch = trimmedLine.match(/^\d+\.\s*(.+)$/)
+        if (pointMatch && task.technicalPoints) {
+          task.technicalPoints.push(pointMatch[1].trim())
+        }
+      } else if (currentSection === 'referenceLinks') {
+        const linkMatch = trimmedLine.match(/^\d+\.\s*(.+)$/)
+        if (linkMatch && task.referenceLinks) {
+          task.referenceLinks.push(linkMatch[1].trim())
+        }
+      }
+    }
+  }
+
+  return task
+}
+
+/**
+ * 旧版导入方法（基于序号分割）- 作为降级方案
+ */
+function importTasksFromMarkdownLegacy(
+  markdown: string,
+  projectId: string,
+  existingTaskIds: string[] = []
+): Partial<Task>[] {
+  const tasks: Partial<Task>[] = []
   const lines = markdown.split('\n')
 
   let currentTask: Partial<Task> | null = null
