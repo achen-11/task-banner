@@ -91,16 +91,27 @@ async function handleImport() {
               }))
             : []
 
-          // 添加变更日志
-          const changes = [{
-            timestamp: Date.now(),
-            field: 'AI回填',
-            oldValue: '任务更新前',
-            newValue: '任务已通过AI回填更新',
-            action: 'AI回填更新了任务内容'
-          }]
-
-          fullTask.changelog = [...clonedExistingChangelog, ...changes]
+          // 优先使用导入内容中的 changelog，如果没有则添加导入记录
+          if (parsedTask.changelog && parsedTask.changelog.length > 0) {
+            // 使用导入的 changelog（保留完整的迭代历史）
+            fullTask.changelog = parsedTask.changelog.map(entry => ({
+              timestamp: entry.timestamp || Date.now(),
+              field: entry.field || '',
+              oldValue: entry.oldValue || '',
+              newValue: entry.newValue || '',
+              action: entry.action || ''
+            }))
+          } else {
+            // 如果导入的任务没有 changelog，则创建一条导入记录
+            const changes = [{
+              timestamp: Date.now(),
+              field: 'AI回填',
+              oldValue: '任务更新前',
+              newValue: '任务已通过AI回填更新',
+              action: 'AI回填更新了任务内容'
+            }]
+            fullTask.changelog = [...clonedExistingChangelog, ...changes]
+          }
 
           taskStore.updateTask(fullTask.id, fullTask)
           await dbStore.saveTask(fullTask)

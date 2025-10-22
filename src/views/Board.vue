@@ -308,14 +308,22 @@ const handleImportShortcut = async () => {
         technicalPoints: taskData.technicalPoints ? [...taskData.technicalPoints] : (existingTask.technicalPoints ? [...existingTask.technicalPoints] : undefined),
         referenceLinks: taskData.referenceLinks ? [...taskData.referenceLinks] : (existingTask.referenceLinks ? [...existingTask.referenceLinks] : undefined),
         progress: taskData.progress !== undefined ? taskData.progress : existingTask.progress,
-        // 确保 changelog 也是纯数组
-        changelog: existingTask.changelog ? existingTask.changelog.map(entry => ({
-          timestamp: entry.timestamp,
-          field: entry.field,
-          oldValue: entry.oldValue,
-          newValue: entry.newValue,
-          action: entry.action
-        })) : [],
+        // 优先使用导入内容中的 changelog，如果没有则保留现有的
+        changelog: taskData.changelog && taskData.changelog.length > 0
+          ? taskData.changelog.map(entry => ({
+              timestamp: entry.timestamp || Date.now(),
+              field: entry.field || '',
+              oldValue: entry.oldValue || '',
+              newValue: entry.newValue || '',
+              action: entry.action || ''
+            }))
+          : (existingTask.changelog ? existingTask.changelog.map(entry => ({
+              timestamp: entry.timestamp,
+              field: entry.field,
+              oldValue: entry.oldValue,
+              newValue: entry.newValue,
+              action: entry.action
+            })) : []),
         updatedAt: Date.now(),
       }
       taskStore.updateTask(taskData.id!, updatedTask)

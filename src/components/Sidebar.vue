@@ -102,6 +102,11 @@ onUnmounted(() => {
       <div class="nav-section">
         <div class="nav-section-header">
           <span class="nav-section-title">Projects</span>
+          <button class="icon-button" @click="router.push('/projects')">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </button>
         </div>
         <div class="nav-items">
           <div
@@ -285,6 +290,9 @@ onUnmounted(() => {
 .nav-section-header {
   padding: 4px 16px;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .nav-section-title {

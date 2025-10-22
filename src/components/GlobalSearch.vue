@@ -161,7 +161,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
 // 全局快捷键 (Cmd+K 或 Ctrl+K)
 function handleGlobalKeyDown(event: KeyboardEvent) {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+  // 只响应 Cmd+K，不响应 Cmd+Shift+K（避免与表单清空快捷键冲突）
+  if ((event.metaKey || event.ctrlKey) && event.key === 'k' && !event.shiftKey) {
     event.preventDefault()
     if (visible.value) {
       closeSearch()
