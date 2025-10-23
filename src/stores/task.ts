@@ -24,7 +24,23 @@ export const useTaskStore = defineStore('task', () => {
   })
 
   const allTasks = computed(() => {
-    return tasks.value.sort((a, b) => b.createdAt - a.createdAt)
+    // 定义状态优先级（值越小优先级越高）
+    const statusOrder: Record<TaskStatus, number> = {
+      'in_progress': 1,
+      'sent_to_ai': 2,
+      'needs_optimization': 3,
+      'todo': 4,
+      'completed': 5
+    }
+
+    return tasks.value.sort((a, b) => {
+      // 先按状态排序
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+      if (statusDiff !== 0) return statusDiff
+
+      // 状态相同时，按更新时间降序排序（最新的在前）
+      return b.updatedAt - a.updatedAt
+    })
   })
 
   // Actions

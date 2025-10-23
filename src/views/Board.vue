@@ -29,6 +29,11 @@ const editingTask = ref<Task | null>(null)
 const selectedTasks = ref<Set<string>>(new Set())
 const viewMode = ref<'board' | 'list'>('list') // 视图模式：看板或列表
 
+// 检测操作系统
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+const modKey = isMac ? '⌘' : 'Ctrl'
+const altKey = isMac ? '⌥' : 'Alt'
+
 // 任务列状态配置
 const columns = [
   { status: 'todo' as TaskStatus, label: '待办', color: 'bg-gray-100' },
@@ -441,22 +446,30 @@ onUnmounted(() => {
               </el-button>
             </el-button-group>
 
-            <el-button
-              type="info"
-              @click="importTasks"
-            >
-              导入任务
-            </el-button>
-            <el-button
-              v-if="selectedTasks.size > 0"
-              type="success"
-              @click="exportTasks"
-            >
-              导出选中 ({{ selectedTasks.size }})
-            </el-button>
-            <el-button type="primary" @click="createTask">
-              新建任务
-            </el-button>
+            <el-tooltip :content="`快捷键: ${modKey}+I`" placement="bottom">
+              <el-button
+                type="info"
+                @click="importTasks"
+              >
+                导入任务
+              </el-button>
+            </el-tooltip>
+            <el-tooltip v-if="selectedTasks.size > 0" :content="`快捷键: ${modKey}+E`" placement="bottom">
+              <el-button
+                type="success"
+                @click="exportTasks"
+              >
+                导出选中 ({{ selectedTasks.size }})
+              </el-button>
+            </el-tooltip>
+            <el-tooltip :content="`快捷键: ${altKey}+N`" placement="bottom">
+              <el-button
+                type="primary"
+                @click="createTask"
+              >
+                新建任务
+              </el-button>
+            </el-tooltip>
           </div>
         </div>
 

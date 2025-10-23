@@ -48,6 +48,10 @@ const currentTask = ref<Task | null>(null)
 // Markdown 预览模式
 const isPreviewMode = ref(false)
 
+// 检测操作系统
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+const modKey = isMac ? '⌘' : 'Ctrl'
+
 // 渲染 Markdown
 const renderedMarkdown = computed(() => {
   if (!formData.value.description) return ''
@@ -624,10 +628,35 @@ onUnmounted(() => {
 
     <template #footer>
       <div class="drawer-footer">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">
-          {{ currentTask ? '保存' : '创建' }}
-        </el-button>
+        <div class="shortcut-hints">
+          <div class="hint-item">
+            <kbd>{{ modKey }}+S</kbd>
+            <span>保存</span>
+          </div>
+          <div class="hint-item">
+            <kbd>{{ modKey }}+Shift+S</kbd>
+            <span>保存并新建</span>
+          </div>
+          <div class="hint-item">
+            <kbd>{{ modKey }}+E</kbd>
+            <span>导出</span>
+          </div>
+          <div class="hint-item">
+            <kbd>{{ modKey }}+Shift+K</kbd>
+            <span>清空</span>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <el-button @click="handleClose">取消</el-button>
+          <el-tooltip :content="`快捷键: ${modKey}+S`" placement="top">
+            <el-button
+              type="primary"
+              @click="handleSubmit"
+            >
+              {{ currentTask ? '保存' : '创建' }}
+            </el-button>
+          </el-tooltip>
+        </div>
       </div>
     </template>
   </el-drawer>
@@ -703,9 +732,45 @@ onUnmounted(() => {
 
 .drawer-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   padding: 16px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.shortcut-hints {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.hint-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.hint-item kbd {
+  padding: 3px 6px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hint-item span {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* 迭代历史样式 */
