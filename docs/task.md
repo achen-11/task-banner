@@ -21,76 +21,52 @@
 
 ## 任务列表
 
-共 2 个任务
+共 1 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 1760973811078-760g44pw9 -->
-#### 1. 快捷键提示
-
-**状态：** 已完成
-**优先级：** 中
-**创建时间：** 2025/10/20 23:23:31
-**更新时间：** 2025/10/23 10:00:00
-
-**任务描述：**
-
-- [x] 添加 title 属性是好的, 但反馈不够及时, 需要类似 tooltip 这种的反馈才会更及时
-
-**实现说明：**
-
-使用 Element Plus 的 `el-tooltip` 组件替换原生 `title` 属性，提供即时的视觉反馈。
-
-**技术要点：**
-
-- 修改文件：
-  - `src/components/TaskDialog.vue:651-658` - 保存按钮添加 tooltip
-  - `src/views/Board.vue:449-472` - 导入任务、导出选中、新建任务按钮添加 tooltip
-- 使用 `el-tooltip` 组件包裹按钮，提供更好的用户体验
-- 设置 `placement` 属性控制提示位置（top/bottom）
-
-**参考链接：**
-
-- [Element Plus Tooltip 组件文档](https://element-plus.org/zh-CN/component/tooltip.html)
-
----
-
 <!-- task-id: 1761184818764-4xbypp5nu -->
-#### 2. 任务列表-排序
+#### 1. 任务列表-排序
 
 **状态：** 已完成
 **优先级：** 中
 **创建时间：** 2025/10/23 10:00:18
-**更新时间：** 2025/10/23 10:05:00
+**更新时间：** 2025/10/23 11:10:00
 
 **任务描述：**
 
-- [x] 调整默认排序: 先按状态排序, 后根据 update 进行排序
+- [x] 目前看起来并没有效果
+- [x] 检查并修复排序问题
+- [x] 可以移除默认的 status 排序, 但需要完成待办靠前, 且根据更新时间降序的效果
 
 **实现说明：**
 
-在任务列表的排序逻辑中，实现了两级排序：首先按任务状态优先级排序，相同状态下再按更新时间降序排序（最新的在前）。
+问题原因：之前在 `task.ts` 的 `allTasks` 中实现的排序逻辑没有被实际使用。列表视图使用的是 `allProjectTasks`，它调用 `getTasksByProject` 按 `order` 字段排序。
+
+解决方案：在 Board.vue 中创建新的 `sortedProjectTasks` computed 属性，专门为列表视图提供排序后的任务列表。简化排序逻辑为：
+- 已完成的任务排在后面
+- 其他任务（待办、进行中等）排在前面
+- 相同状态下按更新时间降序排序（最新的在前）
 
 **技术要点：**
 
 - 修改文件：
-  - `src/stores/task.ts:26-44` - 修改 `allTasks` computed 属性的排序逻辑
-- 定义状态优先级顺序：
-  1. `in_progress` (进行中) - 优先级最高
-  2. `sent_to_ai` (发送到AI)
-  3. `needs_optimization` (需要优化)
-  4. `todo` (待办)
-  5. `completed` (已完成) - 优先级最低
-- 使用复合排序：先比较状态优先级，相同状态下再按 `updatedAt` 降序排序
-- 确保最新更新的任务在相同状态分组内优先显示
+  - `src/views/Board.vue:166-178` - 新增 `sortedProjectTasks` computed 属性
+  - `src/views/Board.vue:601` - ListView 使用 `sortedProjectTasks` 替代 `allProjectTasks`
+  - `src/stores/task.ts:26-28` - 恢复 `allTasks` 为简单的按创建时间排序
+- 排序逻辑：
+  - 第一优先级：已完成的任务 (`status === 'completed'`) 排在后面
+  - 第二优先级：相同状态分组内，按 `updatedAt` 降序排序
+- 使用 `[...array]` 创建数组副本避免直接修改原数组
+- 只影响列表视图的排序，看板视图保持原有的按列分组+order排序逻辑
 
 **参考链接：**
 
-- [TypeScript Record 类型](https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type)
-- [Array.prototype.sort() - MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/sort)
+- [Vue 3 Computed Properties](https://vuejs.org/guide/essentials/computed.html)
+- [JavaScript Array.sort()](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/sort)
 
 ---
 
 
-> 📅 导出时间：2025/10/23 10:00:24
+> 📅 导出时间：2025/10/23 11:03:03
 > 🤖 由 Task Banner 生成

@@ -163,6 +163,20 @@ const allProjectTasks = computed(() => {
   return taskStore.getTasksByProject(projectId.value)
 })
 
+// 获取排序后的任务列表（用于列表视图）
+const sortedProjectTasks = computed(() => {
+  const tasks = [...taskStore.getTasksByProject(projectId.value)]
+
+  return tasks.sort((a, b) => {
+    // 已完成的任务排在后面
+    if (a.status === 'completed' && b.status !== 'completed') return 1
+    if (a.status !== 'completed' && b.status === 'completed') return -1
+
+    // 相同状态下，按更新时间降序排序（最新的在前）
+    return b.updatedAt - a.updatedAt
+  })
+})
+
 // 获取选中的任务列表
 const getSelectedTasks = computed(() => {
   return taskStore.tasks.filter(task => selectedTasks.value.has(task.id))
@@ -584,7 +598,7 @@ onUnmounted(() => {
       <!-- 列表视图 -->
       <ListView
         v-if="viewMode === 'list'"
-        :tasks="allProjectTasks"
+        :tasks="sortedProjectTasks"
         :selected-tasks="selectedTasks"
         @toggle-selection="toggleTaskSelection"
         @toggle-all-selection="toggleAllSelection"
