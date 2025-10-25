@@ -25,76 +25,125 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761403337408-s881dt303 -->
-#### 1. project api - 创建项目 api 异常
+<!-- task-id: 1761405234174-rjbix3ibv -->
+#### 1. 接入 project api
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/25 22:42:17
-**更新时间：** 2025/10/25 22:42:21
+**创建时间：** 2025/10/25 23:13:54
+**更新时间：** 2025/10/25 23:13:56
 
 **任务描述：**
 
-测试用例返回: {
-  "code": 500,
-  "message": "Failed to create project",
-  "data": null
-},
-- [x] 异常信息使用 k.logger 进行返回
-- [x] 检查异常问题并修复
+- [x] 前端接入 project api
 
 **实现说明：**
 
-已成功修复创建项目 API 及所有相关 API 端点的异常处理问题：
+已完成前端 Project API 的完整接入，包括以下内容：
 
-1. **根本原因分析**
-   - `getUserInfo(username)` 调用在 try-catch 块外部，导致异常无法被捕获
-   - 如果用户信息获取失败（如用户不存在、数据库创建失败等），会抛出未捕获的异常
+#### 1. 目录结构
 
-2. **修复内容**（文件：`src/api/project.ts`）
-   - ✅ 将所有 8 个 API 端点的 `getUserInfo()` 调用移入 try-catch 块
-   - ✅ 为每个端点添加详细的 k.logger.error 日志记录
-   - ✅ 优化代码结构，将参数验证前置，减少不必要的操作
+```
+frontend/src/
+├── api/
+│   ├── project.ts          # 项目 API 调用封装
+│   └── README.md           # API 使用文档
+├── types/
+│   └── project.ts          # 项目相关类型定义
+└── stores/
+    └── project.ts          # 项目状态管理（Pinia）
+```
 
-3. **修复的 API 端点**
-   - GET `/api/project/list` - 获取项目列表
-   - GET `/api/project/detail` - 获取项目详情
-   - GET `/api/project/members` - 获取项目成员
-   - POST `/api/project/create` - 创建项目（主要问题点）
-   - POST `/api/project/addMember` - 添加成员
-   - PUT `/api/project/update` - 更新项目
-   - DELETE `/api/project/removeMember` - 移除成员
-   - DELETE `/api/project/delete` - 删除项目
+#### 2. 类型定义 (`types/project.ts`)
 
-4. **日志增强**
-   - 每个端点都添加了独立的错误标识（如 CreateProjectError, UpdateProjectError）
-   - 使用 `k.logger.error(tag, message, errorObject)` 记录详细错误信息
-   - 保留完整的错误堆栈信息，便于调试
+定义了完整的 TypeScript 类型：
+- `Project` - 项目信息接口
+- `ProjectMember` - 项目成员接口
+- `CreateProjectParams` - 创建项目参数
+- `UpdateProjectParams` - 更新项目参数
+- `AddMemberParams` - 添加成员参数
+- `RemoveMemberParams` - 移除成员参数
+- `ProjectListResponse` - 项目列表响应
+- `MemberListResponse` - 成员列表响应
 
-5. **技术要点**
-   - 确保所有可能抛出异常的代码都在 try-catch 块内
-   - 异常日志记录包含错误标识、消息和完整错误对象
-   - 保持 API 响应格式的一致性
+#### 3. API 调用封装 (`api/project.ts`)
 
-6. **后续发现：时间戳字段问题（已在底层修复）**
+实现了 8 个 API 方法：
 
-   错误信息："Not the correct time format{ key: joinedAt, value: function default() { [native code] }}"
+**项目管理：**
+- `getProjectList(page, size)` - 获取项目列表（分页）
+- `getProjectDetail(id)` - 获取项目详情
+- `createProject(data)` - 创建新项目
+- `updateProject(data)` - 更新项目信息
+- `deleteProject(id)` - 删除项目
 
-   **问题原因：**
-   - ProjectMember 模型的 `joinedAt` 字段使用了 `default: () => Date.now()` 函数
-   - k_sqlite ORM 的旧版本存在 bug，不会正确执行默认值函数，而是将函数本身作为值传递
+**成员管理：**
+- `getProjectMembers(projectId)` - 获取项目成员列表
+- `addProjectMember(data)` - 添加项目成员
+- `removeProjectMember(data)` - 移除项目成员
 
-   **最终解决方案：**
-   - ✅ **已在 k_sqlite 底层修复**：更新了 k_sqlite 代码，修复了 default 函数无法正常执行的问题
-   - ✅ 现在可以正常使用 `default: () => Date.now()` 等函数类型的默认值定义
-   - ✅ 无需在应用层代码中显式传递时间戳值（ORM 会自动处理）
+#### 4. 状态管理 (`stores/project.ts`)
 
-   **修复级别：** 底层框架修复（k_sqlite）
+使用 Pinia 实现完整的状态管理：
 
-   **影响范围：** 所有使用函数类型默认值的字段现在都能正常工作
+**状态：**
+- `projects` - 项目列表
+- `currentProject` - 当前选中的项目
+- `loading` - 加载状态
+- `total` - 项目总数
+
+**计算属性：**
+- `activeProjects` - 活跃项目列表
+- `completedProjects` - 已完成项目列表
+- `pausedProjects` - 暂停的项目列表
+
+**方法：**
+- `fetchProjects()` - 获取项目列表
+- `fetchProjectDetail()` - 获取项目详情
+- `createProject()` - 创建项目
+- `updateProject()` - 更新项目
+- `deleteProject()` - 删除项目
+- `findProjectById()` - 根据 ID 查找项目
+- `setCurrentProject()` - 设置当前项目
+- `reset()` - 清空状态
+
+#### 5. 技术要点
+
+- ✅ 使用现有的 `utils/request.ts` 进行 HTTP 请求
+- ✅ 响应拦截器自动处理 code 200 并返回 data.data
+- ✅ 所有 ID 字段类型为 `string`（与后端 Kooboo _id 保持一致）
+- ✅ 时间字段为毫秒级时间戳（number 类型）
+- ✅ 完整的 TypeScript 类型支持
+- ✅ 错误处理和日志记录
+- ✅ Pinia 响应式状态管理
+
+#### 6. 使用方式
+
+**方式一：直接调用 API（一次性操作）**
+```typescript
+import { createProject } from '@/api/project'
+const project = await createProject({ name: '新项目' })
+```
+
+**方式二：使用 Pinia Store（组件中推荐）**
+```vue
+<script setup lang="ts">
+import { useProjectStore } from '@/stores/project'
+const projectStore = useProjectStore()
+await projectStore.fetchProjects()
+</script>
+```
+
+#### 7. 文档
+
+创建了详细的使用文档 `frontend/src/api/README.md`，包含：
+- API 方法列表和参数说明
+- 完整的使用示例
+- 错误处理指南
+- 注意事项和最佳实践
 
 ---
 
 
-> 📅 导出时间：2025/10/25 22:42:22
+> 📅 导出时间：2025/10/25 23:13:58
 > 🤖 由 Task Banner 生成
