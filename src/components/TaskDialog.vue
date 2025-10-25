@@ -385,6 +385,12 @@ function handleKeyDown(event: KeyboardEvent) {
     if (props.visible) {
       resetForm()
       ElMessage.success('已清空表单内容')
+      // 清空后自动聚焦到标题输入框
+      nextTick(() => {
+        if (titleInputRef.value) {
+          titleInputRef.value.focus()
+        }
+      })
     }
   }
 }
