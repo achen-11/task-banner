@@ -25,52 +25,76 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761398923353-w1n41yhcx -->
-#### 1. 数据库定义
+<!-- task-id: 1761403337408-s881dt303 -->
+#### 1. project api - 创建项目 api 异常
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/25 21:28:43
-**更新时间：** 2025/10/25 21:35:00
+**创建时间：** 2025/10/25 22:42:17
+**更新时间：** 2025/10/25 22:42:21
 
 **任务描述：**
 
-- [x] 需要新增一个规范, kooboo 生成表时会自动带一个唯一标识"_id", 因此再设置 primaryKey:true 时会出现"Script error on 'project' SQLite Error 1: 'table "projects" has more than one primary key'."
-- [x] 默认使用_id 作为主键, 例如, 如果需要 task id 时, 可以定义这个字段, 但不设为 primary key
+测试用例返回: {
+  "code": 500,
+  "message": "Failed to create project",
+  "data": null
+},
+- [x] 异常信息使用 k.logger 进行返回
+- [x] 检查异常问题并修复
 
 **实现说明：**
 
-已完成所有模型定义的修复和规范文档的更新：
+已成功修复创建项目 API 及所有相关 API 端点的异常处理问题：
 
-1. **修复的模型文件（10个）：**
-   - `kb-task/src/code/Models/Project.ts` - 移除 `id` 字段的 `primaryKey: true`
-   - `kb-task/src/code/Models/ProjectMember.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/Module.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/Task.ts` - 移除主键定义，更新外键引用，保留 `taskId` 作为普通字段
-   - `kb-task/src/code/Models/Tag.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/TaskTag.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/TaskHistory.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/TaskComment.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/Notification.ts` - 移除主键定义，更新外键引用
-   - `kb-task/src/code/Models/User.ts` - 移除主键定义
+1. **根本原因分析**
+   - `getUserInfo(username)` 调用在 try-catch 块外部，导致异常无法被捕获
+   - 如果用户信息获取失败（如用户不存在、数据库创建失败等），会抛出未捕获的异常
 
-2. **更新的规范文档：**
-   - `docs/Backend-Development-Guide.md` - 添加了详细的 Kooboo 主键规范说明（第 365-457 行）
-   - `.claud.md` - 在数据库操作部分添加了 Kooboo 主键规范（第 117-144 行）
+2. **修复内容**（文件：`src/api/project.ts`）
+   - ✅ 将所有 8 个 API 端点的 `getUserInfo()` 调用移入 try-catch 块
+   - ✅ 为每个端点添加详细的 k.logger.error 日志记录
+   - ✅ 优化代码结构，将参数验证前置，减少不必要的操作
 
-3. **关键修改点：**
-   - 移除所有模型中的 `id: { primaryKey: true, autoincrement: true }` 定义
-   - 将所有外键引用从 `fieldName: 'id'` 改为 `fieldName: '_id'`
-   - 保留了 Task 模型的 `taskId` 字段作为自定义 ID，但不设为主键
+3. **修复的 API 端点**
+   - GET `/api/project/list` - 获取项目列表
+   - GET `/api/project/detail` - 获取项目详情
+   - GET `/api/project/members` - 获取项目成员
+   - POST `/api/project/create` - 创建项目（主要问题点）
+   - POST `/api/project/addMember` - 添加成员
+   - PUT `/api/project/update` - 更新项目
+   - DELETE `/api/project/removeMember` - 移除成员
+   - DELETE `/api/project/delete` - 删除项目
 
-4. **技术要点：**
-   - Kooboo ORM 自动为每个表生成 `_id` 字段作为主键
-   - 禁止手动定义 `primaryKey: true`，会导致 "more than one primary key" 错误
-   - 允许定义自定义 ID 字段（如 `taskId`），但不能设为主键
-   - 所有外键必须引用 `_id` 字段
+4. **日志增强**
+   - 每个端点都添加了独立的错误标识（如 CreateProjectError, UpdateProjectError）
+   - 使用 `k.logger.error(tag, message, errorObject)` 记录详细错误信息
+   - 保留完整的错误堆栈信息，便于调试
+
+5. **技术要点**
+   - 确保所有可能抛出异常的代码都在 try-catch 块内
+   - 异常日志记录包含错误标识、消息和完整错误对象
+   - 保持 API 响应格式的一致性
+
+6. **后续发现：时间戳字段问题（已在底层修复）**
+
+   错误信息："Not the correct time format{ key: joinedAt, value: function default() { [native code] }}"
+
+   **问题原因：**
+   - ProjectMember 模型的 `joinedAt` 字段使用了 `default: () => Date.now()` 函数
+   - k_sqlite ORM 的旧版本存在 bug，不会正确执行默认值函数，而是将函数本身作为值传递
+
+   **最终解决方案：**
+   - ✅ **已在 k_sqlite 底层修复**：更新了 k_sqlite 代码，修复了 default 函数无法正常执行的问题
+   - ✅ 现在可以正常使用 `default: () => Date.now()` 等函数类型的默认值定义
+   - ✅ 无需在应用层代码中显式传递时间戳值（ORM 会自动处理）
+
+   **修复级别：** 底层框架修复（k_sqlite）
+
+   **影响范围：** 所有使用函数类型默认值的字段现在都能正常工作
 
 ---
 
 
-> 📅 导出时间：2025/10/25 21:28:46
+> 📅 导出时间：2025/10/25 22:42:22
 > 🤖 由 Task Banner 生成

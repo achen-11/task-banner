@@ -21,17 +21,17 @@ k.api.get("list", () => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 获取分页参数
+  // 2. 获取分页参数
   const query = k.request.queryString as unknown as { page: string, size: string }
   const page = parseInt(query?.page) || 1
   const size = parseInt(query?.size) || 20
 
-  // 4. 获取项目列表
+  // 3. 获取项目列表
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
     const projects = getUserProjects(currentUser._id)
 
     return success({
@@ -42,6 +42,7 @@ k.api.get("list", () => {
     })
 
   } catch (err) {
+    k.logger.error('GetProjectListError', err instanceof Error ? err.message : String(err))
     return error('Failed to get projects', 500, err)
   }
 })
@@ -53,11 +54,7 @@ k.api.get("detail", () => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const query = k.request.queryString as unknown as { id: string }
   const projectId = query.id
 
@@ -65,13 +62,17 @@ k.api.get("detail", () => {
     return error('Invalid project ID', 400)
   }
 
-  // 4. 权限检查
-  if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
-    return error('You do not have permission to access this project', 403)
-  }
-
-  // 5. 获取项目详情
+  // 3. 获取项目详情
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查
+    if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to access this project', 403)
+    }
+
     const project = getProjectById(projectId)
 
     if (!project) {
@@ -81,6 +82,7 @@ k.api.get("detail", () => {
     return success(project)
 
   } catch (err) {
+    k.logger.error('GetProjectDetailError', err instanceof Error ? err.message : String(err))
     return error('Failed to get project', 500, err)
   }
 })
@@ -92,11 +94,7 @@ k.api.get("members", () => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const query = k.request.queryString as unknown as { projectId: string }
   const projectId = query?.projectId
 
@@ -104,13 +102,17 @@ k.api.get("members", () => {
     return error('Invalid project ID', 400)
   }
 
-  // 4. 权限检查
-  if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
-    return error('You do not have permission to view members', 403)
-  }
-
-  // 5. 获取成员列表
+  // 3. 获取成员列表
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查
+    if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to view members', 403)
+    }
+
     const memberList = getProjectMembers(projectId)
 
     return success({
@@ -119,6 +121,7 @@ k.api.get("members", () => {
     })
 
   } catch (err) {
+    k.logger.error('GetProjectMembersError', err instanceof Error ? err.message : String(err))
     return error('Failed to get members', 500, err)
   }
 })
@@ -130,19 +133,19 @@ k.api.post("create", (body: any) => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const { name, description, color } = body
 
   if (!name || name.trim() === '') {
     return error('Project name is required', 400)
   }
 
-  // 4. 创建项目
+  // 3. 创建项目
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
     const projectId = createProject(
       {
         name: name.trim(),
@@ -152,11 +155,12 @@ k.api.post("create", (body: any) => {
       currentUser._id
     )
 
-    // 5. 获取项目详情
+    // 4. 获取项目详情
     const project = getProjectById(projectId)
     return success(project, 'Project created successfully')
 
   } catch (err) {
+    k.logger.error('CreateProjectError', err instanceof Error ? err.message : String(err))
     return error('Failed to create project', 500, err)
   }
 })
@@ -168,11 +172,7 @@ k.api.post("addMember", (body: any) => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const { projectId, userId, role } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
@@ -183,18 +183,23 @@ k.api.post("addMember", (body: any) => {
     return error('User ID is required', 400)
   }
 
-  // 4. 权限检查（需要 admin 权限）
-  if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
-    return error('You do not have permission to add members', 403)
-  }
-
-  // 5. 添加成员
+  // 3. 添加成员
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查（需要 admin 权限）
+    if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
+      return error('You do not have permission to add members', 403)
+    }
+
     const memberId = addProjectMember(projectId, userId, role || 'member')
 
     return success({ id: memberId }, 'Member added successfully')
 
   } catch (err) {
+    k.logger.error('AddProjectMemberError', err instanceof Error ? err.message : String(err))
     return error(err instanceof Error ? err.message : 'Failed to add member', 400, err)
   }
 })
@@ -206,11 +211,7 @@ k.api.put("update", (body: any) => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const { id, name, description, color } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
@@ -219,13 +220,17 @@ k.api.put("update", (body: any) => {
 
   const projectId = id
 
-  // 4. 权限检查（需要 admin 权限）
-  if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
-    return error('You do not have permission to update this project', 403)
-  }
-
-  // 5. 更新项目
+  // 3. 更新项目
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查（需要 admin 权限）
+    if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
+      return error('You do not have permission to update this project', 403)
+    }
+
     const updated = updateProject(projectId, {
       name: name?.trim(),
       description: description,
@@ -236,11 +241,12 @@ k.api.put("update", (body: any) => {
       return error('Failed to update project', 500)
     }
 
-    // 6. 获取更新后的项目详情
+    // 获取更新后的项目详情
     const project = getProjectById(projectId)
     return success(project, 'Project updated successfully')
 
   } catch (err) {
+    k.logger.error('UpdateProjectError', err instanceof Error ? err.message : String(err))
     return error('Failed to update project', 500, err)
   }
 })
@@ -252,11 +258,7 @@ k.api.delete("removeMember", (body: any) => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const { projectId, userId } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
@@ -267,13 +269,17 @@ k.api.delete("removeMember", (body: any) => {
     return error('Invalid user ID', 400)
   }
 
-  // 4. 权限检查（需要 admin 权限）
-  if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
-    return error('You do not have permission to remove members', 403)
-  }
-
-  // 5. 移除成员
+  // 3. 移除成员
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查（需要 admin 权限）
+    if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
+      return error('You do not have permission to remove members', 403)
+    }
+
     const removed = removeProjectMember(projectId, userId)
 
     if (!removed) {
@@ -283,6 +289,7 @@ k.api.delete("removeMember", (body: any) => {
     return success(null, 'Member removed successfully')
 
   } catch (err) {
+    k.logger.error('RemoveProjectMemberError', err instanceof Error ? err.message : String(err))
     return error(err instanceof Error ? err.message : 'Failed to remove member', 400, err)
   }
 })
@@ -294,11 +301,7 @@ k.api.delete("delete", (body: any) => {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
-  // 3. 参数验证
+  // 2. 参数验证
   const { id } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
@@ -307,13 +310,17 @@ k.api.delete("delete", (body: any) => {
 
   const projectId = id
 
-  // 4. 权限检查（需要 owner 权限）
-  if (!checkProjectPermission(projectId, currentUser._id, 'owner')) {
-    return error('Only project owner can delete the project', 403)
-  }
-
-  // 5. 删除项目
+  // 3. 删除项目
   try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查（需要 owner 权限）
+    if (!checkProjectPermission(projectId, currentUser._id, 'owner')) {
+      return error('Only project owner can delete the project', 403)
+    }
+
     const deleted = deleteProject(projectId)
 
     if (!deleted) {
@@ -323,6 +330,7 @@ k.api.delete("delete", (body: any) => {
     return success(null, 'Project deleted successfully')
 
   } catch (err) {
+    k.logger.error('DeleteProjectError', err instanceof Error ? err.message : String(err))
     return error('Failed to delete project', 500, err)
   }
 })
