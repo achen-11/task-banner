@@ -70,12 +70,16 @@
         </div>
 
         <!-- 项目列表 -->
+        <div v-if="projectStore.loading" class="px-2 py-4 text-center">
+          <div class="text-sm text-gray-500">加载中...</div>
+        </div>
         <router-link
-          v-for="project in projects"
-          :key="project.id"
-          :to="`/projects/${project.id}`"
+          v-else
+          v-for="project in projectStore.projects"
+          :key="project._id"
+          :to="`/projects/${project._id}`"
           class="sidebar-menu"
-          :class="{ 'bg-zinc-200': isActive(`/projects/${project.id}`) }"
+          :class="{ 'bg-zinc-200': isActive(`/projects/${project._id}`) }"
         >
           <div
             class="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
@@ -86,6 +90,12 @@
           <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2 truncate">{{ project.name }}</div>
         </router-link>
       </nav>
+
+      <!-- 创建项目对话框 -->
+      <CreateProjectDialog
+        v-model="showCreateProject"
+        @created="handleProjectCreated"
+      />
 
       <!-- 底部用户信息 -->
       <div class="relative rounded-md" :class="{ 'p-2 hover:bg-gray-200': !isCollapsed, 'p-0': isCollapsed }">
@@ -135,12 +145,15 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCurrentUser, logout } from '@/utils/auth'
+import { useProjectStore } from '@/stores/project'
+import CreateProjectDialog from './CreateProjectDialog.vue'
 
 defineProps<{
   isCollapsed: boolean
 }>()
 
 const route = useRoute()
+const projectStore = useProjectStore()
 
 // 当前用户
 const currentUser = ref<any>(null)
@@ -154,9 +167,6 @@ const userInitials = computed(() => {
 
 // 未读消息数
 const unreadCount = ref(0)
-
-// 项目列表
-const projects = ref<any[]>([])
 
 // 创建项目对话框
 const showCreateProject = ref(false)
@@ -187,15 +197,17 @@ const handleClickOutside = (event: MouseEvent) => {
 
 // 加载项目列表
 const loadProjects = async () => {
-  // TODO: 从 API 加载项目列表
-  projects.value = [
-    { id: 1, name: 'ERP', color: '#6366f1' },
-    { id: 2, name: '优作', color: '#10b981' },
-    { id: 3, name: 'kooboo-cli', color: '#f59e0b' },
-    { id: 4, name: '湖滨展示', color: '#ec4899' },
-    { id: 5, name: 'k-file-plus', color: '#8b5cf6' },
-    { id: 6, name: '任务管理', color: '#06b6d4' }
-  ]
+  try {
+    await projectStore.fetchProjects()
+  } catch (error) {
+    console.error('Failed to load projects:', error)
+  }
+}
+
+// 项目创建成功回调
+const handleProjectCreated = () => {
+  // 项目已经通过 store 自动添加到列表中
+  console.log('Project created successfully')
 }
 
 // 退出登录

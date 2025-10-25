@@ -75,6 +75,20 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  // 开发服务器配置
+  server: {
+    port: 5173,
+    proxy: {
+      // 代理所有 /api 开头的请求
+      '/api': {
+        target: 'https://ai_task_manage.redev.cn',
+        changeOrigin: true,
+        secure: false,
+        // 不重写路径，保持 /api 前缀
+        // rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
   build: {
     outDir: '../src',
     emptyOutDir: false,

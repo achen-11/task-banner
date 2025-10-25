@@ -25,125 +25,112 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761405234174-rjbix3ibv -->
-#### 1. 接入 project api
+<!-- task-id: 1761408437032-ucf3yjs43 -->
+#### 1. 菜单栏-项目列表接入
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/25 23:13:54
-**更新时间：** 2025/10/25 23:13:56
+**创建时间：** 2025/10/26 00:07:17
+**更新时间：** 2025/10/26 00:07:17
 
 **任务描述：**
 
-- [x] 前端接入 project api
+- [x] 完成左侧菜单的 api 接入
+    - [x] 新建项目
+    - [x] 获取当前用户的项目列表
 
 **实现说明：**
 
-已完成前端 Project API 的完整接入，包括以下内容：
+已成功完成左侧菜单栏的项目管理功能接入，包括项目列表展示和新建项目功能。
 
-#### 1. 目录结构
+#### 1. 创建的组件
 
-```
-frontend/src/
-├── api/
-│   ├── project.ts          # 项目 API 调用封装
-│   └── README.md           # API 使用文档
-├── types/
-│   └── project.ts          # 项目相关类型定义
-└── stores/
-    └── project.ts          # 项目状态管理（Pinia）
-```
+**CreateProjectDialog.vue** - 创建项目对话框组件
 
-#### 2. 类型定义 (`types/project.ts`)
+特性：
+- ✅ 使用 Teleport 实现模态框
+- ✅ 表单包含：项目名称（必填）、项目描述（可选）、项目颜色（8 种预设颜色）
+- ✅ 完整的表单验证和错误提示
+- ✅ 加载状态显示（创建中...）
+- ✅ 支持 v-model 双向绑定
+- ✅ 创建成功后触发 `created` 事件并自动关闭
+- ✅ 点击遮罩或关闭按钮可关闭对话框
 
-定义了完整的 TypeScript 类型：
-- `Project` - 项目信息接口
-- `ProjectMember` - 项目成员接口
-- `CreateProjectParams` - 创建项目参数
-- `UpdateProjectParams` - 更新项目参数
-- `AddMemberParams` - 添加成员参数
-- `RemoveMemberParams` - 移除成员参数
-- `ProjectListResponse` - 项目列表响应
-- `MemberListResponse` - 成员列表响应
+#### 2. 更新的组件
 
-#### 3. API 调用封装 (`api/project.ts`)
+**Sidebar.vue** - 左侧菜单栏组件
 
-实现了 8 个 API 方法：
+核心改动：
+1. **导入依赖**
+   - 导入 `useProjectStore` 进行状态管理
+   - 导入 `CreateProjectDialog` 组件
 
-**项目管理：**
-- `getProjectList(page, size)` - 获取项目列表（分页）
-- `getProjectDetail(id)` - 获取项目详情
-- `createProject(data)` - 创建新项目
-- `updateProject(data)` - 更新项目信息
-- `deleteProject(id)` - 删除项目
+2. **移除硬编码数据**
+   - 删除了原有的 `projects` ref 和硬编码的项目数据
+   - 使用 `projectStore.projects` 替代
 
-**成员管理：**
-- `getProjectMembers(projectId)` - 获取项目成员列表
-- `addProjectMember(data)` - 添加项目成员
-- `removeProjectMember(data)` - 移除项目成员
+3. **项目列表渲染**
+   - 使用 `projectStore.loading` 显示加载状态
+   - 使用 `project._id` 替代原有的 `project.id`（与后端 Kooboo _id 保持一致）
+   - 动态路由改为 `/projects/${project._id}`
 
-#### 4. 状态管理 (`stores/project.ts`)
+4. **API 接入**
+   - `loadProjects()` 函数调用 `projectStore.fetchProjects()` 从后端加载项目列表
+   - 组件挂载时自动加载项目列表
 
-使用 Pinia 实现完整的状态管理：
+5. **创建项目功能**
+   - 渲染 `CreateProjectDialog` 组件
+   - 点击 "+" 按钮打开创建对话框
+   - 创建成功后项目自动添加到列表（通过 store 管理）
 
-**状态：**
-- `projects` - 项目列表
-- `currentProject` - 当前选中的项目
-- `loading` - 加载状态
-- `total` - 项目总数
+#### 3. 技术要点
 
-**计算属性：**
-- `activeProjects` - 活跃项目列表
-- `completedProjects` - 已完成项目列表
-- `pausedProjects` - 暂停的项目列表
-
-**方法：**
-- `fetchProjects()` - 获取项目列表
-- `fetchProjectDetail()` - 获取项目详情
-- `createProject()` - 创建项目
-- `updateProject()` - 更新项目
-- `deleteProject()` - 删除项目
-- `findProjectById()` - 根据 ID 查找项目
-- `setCurrentProject()` - 设置当前项目
-- `reset()` - 清空状态
-
-#### 5. 技术要点
-
-- ✅ 使用现有的 `utils/request.ts` 进行 HTTP 请求
-- ✅ 响应拦截器自动处理 code 200 并返回 data.data
-- ✅ 所有 ID 字段类型为 `string`（与后端 Kooboo _id 保持一致）
-- ✅ 时间字段为毫秒级时间戳（number 类型）
-- ✅ 完整的 TypeScript 类型支持
+- ✅ 使用 Pinia store 进行状态管理
+- ✅ 响应式数据自动更新 UI
+- ✅ ID 字段类型正确（使用 `_id` 字符串）
 - ✅ 错误处理和日志记录
-- ✅ Pinia 响应式状态管理
+- ✅ 加载状态反馈
+- ✅ 组件化设计，职责清晰
 
-#### 6. 使用方式
+#### 4. 用户体验
 
-**方式一：直接调用 API（一次性操作）**
-```typescript
-import { createProject } from '@/api/project'
-const project = await createProject({ name: '新项目' })
+**项目列表展示：**
+- 加载时显示 "加载中..." 提示
+- 每个项目显示：彩色方块（首字母）+ 项目名称
+- 支持点击跳转到项目详情页
+- 当前激活项目高亮显示
+
+**新建项目：**
+- 点击 Projects 标题旁的 "+" 图标打开对话框
+- 填写项目名称（必填）、描述（可选）
+- 选择项目颜色（8 种预设颜色可选）
+- 点击"创建项目"按钮提交
+- 创建成功后对话框自动关闭，项目立即出现在列表中
+- 支持取消操作
+
+#### 5. 修改的文件
+
+- `frontend/src/components/Sidebar.vue` - 更新项目列表和 API 接入
+- `frontend/src/components/CreateProjectDialog.vue` - 新建（创建项目对话框）
+
+#### 6. API 调用流程
+
 ```
-
-**方式二：使用 Pinia Store（组件中推荐）**
-```vue
-<script setup lang="ts">
-import { useProjectStore } from '@/stores/project'
-const projectStore = useProjectStore()
-await projectStore.fetchProjects()
-</script>
+用户操作 → Sidebar.vue
+          ↓
+    useProjectStore
+          ↓
+    api/project.ts
+          ↓
+    后端 API (/api/project/*)
+          ↓
+    返回数据 → Store 更新
+          ↓
+    UI 自动更新
 ```
-
-#### 7. 文档
-
-创建了详细的使用文档 `frontend/src/api/README.md`，包含：
-- API 方法列表和参数说明
-- 完整的使用示例
-- 错误处理指南
-- 注意事项和最佳实践
 
 ---
 
 
-> 📅 导出时间：2025/10/25 23:13:58
+> 📅 导出时间：2025/10/26 00:07:21
 > 🤖 由 Task Banner 生成
