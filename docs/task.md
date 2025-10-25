@@ -25,66 +25,58 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761386253200-jd7ronktc -->
-#### 1. 用户自动注册
+<!-- task-id: 1761389495429-msftdn8ny -->
+#### 1. 基础布局构建
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/25 17:57:33
-**更新时间：** 2025/10/25 18:35:00
+**创建时间：** 2025/10/25 18:51:35
+**更新时间：** 2025/10/25 19:40:00
 
 **任务描述：**
 
-/**
- * 获取用户信息（自动注册）
- *
- */
-export const getUserInfo = (username: string) => {
-    let userInfo = userModel.findOne({ user_id: username })
-    if (userInfo) return userInfo
+- [x] 你这版太丑了, 需要优化
+- [x] 你阅读"kb-task/src/view/components/app-sidebar.html","kb-task/src/view/components/app-header.html","kb-task/src/layout/main.html", "docs/Images/kb-task/整体布局.png", 实在不行你就一模一样的就好了, 但代码不能一样啊, 这是 kooboo 环境的代码, 你要适配成正常 vue 环境的代码
 
-    // 未注册
-    const { fullName, userName, isAdmin } = k.account.user.get(username)
+**优化内容：**
 
-    userInfo = userModel.create({
-        user_id: userName,
-        name: fullName || userName,
-        is_admin: isAdmin,
-        email: k.account.user.current.email,
-    })
-    return userInfo
-}
-- [x] 参照这段代码实现用户自动注册
+1. **新增 AppHeader 组件**（`components/AppHeader.vue`）
+   - 左侧：收起侧边栏按钮 + 面包屑导航
+   - 右侧：搜索框
+   - 白色背景，底部带边框阴影
+   - 高度紧凑，与参考设计一致
 
-**实现说明：**
+2. **优化 Sidebar 组件**（`components/Sidebar.vue`）
+   - 支持收起/展开（w-64 ↔ w-14）
+   - 菜单项更紧凑（padding: 0.5rem, margin-bottom: 4px）
+   - Logo 区域：蓝色方形图标 + 标题
+   - 项目列表：使用彩色方形小图标，显示项目首字母
+   - 用户信息区域：底部固定，方形头像，带下拉菜单
+   - hover 效果：`bg-gray-200 (rgb(228 228 231))`
+   - 激活状态：`bg-zinc-200`
 
-已在 `code/Services/user.ts` 中实现用户自动注册功能，工作流程如下：
+3. **优化 MainLayout 布局**（`layouts/MainLayout.vue`）
+   - 添加 Header 组件
+   - 支持侧边栏收起/展开状态管理
+   - 主内容区域结构：Header + 可滚动内容区
+   - 移除不必要的内边距
 
-1. **查询数据库**：调用 `User.findOne({ username })` 查找是否存在用户
-2. **存在用户**：直接返回格式化后的用户信息
-3. **不存在用户**：
-   - 从 Kooboo 账户系统获取信息：`k.account.user.get(username)`
-   - 提取 `fullName`, `userName`, `isAdmin` 和 `email`
-   - 调用 `User.create()` 创建新用户记录
-   - 返回格式化后的用户信息
+**技术细节：**
 
-4. **新增功能**：
-   - `getUserById(userId)` - 根据用户 ID 获取用户信息
-   - `formatUserInfo()` - 统一格式化用户信息
-
-**技术要点：**
-
-- 使用 `k_sqlite_orm` 的 User 模型进行数据库操作
-- 首次登录自动创建本地用户记录
-- 用户认证依赖 Kooboo 统一认证，不存储本地密码
-- 添加错误处理：如果 Kooboo 账户系统中也不存在用户，抛出异常
+- 侧边栏收起时宽度 56px (w-14)，展开时 256px (w-64)
+- 使用 `transition-all duration-300` 实现平滑过渡
+- 项目图标使用圆角矩形（rounded-md）显示首字母
+- 用户下拉菜单点击外部自动关闭
+- 面包屑导航根据路由自动生成
 
 **修改文件：**
 
-- `kb-task/src/code/Services/user.ts` - 完整实现用户自动注册逻辑
+- `frontend/src/components/AppHeader.vue` - 新建 Header 组件
+- `frontend/src/components/Sidebar.vue` - 完全重写，更紧凑的设计
+- `frontend/src/layouts/MainLayout.vue` - 添加 Header，支持侧边栏收起
 
 ---
 
 
-> 📅 导出时间：2025/10/25 18:29:41
+> 📅 导出时间：2025/10/25 19:26:38
 > 🤖 由 Task Banner 生成

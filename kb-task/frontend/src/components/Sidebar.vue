@@ -1,0 +1,233 @@
+<template>
+  <aside
+    class="h-screen bg-zinc-50 border-r border-gray-200 transition-all duration-300 flex flex-col"
+    :class="isCollapsed ? 'w-14' : 'w-64'"
+  >
+    <div class="flex flex-col h-full p-2">
+      <!-- Logo / Brand -->
+      <div class="flex items-center p-1 mb-4">
+        <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <div v-if="!isCollapsed" class="text-lg font-semibold text-gray-900 ml-2">任务管理系统</div>
+      </div>
+
+      <!-- 导航菜单 -->
+      <nav class="flex-1 overflow-y-auto">
+        <router-link
+          to="/"
+          class="sidebar-menu"
+          :class="{ 'bg-zinc-200': isActive('/') }"
+        >
+          <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2">首页</div>
+        </router-link>
+
+        <router-link
+          to="/my-tasks"
+          class="sidebar-menu"
+          :class="{ 'bg-zinc-200': isActive('/my-tasks') }"
+        >
+          <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2">我的任务</div>
+        </router-link>
+
+        <router-link
+          to="/messages"
+          class="sidebar-menu"
+          :class="{ 'bg-zinc-200': isActive('/messages') }"
+        >
+          <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2">消息</div>
+          <span v-if="unreadCount > 0 && !isCollapsed" class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {{ unreadCount }}
+          </span>
+        </router-link>
+
+        <!-- 分割线 -->
+        <div class="h-px bg-gray-200 my-2"></div>
+
+        <!-- 项目标题 -->
+        <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 flex items-center justify-between px-2 mb-2">
+          <div>Projects</div>
+          <button
+            @click="showCreateProject = true"
+            class="text-gray-500 hover:text-gray-700 transition-colors"
+            title="创建项目"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 项目列表 -->
+        <router-link
+          v-for="project in projects"
+          :key="project.id"
+          :to="`/projects/${project.id}`"
+          class="sidebar-menu"
+          :class="{ 'bg-zinc-200': isActive(`/projects/${project.id}`) }"
+        >
+          <div
+            class="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
+            :style="{ backgroundColor: project.color || '#6366f1' }"
+          >
+            {{ project.name.substring(0, 1) }}
+          </div>
+          <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2 truncate">{{ project.name }}</div>
+        </router-link>
+      </nav>
+
+      <!-- 底部用户信息 -->
+      <div class="relative rounded-md" :class="{ 'p-2 hover:bg-gray-200': !isCollapsed, 'p-0': isCollapsed }">
+        <div v-if="!isCollapsed" class="flex items-center justify-between cursor-pointer" @click="toggleUserMenu">
+          <div class="flex items-center flex-1 min-w-0 mr-2">
+            <div class="w-8 h-8 bg-gray-300 rounded flex items-center justify-center flex-shrink-0">
+              <span class="text-gray-800 text-sm font-medium">{{ userInitials }}</span>
+            </div>
+            <div class="ml-2 overflow-hidden">
+              <div class="text-sm font-medium text-gray-900 truncate">{{ currentUser?.displayName || currentUser?.username }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ currentUser?.email }}</div>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div v-else class="flex justify-center">
+          <div class="w-8 h-8 bg-gray-300 rounded flex items-center justify-center cursor-pointer" @click="toggleUserMenu">
+            <span class="text-gray-800 text-sm font-medium">{{ userInitials }}</span>
+          </div>
+        </div>
+
+        <!-- 用户下拉菜单 -->
+        <div
+          v-if="showUserMenu"
+          class="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
+        >
+          <div class="p-1">
+            <button
+              @click="handleLogout"
+              class="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              退出登录
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { getCurrentUser, logout } from '@/utils/auth'
+
+defineProps<{
+  isCollapsed: boolean
+}>()
+
+const route = useRoute()
+
+// 当前用户
+const currentUser = ref<any>(null)
+
+// 用户名首字母
+const userInitials = computed(() => {
+  if (!currentUser.value) return ''
+  const name = currentUser.value.displayName || currentUser.value.username
+  return name.substring(0, 1).toUpperCase()
+})
+
+// 未读消息数
+const unreadCount = ref(0)
+
+// 项目列表
+const projects = ref<any[]>([])
+
+// 创建项目对话框
+const showCreateProject = ref(false)
+
+// 用户菜单
+const showUserMenu = ref(false)
+
+// 判断当前路由是否激活
+const isActive = (path: string) => {
+  if (path === '/') {
+    return route.path === '/'
+  }
+  return route.path.startsWith(path)
+}
+
+// 切换用户菜单
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
+// 点击外部关闭菜单
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.relative')) {
+    showUserMenu.value = false
+  }
+}
+
+// 加载项目列表
+const loadProjects = async () => {
+  // TODO: 从 API 加载项目列表
+  projects.value = [
+    { id: 1, name: 'ERP', color: '#6366f1' },
+    { id: 2, name: '优作', color: '#10b981' },
+    { id: 3, name: 'kooboo-cli', color: '#f59e0b' },
+    { id: 4, name: '湖滨展示', color: '#ec4899' },
+    { id: 5, name: 'k-file-plus', color: '#8b5cf6' },
+    { id: 6, name: '任务管理', color: '#06b6d4' }
+  ]
+}
+
+// 退出登录
+const handleLogout = () => {
+  showUserMenu.value = false
+  if (confirm('确定要退出登录吗？')) {
+    logout()
+  }
+}
+
+onMounted(() => {
+  currentUser.value = getCurrentUser()
+  loadProjects()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+</script>
+
+<style scoped>
+.sidebar-menu {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 4px;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+.sidebar-menu:hover {
+  background-color: rgb(228 228 231);
+}
+</style>
