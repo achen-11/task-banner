@@ -6,27 +6,22 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const ProjectMember = ksql.define(
   'project_members',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     projectId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'projects',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true
     },
     userId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'users',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true

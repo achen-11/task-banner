@@ -6,27 +6,22 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const TaskComment = ksql.define(
   'task_comments',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     taskId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'tasks',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true
     },
     userId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'users',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true

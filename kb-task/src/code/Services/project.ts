@@ -9,11 +9,14 @@ import { ProjectMember, type ProjectMemberType } from 'code/Models/ProjectMember
  * 项目信息接口
  */
 export interface ProjectInfo {
-  id: number
+  _id: string // Kooboo 自动生成的主键（字符串类型）
   name: string
   description: string
   color: string
-  creatorId: number
+  ownerId: string
+  status: string
+  icon: string
+  order: number
   createdAt: number
   updatedAt: number
 }
@@ -22,9 +25,9 @@ export interface ProjectInfo {
  * 项目成员信息接口
  */
 export interface ProjectMemberInfo {
-  id: number
-  projectId: number
-  userId: number
+  _id: string // Kooboo 自动生成的主键（字符串类型）
+  projectId: string // 外键引用 _id（字符串类型）
+  userId: string
   role: 'owner' | 'admin' | 'member'
   joinedAt: number
 }
@@ -32,25 +35,25 @@ export interface ProjectMemberInfo {
 /**
  * 创建项目
  * @param data - 项目数据
- * @param creatorId - 创建者 ID
- * @returns 新创建的项目 ID
+ * @param ownerId - 项目所有者 ID
+ * @returns 新创建的项目 ID（字符串类型）
  */
 export function createProject(
   data: { name: string; description?: string; color?: string },
-  creatorId: number
-): number {
+  ownerId: string
+): string {
   // 1. 创建项目
   const projectId = Project.create({
     name: data.name,
     description: data.description || '',
     color: data.color || '#6366f1',
-    creatorId: creatorId
+    ownerId: ownerId
   })
 
   // 2. 添加创建者为项目所有者
   ProjectMember.create({
     projectId: projectId,
-    userId: creatorId,
+    userId: ownerId,
     role: 'owner'
   })
 
@@ -59,10 +62,10 @@ export function createProject(
 
 /**
  * 根据 ID 获取项目
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @returns 项目信息或 null
  */
-export function getProjectById(projectId: number): ProjectInfo | null {
+export function getProjectById(projectId: string): ProjectInfo | null {
   const project = Project.findById(projectId) as ProjectType | null
 
   if (!project) {
@@ -77,9 +80,9 @@ export function getProjectById(projectId: number): ProjectInfo | null {
  * @param userId - 用户 ID
  * @returns 项目列表
  */
-export function getUserProjects(userId: number): ProjectInfo[] {
+export function getUserProjects(userId: string): ProjectInfo[] {
   // 1. 查询用户参与的所有项目成员记录
-  const memberRecords = ProjectMember.find({
+  const memberRecords = ProjectMember.findAll({
     userId: userId
   }) as ProjectMemberType[]
 
@@ -100,45 +103,46 @@ export function getUserProjects(userId: number): ProjectInfo[] {
 
 /**
  * 更新项目信息
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @param data - 更新的数据
  * @returns 是否成功
  */
 export function updateProject(
-  projectId: number,
+  projectId: string,
   data: { name?: string; description?: string; color?: string }
 ): boolean {
-  return Project.update(projectId, data)
+  const updatedId = Project.updateById(projectId, data)
+  return updatedId !== null && updatedId !== undefined
 }
 
 /**
  * 删除项目
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @returns 是否成功
  */
-export function deleteProject(projectId: number): boolean {
+export function deleteProject(projectId: string): boolean {
   // 1. 删除所有项目成员
-  const members = ProjectMember.find({ projectId: projectId }) as ProjectMemberType[]
+  const members = ProjectMember.findAll({ projectId: projectId }) as ProjectMemberType[]
   members.forEach(member => {
-    ProjectMember.delete(member.id)
+    ProjectMember.deleteById(member._id)
   })
 
   // 2. 删除项目
-  return Project.delete(projectId)
+  return Project.deleteById(projectId)
 }
 
 /**
  * 添加项目成员
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @param userId - 用户 ID
  * @param role - 角色
- * @returns 成员 ID
+ * @returns 成员 ID（字符串类型）
  */
 export function addProjectMember(
-  projectId: number,
-  userId: number,
+  projectId: string,
+  userId: string,
   role: 'admin' | 'member' = 'member'
-): number {
+): string {
   // 检查是否已经是成员
   const existing = ProjectMember.findOne({
     projectId: projectId,
@@ -158,11 +162,11 @@ export function addProjectMember(
 
 /**
  * 移除项目成员
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @param userId - 用户 ID
  * @returns 是否成功
  */
-export function removeProjectMember(projectId: number, userId: number): boolean {
+export function removeProjectMember(projectId: string, userId: string): boolean {
   const member = ProjectMember.findOne({
     projectId: projectId,
     userId: userId
@@ -177,33 +181,33 @@ export function removeProjectMember(projectId: number, userId: number): boolean 
     throw new Error('Cannot remove project owner')
   }
 
-  return ProjectMember.delete(member.id)
+  return ProjectMember.deleteById(member._id)
 }
 
 /**
  * 获取项目成员列表
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @returns 成员列表
  */
-export function getProjectMembers(projectId: number): ProjectMemberInfo[] {
-  const members = ProjectMember.find({ projectId: projectId }) as ProjectMemberType[]
+export function getProjectMembers(projectId: string): ProjectMemberInfo[] {
+  const members = ProjectMember.findAll({ projectId: projectId }) as ProjectMemberType[]
 
   return members.map(member => ({
-    id: member.id,
+    _id: member._id,
     projectId: member.projectId,
     userId: member.userId,
     role: member.role as 'owner' | 'admin' | 'member',
-    joinedAt: member.createdAt
+    joinedAt: member.joinedAt
   }))
 }
 
 /**
  * 检查用户是否是项目成员
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @param userId - 用户 ID
  * @returns 是否是成员
  */
-export function isProjectMember(projectId: number, userId: number): boolean {
+export function isProjectMember(projectId: string, userId: string): boolean {
   const member = ProjectMember.findOne({
     projectId: projectId,
     userId: userId
@@ -214,14 +218,14 @@ export function isProjectMember(projectId: number, userId: number): boolean {
 
 /**
  * 检查用户权限
- * @param projectId - 项目 ID
+ * @param projectId - 项目 ID（字符串类型）
  * @param userId - 用户 ID
  * @param requiredRole - 需要的角色（owner > admin > member）
  * @returns 是否有权限
  */
 export function checkProjectPermission(
-  projectId: number,
-  userId: number,
+  projectId: string,
+  userId: string,
   requiredRole: 'owner' | 'admin' | 'member' = 'member'
 ): boolean {
   const member = ProjectMember.findOne({
@@ -247,11 +251,14 @@ export function checkProjectPermission(
  */
 function formatProjectInfo(project: ProjectType): ProjectInfo {
   return {
-    id: project.id,
+    _id: project._id,
     name: project.name,
     description: project.description || '',
     color: project.color || '#6366f1',
-    creatorId: project.creatorId,
+    ownerId: project.ownerId,
+    status: project.status || 'active',
+    icon: project.icon || '',
+    order: project.order || 0,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt
   }

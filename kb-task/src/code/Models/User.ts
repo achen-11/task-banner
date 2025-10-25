@@ -6,12 +6,6 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const User = ksql.define(
   'users',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true,
-      initialValue: 1000
-    },
     username: {
       type: DataTypes.String,
       required: true,

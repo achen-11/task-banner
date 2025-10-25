@@ -6,17 +6,12 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const Tag = ksql.define(
   'tags',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     projectId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'projects',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true

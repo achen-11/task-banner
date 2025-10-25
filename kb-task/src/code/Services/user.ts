@@ -5,7 +5,7 @@
 import { User, type UserType } from 'code/Models/User'
 
 export interface UserInfo {
-  id: number
+  _id: string
   username: string
   email: string
   displayName: string
@@ -64,8 +64,8 @@ export function getUserInfo(username: string): UserInfo {
  * @param userId - 用户 ID
  * @returns 用户信息对象或 null
  */
-export function getUserById(userId: number): UserInfo | null {
-  const userRecord = User.findOne({ id: userId }) as UserType | null
+export function getUserById(userId: string): UserInfo | null {
+  const userRecord = User.findById(userId) as UserType | null
 
   if (!userRecord) {
     return null
@@ -80,7 +80,7 @@ export function getUserById(userId: number): UserInfo | null {
  */
 function formatUserInfo(userRecord: UserType): UserInfo {
   return {
-    id: userRecord.id,
+    _id: userRecord._id,
     username: userRecord.username,
     email: userRecord.email,
     displayName: userRecord.displayName || userRecord.username,

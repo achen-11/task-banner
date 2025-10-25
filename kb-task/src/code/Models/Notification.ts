@@ -6,17 +6,12 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const Notification = ksql.define(
   'notifications',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     userId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'users',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true
@@ -35,13 +30,13 @@ export const Notification = ksql.define(
       default: ''
     },
     relatedTaskId: {
-      type: DataTypes.Number,
-      default: 0,
+      type: DataTypes.String,
+      default: '',
       index: true
     },
     relatedCommentId: {
-      type: DataTypes.Number,
-      default: 0
+      type: DataTypes.String,
+      default: ''
     },
     isRead: {
       type: DataTypes.Boolean,

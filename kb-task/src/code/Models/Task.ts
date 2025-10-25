@@ -6,11 +6,6 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const Task = ksql.define(
   'tasks',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     taskId: {
       type: DataTypes.String,
       required: true,
@@ -19,18 +14,18 @@ export const Task = ksql.define(
       default: () => `task_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     },
     projectId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'projects',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true
     },
     moduleId: {
-      type: DataTypes.Number,
-      default: 0, // 0 表示未归属任何模块
+      type: DataTypes.String,
+      default: '', // 空字符串表示未归属任何模块
       index: true
     },
     title: {
@@ -52,16 +47,16 @@ export const Task = ksql.define(
       index: true
     },
     assigneeId: {
-      type: DataTypes.Number,
-      default: 0, // 0 表示未分配
+      type: DataTypes.String,
+      default: '', // 空字符串表示未分配
       index: true
     },
     creatorId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'users',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true

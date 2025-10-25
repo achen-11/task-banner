@@ -25,218 +25,52 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761393786292-rmieavzbv -->
-#### 1. 整理Api 开发规范
+<!-- task-id: 1761398923353-w1n41yhcx -->
+#### 1. 数据库定义
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/25 20:03:06
-**更新时间：** 2025/10/25 21:10:00
+**创建时间：** 2025/10/25 21:28:43
+**更新时间：** 2025/10/25 21:35:00
 
 **任务描述：**
 
-- [x] 1. @k-url 的定义, 动态路由的匹配需要在@k-url 中体现, 比如"/api/project/{action}", action用来作为动态匹配的子路由定义
-- [x] 2. 约定少用{id}这种形式来获取 id, 动态路由尽量就只使用{action}, 向 id 这种可以携带在 query 或者 body
-- [x] 3. 统一响应工具不用分那么多, 有一个成功和一个失败(通配)就好了
-- [x] 4. claude 是否有标准的这种用来表示规则或者偏好的文件, 如果有可以把这些纳入规则标准
+- [x] 需要新增一个规范, kooboo 生成表时会自动带一个唯一标识"_id", 因此再设置 primaryKey:true 时会出现"Script error on 'project' SQLite Error 1: 'table "projects" has more than one primary key'."
+- [x] 默认使用_id 作为主键, 例如, 如果需要 task id 时, 可以定义这个字段, 但不设为 primary key
 
-**完成内容：**
+**实现说明：**
 
-### 1. 路由定义规范优化
+已完成所有模型定义的修复和规范文档的更新：
 
-**核心变更：**
-- ✅ 使用 `@k-url /api/resource/{action}` 格式
-- ✅ `{action}` 用于动态匹配子路由（list, detail, create, update, delete）
-- ✅ **避免使用 `{id}` 路径参数**，改用 query 或 body 传递
+1. **修复的模型文件（10个）：**
+   - `kb-task/src/code/Models/Project.ts` - 移除 `id` 字段的 `primaryKey: true`
+   - `kb-task/src/code/Models/ProjectMember.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/Module.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/Task.ts` - 移除主键定义，更新外键引用，保留 `taskId` 作为普通字段
+   - `kb-task/src/code/Models/Tag.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/TaskTag.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/TaskHistory.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/TaskComment.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/Notification.ts` - 移除主键定义，更新外键引用
+   - `kb-task/src/code/Models/User.ts` - 移除主键定义
 
-**示例：**
-```typescript
-// 文件: kb-task/src/api/project.ts
-// @k-url /api/project/{action}
+2. **更新的规范文档：**
+   - `docs/Backend-Development-Guide.md` - 添加了详细的 Kooboo 主键规范说明（第 365-457 行）
+   - `.claud.md` - 在数据库操作部分添加了 Kooboo 主键规范（第 117-144 行）
 
-// GET /api/project/list?page=1&size=20
-k.api.get("list", () => {
-  const query = k.request.queryString
-  const page = parseInt(query?.page) || 1
-  // ...
-})
+3. **关键修改点：**
+   - 移除所有模型中的 `id: { primaryKey: true, autoincrement: true }` 定义
+   - 将所有外键引用从 `fieldName: 'id'` 改为 `fieldName: '_id'`
+   - 保留了 Task 模型的 `taskId` 字段作为自定义 ID，但不设为主键
 
-// GET /api/project/detail?id=1
-k.api.get("detail", () => {
-  const id = parseInt(k.request.queryString?.id)
-  // ...
-})
-
-// POST /api/project/create
-k.api.post("create", (body: any) => {
-  const { name, description } = body
-  // ...
-})
-
-// PUT /api/project/update
-k.api.put("update", (body: any) => {
-  const { id, name } = body  // ID 通过 body 传递
-  // ...
-})
-
-// DELETE /api/project/delete
-k.api.delete("delete", (body: any) => {
-  const { id } = body  // ID 通过 body 传递
-  // ...
-})
-```
-
-**优势：**
-1. **统一性**：所有 ID 通过 query 或 body 传递，接口更一致
-2. **灵活性**：query 和 body 更容易扩展参数
-3. **简洁性**：@k-url 定义更简单，只需要 {action}
-
-### 2. 统一响应格式简化
-
-**只保留两个核心函数：**
-
-```typescript
-/**
- * 成功响应
- */
-export function success<T = any>(data: T, message: string = 'Success') {
-  k.response.json({
-    code: 200,
-    message,
-    data
-  })
-  return k.api.ok()
-}
-
-/**
- * 错误响应（通用）
- */
-export function error(message: string, code: number = 400, err?: any) {
-  // 500 级别错误自动记录日志
-  if (code >= 500 && err) {
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    k.logger.error('ServerError', errorMessage)
-  }
-
-  k.response.json({
-    code,
-    message,
-    data: null
-  })
-  return k.api.httpCode(code)
-}
-```
-
-**使用示例：**
-```typescript
-// 成功
-return success({ id: 1, name: 'John' })
-return success({ items: [...], total: 100, page: 1, pageSize: 20 })
-
-// 各种错误（通过 code 区分）
-return error('Invalid parameters', 400)
-return error('Unauthorized', 401)
-return error('Forbidden', 403)
-return error('Not found', 404)
-return error('Internal server error', 500, err)
-```
-
-**优点：**
-- 简化 API：只需记住两个函数
-- 统一格式：所有响应格式一致
-- 灵活性：通过 code 参数支持所有 HTTP 状态码
-- 自动日志：500 错误自动记录日志
-
-### 3. 创建 .claud.md 偏好文件
-
-**文件：** `.claud.md`
-
-Claude Code 支持使用 `.claud.md` 文件定义项目开发规范和偏好设置。这个文件放在项目根目录，AI 会自动读取并遵守其中的规则。
-
-**文件内容包括：**
-
-1. **项目结构**：清晰的目录组织
-2. **后端 API 规范**：
-   - 路由定义（@k-url /api/resource/{action}）
-   - 参数传递规范
-   - 统一响应格式
-   - 标准 API 流程
-   - 数据库操作
-3. **前端开发规范**：
-   - Vue 3 Composition API
-   - Tailwind CSS
-   - 组件结构
-4. **代码风格**：
-   - 导入顺序
-   - 命名规范
-   - TypeScript 类型
-5. **安全规范**：
-   - SQL 注入防护
-   - 鉴权检查
-   - 权限检查
-6. **文档和注释**：函数注释、复杂逻辑说明
-7. **提交前检查清单**
-8. **参考文档链接**
-9. **开发原则**
-
-**作用：**
-- 为 AI 提供明确的开发规范
-- 为团队成员提供统一的代码风格指南
-- 确保代码质量和一致性
-- 简化新成员上手过程
-
-### 4. 完整更新开发规范文档
-
-**文件：** `docs/Backend-Development-Guide.md`
-
-已完全重写开发规范文档，包含：
-
-1. **API 开发规范**（重点优化）：
-   - 使用 `@k-url /api/resource/{action}` 格式
-   - 详细的路由定义示例（方式一：动态路由，方式二：简单路由）
-   - 参数传递规范表格
-   - 避免 {id} 路径参数的说明
-
-2. **统一响应格式**（简化）：
-   - 只保留 success 和 error 两个函数
-   - 详细的使用示例
-   - 响应格式说明
-
-3. **数据库、错误处理、认证权限、开发流程**（保持）
-
-4. **完整示例**（更新）：
-   - 使用新的路由定义方式
-   - 使用简化的响应函数
-   - 任务管理 API 完整实现
-
-5. **常见问题**（新增）：
-   - Q1: 为什么要避免路径参数 {id}？
-   - Q2-Q4: ORM、多表查询、分页查询等
-
-**文件对比：**
-
-| 旧规范 | 新规范 |
-|-------|-------|
-| `@k-url /api/projects` | `@k-url /api/project/{action}` |
-| `GET /api/projects/{id}` | `GET /api/project/detail?id=1` |
-| `POST /api/projects/{id}/members` | `POST /api/project/members` + body: {projectId} |
-| 8个响应函数 | 2个响应函数（success + error） |
-
-### 总结
-
-✅ **已完成所有优化要求：**
-1. 路由定义使用 `{action}` 动态匹配
-2. ID 通过 query 或 body 传递
-3. 响应工具简化为 success 和 error
-4. 创建了 .claud.md 标准偏好文件
-
-**修改文件：**
-- `kb-task/src/code/Utils/response.ts` - 简化为2个函数
-- `docs/Backend-Development-Guide.md` - 完全重写
-- `.claud.md` - 新建项目偏好文件
+4. **技术要点：**
+   - Kooboo ORM 自动为每个表生成 `_id` 字段作为主键
+   - 禁止手动定义 `primaryKey: true`，会导致 "more than one primary key" 错误
+   - 允许定义自定义 ID 字段（如 `taskId`），但不能设为主键
+   - 所有外键必须引用 `_id` 字段
 
 ---
 
 
-> 📅 导出时间：2025/10/25 20:58:52
+> 📅 导出时间：2025/10/25 21:28:46
 > 🤖 由 Task Banner 生成

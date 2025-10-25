@@ -362,18 +362,40 @@ Project.removeById(projectId) // 软删除
 
 ### 4.2 模型定义规范
 
+#### ⚠️ 重要：Kooboo 主键规范
+
+**Kooboo 的 ORM 会自动为每个表生成 `_id` 字段作为主键**，因此：
+
+- ❌ **禁止**手动定义 `id` 字段并设置 `primaryKey: true`
+- ❌ **禁止**使用 `autoincrement: true`
+- ✅ **允许**定义自定义 ID 字段（如 `taskId`），但不要设为主键
+- ✅ 使用 ORM 自动生成的 `_id` 作为主键
+- ⚠️ **注意**：`_id` 字段类型是 **string（字符串）**，不是 number
+
+**错误示例（会导致"more than one primary key"错误）：**
+
+```typescript
+// ❌ 错误：与自动生成的 _id 冲突
+export const Project = ksql.define('projects', {
+  id: {
+    type: DataTypes.Number,
+    primaryKey: true,       // ❌ 禁止
+    autoincrement: true     // ❌ 禁止
+  },
+  name: { type: DataTypes.String, required: true }
+})
+```
+
+**正确示例：**
+
 ```typescript
 // 文件: kb-task/src/code/Models/project.ts
-import { ksql, DataTypes } from 'code/k_sqlite'
+import { ksql, DataTypes } from 'module/k_sqlite'
 
+// ✅ 正确：不定义 id 字段，使用自动生成的 _id
 export const Project = ksql.define(
   'projects',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     name: {
       type: DataTypes.String,
       required: true,
@@ -398,6 +420,65 @@ export const Project = ksql.define(
     softDelete: false      // 项目不使用软删除
   }
 )
+```
+
+**如果需要自定义 ID 字段（例如任务的 taskId）：**
+
+```typescript
+// ✅ 正确：定义自定义 ID 字段，但不设为主键
+export const Task = ksql.define('tasks', {
+  taskId: {
+    type: DataTypes.String,
+    required: true,
+    unique: true,        // 可以设为唯一
+    index: true,         // 可以建索引
+    default: () => `task_${Date.now()}`
+    // 注意：不设置 primaryKey: true
+  },
+  title: { type: DataTypes.String, required: true }
+})
+```
+
+**外键引用规范：**
+
+所有外键引用必须指向 `_id` 字段（字符串类型）：
+
+```typescript
+export const ProjectMember = ksql.define('project_members', {
+  projectId: {
+    type: DataTypes.String,  // ⚠️ 外键类型必须是 String，因为 _id 是字符串
+    required: true,
+    ref: {
+      tableName: 'projects',
+      fieldName: '_id',      // ✅ 引用 _id，不是 id
+      onDelete: 'CASCADE'
+    }
+  }
+})
+```
+
+**重要提示：_id 字段类型**
+
+```typescript
+// ✅ 正确：Service 层接口定义
+export interface ProjectInfo {
+  _id: string              // ⚠️ 必须是 string，不是 number
+  name: string
+  description: string
+  ownerId: number
+}
+
+// ✅ 正确：Service 函数签名
+export function getProjectById(projectId: string): ProjectInfo | null {
+  return Project.findById(projectId)  // projectId 是字符串
+}
+
+// ✅ 正确：API 层参数验证
+const { id } = body
+if (!id || typeof id !== 'string' || id.trim() === '') {
+  return error('Invalid project ID', 400)
+}
+// ❌ 错误：不要使用 parseInt(id)
 ```
 
 ### 4.3 Service 层规范

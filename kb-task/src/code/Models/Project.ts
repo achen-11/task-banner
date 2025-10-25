@@ -6,11 +6,6 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const Project = ksql.define(
   'projects',
   {
-    id: {
-      type: DataTypes.Number,
-      primaryKey: true,
-      autoincrement: true
-    },
     name: {
       type: DataTypes.String,
       required: true,
@@ -25,11 +20,11 @@ export const Project = ksql.define(
       default: '#3B82F6' // 默认蓝色
     },
     ownerId: {
-      type: DataTypes.Number,
+      type: DataTypes.String,
       required: true,
       ref: {
         tableName: 'users',
-        fieldName: 'id',
+        fieldName: '_id',
         onDelete: 'CASCADE'
       },
       index: true
