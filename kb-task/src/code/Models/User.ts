@@ -36,6 +36,10 @@ export const User = ksql.define(
     displayName: {
       type: DataTypes.String,
       default: ''
+    },
+    isAdmin: {
+      type: DataTypes.Boolean,
+      default: false
     }
   },
   {

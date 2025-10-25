@@ -112,14 +112,53 @@
           API Endpoint: {{ apiUrl }}
         </p>
       </div>
+
+      <!-- User Info & Auth Status -->
+      <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-800 font-medium">
+              👤 当前用户: {{ currentUser?.displayName || currentUser?.username }}
+            </p>
+            <p class="text-blue-600 text-sm mt-1">
+              Email: {{ currentUser?.email }}
+            </p>
+            <p class="text-blue-600 text-xs mt-1" v-if="isDev">
+              🔧 开发模式: Mock 用户数据
+            </p>
+          </div>
+          <button
+            @click="handleLogout"
+            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
+          >
+            退出登录
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { getCurrentUser, logout, isLogin } from './utils/auth'
 
 const apiUrl = computed(() => {
   return import.meta.env.VITE_API_BASE_URL || 'API URL not configured'
 })
+
+const currentUser = ref<any>(null)
+const isDev = import.meta.env.DEV
+
+onMounted(() => {
+  if (isLogin()) {
+    currentUser.value = getCurrentUser()
+  }
+})
+
+const handleLogout = () => {
+  if (confirm('确定要退出登录吗？')) {
+    logout()
+  }
+}
 </script>
