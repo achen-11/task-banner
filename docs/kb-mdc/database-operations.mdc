@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- Use SQLite database with k.DB.sqlite
+- Tables automatically have _id primary key
+- Create records with k.DB.sqlite.tableName.append({})
+- Use named parameters for SQL queries: k.DB.sqlite.query(sql, { key1: value1 })
+- Use @key as parameter placeholders in SQL
+- For transactions, use k.DB.sqlite.transaction(() => {})
+- Throw errors inside transactions to abort them
+- Transaction blocks don't return values
+- Operations involving multiple tables must use transactions

@@ -1,0 +1,10 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+- Catch all exceptions in service layer
+- Use utils.ts successResponse and failResponse for API responses
+- Maintain consistent enum values and status mappings
+- Use consistent naming style throughout the project
+- Format API responses using utility functions, not manual construction

@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- Use `code` for imports in Api and CodeBlock files
+- Only can import from CodeBlock 
+- Don't use async/await in API and CodeBlock code
+- Use `k.api.get/post/put/delete/patch` for API endpoints
+- Get query parameters with `k.request.queryString`
+- Get form data with `k.request.form.get(key)`
