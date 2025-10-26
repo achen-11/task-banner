@@ -155,167 +155,12 @@
 
     <!-- Tab 内容 -->
     <div class="flex-1 overflow-auto p-6">
-      <!-- 概览 -->
-      <div v-if="currentTab === 'overview'" class="space-y-6">
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500">总任务数</h3>
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ project?.taskCount || 0 }}</p>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500">待办</h3>
-              <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-blue-600">{{ (project?.taskCount || 0) - (project?.completedTaskCount || 0) }}</p>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500">已完成</h3>
-              <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-green-600">{{ project?.completedTaskCount || 0 }}</p>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500">完成率</h3>
-              <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-purple-600">{{ taskCompletionRate }}%</p>
-          </div>
-        </div>
-
-        <!-- 项目描述 -->
-        <div v-if="project?.description" class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <h3 class="text-lg font-semibold text-gray-900 mb-3">项目描述</h3>
-          <p class="text-gray-600 leading-relaxed">{{ project.description }}</p>
-        </div>
-
-        <!-- 最近活动 -->
-        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">最近活动</h3>
-          <div class="text-center py-12 text-gray-400">
-            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p>暂无最近活动</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 列表视图 -->
-      <div v-if="currentTab === 'list'">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">任务列表</h2>
-            <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-              <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              新建任务
-            </button>
-          </div>
-          <div class="p-8 text-center text-gray-400">
-            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p>暂无任务</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 看板视图 -->
-      <div v-if="currentTab === 'board'" class="h-full">
-        <div class="flex gap-4 h-full">
-          <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col">
-            <div class="p-4 border-b border-gray-100">
-              <div class="flex items-center justify-between">
-                <h3 class="font-semibold text-gray-900">待办</h3>
-                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">0</span>
-              </div>
-            </div>
-            <div class="flex-1 p-4 overflow-auto">
-              <div class="text-center py-12 text-gray-400">
-                <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <p class="text-sm">暂无任务</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col">
-            <div class="p-4 border-b border-gray-100">
-              <div class="flex items-center justify-between">
-                <h3 class="font-semibold text-gray-900">进行中</h3>
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">0</span>
-              </div>
-            </div>
-            <div class="flex-1 p-4 overflow-auto">
-              <div class="text-center py-12 text-gray-400">
-                <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <p class="text-sm">暂无任务</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col">
-            <div class="p-4 border-b border-gray-100">
-              <div class="flex items-center justify-between">
-                <h3 class="font-semibold text-gray-900">已完成</h3>
-                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">{{ project?.completedTaskCount || 0 }}</span>
-              </div>
-            </div>
-            <div class="flex-1 p-4 overflow-auto">
-              <div class="text-center py-12 text-gray-400">
-                <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-sm">暂无任务</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 成员管理 -->
-      <div v-if="currentTab === 'members'">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">项目成员 ({{ memberCount }})</h2>
-            <button class="px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
-              <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              添加成员
-            </button>
-          </div>
-          <div class="p-8 text-center text-gray-400">
-            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <p>暂无成员数据</p>
-            <p class="text-sm mt-1">点击上方"添加成员"按钮邀请成员</p>
-          </div>
-        </div>
-      </div>
+      <ProjectOverview v-if="currentTab === 'overview'" :project="project" />
+      <ProjectTaskList v-else-if="currentTab === 'list'" :project-id="projectId" />
+      <ProjectBoard v-else-if="currentTab === 'board'" :project="project" />
+      <ProjectModules v-else-if="currentTab === 'modules'" :project-id="projectId" />
+      <ProjectTags v-else-if="currentTab === 'tags'" :project-id="projectId" />
+      <ProjectMembers v-else-if="currentTab === 'members'" :project-id="projectId" />
     </div>
   </div>
 </template>
@@ -325,12 +170,21 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import type { Project } from '@/types/project'
+import ProjectOverview from '@/components/project/ProjectOverview.vue'
+import ProjectTaskList from '@/components/project/ProjectTaskList.vue'
+import ProjectBoard from '@/components/project/ProjectBoard.vue'
+import ProjectModules from '@/components/project/ProjectModules.vue'
+import ProjectTags from '@/components/project/ProjectTags.vue'
+import ProjectMembers from '@/components/project/ProjectMembers.vue'
 
 const route = useRoute()
 const projectStore = useProjectStore()
 
 // 项目信息
 const project = computed<Project | null>(() => projectStore.currentProject)
+
+// 项目 ID
+const projectId = computed(() => route.params.id as string)
 
 // 头部展开/收起状态
 const collapsed = ref(false)
@@ -354,6 +208,16 @@ const tabs = [
     value: 'board',
     label: '看板',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+  },
+  {
+    value: 'modules',
+    label: '模块',
+    icon: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z'
+  },
+  {
+    value: 'tags',
+    label: '标签',
+    icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'
   },
   {
     value: 'members',
@@ -430,11 +294,11 @@ const formatDate = (timestamp: number | undefined) => {
 
 // 加载项目详情
 const loadProject = async () => {
-  const projectId = route.params.id as string
-  if (!projectId) return
+  const id = route.params.id as string
+  if (!id) return
 
   try {
-    await projectStore.fetchProjectDetail(projectId)
+    await projectStore.fetchProjectDetail(id)
   } catch (error) {
     console.error('Failed to load project:', error)
   }
