@@ -180,6 +180,7 @@ import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, readFromClipboard } from '@/utils/export'
+import type { Task, TaskDetail } from '@/types/task'
 
 interface Attachment {
   _id: string
@@ -193,26 +194,6 @@ interface Attachment {
   thumbnailUrl?: string
   uploaderId: string
   projectId: string
-  createdAt: number
-  updatedAt: number
-}
-
-interface Task {
-  _id: string
-  displayId: number
-  projectId: string
-  title: string
-  status: 'todo' | 'in_progress' | 'completed'
-  priority: 'low' | 'medium' | 'high'
-  content?: string  // 任务描述内容
-  assigneeId?: string
-  creatorId: string
-  moduleIds?: string[]  // 模块 ID 数组
-  tagIds?: string[]  // 标签 ID 数组
-  dueDate?: number
-  progress?: number
-  order: number
-  attachments?: Attachment[]
   createdAt: number
   updatedAt: number
 }
@@ -232,8 +213,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'update:taskId', taskId: string): void
-  (e: 'task-created', task: Task): void
-  (e: 'task-updated', task: Task): void
+  (e: 'task-created', task: Task | TaskDetail): void
+  (e: 'task-updated', task: Task | TaskDetail): void
   (e: 'task-deleted', taskId: string): void
 }>()
 
@@ -405,7 +386,10 @@ const importTaskFromMarkdown = async (markdown: string) => {
     if (createdTasks.length === 1) {
       alert(`✅ 成功导入 1 个任务`)
       // 切换到新创建的任务
-      emit('task-created', createdTasks[0])
+      const task = createdTasks[0]
+      if (task) {
+        emit('task-created', task as Task)
+      }
     } else {
       alert(`✅ 成功导入 ${createdTasks.length} 个任务`)
       // 刷新任务列表

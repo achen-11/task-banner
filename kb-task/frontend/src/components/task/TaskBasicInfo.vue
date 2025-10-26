@@ -61,12 +61,12 @@
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 w-16">指派人</label>
           <el-select
-            v-model="localTask.assignee"
+            v-model="localTask.assigneeId"
             size="small"
             clearable
             class="flex-1"
             placeholder="未指派"
-            @change="handleUpdate({ assignee: localTask.assignee })"
+            @change="handleUpdate({ assigneeId: localTask.assigneeId })"
           >
             <el-option label="张三" value="张三" />
             <el-option label="李四" value="李四" />

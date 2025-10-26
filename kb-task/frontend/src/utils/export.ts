@@ -177,10 +177,12 @@ export function importTasksFromMarkdown(
   const taskIdMatches: Array<{ id: string; index: number }> = []
   let match
   while ((match = taskIdRegex.exec(markdown)) !== null) {
-    taskIdMatches.push({
-      id: match[1],
-      index: match.index
-    })
+    if (match[1]) {
+      taskIdMatches.push({
+        id: match[1],
+        index: match.index
+      })
+    }
   }
 
   // 如果没有找到任何 task-id，使用标题分割方式
@@ -192,6 +194,8 @@ export function importTasksFromMarkdown(
   for (let i = 0; i < taskIdMatches.length; i++) {
     const currentMatch = taskIdMatches[i]
     const nextMatch = taskIdMatches[i + 1]
+
+    if (!currentMatch) continue
 
     // 提取当前任务的内容（从当前 task-id 到下一个 task-id 或文本结尾）
     const taskContent = markdown.substring(
@@ -241,7 +245,7 @@ function parseSingleTask(
 
     // 提取任务标题 (支持 #### N. 标题 或 #### 标题)
     const titleMatch = trimmedLine.match(/^####\s*(?:\d+\.\s*)?(.+)$/)
-    if (titleMatch && !task.title) {
+    if (titleMatch && titleMatch[1] && !task.title) {
       task.title = titleMatch[1].trim()
       continue
     }
@@ -287,11 +291,13 @@ function importTasksFromMarkdownLegacy(
   let currentSection: 'description' | null = null
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
+    const line = lines[i]
+    if (!line) continue
+    const trimmedLine = line.trim()
 
     // 检测任务标题 (#### 1. 标题 或 #### 标题)
-    const titleMatch = line.match(/^####\s*(?:\d+\.\s*)?(.+)$/)
-    if (titleMatch) {
+    const titleMatch = trimmedLine.match(/^####\s*(?:\d+\.\s*)?(.+)$/)
+    if (titleMatch && titleMatch[1]) {
       // 保存上一个任务
       if (currentTask && currentTask.title) {
         tasks.push(currentTask)

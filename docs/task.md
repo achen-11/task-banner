@@ -23,34 +23,51 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: f23cf1b1-af62-4b93-b83d-1ca3aba4ce94 -->
-#### 1. 保存任务 bug
+<!-- task-id: 2449a7f2-2135-4c20-9d88-46fb97f86ecb -->
+#### 1. build 异常
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/26 14:28:01
-**更新时间：** 2025/10/26 14:44:05
+**创建时间：** 2025/10/26 15:00:40
+**更新时间：** 2025/10/26 15:05:10
 
 **任务描述：**
 
-- [x] 移除上下键切换任务, 这太容易误触了, 保留也可以, 但需要校验有没有在任务编辑状态(检查输入框有没有聚焦之类的)
-- [x] cmd+s 触发时, 输入框还没失焦, 这会导致内容缺失, 这是前端 bug, 修复它
+- [x] 现在 build 项目会异常,修复它们
 
 **实现说明：**
 
-1. **上下键切换任务误触修复** (TaskDetailDrawer.vue:431-446)
-   - 在 handleKeydown 函数中添加输入框聚焦检测
-   - 当用户在 INPUT 或 TEXTAREA 中输入时，忽略上下键事件
-   - 这样既保留了快捷键功能，又避免了误触
+修复了以下 TypeScript 类型错误，使项目构建成功：
 
-2. **cmd+s 保存时内容缺失修复** (TaskDetailDrawer.vue:489-497)
-   - 在 handleSaveTask 函数开头添加强制失焦逻辑
-   - 使用 document.activeElement.blur() 触发当前聚焦元素的失焦事件
-   - 使用 await nextTick() 等待失焦事件处理完成，确保 TaskBasicInfo 的 @blur 事件能够触发
-   - 这样保证了所有输入框的内容都能在保存前正确提交
+1. **AttachmentUpload.vue (line 134-135)** - 修复 item 可能为 undefined 的错误
+   - 在循环中添加 `if (item && item.kind === 'file')` 检查
+   - 确保只在 item 存在时访问其属性
+
+2. **TaskBasicInfo.vue (line 64, 69)** - 修复字段名错误
+   - 将 `localTask.assignee` 改为 `localTask.assigneeId`
+   - 将 `handleUpdate({ assignee: ... })` 改为 `handleUpdate({ assigneeId: ... })`
+   - 保持与 Task 接口定义一致
+
+3. **TaskDetailDrawer.vue** - 修复类型导入和 emit 类型错误
+   - 移除本地定义的 Task 接口，改为从 `@/types/task` 导入
+   - 添加 `import type { Task, TaskDetail } from '@/types/task'`
+   - 修改 emit 定义，使其接受 `Task | TaskDetail` 类型
+   - 在 emit('task-created') 调用时添加类型断言 `as Task`
+
+4. **export.ts** - 修复多处 undefined 检查错误
+   - Line 181: 添加 `if (match[1])` 检查，确保捕获组存在
+   - Line 198: 添加 `if (!currentMatch) continue` 检查
+   - Line 248: 添加 `titleMatch[1]` 的 undefined 检查
+   - Line 294-295: 添加 `if (!line) continue` 和使用 trimmedLine
+   - Line 300: 添加 `titleMatch[1]` 的 undefined 检查
+
+**构建结果：**
+✅ TypeScript 类型检查通过
+✅ Vite 构建成功
+✅ 所有文件正常打包
 
 ---
 
 
-> 📅 导出时间：2025/10/26 14:59:34
+> 📅 导出时间：2025/10/26 15:05:11
 > 🤖 由 Task-Flow 生成

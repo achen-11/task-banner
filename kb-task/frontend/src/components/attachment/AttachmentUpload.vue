@@ -131,7 +131,7 @@ const handlePaste = (event: ClipboardEvent) => {
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
-    if (item.kind === 'file') {
+    if (item && item.kind === 'file') {
       const file = item.getAsFile()
       if (file) {
         // 为粘贴的文件生成一个名称
