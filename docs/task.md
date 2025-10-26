@@ -30,10 +30,126 @@
 
 ## 任务列表
 
-共 0 个任务
+共 1 个任务
+
+### 🟡 中优先级
+
+<!-- task-id: ca9bace2-b02d-4a14-b560-cdb937601330 -->
+#### 1. 快捷键系统
+
+**状态：** 已完成
+**优先级：** 中
+**创建时间：** 2025/10/26 15:22:23
+**更新时间：** 2025/10/26 21:30:00
+
+**任务描述：**
+
+**任务摘要：** 实现了完整的全局快捷键系统，支持新建、导入导出任务及快捷键说明面板
+
+- [x] N -> 新建任务
+- [x] Cmd + b -> 展开/收起 左侧菜单栏
+- [x] cmd + shift + . -> 查看快捷键说明面板
+- [x] Cmd + e / i 快捷导入导出 (参照task-banner)
+
+在支持快捷键的按钮上添加 hover 提醒(显示快捷键)
+
+**实现细节：**
+
+**新建的文件：**
+1. `src/composables/useKeyboard.ts` - 全局快捷键管理系统
+2. `src/components/common/KeyboardShortcutsPanel.vue` - 快捷键说明面板
+
+**修改的文件：**
+1. `src/layouts/MainLayout.vue` - 集成快捷键系统
+2. `src/components/project/ProjectTaskList.vue` - 任务快捷键注册和按钮提示
+
+**技术要点：**
+
+1. **全局快捷键管理系统** - useKeyboard.ts
+   - 使用单例模式管理所有快捷键
+   - 支持组合键（Ctrl/Cmd、Shift、Alt）
+   - 智能检测操作系统（Mac/Windows）
+   - 自动过滤输入框内的快捷键触发
+   ```typescript
+   interface KeyboardShortcut {
+     key: string
+     ctrl?: boolean
+     meta?: boolean  // Cmd on Mac, Ctrl on Windows
+     shift?: boolean
+     alt?: boolean
+     description: string
+     handler: () => void
+     category?: string
+   }
+
+   export function registerShortcut(shortcut: KeyboardShortcut)
+   export function unregisterShortcut(key: string)
+   export function formatShortcut(shortcut: KeyboardShortcut): string
+   ```
+
+2. **快捷键说明面板** - KeyboardShortcutsPanel.vue
+   - 按类别分组显示所有快捷键
+   - 使用 Element Plus Dialog 组件
+   - 支持 show/hide/toggle 方法
+   - 键盘显示使用 macOS 风格符号（⌘ ⌃ ⇧ ⌥）
+
+3. **全局快捷键注册** - MainLayout.vue:46-67
+   ```typescript
+   // Cmd/Ctrl + B: 切换侧边栏
+   registerShortcut({
+     key: 'b',
+     meta: true,
+     description: '展开/收起左侧菜单栏',
+     category: '导航',
+     handler: toggleSidebar
+   })
+
+   // Cmd/Ctrl + Shift + .: 查看快捷键说明
+   registerShortcut({
+     key: '.',
+     meta: true,
+     shift: true,
+     description: '查看快捷键说明',
+     category: '帮助',
+     handler: () => shortcutsPanelRef.value?.toggle()
+   })
+   ```
+
+4. **任务操作快捷键** - ProjectTaskList.vue:657-691
+   - N: 新建任务
+   - Cmd+I: 快捷导入任务
+   - Cmd+E: 快捷导出任务
+   - 组件卸载时自动移除快捷键
+
+5. **按钮快捷键提示** - ProjectTaskList.vue:31-41
+   ```vue
+   <el-tooltip content="快捷键：N" placement="bottom">
+     <button @click="handleCreateTask">
+       新建任务
+     </button>
+   </el-tooltip>
+   ```
+
+**快捷键列表：**
+
+| 快捷键 | 功能 | 类别 |
+|-------|------|------|
+| N | 新建任务 | 任务操作 |
+| ⌘/Ctrl + B | 展开/收起左侧菜单栏 | 导航 |
+| ⌘/Ctrl + I | 快捷导入任务 | 任务操作 |
+| ⌘/Ctrl + E | 快捷导出任务 | 任务操作 |
+| ⌘/Ctrl + ⇧ + . | 查看快捷键说明 | 帮助 |
+
+**效果：**
+- ✅ 全局快捷键系统，支持动态注册和移除
+- ✅ 智能检测操作系统，显示对应的快捷键符号
+- ✅ 自动过滤输入框内的快捷键冲突
+- ✅ 按钮 hover 显示快捷键提示
+- ✅ 快捷键说明面板按类别分组展示
+- ✅ 组件级快捷键自动清理，无内存泄漏
 
 ---
 
 
-> 📅 导出时间：2025/10/26 21:00:00
+> 📅 导出时间：2025/10/26 21:30:00
 > 🤖 由 Task-Flow 生成

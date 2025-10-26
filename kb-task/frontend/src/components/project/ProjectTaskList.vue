@@ -28,15 +28,17 @@
           </button>
         </div>
       </div>
-      <button
-        class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-        @click="handleCreateTask"
-      >
-        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        新建任务
-      </button>
+      <el-tooltip content="快捷键：N" placement="bottom">
+        <button
+          class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          @click="handleCreateTask"
+        >
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          新建任务
+        </button>
+      </el-tooltip>
     </div>
 
     <div v-if="isLoading" class="p-8 text-center text-gray-400">
@@ -333,6 +335,7 @@ import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import { getTaskList, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { importTasksFromMarkdown, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
+import { registerShortcut, unregisterShortcut } from '@/composables/useKeyboard'
 import type { Task } from '@/types/task'
 
 interface Props {
@@ -647,40 +650,52 @@ const confirmImportTasks = async () => {
   }
 }
 
-// 键盘快捷键处理
-const handleKeydown = (e: KeyboardEvent) => {
-  // 检查是否在抽屉打开状态（如果打开，不处理快捷键）
-  if (isDrawerOpen.value) return
-
-  // 避免在输入框中触发
-  const target = e.target as HTMLElement
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-    return
-  }
-
-  // N 快捷键创建任务
-  if (e.key === 'n' || e.key === 'N') {
-    e.preventDefault()
-    handleCreateTask()
-  } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
-    // cmd+i 或 ctrl+i 导入任务
-    e.preventDefault()
-    handleImportTasks()
-  } else if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
-    // cmd+e 或 ctrl+e 批量导出选中任务
-    e.preventDefault()
-    handleBatchExport()
-  }
-}
-
 // 组件挂载时加载任务和注册快捷键
 onMounted(() => {
   loadTasks()
-  window.addEventListener('keydown', handleKeydown)
+
+  // 注册组件级快捷键
+  registerShortcut({
+    key: 'n',
+    description: '新建任务',
+    category: '任务操作',
+    handler: () => {
+      if (!isDrawerOpen.value) {
+        handleCreateTask()
+      }
+    }
+  })
+
+  registerShortcut({
+    key: 'i',
+    meta: true,
+    description: '快捷导入任务',
+    category: '任务操作',
+    handler: () => {
+      if (!isDrawerOpen.value && props.projectId) {
+        handleImportTasks()
+      }
+    }
+  })
+
+  registerShortcut({
+    key: 'e',
+    meta: true,
+    description: '快捷导出任务',
+    category: '任务操作',
+    handler: () => {
+      if (!isDrawerOpen.value && selectedTaskIds.value.size > 0) {
+        handleBatchExport()
+      }
+    }
+  })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
+  // 移除组件级快捷键
+  unregisterShortcut('n')
+  unregisterShortcut('i')
+  unregisterShortcut('e')
 })
 
 // 抽屉状态

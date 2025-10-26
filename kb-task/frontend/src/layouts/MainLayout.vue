@@ -15,19 +15,54 @@
         </div>
       </main>
     </div>
+
+    <!-- 快捷键说明面板 -->
+    <KeyboardShortcutsPanel ref="shortcutsPanelRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import Sidebar from '@/components/Sidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import KeyboardShortcutsPanel from '@/components/common/KeyboardShortcutsPanel.vue'
+import { useKeyboard, registerShortcut } from '@/composables/useKeyboard'
 
 // 侧边栏收起状态
 const sidebarCollapsed = ref(false)
+
+// 快捷键面板引用
+const shortcutsPanelRef = ref<InstanceType<typeof KeyboardShortcutsPanel> | null>(null)
 
 // 切换侧边栏
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
+
+// 初始化快捷键系统
+useKeyboard()
+
+// 注册全局快捷键
+onMounted(() => {
+  // Cmd/Ctrl + B: 切换侧边栏
+  registerShortcut({
+    key: 'b',
+    meta: true,
+    description: '展开/收起左侧菜单栏',
+    category: '导航',
+    handler: toggleSidebar
+  })
+
+  // Cmd/Ctrl + Shift + .: 查看快捷键说明
+  registerShortcut({
+    key: '.',
+    meta: true,
+    shift: true,
+    description: '查看快捷键说明',
+    category: '帮助',
+    handler: () => {
+      shortcutsPanelRef.value?.toggle()
+    }
+  })
+})
 </script>
