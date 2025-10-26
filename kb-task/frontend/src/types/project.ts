@@ -16,6 +16,11 @@ export interface Project {
   order: number
   createdAt: number
   updatedAt: number
+
+  // 统计信息（可选，从 API detail 接口返回）
+  taskCount?: number          // 总任务数
+  completedTaskCount?: number // 已完成任务数
+  memberCount?: number        // 成员数量
 }
 
 /**
