@@ -121,6 +121,16 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 
+interface Attachment {
+  _id: string
+  name: string
+  size: number
+  type: string
+  url: string
+  thumbnailUrl?: string
+  uploadedAt: number
+}
+
 interface Task {
   _id: string
   taskId: number
@@ -133,6 +143,7 @@ interface Task {
   tags?: string[]
   dueDate?: number
   progress?: number
+  attachments?: Attachment[]
   createdAt: number
   updatedAt: number
 }

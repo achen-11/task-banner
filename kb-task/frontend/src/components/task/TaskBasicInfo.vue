@@ -178,12 +178,63 @@
       <div class="mt-2 text-xs text-gray-400">
         支持 Markdown 语法（开发中）
       </div>
+
+      <!-- 附件区域 -->
+      <div class="mt-6">
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-xs font-medium text-gray-500">附件</label>
+          <button
+            v-if="!showUploadArea"
+            class="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+            @click="showUploadArea = true"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            添加附件
+          </button>
+        </div>
+
+        <!-- 附件上传（可折叠） -->
+        <div v-if="showUploadArea" class="mb-4">
+          <AttachmentUpload
+            @upload="handleAttachmentUpload"
+            @uploaded="handleAttachmentUploaded"
+          />
+          <button
+            class="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            @click="showUploadArea = false"
+          >
+            收起
+          </button>
+        </div>
+
+        <!-- 附件列表 -->
+        <div v-if="localTask.attachments && localTask.attachments.length > 0">
+          <AttachmentList
+            :attachments="localTask.attachments"
+            @delete="handleAttachmentDelete"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import AttachmentUpload from '../attachment/AttachmentUpload.vue'
+import AttachmentList from '../attachment/AttachmentList.vue'
+
+interface Attachment {
+  _id: string
+  name: string
+  size: number
+  type: string
+  url: string
+  thumbnailUrl?: string
+  uploadedAt: number
+}
 
 interface Task {
   _id: string
@@ -197,6 +248,7 @@ interface Task {
   tags?: string[]
   dueDate?: number
   progress?: number
+  attachments?: Attachment[]
   createdAt: number
   updatedAt: number
 }
@@ -245,6 +297,9 @@ const tagInputRef = ref<HTMLInputElement>()
 
 // 字段折叠状态（默认收起）
 const isFieldsCollapsed = ref(true)
+
+// 附件上传区域显示状态
+const showUploadArea = ref(false)
 
 // 监听 props 变化，更新本地副本
 watch(() => props.task, (newTask) => {
@@ -298,6 +353,31 @@ const formatDate = (timestamp: number) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 附件上传处理
+const handleAttachmentUpload = (files: File[]) => {
+  console.log('开始上传附件:', files)
+  // TODO: 实际项目中调用上传 API
+}
+
+// 附件上传完成处理
+const handleAttachmentUploaded = (attachments: Attachment[]) => {
+  const currentAttachments = localTask.value.attachments || []
+  const newAttachments = [...currentAttachments, ...attachments]
+  localTask.value.attachments = newAttachments
+  handleUpdate({ attachments: newAttachments })
+  // 上传完成后自动收起上传区域
+  showUploadArea.value = false
+}
+
+// 附件删除处理
+const handleAttachmentDelete = (attachmentId: string) => {
+  if (!localTask.value.attachments) return
+
+  const newAttachments = localTask.value.attachments.filter(att => att._id !== attachmentId)
+  localTask.value.attachments = newAttachments
+  handleUpdate({ attachments: newAttachments })
 }
 
 // 当显示标签输入时，聚焦输入框
