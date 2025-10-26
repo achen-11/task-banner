@@ -187,10 +187,10 @@ const project = computed<Project | null>(() => projectStore.currentProject)
 const projectId = computed(() => route.params.id as string)
 
 // 头部展开/收起状态
-const collapsed = ref(false)
+const collapsed = ref(true)
 
 // 当前 Tab
-const currentTab = ref('overview')
+const currentTab = ref('list')
 
 // Tab 列表
 const tabs = [

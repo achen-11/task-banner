@@ -310,7 +310,7 @@ const newTag = ref('')
 const tagInputRef = ref<HTMLInputElement>()
 
 // 字段折叠状态（默认收起）
-const isFieldsCollapsed = ref(true)
+const isFieldsCollapsed = ref(false)
 
 // 附件上传区域显示状态
 const showUploadArea = ref(false)

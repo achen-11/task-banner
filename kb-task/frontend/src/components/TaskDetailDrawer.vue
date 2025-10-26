@@ -95,18 +95,44 @@
                 {{ isSaving ? '保存中...' : '保存' }}
               </button>
 
-              <!-- 查看模式：删除按钮 -->
-              <button
-                v-if="mode === 'view'"
-                class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
-                title="删除任务"
-                @click="handleTaskDelete"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                删除
-              </button>
+              <!-- 查看模式：操作按钮组 -->
+              <template v-if="mode === 'view'">
+                <!-- 导出按钮 -->
+                <button
+                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
+                  title="导出任务 (Cmd+E)"
+                  @click="handleExportTask"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  导出
+                </button>
+
+                <!-- 导入按钮 -->
+                <button
+                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
+                  title="导入任务 (Cmd+I)"
+                  @click="handleImportTask"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17l4-4m0 0l4 4m-4-4v12M4 4h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                  </svg>
+                  导入
+                </button>
+
+                <!-- 删除按钮 -->
+                <button
+                  class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
+                  title="删除任务"
+                  @click="handleTaskDelete"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  删除
+                </button>
+              </template>
 
               <!-- 关闭按钮 -->
               <button
@@ -153,6 +179,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, readFromClipboard } from '@/utils/export'
 
 interface Attachment {
   _id: string
@@ -302,13 +329,101 @@ const closeDrawer = () => {
   emit('close')
 }
 
+// 导出当前任务
+const handleExportTask = async () => {
+  if (!currentTask.value || !currentTask.value.title) {
+    alert('没有可导出的任务')
+    return
+  }
+
+  try {
+    const markdown = exportTaskToMarkdown(currentTask.value)
+    const success = await copyToClipboard(markdown)
+
+    if (success) {
+      alert('✅ 任务已复制到剪贴板')
+    } else {
+      alert('❌ 复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('Export task error:', error)
+    alert('导出任务失败')
+  }
+}
+
+// 导入任务
+const handleImportTask = async () => {
+  if (!props.projectId) {
+    alert('缺少项目ID，无法导入任务')
+    return
+  }
+
+  try {
+    const markdown = await readFromClipboard()
+
+    if (!markdown) {
+      // 如果无法读取剪贴板，提示用户手动粘贴
+      const input = prompt('请粘贴 Markdown 格式的任务内容：')
+      if (!input) return
+
+      await importTaskFromMarkdown(input)
+    } else {
+      await importTaskFromMarkdown(markdown)
+    }
+  } catch (error) {
+    console.error('Import task error:', error)
+    alert('导入任务失败')
+  }
+}
+
+// 从 Markdown 导入任务
+const importTaskFromMarkdown = async (markdown: string) => {
+  try {
+    const tasks = importTasksFromMarkdown(markdown, props.projectId!)
+
+    if (tasks.length === 0) {
+      alert('未能解析出任务，请检查 Markdown 格式')
+      return
+    }
+
+    // 创建任务
+    const promises = tasks.map(task =>
+      createTaskAPI({
+        projectId: props.projectId!,
+        title: task.title || '未命名任务',
+        content: task.content || '',
+        status: task.status || 'todo',
+        priority: task.priority || 'medium',
+        assigneeId: task.assigneeId,
+        tagIds: task.tagIds || [],
+        moduleIds: task.moduleIds || []
+      })
+    )
+
+    const createdTasks = await Promise.all(promises)
+
+    if (createdTasks.length === 1) {
+      alert(`✅ 成功导入 1 个任务`)
+      // 切换到新创建的任务
+      emit('task-created', createdTasks[0])
+    } else {
+      alert(`✅ 成功导入 ${createdTasks.length} 个任务`)
+      // 刷新任务列表
+      closeDrawer()
+    }
+  } catch (error: any) {
+    console.error('Import from markdown error:', error)
+    alert(`导入失败：${error?.message || '未知错误'}`)
+  }
+}
+
 // 键盘快捷键
 const handleKeydown = (e: KeyboardEvent) => {
   if (!props.isOpen) return
 
   if (e.key === 'Escape') {
     // 如果有未保存的更改，提示用户
-    if (!isSaved.value) {
+    if (!isSaved.value && props.mode === 'create') {
       const confirmed = confirm('有未保存的更改，确定要关闭吗？')
       if (!confirmed) return
     }
@@ -323,6 +438,14 @@ const handleKeydown = (e: KeyboardEvent) => {
     // cmd+s 或 ctrl+s 保存
     e.preventDefault()
     handleSaveTask()
+  } else if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+    // cmd+e 或 ctrl+e 导出任务
+    e.preventDefault()
+    handleExportTask()
+  } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+    // cmd+i 或 ctrl+i 导入任务
+    e.preventDefault()
+    handleImportTask()
   }
 }
 
@@ -433,7 +556,7 @@ watch(() => props.isOpen, async (newValue, oldValue) => {
         priority: 'medium',
         content: ''
       }
-      isSaved.value = true
+      isSaved.value = false
 
       // 等待 DOM 更新后聚焦标题输入框
       await nextTick()

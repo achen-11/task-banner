@@ -1,105 +1,120 @@
-# Task-FLow - 任务需求文档
+# 任务导入导出功能
+
+## ✅ 已完成
+
+- [x] 阅读 task-banner 下的代码, 将最核心的导入导出功能支持到我们这个系统中
+- [x] 当有任务打开时, cmd+e 导出当前任务(复制到剪切板)
+- [x] cmd+i 导入任务
+
+## 📝 实现细节
+
+### 1. 创建导入导出工具 (frontend/src/utils/export.ts)
+
+**核心功能：**
+
+1. **exportTaskToMarkdown(task, projectName?)** - 导出单个任务为 Markdown 格式
+   - 包含 AI 协作指引
+   - 包含 task-id 注释（用于回填）
+   - 包含任务元数据（状态、优先级、标签、指派人、时间）
+   - 适配我们系统的字段（content、tagIds、assigneeId 等）
+
+2. **exportTasksToMarkdown(tasks[], projectName?)** - 批量导出任务
+   - 按优先级分组
+   - 支持多任务导出
+
+3. **importTasksFromMarkdown(markdown, projectId)** - 从 Markdown 导入任务
+   - 基于 task-id 注释分割任务（主要方式）
+   - 降级方案：基于标题分割（兼容性）
+   - 解析任务属性（状态、优先级、标签、指派人、描述）
+   - 返回任务列表供创建
+
+4. **辅助函数：**
+   - `copyToClipboard(text)` - 复制到剪贴板
+   - `readFromClipboard()` - 从剪贴板读取
+   - `downloadAsFile(content, filename)` - 下载为文件
+
+### 2. 在 TaskDetailDrawer 中集成功能
+
+**快捷键：**
+- `Cmd+E` / `Ctrl+E` - 导出当前任务到剪贴板
+- `Cmd+I` / `Ctrl+I` - 从剪贴板导入任务
+
+**UI 按钮：**
+- 查看模式下显示「导出」和「导入」按钮
+- 点击导出：复制 Markdown 到剪贴板并提示
+- 点击导入：尝试读取剪贴板，失败则弹窗让用户手动粘贴
+
+**导出流程：**
+1. 用户按 `Cmd+E` 或点击「导出」按钮
+2. 调用 `exportTaskToMarkdown()` 生成 Markdown
+3. 调用 `copyToClipboard()` 复制到剪贴板
+4. 显示成功提示
+
+**导入流程：**
+1. 用户按 `Cmd+I` 或点击「导入」按钮
+2. 尝试调用 `readFromClipboard()` 读取剪贴板
+3. 如果失败，使用 `prompt()` 让用户手动粘贴
+4. 调用 `importTasksFromMarkdown()` 解析任务
+5. 批量调用 `createTaskAPI()` 创建任务
+6. 显示成功提示并刷新列表
+
+## 🔄 Markdown 格式示例
+
+```markdown
+# 项目名 - 任务需求文档
 
 ## 🤖 AI 协作指引
 
 ### 任务处理流程
-1. **阅读任务**：仔细阅读下方的任务需求，理解每个任务的目标、技术要点和参考资料
-2. **实现任务**：根据项目技术栈和任务描述完成开发
-3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（`<!-- task-id: xxx -->`）
-4. **更新任务信息**：
-   - 更新任务描述，补充实现细节
-   - 如有修改文件，在技术要点中注明
-   - 添加相关的参考链接（如果有）
-5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容
-
-### ⚠️ 重要提醒
-- 必须保留所有 `<!-- task-id: xxx -->` 注释，这是任务回填的关键标识
-- 保持 Markdown 结构完整，不要删除任何标题层级
-- 任务完成后，可以在任务描述末尾添加实现说明
+1. **阅读任务**：仔细阅读下方的任务需求
+2. **实现任务**：根据项目技术栈完成开发
+3. **保留元数据**：务必保留 task-id 注释
+...
 
 ---
 
 ## 任务列表
 
-共 2 个任务
+共 1 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761455447956-lb16l50pt -->
-#### 1. 创建任务流程优化
+<!-- task-id: 1234567890-abc123 -->
+#### 1. 实现用户登录功能
 
-**状态：** 已完成
+**状态：** 待办
 **优先级：** 中
-**创建时间：** 2025/10/26 13:10:47
-**更新时间：** 2025/10/26 14:30:00
+**标签：** 后端, 安全
+**指派人：** 张三
+**创建时间：** 2025/10/26 14:00:00
+**更新时间：** 2025/10/26 14:00:00
 
 **任务描述：**
 
-- [x] 现在创建流程会先通过 alert 弹窗, 取消这个流程
-- [x] 点击创建时打开抽屉(创建模式)
-- [x] 打开时自动聚焦到标题
-- [x] 支持"N"快捷键快捷创建
-- [x] cmd + s 保存任务
-- [x] 保存/未保存状态提示
-
-**实现细节：**
-
-1. **ProjectTaskList.vue 修改**：
-   - 添加 `drawerMode` 状态（'view' | 'create'）
-   - 重构 `handleCreateTask()` 函数，移除 prompt，直接打开创建模式抽屉
-   - 添加 `handleTaskCreated()` 处理任务创建完成事件
-   - 实现 N 快捷键监听（避免在输入框中触发）
-   - 传递 `mode` 和 `projectId` 给 TaskDetailDrawer
-
-2. **TaskDetailDrawer.vue 重大更新**：
-   - 添加 `mode` prop（'view' | 'create'）
-   - 添加 `titleInputRef` 标题输入框引用
-   - 添加 `newTaskData` 存储创建模式下的任务数据
-   - 添加 `isSaved` 和 `isSaving` 状态管理
-   - 修改 `currentTask` computed，创建模式返回 newTaskData
-   - 实现 `handleSaveTask()` 函数（cmd+s 触发）
-   - 修改 `handleTaskUpdate()`，创建模式下只更新本地数据并标记未保存
-   - watch 抽屉打开事件，创建模式下自动聚焦标题并重置数据
-   - 更新 UI：显示"新建任务"标签、保存状态指示、保存按钮
-   - 隐藏创建模式下的任务导航按钮
-   - Esc 关闭时检查未保存状态并提示
-
-3. **修改文件**：
-   - frontend/src/components/project/ProjectTaskList.vue
-   - frontend/src/components/TaskDetailDrawer.vue
+实现基于 JWT 的用户登录功能，包括：
+- 用户名密码验证
+- Token 生成
+- Token 验证中间件
 
 ---
-
-<!-- task-id: 1761455916589-bgeia70cx -->
-#### 2. 日期类型默认值问题
-
-**状态：** 已完成
-**优先级：** 中
-**创建时间：** 2025/10/26 13:18:36
-**更新时间：** 2025/10/26 14:30:00
-
-**任务描述：**
-
-- [x] timestamp 没有值时默认为空就好, 为 0 会导致ksqlite 报错
-- [x] 我手动修复了 task 的 dueDate 字段, 你检查其他 model 有没有这个问题
-
-**实现细节：**
-
-1. **检查结果**：
-   - 已检查所有 Models 中的 Timestamp 字段
-   - Task.dueDate - 已正确修复（无 default 值）
-   - TaskHistory.createdAt - 使用 `default: () => Date.now()`（正确）
-   - Notification.createdAt - 使用 `default: () => Date.now()`（正确）
-   - ProjectMember.joinedAt - 使用 `default: () => Date.now()`（正确）
-
-2. **结论**：
-   - 所有 Timestamp 字段都已正确配置
-   - 没有使用 `default: 0` 的 Timestamp 字段
-   - `default: 0` 只用于 Number 类型字段（如 progress, order）
-   - 不需要额外修改
-
----
-
 
 > 📅 导出时间：2025/10/26 14:30:00
-> 🤖 由 Claude Code 完成
+> 🤖 由 Task-Flow 生成
+```
+
+## 🎯 使用场景
+
+1. **与 AI 协作**：导出任务到 Claude/ChatGPT，获取实现建议后导入更新
+2. **任务备份**：导出重要任务到 Markdown 文件保存
+3. **跨项目复制**：从一个项目导出任务，导入到另一个项目
+4. **批量创建**：手写 Markdown 格式任务，批量导入
+
+## 📂 修改的文件
+
+- `frontend/src/utils/export.ts` - 新建，导入导出工具函数
+- `frontend/src/components/TaskDetailDrawer.vue` - 集成导入导出功能
+  - 添加 `handleExportTask()` 函数
+  - 添加 `handleImportTask()` 函数
+  - 添加 `importTaskFromMarkdown()` 函数
+  - 添加 Cmd+E 和 Cmd+I 快捷键
+  - 添加导出/导入按钮到工具栏
