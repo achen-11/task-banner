@@ -1,0 +1,310 @@
+<template>
+  <div class="h-full flex flex-col">
+    <!-- 任务信息区域（固定在上方） -->
+    <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200">
+      <!-- 折叠按钮 -->
+      <div class="flex items-center justify-end">
+        <button
+          class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+          @click="isFieldsCollapsed = !isFieldsCollapsed"
+        >
+          <span>{{ isFieldsCollapsed ? '展开详情' : '收起详情' }}</span>
+          <svg
+            class="w-4 h-4 transition-transform"
+            :class="{ 'rotate-180': !isFieldsCollapsed }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 紧凑的字段网格（可折叠） -->
+      <div
+        v-show="!isFieldsCollapsed"
+        class="space-y-4"
+      >
+        <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <!-- 状态 -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 w-16">状态</label>
+          <el-select
+            v-model="localTask.status"
+            size="small"
+            class="flex-1"
+            @change="handleUpdate({ status: localTask.status })"
+          >
+            <el-option label="待办" value="todo" />
+            <el-option label="进行中" value="in_progress" />
+            <el-option label="已完成" value="completed" />
+          </el-select>
+        </div>
+
+        <!-- 优先级 -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 w-16">优先级</label>
+          <el-select
+            v-model="localTask.priority"
+            size="small"
+            class="flex-1"
+            @change="handleUpdate({ priority: localTask.priority })"
+          >
+            <el-option label="低" value="low" />
+            <el-option label="中" value="medium" />
+            <el-option label="高" value="high" />
+          </el-select>
+        </div>
+
+        <!-- 指派人 -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 w-16">指派人</label>
+          <el-select
+            v-model="localTask.assignee"
+            size="small"
+            clearable
+            class="flex-1"
+            placeholder="未指派"
+            @change="handleUpdate({ assignee: localTask.assignee })"
+          >
+            <el-option label="张三" value="张三" />
+            <el-option label="李四" value="李四" />
+            <el-option label="王五" value="王五" />
+          </el-select>
+        </div>
+
+        <!-- 截止日期 -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 w-16">截止</label>
+          <el-date-picker
+            :model-value="localTask.dueDate"
+            type="date"
+            size="small"
+            class="flex-1"
+            placeholder="选择日期"
+            format="MM/DD"
+            @update:model-value="handleDueDateChange"
+          />
+        </div>
+
+        <!-- 模块（多选，占满一行） -->
+        <div class="col-span-2 flex items-center gap-2">
+          <label class="text-xs text-gray-500 w-16">模块</label>
+          <el-select
+            v-model="localModules"
+            multiple
+            size="small"
+            class="flex-1"
+            placeholder="选择模块"
+            @change="handleModulesChange"
+          >
+            <el-option label="前端" value="前端" />
+            <el-option label="后端" value="后端" />
+            <el-option label="设计" value="设计" />
+            <el-option label="测试" value="测试" />
+            <el-option label="运维" value="运维" />
+          </el-select>
+        </div>
+        </div>
+
+        <!-- 标签 -->
+        <div>
+        <label class="block text-xs text-gray-500 mb-2">标签</label>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="tag in localTask.tags"
+            :key="tag"
+            class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+          >
+            {{ tag }}
+            <button
+              class="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+              @click="removeTag(tag)"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </span>
+          <button
+            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 border border-dashed border-gray-300 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors"
+            @click="showTagInput = true"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            添加标签
+          </button>
+          <input
+            v-if="showTagInput"
+            ref="tagInputRef"
+            v-model="newTag"
+            type="text"
+            class="inline-block w-24 px-2 py-1 text-xs border border-blue-500 rounded-full"
+            placeholder="标签名..."
+            @keydown.enter="addTag"
+            @blur="showTagInput = false"
+          />
+        </div>
+        </div>
+
+        <!-- 元数据 -->
+        <div class="grid grid-cols-2 gap-4 text-xs text-gray-500 pt-2">
+        <div>
+          <span class="font-medium">创建：</span>
+          <span>{{ formatDate(localTask.createdAt) }}</span>
+        </div>
+        <div>
+          <span class="font-medium">更新：</span>
+          <span>{{ formatDate(localTask.updatedAt) }}</span>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务描述区域（可滚动） -->
+    <div class="flex-1 overflow-y-auto mt-4">
+      <label class="block text-xs font-medium text-gray-500 mb-2">描述</label>
+      <div class="border border-gray-200 rounded-lg overflow-hidden transition-all">
+        <textarea
+          v-model="localTask.description"
+          rows="12"
+          class="w-full px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none"
+          placeholder="添加任务描述...&#10;&#10;提示：未来将支持富文本编辑（Quill.js）、@提及、Markdown 等功能"
+          @blur="handleUpdate({ description: localTask.description })"
+        ></textarea>
+      </div>
+      <div class="mt-2 text-xs text-gray-400">
+        支持 Markdown 语法（开发中）
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, nextTick } from 'vue'
+
+interface Task {
+  _id: string
+  taskId: number
+  title: string
+  status: 'todo' | 'in_progress' | 'completed'
+  priority: 'low' | 'medium' | 'high'
+  description?: string
+  assignee?: string
+  module?: string | string[]
+  tags?: string[]
+  dueDate?: number
+  progress?: number
+  createdAt: number
+  updatedAt: number
+}
+
+interface Props {
+  task: Task | null
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'update', updates: Partial<Task>): void
+}>()
+
+// 本地任务副本（用于编辑）
+const localTask = ref<Task>({
+  _id: '',
+  taskId: 0,
+  title: '',
+  status: 'todo',
+  priority: 'medium',
+  tags: [],
+  progress: 0,
+  createdAt: Date.now(),
+  updatedAt: Date.now()
+})
+
+// 模块多选处理
+const localModules = ref<string[]>([])
+
+// 初始化模块值
+watch(() => props.task?.module, (newModule) => {
+  if (Array.isArray(newModule)) {
+    localModules.value = newModule
+  } else if (typeof newModule === 'string') {
+    localModules.value = [newModule]
+  } else {
+    localModules.value = []
+  }
+}, { immediate: true })
+
+// 标签输入
+const showTagInput = ref(false)
+const newTag = ref('')
+const tagInputRef = ref<HTMLInputElement>()
+
+// 字段折叠状态（默认收起）
+const isFieldsCollapsed = ref(true)
+
+// 监听 props 变化，更新本地副本
+watch(() => props.task, (newTask) => {
+  if (newTask) {
+    localTask.value = { ...newTask }
+  }
+}, { immediate: true, deep: true })
+
+// 处理更新
+const handleUpdate = (updates: Partial<Task>) => {
+  emit('update', updates)
+}
+
+// 处理日期变更
+const handleDueDateChange = (value: number | null) => {
+  localTask.value.dueDate = value || undefined
+  handleUpdate({ dueDate: value || undefined })
+}
+
+// 处理模块变更
+const handleModulesChange = (value: string[]) => {
+  localTask.value.module = value
+  handleUpdate({ module: value })
+}
+
+// 添加标签
+const addTag = () => {
+  if (newTag.value.trim()) {
+    const tags = [...(localTask.value.tags || []), newTag.value.trim()]
+    localTask.value.tags = tags
+    handleUpdate({ tags })
+    newTag.value = ''
+    showTagInput.value = false
+  }
+}
+
+// 移除标签
+const removeTag = (tag: string) => {
+  const tags = (localTask.value.tags || []).filter(t => t !== tag)
+  localTask.value.tags = tags
+  handleUpdate({ tags })
+}
+
+// 格式化日期
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 当显示标签输入时，聚焦输入框
+watch(showTagInput, async (show) => {
+  if (show) {
+    await nextTick()
+    tagInputRef.value?.focus()
+  }
+})
+</script>
