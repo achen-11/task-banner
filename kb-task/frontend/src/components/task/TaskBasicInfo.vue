@@ -229,6 +229,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
 import { getAttachmentList } from '@/api/attachment'
@@ -398,9 +399,8 @@ const handleAttachmentUploaded = (attachments: Attachment[]) => {
 
 // 附件上传错误处理
 const handleAttachmentError = (message: string) => {
-  // TODO: 显示错误提示（可以使用 Element Plus 的 Message 组件）
   console.error('附件上传失败:', message)
-  alert(message)
+  ElMessage.error(message)
 }
 
 // 附件删除处理

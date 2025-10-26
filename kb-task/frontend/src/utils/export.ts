@@ -224,7 +224,8 @@ function parseSingleTask(
   const lines = content.split('\n')
 
   const task: Pick<Task, 'projectId' | 'title' | 'content' | 'status' | 'priority'> & Partial<Task> = {
-    // _id 将由后端生成，这里只是用于更新已存在的任务
+    // 保存 task-id 用于更新已存在的任务
+    _id: taskId,
     projectId,
     title: '',
     content: '',

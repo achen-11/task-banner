@@ -261,6 +261,8 @@ export function updateTask(
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate
   if (data.progress !== undefined) updateData.progress = data.progress
 
+  if (data.dueDate === 0) delete updateData.dueDate
+
   const updatedId = Task.updateById(taskId, updateData)
 
   // 如果提供了模块，更新任务模块关联

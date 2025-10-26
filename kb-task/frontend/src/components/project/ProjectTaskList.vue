@@ -2,10 +2,31 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-100">
     <!-- 顶部工具栏 - 移除了标题 -->
     <div class="p-3 border-b border-gray-100 flex items-center justify-between">
-      <div class="text-sm text-gray-500">
-        <span v-if="isLoading">加载中...</span>
-        <span v-else-if="error" class="text-red-500">{{ error }}</span>
-        <span v-else>共 {{ tasks.length }} 个任务</span>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-500">
+          <span v-if="isLoading">加载中...</span>
+          <span v-else-if="error" class="text-red-500">{{ error }}</span>
+          <span v-else>共 {{ tasks.length }} 个任务</span>
+        </div>
+        <div v-if="selectedTaskIds.size > 0" class="flex items-center gap-2">
+          <span class="text-sm text-blue-600 font-medium">已选择 {{ selectedTaskIds.size }} 个</span>
+          <button
+            class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            @click="handleBatchExport"
+            title="导出选中任务 (Cmd+E)"
+          >
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            批量导出
+          </button>
+          <button
+            class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            @click="clearSelection"
+          >
+            取消选择
+          </button>
+        </div>
       </div>
       <button
         class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -46,7 +67,16 @@
     <!-- 任务表格 -->
     <div v-else>
       <!-- 表头 -->
-      <div class="grid grid-cols-[80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div class="flex items-center justify-center">
+          <input
+            type="checkbox"
+            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+            :checked="isAllSelected"
+            :indeterminate="isSomeSelected"
+            @change="toggleSelectAll"
+          />
+        </div>
         <div>ID</div>
         <div>标题</div>
         <div>指派人</div>
@@ -60,16 +90,26 @@
         <div
           v-for="task in tasks"
           :key="task._id"
-          class="grid grid-cols-[80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors items-center"
-          @click="openTaskDetail(task._id)"
+          class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
+          :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }"
         >
+          <!-- Checkbox -->
+          <div class="flex items-center justify-center" @click.stop>
+            <input
+              type="checkbox"
+              class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              :checked="selectedTaskIds.has(task._id)"
+              @change="toggleTaskSelection(task._id)"
+            />
+          </div>
+
           <!-- ID -->
-          <div class="text-sm font-mono text-gray-500">
+          <div class="text-sm font-mono text-gray-500 cursor-pointer" @click="openTaskDetail(task._id)">
             #{{ task.displayId }}
           </div>
 
           <!-- 标题 -->
-          <div class="min-w-0">
+          <div class="min-w-0 cursor-pointer" @click="openTaskDetail(task._id)">
             <div class="font-medium text-gray-900 truncate">{{ task.title }}</div>
             <div v-if="task.tagIds && task.tagIds.length > 0" class="flex items-center gap-1 mt-1">
               <span
@@ -86,7 +126,7 @@
           </div>
 
           <!-- 指派人 -->
-          <div class="text-sm text-gray-600">
+          <div class="text-sm text-gray-600 cursor-pointer" @click="openTaskDetail(task._id)">
             <div v-if="task.assigneeId" class="flex items-center gap-2">
               <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
                 {{ task.assigneeId.charAt(0) }}
@@ -97,7 +137,7 @@
           </div>
 
           <!-- 优先级 -->
-          <div>
+          <div class="cursor-pointer" @click="openTaskDetail(task._id)">
             <span
               class="inline-block px-2 py-1 text-xs font-medium rounded-full"
               :class="getPriorityBadgeClass(task.priority)"
@@ -107,12 +147,12 @@
           </div>
 
           <!-- 最后更新 -->
-          <div class="text-sm text-gray-500">
+          <div class="text-sm text-gray-500 cursor-pointer" @click="openTaskDetail(task._id)">
             {{ formatDate(task.updatedAt) }}
           </div>
 
           <!-- 状态 -->
-          <div>
+          <div class="cursor-pointer" @click="openTaskDetail(task._id)">
             <div
               class="w-5 h-5 rounded flex items-center justify-center"
               :class="getStatusIconClass(task.status)"
@@ -144,9 +184,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
-import { getTaskList, createTask as createTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { getTaskList, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { importTasksFromMarkdown, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 import type { Task } from '@/types/task'
 
 interface Props {
@@ -159,6 +201,19 @@ const props = defineProps<Props>()
 const tasks = ref<Task[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+// 批量选择状态
+const selectedTaskIds = ref<Set<string>>(new Set())
+
+// 计算属性：是否全选
+const isAllSelected = computed(() => {
+  return tasks.value.length > 0 && selectedTaskIds.value.size === tasks.value.length
+})
+
+// 计算属性：是否部分选中
+const isSomeSelected = computed(() => {
+  return selectedTaskIds.value.size > 0 && selectedTaskIds.value.size < tasks.value.length
+})
 
 // 加载任务列表
 const loadTasks = async () => {
@@ -185,20 +240,176 @@ const loadTasks = async () => {
 // 监听projectId变化，重新加载任务
 watch(() => props.projectId, () => {
   loadTasks()
+  // 清空选择
+  selectedTaskIds.value.clear()
 }, { immediate: true })
 
-// 键盘快捷键处理
-const handleKeydown = (e: KeyboardEvent) => {
-  // N 快捷键创建任务（只在未打开抽屉时生效）
-  if (e.key === 'n' || e.key === 'N') {
-    // 避免在输入框中触发
-    const target = e.target as HTMLElement
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+// 切换单个任务选择
+const toggleTaskSelection = (taskId: string) => {
+  if (selectedTaskIds.value.has(taskId)) {
+    selectedTaskIds.value.delete(taskId)
+  } else {
+    selectedTaskIds.value.add(taskId)
+  }
+  // 触发响应式更新
+  selectedTaskIds.value = new Set(selectedTaskIds.value)
+}
+
+// 全选/取消全选
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    // 取消全选
+    selectedTaskIds.value.clear()
+  } else {
+    // 全选
+    selectedTaskIds.value = new Set(tasks.value.map(t => t._id))
+  }
+}
+
+// 清空选择
+const clearSelection = () => {
+  selectedTaskIds.value.clear()
+  selectedTaskIds.value = new Set()
+}
+
+// 批量导出选中任务
+const handleBatchExport = async () => {
+  if (selectedTaskIds.value.size === 0) {
+    ElMessage.warning('请先选择要导出的任务')
+    return
+  }
+
+  try {
+    // 获取选中的任务
+    const selectedTasks = tasks.value.filter(t => selectedTaskIds.value.has(t._id))
+
+    // 导出为 Markdown
+    const markdown = exportTasksToMarkdown(selectedTasks)
+    const success = await copyToClipboard(markdown)
+
+    if (success) {
+      ElMessage.success(`已导出 ${selectedTasks.length} 个任务到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('Batch export error:', error)
+    ElMessage.error('批量导出失败')
+  }
+}
+
+// 从剪贴板导入任务
+const handleImportTasks = async () => {
+  if (!props.projectId) {
+    ElMessage.warning('缺少项目ID，无法导入任务')
+    return
+  }
+
+  try {
+    const markdown = await readFromClipboard()
+
+    if (!markdown) {
+      // 如果无法读取剪贴板，提示用户手动粘贴
+      const input = prompt('请粘贴 Markdown 格式的任务内容：')
+      if (!input) return
+
+      await importTasksFromMarkdownHelper(input)
+    } else {
+      await importTasksFromMarkdownHelper(markdown)
+    }
+  } catch (error) {
+    console.error('Import tasks error:', error)
+    ElMessage.error('导入任务失败')
+  }
+}
+
+// 导入任务辅助函数
+const importTasksFromMarkdownHelper = async (markdown: string) => {
+  try {
+    const parsedTasks = importTasksFromMarkdown(markdown, props.projectId!)
+
+    if (parsedTasks.length === 0) {
+      ElMessage.warning('未能解析出任务，请检查 Markdown 格式')
       return
     }
 
+    let createdCount = 0
+    let updatedCount = 0
+
+    // 处理每个任务（创建或更新）
+    const promises = parsedTasks.map(async task => {
+      // 检查任务是否已经存在（通过 _id）
+      const existingTask = task._id && tasks.value.find(t => t._id === task._id)
+
+      if (existingTask) {
+        // 更新已存在的任务
+        updatedCount++
+        return updateTaskAPI({
+          id: task._id!,
+          title: task.title || existingTask.title,
+          content: task.content !== undefined ? task.content : existingTask.content,
+          status: task.status || existingTask.status,
+          priority: task.priority || existingTask.priority,
+          assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
+          tagIds: task.tagIds || existingTask.tagIds,
+          moduleIds: task.moduleIds || existingTask.moduleIds,
+          dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate
+        })
+      } else {
+        // 创建新任务
+        createdCount++
+        return createTaskAPI({
+          projectId: props.projectId!,
+          title: task.title || '未命名任务',
+          content: task.content || '',
+          status: task.status || 'todo',
+          priority: task.priority || 'medium',
+          assigneeId: task.assigneeId,
+          tagIds: task.tagIds || [],
+          moduleIds: task.moduleIds || []
+        })
+      }
+    })
+
+    const processedTasks = await Promise.all(promises)
+
+    // 显示结果消息
+    const messages: string[] = []
+    if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
+    if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
+    ElMessage.success(`成功${messages.join('、')}任务`)
+
+    // 刷新任务列表
+    await loadTasks()
+  } catch (error: any) {
+    console.error('Import from markdown error:', error)
+    ElMessage.error(`导入失败：${error?.message || '未知错误'}`)
+  }
+}
+
+// 键盘快捷键处理
+const handleKeydown = (e: KeyboardEvent) => {
+  // 检查是否在抽屉打开状态（如果打开，不处理快捷键）
+  if (isDrawerOpen.value) return
+
+  // 避免在输入框中触发
+  const target = e.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+    return
+  }
+
+  // N 快捷键创建任务
+  if (e.key === 'n' || e.key === 'N') {
     e.preventDefault()
     handleCreateTask()
+  } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+    // cmd+i 或 ctrl+i 导入任务
+    e.preventDefault()
+    handleImportTasks()
+  } else if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+    // cmd+e 或 ctrl+e 批量导出选中任务
+    e.preventDefault()
+    handleBatchExport()
   }
 }
 
@@ -251,6 +462,9 @@ const handleTaskUpdated = (updatedTask: Task) => {
   const index = tasks.value.findIndex(t => t._id === updatedTask._id)
   if (index !== -1) {
     tasks.value[index] = updatedTask
+  } else {
+    // 如果任务不存在，添加到列表顶部（用于 continueCreate 模式）
+    tasks.value.unshift(updatedTask)
   }
 }
 
@@ -265,7 +479,7 @@ const handleTaskDeleted = async (taskId: string) => {
     // 关闭抽屉
     isDrawerOpen.value = false
   } catch (err: any) {
-    alert(err?.message || '删除任务失败')
+    ElMessage.error(err?.message || '删除任务失败')
     console.error('Failed to delete task:', err)
   }
 }

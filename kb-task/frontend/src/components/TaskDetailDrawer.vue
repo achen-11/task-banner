@@ -69,7 +69,9 @@
                   type="text"
                   class="w-full text-base font-semibold text-gray-900 border-0 border-b-2 border-transparent hover:border-gray-200 px-0 py-1 transition-colors bg-transparent focus:outline-none focus:border-blue-500"
                   placeholder="任务标题..."
-                  @input="handleTaskUpdate({ title: ($event.target as HTMLInputElement).value })"
+                  @input="handleTitleInput"
+                  @compositionstart="handleTitleCompositionStart"
+                  @compositionend="handleTitleCompositionEnd"
                   @blur="mode === 'view' ? handleTaskUpdate({ title: ($event.target as HTMLInputElement).value }) : null"
                 />
               </div>
@@ -84,7 +86,7 @@
                 :class="isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
                 :disabled="isSaving"
                 title="保存任务 (Cmd+S)"
-                @click="handleSaveTask"
+                @click="() => handleSaveTask(false)"
               >
                 <svg v-if="isSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -176,6 +178,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
@@ -232,6 +235,9 @@ const newTaskData = ref<Partial<Task>>({
 // 保存状态
 const isSaved = ref(true)
 const isSaving = ref(false)
+
+// 中文输入法标志（防止输入混乱）
+const isComposing = ref(false)
 
 // 抽屉宽度管理
 const drawerWidth = ref(1000) // 默认宽度 1000px
@@ -313,7 +319,7 @@ const closeDrawer = () => {
 // 导出当前任务
 const handleExportTask = async () => {
   if (!currentTask.value || !currentTask.value.title) {
-    alert('没有可导出的任务')
+    ElMessage.warning('没有可导出的任务')
     return
   }
 
@@ -322,20 +328,20 @@ const handleExportTask = async () => {
     const success = await copyToClipboard(markdown)
 
     if (success) {
-      alert('✅ 任务已复制到剪贴板')
+      ElMessage.success('任务已复制到剪贴板')
     } else {
-      alert('❌ 复制失败，请重试')
+      ElMessage.error('复制失败，请重试')
     }
   } catch (error) {
     console.error('Export task error:', error)
-    alert('导出任务失败')
+    ElMessage.error('导出任务失败')
   }
 }
 
 // 导入任务
 const handleImportTask = async () => {
   if (!props.projectId) {
-    alert('缺少项目ID，无法导入任务')
+    ElMessage.warning('缺少项目ID，无法导入任务')
     return
   }
 
@@ -353,7 +359,7 @@ const handleImportTask = async () => {
     }
   } catch (error) {
     console.error('Import task error:', error)
-    alert('导入任务失败')
+    ElMessage.error('导入任务失败')
   }
 }
 
@@ -363,41 +369,79 @@ const importTaskFromMarkdown = async (markdown: string) => {
     const tasks = importTasksFromMarkdown(markdown, props.projectId!)
 
     if (tasks.length === 0) {
-      alert('未能解析出任务，请检查 Markdown 格式')
+      ElMessage.warning('未能解析出任务，请检查 Markdown 格式')
       return
     }
 
-    // 创建任务
-    const promises = tasks.map(task =>
-      createTaskAPI({
-        projectId: props.projectId!,
-        title: task.title || '未命名任务',
-        content: task.content || '',
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        assigneeId: task.assigneeId,
-        tagIds: task.tagIds || [],
-        moduleIds: task.moduleIds || []
-      })
-    )
+    let createdCount = 0
+    let updatedCount = 0
 
-    const createdTasks = await Promise.all(promises)
+    // 处理每个任务（创建或更新）
+    const promises = tasks.map(async task => {
+      // 检查任务是否已经存在（通过 _id）
+      const existingTask = task._id && props.allTasks?.find(t => t._id === task._id)
 
-    if (createdTasks.length === 1) {
-      alert(`✅ 成功导入 1 个任务`)
-      // 切换到新创建的任务
-      const task = createdTasks[0]
-      if (task) {
-        emit('task-created', task as Task)
+      if (existingTask) {
+        // 更新已存在的任务
+        updatedCount++
+        return updateTaskAPI({
+          id: task._id!,
+          title: task.title || existingTask.title,
+          content: task.content !== undefined ? task.content : existingTask.content,
+          status: task.status || existingTask.status,
+          priority: task.priority || existingTask.priority,
+          assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
+          tagIds: task.tagIds || existingTask.tagIds,
+          moduleIds: task.moduleIds || existingTask.moduleIds,
+          dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate
+        })
+      } else {
+        // 创建新任务
+        createdCount++
+        return createTaskAPI({
+          projectId: props.projectId!,
+          title: task.title || '未命名任务',
+          content: task.content || '',
+          status: task.status || 'todo',
+          priority: task.priority || 'medium',
+          assigneeId: task.assigneeId,
+          tagIds: task.tagIds || [],
+          moduleIds: task.moduleIds || []
+        })
+      }
+    })
+
+    const processedTasks = await Promise.all(promises)
+
+    // 显示结果消息
+    if (tasks.length === 1) {
+      if (updatedCount > 0) {
+        ElMessage.success('成功更新 1 个任务')
+        // 切换到更新的任务
+        const task = processedTasks[0]
+        if (task) {
+          emit('task-updated', task as Task)
+        }
+      } else {
+        ElMessage.success('成功创建 1 个任务')
+        // 切换到新创建的任务
+        const task = processedTasks[0]
+        if (task) {
+          emit('task-created', task as Task)
+        }
       }
     } else {
-      alert(`✅ 成功导入 ${createdTasks.length} 个任务`)
+      const messages: string[] = []
+      if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
+      if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
+      ElMessage.success(`成功${messages.join('、')}任务`)
+
       // 刷新任务列表
       closeDrawer()
     }
   } catch (error: any) {
     console.error('Import from markdown error:', error)
-    alert(`导入失败：${error?.message || '未知错误'}`)
+    ElMessage.error(`导入失败：${error?.message || '未知错误'}`)
   }
 }
 
@@ -430,8 +474,10 @@ const handleKeydown = (e: KeyboardEvent) => {
     goToNextTask()
   } else if ((e.metaKey || e.ctrlKey) && e.key === 's') {
     // cmd+s 或 ctrl+s 保存
+    // cmd+shift+s 保存并继续新建
     e.preventDefault()
-    handleSaveTask()
+    const continueCreate = e.shiftKey
+    handleSaveTask(continueCreate)
   } else if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
     // cmd+e 或 ctrl+e 导出任务
     e.preventDefault()
@@ -441,6 +487,25 @@ const handleKeydown = (e: KeyboardEvent) => {
     e.preventDefault()
     handleImportTask()
   }
+}
+
+// 标题输入处理（防止中文输入法混乱）
+const handleTitleInput = (e: Event) => {
+  // 如果正在使用中文输入法，不立即更新
+  if (isComposing.value) return
+
+  const value = (e.target as HTMLInputElement).value
+  handleTaskUpdate({ title: value })
+}
+
+const handleTitleCompositionStart = () => {
+  isComposing.value = true
+}
+
+const handleTitleCompositionEnd = (e: Event) => {
+  isComposing.value = false
+  const value = (e.target as HTMLInputElement).value
+  handleTaskUpdate({ title: value })
 }
 
 // 任务更新处理
@@ -465,12 +530,12 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
     emit('task-updated', updatedTask)
   } catch (err: any) {
     console.error('Failed to update task:', err)
-    alert(err?.message || '更新任务失败')
+    ElMessage.error(err?.message || '更新任务失败')
   }
 }
 
 // 保存任务（创建或更新）
-const handleSaveTask = async () => {
+const handleSaveTask = async (continueCreate = false) => {
   if (isSaving.value) return
 
   // 强制失焦当前聚焦的元素，确保所有输入都已提交（修复 cmd+s 时内容缺失的问题）
@@ -483,13 +548,13 @@ const handleSaveTask = async () => {
   // 创建模式下
   if (props.mode === 'create') {
     if (!newTaskData.value.title || newTaskData.value.title.trim() === '') {
-      alert('请输入任务标题')
+      ElMessage.warning('请输入任务标题')
       titleInputRef.value?.focus()
       return
     }
 
     if (!props.projectId) {
-      alert('缺少项目ID')
+      ElMessage.error('缺少项目ID')
       return
     }
 
@@ -510,11 +575,35 @@ const handleSaveTask = async () => {
 
       isSaved.value = true
 
-      // 通知父组件任务已创建
-      emit('task-created', task)
+      if (continueCreate) {
+        // cmd+shift+s：保存并继续新建
+        ElMessage.success('任务创建成功，可继续新建')
+
+        // 重置表单
+        newTaskData.value = {
+          title: '',
+          status: 'todo',
+          priority: 'medium',
+          content: ''
+        }
+        isSaved.value = false
+
+        // 聚焦标题输入框
+        await nextTick()
+        titleInputRef.value?.focus()
+
+        // 通知父组件任务已创建（但不切换模式）
+        emit('task-updated', task)
+      } else {
+        // cmd+s：保存并切换到查看模式
+        ElMessage.success('任务创建成功')
+
+        // 通知父组件任务已创建并切换到查看模式
+        emit('task-created', task)
+      }
     } catch (err: any) {
       console.error('Failed to create task:', err)
-      alert(err?.message || '创建任务失败')
+      ElMessage.error(err?.message || '创建任务失败')
     } finally {
       isSaving.value = false
     }
@@ -533,7 +622,7 @@ const handleTaskDelete = async () => {
     emit('task-deleted', currentTask.value._id)
   } catch (err: any) {
     console.error('Failed to delete task:', err)
-    alert(err?.message || '删除任务失败')
+    ElMessage.error(err?.message || '删除任务失败')
   }
 }
 
