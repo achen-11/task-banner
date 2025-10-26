@@ -42,6 +42,10 @@ export const TaskHistory = ksql.define(
       type: DataTypes.String,
       required: true // create, update, delete
     },
+    summary: {
+      type: DataTypes.String,
+      default: '' // 任务摘要（20-50字的简短总结）
+    },
     createdAt: {
       type: DataTypes.Timestamp,
       default: () => Date.now()

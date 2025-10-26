@@ -16,6 +16,7 @@ export interface Task {
   tagIds?: string[]
   dueDate?: number
   progress?: number
+  summary?: string
   order: number
   createdAt: number
   updatedAt: number
@@ -51,6 +52,7 @@ export interface CreateTaskParams {
   tagIds?: string[]
   dueDate?: number
   progress?: number
+  summary?: string
 }
 
 export interface UpdateTaskParams {
@@ -64,6 +66,7 @@ export interface UpdateTaskParams {
   tagIds?: string[]
   dueDate?: number
   progress?: number
+  summary?: string
 }
 
 export interface TaskListFilters {

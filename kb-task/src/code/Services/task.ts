@@ -7,6 +7,7 @@ import { TaskTag, type TaskTagType } from 'code/Models/TaskTag'
 import { TaskModule, type TaskModuleType } from 'code/Models/TaskModule'
 import { Tag, type TagType } from 'code/Models/Tag'
 import { Module, type ModuleType } from 'code/Models/Module'
+import { TaskHistory } from 'code/Models/TaskHistory'
 
 /**
  * 任务信息接口
@@ -80,6 +81,7 @@ export function createTask(data: {
   dueDate?: number
   progress?: number
   tags?: string[] // 标签 ID 数组
+  summary?: string // 任务摘要（20-50字）
 }): string {
   // 1. 获取当前最大 order 值
   const tasks = Task.findAll({ projectId: data.projectId }) as TaskType[]
@@ -122,6 +124,17 @@ export function createTask(data: {
       })
     })
   }
+
+  // 6. 记录任务创建历史
+  TaskHistory.create({
+    taskId: taskId,
+    userId: data.creatorId,
+    field: 'task',
+    oldValue: '',
+    newValue: data.title,
+    action: 'create',
+    summary: data.summary || ''
+  })
 
   return taskId
 }
@@ -235,6 +248,7 @@ export function getProjectTasks(
  * 更新任务信息
  * @param taskId - 任务 ID（字符串类型）
  * @param data - 更新的数据
+ * @param userId - 执行更新的用户 ID（用于记录历史）
  * @returns 是否成功
  */
 export function updateTask(
@@ -249,8 +263,13 @@ export function updateTask(
     progress?: number
     moduleIds?: string[] // 如果提供，会完全替换现有模块
     tags?: string[] // 如果提供，会完全替换现有标签
-  }
+    summary?: string // 任务摘要（20-50字）
+  },
+  userId?: string
 ): boolean {
+  // 获取旧任务数据用于记录历史
+  const oldTask = userId ? (Task.findById(taskId) as TaskType | null) : null
+
   const updateData: any = {}
 
   if (data.title !== undefined) updateData.title = data.title
@@ -264,6 +283,55 @@ export function updateTask(
   if (data.dueDate === 0) delete updateData.dueDate
 
   const updatedId = Task.updateById(taskId, updateData)
+
+  // 记录字段变更历史
+  if (userId && oldTask) {
+    const fieldMap: Array<{ field: string; oldValue: any; newValue: any }> = []
+
+    if (data.title !== undefined && data.title !== oldTask.title) {
+      fieldMap.push({ field: 'title', oldValue: oldTask.title, newValue: data.title })
+    }
+    if (data.content !== undefined && data.content !== oldTask.content) {
+      fieldMap.push({ field: 'content', oldValue: oldTask.content, newValue: data.content })
+    }
+    if (data.status !== undefined && data.status !== oldTask.status) {
+      fieldMap.push({ field: 'status', oldValue: oldTask.status, newValue: data.status })
+    }
+    if (data.priority !== undefined && data.priority !== oldTask.priority) {
+      fieldMap.push({ field: 'priority', oldValue: oldTask.priority, newValue: data.priority })
+    }
+    if (data.assigneeId !== undefined && data.assigneeId !== oldTask.assigneeId) {
+      fieldMap.push({ field: 'assigneeId', oldValue: oldTask.assigneeId, newValue: data.assigneeId })
+    }
+    // dueDate 特殊处理：0、undefined、null 都视为空值
+    if (data.dueDate !== undefined) {
+      const oldDueDate = oldTask.dueDate || 0
+      const newDueDate = data.dueDate || 0
+      if (oldDueDate !== newDueDate) {
+        fieldMap.push({
+          field: 'dueDate',
+          oldValue: oldDueDate ? String(oldDueDate) : '',
+          newValue: newDueDate ? String(newDueDate) : ''
+        })
+      }
+    }
+    if (data.progress !== undefined && data.progress !== oldTask.progress) {
+      fieldMap.push({ field: 'progress', oldValue: String(oldTask.progress), newValue: String(data.progress) })
+    }
+
+    // 为每个变更创建历史记录
+    fieldMap.forEach(change => {
+      TaskHistory.create({
+        taskId: taskId,
+        userId: userId,
+        field: change.field,
+        oldValue: String(change.oldValue || ''),
+        newValue: String(change.newValue || ''),
+        action: 'update',
+        summary: data.summary || ''
+      })
+    })
+  }
 
   // 如果提供了模块，更新任务模块关联
   if (data.moduleIds !== undefined) {

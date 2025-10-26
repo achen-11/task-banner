@@ -18,14 +18,24 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
   lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
   lines.push(`4. **更新任务信息**：`)
-  lines.push(`   - 更新任务描述，补充实现细节`)
+  lines.push(`   - 将任务状态更新为「已完成」`)
+  lines.push(`   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``)
+  lines.push(`   - 补充实现细节（修改文件、技术要点等）`)
   lines.push(`   - 如有修改文件，在技术要点中注明`)
-  lines.push(`   - 添加相关的参考链接（如果有）`)
   lines.push(`5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容\n`)
+  lines.push(`### 📝 任务摘要编写规范`)
+  lines.push(`- **长度**：20-50 字`)
+  lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
+  lines.push(`- **示例**：`)
+  lines.push(`  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"`)
+  lines.push(`  - ✅ "修复了任务列表排序 bug，优化了性能"`)
+  lines.push(`  - ✅ "添加了任务导出功能，支持 Markdown 格式"`)
+  lines.push(`  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）`)
+  lines.push(`  - ❌ "已在 Service 层实现..."（太技术化）\n`)
   lines.push(`### ⚠️ 重要提醒`)
   lines.push(`- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`)
   lines.push(`- 保持 Markdown 结构完整，不要删除任何标题层级`)
-  lines.push(`- 任务完成后，可以在任务描述末尾添加实现说明\n`)
+  lines.push(`- 任务摘要必须简洁明了，便于快速理解任务变更内容\n`)
 
   lines.push(`---\n`)
   lines.push(`## 任务列表\n`)
@@ -92,14 +102,24 @@ export function exportTasksToMarkdown(tasks: Task[], projectName?: string): stri
   lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
   lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
   lines.push(`4. **更新任务信息**：`)
-  lines.push(`   - 更新任务描述，补充实现细节`)
+  lines.push(`   - 将任务状态更新为「已完成」`)
+  lines.push(`   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``)
+  lines.push(`   - 补充实现细节（修改文件、技术要点等）`)
   lines.push(`   - 如有修改文件，在技术要点中注明`)
-  lines.push(`   - 添加相关的参考链接（如果有）`)
   lines.push(`5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容\n`)
+  lines.push(`### 📝 任务摘要编写规范`)
+  lines.push(`- **长度**：20-50 字`)
+  lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
+  lines.push(`- **示例**：`)
+  lines.push(`  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"`)
+  lines.push(`  - ✅ "修复了任务列表排序 bug，优化了性能"`)
+  lines.push(`  - ✅ "添加了任务导出功能，支持 Markdown 格式"`)
+  lines.push(`  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）`)
+  lines.push(`  - ❌ "已在 Service 层实现..."（太技术化）\n`)
   lines.push(`### ⚠️ 重要提醒`)
   lines.push(`- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`)
   lines.push(`- 保持 Markdown 结构完整，不要删除任何标题层级`)
-  lines.push(`- 任务完成后，可以在任务描述末尾添加实现说明\n`)
+  lines.push(`- 任务摘要必须简洁明了，便于快速理解任务变更内容\n`)
 
   lines.push(`---\n`)
   lines.push(`## 任务列表\n`)
@@ -232,6 +252,7 @@ function parseSingleTask(
     status: 'todo',
     priority: 'medium',
     tagIds: [],
+    summary: '', // 任务摘要
   }
 
   let currentSection: 'description' | null = null
@@ -269,9 +290,15 @@ function parseSingleTask(
     } else if (trimmedLine === '---' || trimmedLine.startsWith('###') || trimmedLine.startsWith('>')) {
       // 任务结束或新的小节开始
       currentSection = null
-    } else if (currentSection === 'description' && trimmedLine && !trimmedLine.startsWith('**')) {
-      // 添加内容到描述
-      task.content += (task.content ? '\n' : '') + trimmedLine
+    } else if (currentSection === 'description' && trimmedLine) {
+      // 先检查是否是任务摘要
+      const summaryMatch = trimmedLine.match(/^\*\*任务摘要：?\*\*\s*(.+)$/)
+      if (summaryMatch && summaryMatch[1]) {
+        task.summary = summaryMatch[1].trim()
+      } else if (!trimmedLine.startsWith('**')) {
+        // 不是摘要且不是其他属性，添加到描述
+        task.content += (task.content ? '\n' : '') + trimmedLine
+      }
     }
   }
 

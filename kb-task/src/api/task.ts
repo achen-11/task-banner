@@ -12,8 +12,8 @@ import {
   batchUpdateTaskOrder
 } from 'code/Services/task'
 import { checkProjectPermission } from 'code/Services/project'
+import { getTaskActivities } from 'code/Services/taskHistory'
 import { TaskComment } from 'code/Models/TaskComment'
-import { TaskHistory } from 'code/Models/TaskHistory'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20
 k.api.get("list", () => {
@@ -128,7 +128,7 @@ k.api.post("create", (body: any) => {
   }
 
   // 2. 参数验证
-  const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags } = body
+  const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags, summary } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     return error('Invalid project ID', 400)
@@ -160,7 +160,8 @@ k.api.post("create", (body: any) => {
       creatorId: currentUser._id,
       dueDate,
       progress,
-      tags: tags || []
+      tags: tags || [],
+      summary
     })
 
     // 获取创建的任务详情
@@ -181,7 +182,7 @@ k.api.put("update", (body: any) => {
   }
 
   // 2. 参数验证
-  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags } = body
+  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, summary } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid task ID', 400)
@@ -216,8 +217,9 @@ k.api.put("update", (body: any) => {
       moduleIds,
       dueDate,
       progress,
-      tags
-    })
+      tags,
+      summary
+    }, currentUser._id)
 
     if (!updated) {
       return error('Failed to update task', 500)
@@ -363,33 +365,8 @@ k.api.get("activities", () => {
       return error('You do not have permission to view this task', 403)
     }
 
-    // 获取任务评论
-    const comments = TaskComment.findAll({ taskId })
-
-    // 获取任务历史
-    const histories = TaskHistory.findAll({ taskId })
-
-    // 合并活动（评论 + 历史），并按时间倒序排列
-    const activities = [
-      ...comments.map(comment => ({
-        id: comment._id,
-        type: 'comment' as const,
-        userId: comment.userId,
-        content: comment.content,
-        mentionedUsers: comment.mentionedUsers || [],
-        timestamp: comment.createdAt
-      })),
-      ...histories.map(history => ({
-        id: history._id,
-        type: 'field_change' as const,
-        userId: history.userId,
-        field: history.field,
-        oldValue: history.oldValue,
-        newValue: history.newValue,
-        action: history.action,
-        timestamp: history.createdAt
-      }))
-    ].sort((a, b) => b.timestamp - a.timestamp)
+    // 调用 Service 层获取活动历史（包含用户信息）
+    const activities = getTaskActivities(taskId)
 
     return success(activities)
 

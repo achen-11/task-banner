@@ -270,6 +270,60 @@
       @task-updated="handleTaskUpdated"
       @task-deleted="handleTaskDeleted"
     />
+
+    <!-- 导入确认对话框 -->
+    <el-dialog
+      v-model="importConfirmVisible"
+      title="确认导入任务"
+      width="700px"
+      :append-to-body="true"
+    >
+      <div class="space-y-4">
+        <div class="text-sm text-gray-600 mb-4">
+          检测到 {{ tasksToImport.length }} 个任务，请确认并编辑任务摘要：
+        </div>
+
+        <div class="max-h-96 overflow-y-auto space-y-2">
+          <div
+            v-for="(task, index) in tasksToImport"
+            :key="index"
+            class="border border-gray-200 rounded-lg p-3"
+          >
+            <div class="flex items-start gap-2 mb-2">
+              <div class="flex-1">
+                <h4 class="text-sm font-medium text-gray-900 mb-1">{{ task.title || '未命名任务' }}</h4>
+                <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.status === 'todo' ? '待办' : task.status === 'in_progress' ? '进行中' : '已完成' }}</span>
+                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.priority === 'high' ? '高' : task.priority === 'low' ? '低' : '中' }}优先级</span>
+                  <span v-if="task._id" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">更新</span>
+                  <span v-else class="px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-xs">新建</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="block text-xs font-medium text-gray-700">任务摘要 (20-50字)</label>
+              <el-input
+                v-model="editableSummaries[index]"
+                type="textarea"
+                :rows="2"
+                placeholder="简要描述此次变更的内容..."
+                maxlength="50"
+                show-word-limit
+                size="small"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <el-button @click="importConfirmVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmImportTasks">确认导入</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -298,6 +352,11 @@ const sortDirection = ref<'asc' | 'desc'>('asc')
 
 // 批量选择状态
 const selectedTaskIds = ref<Set<string>>(new Set())
+
+// 导入确认对话框状态
+const importConfirmVisible = ref(false)
+const tasksToImport = ref<Array<Partial<Task> & { summary?: string }>>([])
+const editableSummaries = ref<Record<number, string>>({})
 
 // 计算属性：是否全选
 const isAllSelected = computed(() => {
@@ -505,11 +564,33 @@ const importTasksFromMarkdownHelper = async (markdown: string) => {
       return
     }
 
+    // 保存待导入的任务并显示确认对话框
+    tasksToImport.value = parsedTasks
+    editableSummaries.value = {}
+    parsedTasks.forEach((task, index) => {
+      editableSummaries.value[index] = task.summary || ''
+    })
+    importConfirmVisible.value = true
+  } catch (error) {
+    console.error('Parse tasks error:', error)
+    ElMessage.error('解析任务失败')
+  }
+}
+
+// 确认导入任务
+const confirmImportTasks = async () => {
+  try {
     let createdCount = 0
     let updatedCount = 0
 
+    // 更新任务的 summary
+    const finalTasks = tasksToImport.value.map((task, index) => ({
+      ...task,
+      summary: editableSummaries.value[index] || ''
+    }))
+
     // 处理每个任务（创建或更新）
-    const promises = parsedTasks.map(async task => {
+    const promises = finalTasks.map(async task => {
       // 检查任务是否已经存在（通过 _id）
       const existingTask = task._id && tasks.value.find(t => t._id === task._id)
 
@@ -525,7 +606,8 @@ const importTasksFromMarkdownHelper = async (markdown: string) => {
           assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
           tagIds: task.tagIds || existingTask.tagIds,
           moduleIds: task.moduleIds || existingTask.moduleIds,
-          dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate
+          dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate,
+          summary: task.summary || ''
         })
       } else {
         // 创建新任务
@@ -538,7 +620,8 @@ const importTasksFromMarkdownHelper = async (markdown: string) => {
           priority: task.priority || 'medium',
           assigneeId: task.assigneeId,
           tagIds: task.tagIds || [],
-          moduleIds: task.moduleIds || []
+          moduleIds: task.moduleIds || [],
+          summary: task.summary || ''
         })
       }
     })
@@ -550,6 +633,11 @@ const importTasksFromMarkdownHelper = async (markdown: string) => {
     if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
     if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
     ElMessage.success(`成功${messages.join('、')}任务`)
+
+    // 关闭对话框
+    importConfirmVisible.value = false
+    tasksToImport.value = []
+    editableSummaries.value = {}
 
     // 刷新任务列表
     await loadTasks()
@@ -690,21 +778,45 @@ const getPriorityText = (priority: string) => {
 const formatDate = (timestamp: number) => {
   const now = Date.now()
   const diff = now - timestamp
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(hours / 24)
 
-  if (hours < 1) {
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  if (diff < minute) {
     return '刚刚'
-  } else if (hours < 24) {
+  } else if (diff < hour) {
+    const minutes = Math.floor(diff / minute)
+    return `${minutes}分钟前`
+  } else if (diff < day) {
+    const hours = Math.floor(diff / hour)
     return `${hours}小时前`
-  } else if (days < 7) {
-    return `${days}天前`
   } else {
-    const date = new Date(timestamp)
-    return date.toLocaleDateString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit'
-    })
+    // 计算今天0点的时间
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayTime = today.getTime()
+
+    // 计算 timestamp 是哪一天，和今天的天数差
+    const inputDate = new Date(timestamp)
+    inputDate.setHours(0, 0, 0, 0)
+    const inputTime = inputDate.getTime()
+    const dayDiff = Math.floor((todayTime - inputTime) / day)
+
+    if (dayDiff === 0) {
+      // 今天，但是前面已判断过 <day，不会到这里
+      return '今天'
+    } else if (dayDiff === 1) {
+      return '昨天'
+    } else if (dayDiff === 2) {
+      return '前天'
+    } else {
+      // 超过前天显示具体日期
+      return new Date(timestamp).toLocaleDateString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit'
+      })
+    }
   }
 }
 </script>

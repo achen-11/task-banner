@@ -73,12 +73,19 @@ export interface TaskActivity {
   id: string
   type: 'comment' | 'field_change' | 'system'
   userId?: string
+  user?: {
+    _id: string
+    username?: string
+    displayName?: string
+    email?: string
+  } | null
   content?: string
   mentionedUsers?: string[]
   field?: string
   oldValue?: string
   newValue?: string
   action?: string
+  summary?: string
   timestamp: number
 }
 
