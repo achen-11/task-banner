@@ -25,8 +25,8 @@ export const Module = ksql.define(
       default: '#6B7280' // 默认灰色
     },
     parentId: {
-      type: DataTypes.Number,
-      default: 0, // 0 表示顶级模块
+      type: DataTypes.String,
+      default: '', // 空字符串表示顶级模块
       index: true
     },
     order: {

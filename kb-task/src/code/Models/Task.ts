@@ -6,12 +6,12 @@ import { ksql, DataTypes } from 'module/k_sqlite'
 export const Task = ksql.define(
   'tasks',
   {
-    taskId: {
-      type: DataTypes.String,
+    displayId: {
+      type: DataTypes.Number,
       required: true,
       unique: true,
-      index: true,
-      default: () => `task_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+      index: true
+      // 需要在创建时手动分配递增 ID
     },
     projectId: {
       type: DataTypes.String,
@@ -23,18 +23,13 @@ export const Task = ksql.define(
       },
       index: true
     },
-    moduleId: {
-      type: DataTypes.String,
-      default: '', // 空字符串表示未归属任何模块
-      index: true
-    },
     title: {
       type: DataTypes.String,
       required: true
     },
     content: {
       type: DataTypes.String,
-      default: '' // Quill.js Delta JSON 格式
+      default: '' // Quill.js Delta JSON 格式 或 普通文本描述
     },
     status: {
       type: DataTypes.String,

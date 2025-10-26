@@ -113,14 +113,14 @@
         <label class="block text-xs text-gray-500 mb-2">标签</label>
         <div class="flex flex-wrap gap-2">
           <span
-            v-for="tag in localTask.tags"
-            :key="tag"
+            v-for="tagId in localTask.tagIds"
+            :key="tagId"
             class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
           >
-            {{ tag }}
+            {{ tagId }}
             <button
               class="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-              @click="removeTag(tag)"
+              @click="removeTag(tagId)"
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -168,11 +168,11 @@
       <label class="block text-xs font-medium text-gray-500 mb-2">描述</label>
       <div class="border border-gray-200 rounded-lg overflow-hidden transition-all">
         <textarea
-          v-model="localTask.description"
+          v-model="localTask.content"
           rows="12"
           class="w-full px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none"
           placeholder="添加任务描述...&#10;&#10;提示：未来将支持富文本编辑（Quill.js）、@提及、Markdown 等功能"
-          @blur="handleUpdate({ description: localTask.description })"
+          @blur="handleUpdate({ content: localTask.content })"
         ></textarea>
       </div>
       <div class="mt-2 text-xs text-gray-400">
@@ -238,16 +238,19 @@ interface Attachment {
 
 interface Task {
   _id: string
-  taskId: number
+  displayId: number
+  projectId: string
   title: string
   status: 'todo' | 'in_progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
-  description?: string
-  assignee?: string
-  module?: string | string[]
-  tags?: string[]
+  content?: string  // 任务描述内容（支持富文本或普通文本）
+  assigneeId?: string
+  creatorId: string
+  moduleIds?: string[]  // 模块 ID 数组（支持多选）
+  tagIds?: string[]  // 标签 ID 数组
   dueDate?: number
   progress?: number
+  order: number
   attachments?: Attachment[]
   createdAt: number
   updatedAt: number
@@ -266,29 +269,27 @@ const emit = defineEmits<{
 // 本地任务副本（用于编辑）
 const localTask = ref<Task>({
   _id: '',
-  taskId: 0,
+  displayId: 0,
+  projectId: '',
   title: '',
   status: 'todo',
   priority: 'medium',
-  tags: [],
+  creatorId: '',
+  moduleIds: [],
+  tagIds: [],
   progress: 0,
+  order: 0,
   createdAt: Date.now(),
   updatedAt: Date.now()
 })
 
-// 模块多选处理
-const localModules = ref<string[]>([])
-
-// 初始化模块值
-watch(() => props.task?.module, (newModule) => {
-  if (Array.isArray(newModule)) {
-    localModules.value = newModule
-  } else if (typeof newModule === 'string') {
-    localModules.value = [newModule]
-  } else {
-    localModules.value = []
+// 模块多选处理（现在直接使用 localTask.moduleIds）
+const localModules = computed({
+  get: () => localTask.value.moduleIds || [],
+  set: (value) => {
+    localTask.value.moduleIds = value
   }
-}, { immediate: true })
+})
 
 // 标签输入
 const showTagInput = ref(false)
@@ -321,26 +322,27 @@ const handleDueDateChange = (value: number | null) => {
 
 // 处理模块变更
 const handleModulesChange = (value: string[]) => {
-  localTask.value.module = value
-  handleUpdate({ module: value })
+  localTask.value.moduleIds = value
+  handleUpdate({ moduleIds: value })
 }
 
-// 添加标签
+// 添加标签（注意：现在应该存储标签 ID 而不是名称）
+// TODO: 需要配合标签选择器使用，这里暂时保持兼容
 const addTag = () => {
   if (newTag.value.trim()) {
-    const tags = [...(localTask.value.tags || []), newTag.value.trim()]
-    localTask.value.tags = tags
-    handleUpdate({ tags })
+    const tagIds = [...(localTask.value.tagIds || []), newTag.value.trim()]
+    localTask.value.tagIds = tagIds
+    handleUpdate({ tagIds })
     newTag.value = ''
     showTagInput.value = false
   }
 }
 
 // 移除标签
-const removeTag = (tag: string) => {
-  const tags = (localTask.value.tags || []).filter(t => t !== tag)
-  localTask.value.tags = tags
-  handleUpdate({ tags })
+const removeTag = (tagId: string) => {
+  const tagIds = (localTask.value.tagIds || []).filter(t => t !== tagId)
+  localTask.value.tagIds = tagIds
+  handleUpdate({ tagIds })
 }
 
 // 格式化日期

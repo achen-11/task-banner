@@ -12,7 +12,7 @@ export interface ModuleInfo {
   projectId: string
   name: string
   color: string
-  parentId: number
+  parentId: string
   order: number
   createdAt: number
   updatedAt: number
@@ -27,12 +27,12 @@ export function createModule(data: {
   projectId: string
   name: string
   color?: string
-  parentId?: number
+  parentId?: string
 }): string {
   // 1. 获取同级模块的最大 order 值
   const siblings = Module.findAll({
     projectId: data.projectId,
-    parentId: data.parentId || 0
+    parentId: data.parentId || ''
   }) as ModuleType[]
 
   const maxOrder = siblings.reduce((max, module) => Math.max(max, module.order || 0), 0)
@@ -42,7 +42,7 @@ export function createModule(data: {
     projectId: data.projectId,
     name: data.name,
     color: data.color || '#6B7280',
-    parentId: data.parentId || 0,
+    parentId: data.parentId || '',
     order: maxOrder + 1
   })
 
@@ -72,12 +72,15 @@ export function getModuleById(moduleId: string): ModuleInfo | null {
 export function getProjectModules(projectId: string): ModuleInfo[] {
   const modules = Module.findAll({ projectId }) as ModuleType[]
 
-  // 按 parentId 和 order 排序
+  // 按 parentId 和 order 排序（顶级模块优先）
   return modules
     .map(formatModuleInfo)
     .sort((a, b) => {
+      // 顶级模块（空 parentId）排在前面
+      if (a.parentId === '' && b.parentId !== '') return -1
+      if (a.parentId !== '' && b.parentId === '') return 1
       if (a.parentId !== b.parentId) {
-        return a.parentId - b.parentId
+        return a.parentId.localeCompare(b.parentId)
       }
       return a.order - b.order
     })
@@ -94,7 +97,7 @@ export function updateModule(
   data: {
     name?: string
     color?: string
-    parentId?: number
+    parentId?: string
     order?: number
   }
 ): boolean {

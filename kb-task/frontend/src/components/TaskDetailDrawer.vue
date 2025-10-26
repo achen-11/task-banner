@@ -50,7 +50,7 @@
 
               <!-- 任务 ID -->
               <div v-if="currentTask" class="text-sm font-mono text-gray-500 flex-shrink-0">
-                #{{ currentTask.taskId }}
+                #{{ currentTask.displayId }}
               </div>
 
               <!-- 任务标题 -->
@@ -133,16 +133,19 @@ interface Attachment {
 
 interface Task {
   _id: string
-  taskId: number
+  displayId: number
+  projectId: string
   title: string
   status: 'todo' | 'in_progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
-  description?: string
-  assignee?: string
-  module?: string | string[]  // 支持多选
-  tags?: string[]
+  content?: string  // 任务描述内容
+  assigneeId?: string
+  creatorId: string
+  moduleIds?: string[]  // 模块 ID 数组
+  tagIds?: string[]  // 标签 ID 数组
   dueDate?: number
   progress?: number
+  order: number
   attachments?: Attachment[]
   createdAt: number
   updatedAt: number
