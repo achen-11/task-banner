@@ -429,9 +429,19 @@ const handleKeydown = (e: KeyboardEvent) => {
     }
     closeDrawer()
   } else if (e.key === 'ArrowUp' && props.mode !== 'create') {
+    // 检查是否在输入框中，避免误触
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return
+    }
     e.preventDefault()
     goToPrevTask()
   } else if (e.key === 'ArrowDown' && props.mode !== 'create') {
+    // 检查是否在输入框中，避免误触
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return
+    }
     e.preventDefault()
     goToNextTask()
   } else if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -478,6 +488,13 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
 // 保存任务（创建或更新）
 const handleSaveTask = async () => {
   if (isSaving.value) return
+
+  // 强制失焦当前聚焦的元素，确保所有输入都已提交（修复 cmd+s 时内容缺失的问题）
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+    // 等待失焦事件处理完成
+    await nextTick()
+  }
 
   // 创建模式下
   if (props.mode === 'create') {
