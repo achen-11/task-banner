@@ -34,122 +34,42 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: ca9bace2-b02d-4a14-b560-cdb937601330 -->
-#### 1. 快捷键系统
+<!-- task-id: 2bfd0cce-1939-4e6a-96f4-d808f767eae4 -->
+#### 1. 任务-基本信息优化
+
+**任务摘要：** 优化指派人显示名称优先级，修复任务描述编辑时保存状态显示问题，提升用户体验
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/26 15:22:23
-**更新时间：** 2025/10/26 21:30:00
+**创建时间：** 2025/10/26 15:18:19
+**更新时间：** 2025/10/26 22:27:49
 
 **任务描述：**
 
-**任务摘要：** 实现了完整的全局快捷键系统，支持新建、导入导出任务及快捷键说明面板
-
-- [x] N -> 新建任务
-- [x] Cmd + b -> 展开/收起 左侧菜单栏
-- [x] cmd + shift + . -> 查看快捷键说明面板
-- [x] Cmd + e / i 快捷导入导出 (参照task-banner)
-
-在支持快捷键的按钮上添加 hover 提醒(显示快捷键)
-
-**实现细节：**
-
-**新建的文件：**
-1. `src/composables/useKeyboard.ts` - 全局快捷键管理系统
-2. `src/components/common/KeyboardShortcutsPanel.vue` - 快捷键说明面板
-
-**修改的文件：**
-1. `src/layouts/MainLayout.vue` - 集成快捷键系统
-2. `src/components/project/ProjectTaskList.vue` - 任务快捷键注册和按钮提示
+- [x] 1. 指派人label显示遵循: displayName > username > email > userId
+- [ ] 2.添加标签依然无效, 这个可以先不处理, 后面我们会有专门的任务来做标签模块
+- [x] 3. 保存状态不对, 我在编辑任务描述时, 它却依然显示已保存, 任务描述有变化时应该是未保存才对
 
 **技术要点：**
 
-1. **全局快捷键管理系统** - useKeyboard.ts
-   - 使用单例模式管理所有快捷键
-   - 支持组合键（Ctrl/Cmd、Shift、Alt）
-   - 智能检测操作系统（Mac/Windows）
-   - 自动过滤输入框内的快捷键触发
-   ```typescript
-   interface KeyboardShortcut {
-     key: string
-     ctrl?: boolean
-     meta?: boolean  // Cmd on Mac, Ctrl on Windows
-     shift?: boolean
-     alt?: boolean
-     description: string
-     handler: () => void
-     category?: string
-   }
+1. **指派人显示优化**：
+   - 扩展 `ProjectMember` 接口，添加 `displayName`、`username`、`email`、`avatar` 可选字段
+   - 实现 `getUserDisplayName()` 函数，按优先级返回用户名称：displayName > username > email > userId
+   - 更新 el-option 的 label 使用新函数
 
-   export function registerShortcut(shortcut: KeyboardShortcut)
-   export function unregisterShortcut(key: string)
-   export function formatShortcut(shortcut: KeyboardShortcut): string
-   ```
+2. **保存状态优化**：
+   - 添加 `hasUnsavedChanges` 状态跟踪未保存的变化
+   - 在 textarea 添加 `@input` 事件监听，输入时标记为"未保存"
+   - 在 `handleUpdate` 中，保存时重置 `hasUnsavedChanges`
+   - 更新保存状态显示逻辑：保存中 > 未保存 > 已保存
+   - 在任务切换时重置未保存状态
 
-2. **快捷键说明面板** - KeyboardShortcutsPanel.vue
-   - 按类别分组显示所有快捷键
-   - 使用 Element Plus Dialog 组件
-   - 支持 show/hide/toggle 方法
-   - 键盘显示使用 macOS 风格符号（⌘ ⌃ ⇧ ⌥）
-
-3. **全局快捷键注册** - MainLayout.vue:46-67
-   ```typescript
-   // Cmd/Ctrl + B: 切换侧边栏
-   registerShortcut({
-     key: 'b',
-     meta: true,
-     description: '展开/收起左侧菜单栏',
-     category: '导航',
-     handler: toggleSidebar
-   })
-
-   // Cmd/Ctrl + Shift + .: 查看快捷键说明
-   registerShortcut({
-     key: '.',
-     meta: true,
-     shift: true,
-     description: '查看快捷键说明',
-     category: '帮助',
-     handler: () => shortcutsPanelRef.value?.toggle()
-   })
-   ```
-
-4. **任务操作快捷键** - ProjectTaskList.vue:657-691
-   - N: 新建任务
-   - Cmd+I: 快捷导入任务
-   - Cmd+E: 快捷导出任务
-   - 组件卸载时自动移除快捷键
-
-5. **按钮快捷键提示** - ProjectTaskList.vue:31-41
-   ```vue
-   <el-tooltip content="快捷键：N" placement="bottom">
-     <button @click="handleCreateTask">
-       新建任务
-     </button>
-   </el-tooltip>
-   ```
-
-**快捷键列表：**
-
-| 快捷键 | 功能 | 类别 |
-|-------|------|------|
-| N | 新建任务 | 任务操作 |
-| ⌘/Ctrl + B | 展开/收起左侧菜单栏 | 导航 |
-| ⌘/Ctrl + I | 快捷导入任务 | 任务操作 |
-| ⌘/Ctrl + E | 快捷导出任务 | 任务操作 |
-| ⌘/Ctrl + ⇧ + . | 查看快捷键说明 | 帮助 |
-
-**效果：**
-- ✅ 全局快捷键系统，支持动态注册和移除
-- ✅ 智能检测操作系统，显示对应的快捷键符号
-- ✅ 自动过滤输入框内的快捷键冲突
-- ✅ 按钮 hover 显示快捷键提示
-- ✅ 快捷键说明面板按类别分组展示
-- ✅ 组件级快捷键自动清理，无内存泄漏
+**修改文件：**
+- `src/types/project.ts`：扩展 ProjectMember 接口
+- `src/components/task/TaskBasicInfo.vue`：实现显示优化和保存状态逻辑
 
 ---
 
 
-> 📅 导出时间：2025/10/26 21:30:00
+> 📅 导出时间：2025/10/26 22:27:50
 > 🤖 由 Task-Flow 生成

@@ -2,8 +2,32 @@
   <div class="h-full flex flex-col">
     <!-- 任务信息区域（固定在上方） -->
     <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200">
-      <!-- 折叠按钮 -->
-      <div class="flex items-center justify-end">
+      <!-- 折叠按钮和保存状态 -->
+      <div class="flex items-center justify-between">
+        <!-- 保存状态（仅查看模式） -->
+        <div v-if="mode === 'view'" class="text-xs">
+          <span v-if="isSaving" class="text-orange-500 flex items-center gap-1">
+            <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            保存中...
+          </span>
+          <span v-else-if="hasUnsavedChanges" class="text-gray-400 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            未保存
+          </span>
+          <span v-else-if="lastSavedAt" class="text-green-500 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            已保存
+          </span>
+        </div>
+        <div v-else class="flex-1"></div>
+
+        <!-- 折叠按钮 -->
         <button
           class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
           @click="isFieldsCollapsed = !isFieldsCollapsed"
@@ -68,9 +92,12 @@
             placeholder="未指派"
             @change="handleUpdate({ assigneeId: localTask.assigneeId })"
           >
-            <el-option label="张三" value="张三" />
-            <el-option label="李四" value="李四" />
-            <el-option label="王五" value="王五" />
+            <el-option
+              v-for="member in projectMembers"
+              :key="member.userId"
+              :label="getUserDisplayName(member)"
+              :value="member.userId"
+            />
           </el-select>
         </div>
 
@@ -144,13 +171,13 @@
             class="inline-block w-24 px-2 py-1 text-xs border border-blue-500 rounded-full"
             placeholder="标签名..."
             @keydown.enter="addTag"
-            @blur="showTagInput = false"
+            @blur="addTag"
           />
         </div>
         </div>
 
-        <!-- 元数据 -->
-        <div class="grid grid-cols-2 gap-4 text-xs text-gray-500 pt-2">
+        <!-- 元数据（仅查看模式显示） -->
+        <div v-if="mode === 'view'" class="grid grid-cols-2 gap-4 text-xs text-gray-500 pt-2">
         <div>
           <span class="font-medium">创建：</span>
           <span>{{ formatDate(localTask.createdAt) }}</span>
@@ -172,6 +199,7 @@
           rows="12"
           class="w-full px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none"
           placeholder="添加任务描述...&#10;&#10;提示：未来将支持富文本编辑（Quill.js）、@提及、Markdown 等功能"
+          @input="handleContentInput"
           @blur="handleUpdate({ content: localTask.content })"
         ></textarea>
       </div>
@@ -233,6 +261,9 @@ import { ElMessage } from 'element-plus'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
 import { getAttachmentList } from '@/api/attachment'
+import { getProjectMembers } from '@/api/project'
+import { getCurrentUser } from '@/utils/auth'
+import type { ProjectMember } from '@/types/project'
 
 interface Attachment {
   _id: string
@@ -272,13 +303,28 @@ interface Task {
 
 interface Props {
   task: Task | null
+  mode?: 'view' | 'create'
+  projectId?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  mode: 'view'
+})
 
 const emit = defineEmits<{
   (e: 'update', updates: Partial<Task>): void
 }>()
+
+// 项目成员列表
+const projectMembers = ref<ProjectMember[]>([])
+
+// 保存状态（查看模式）
+const isSaving = ref(false)
+const lastSavedAt = ref<number | null>(null)
+const hasUnsavedChanges = ref(false)
+
+// 获取当前用户
+const currentUser = getCurrentUser()
 
 // 本地任务副本（用于编辑）
 const localTask = ref<Task>({
@@ -316,10 +362,37 @@ const isFieldsCollapsed = ref(false)
 // 附件上传区域显示状态
 const showUploadArea = ref(false)
 
+// 加载项目成员列表
+const loadProjectMembers = async () => {
+  if (!props.projectId) return
+
+  try {
+    const response = await getProjectMembers(props.projectId)
+    projectMembers.value = response.items
+  } catch (error) {
+    console.error('Failed to load project members:', error)
+    projectMembers.value = []
+  }
+}
+
+// 获取用户显示名称（优先级：displayName > username > email > userId）
+const getUserDisplayName = (member: ProjectMember): string => {
+  return member.displayName || member.username || member.email || member.userId
+}
+
 // 监听 props 变化，更新本地副本
 watch(() => props.task, async (newTask) => {
   if (newTask) {
     localTask.value = { ...newTask }
+
+    // 重置保存状态
+    hasUnsavedChanges.value = false
+
+    // 创建模式：设置默认指派人为当前用户
+    if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
+      localTask.value.assigneeId = String(currentUser.id)
+      localTask.value.creatorId = String(currentUser.id)
+    }
 
     // 加载附件列表
     if (newTask._id) {
@@ -335,9 +408,37 @@ watch(() => props.task, async (newTask) => {
   }
 }, { immediate: true, deep: true })
 
+// 监听 projectId 变化，加载项目成员
+watch(() => props.projectId, async (newProjectId) => {
+  if (newProjectId) {
+    await loadProjectMembers()
+  }
+}, { immediate: true })
+
+// 处理任务描述输入（标记为未保存）
+const handleContentInput = () => {
+  if (props.mode === 'view') {
+    hasUnsavedChanges.value = true
+  }
+}
+
 // 处理更新
-const handleUpdate = (updates: Partial<Task>) => {
+const handleUpdate = async (updates: Partial<Task>) => {
+  // 查看模式下显示保存状态
+  if (props.mode === 'view') {
+    isSaving.value = true
+    hasUnsavedChanges.value = false
+  }
+
   emit('update', updates)
+
+  // 模拟保存完成（实际应该在父组件更新成功后通知）
+  if (props.mode === 'view') {
+    setTimeout(() => {
+      isSaving.value = false
+      lastSavedAt.value = Date.now()
+    }, 500)
+  }
 }
 
 // 处理日期变更

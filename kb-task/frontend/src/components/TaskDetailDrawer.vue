@@ -158,7 +158,7 @@
               <!-- 左列：基础信息（独立滚动） -->
               <div class="overflow-y-auto pr-3 -mr-3">
                 <div class="pr-3">
-                  <TaskBasicInfo :task="currentTask" @update="handleTaskUpdate" />
+                  <TaskBasicInfo :task="currentTask" :mode="mode" :project-id="projectId" @update="handleTaskUpdate" />
                 </div>
               </div>
 

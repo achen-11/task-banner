@@ -32,6 +32,11 @@ export interface ProjectMember {
   userId: string
   role: 'owner' | 'admin' | 'member'
   joinedAt: number
+  // 用户详细信息（可能由后端填充）
+  displayName?: string
+  username?: string
+  email?: string
+  avatar?: string
 }
 
 /**
