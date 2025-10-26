@@ -31,73 +31,182 @@
 **状态：** 已完成
 **优先级：** 中
 **创建时间：** 2025/10/26 08:51:11
-**更新时间：** 2025/10/26 09:15:00
+**更新时间：** 2025/10/26 09:30:00
 
 **任务描述：**
 
-- [x] 阅读"docs/Backend-Development-Guide.md"
-- [x] 阅读任务详情页
-- [x] 查看欠缺或者需要哪些api, 输出成 md 文件供我 review
+- [x] 阅读"docs/task-detail-api-requirements.md"
+- [x] 优先完成task, module, tag, 这三个模块的 api, 其他例如评论这些可以晚点再支持
 
 **实现细节：**
 
-已完成任务详情页的 API 需求分析，并输出详细的 API 需求文档。
+已完成 Task、Module、Tag 三个模块的完整 API 实现，包括 Service 层和 API 层。
 
-1. **阅读服务端开发规范** (`docs/Backend-Development-Guide.md`)
-   - 了解了 Kooboo API 开发规范
-   - 掌握了 `@k-url /api/{resource}/{action}` 路由定义方式
-   - 熟悉了统一响应格式（`success()` 和 `error()` 工具函数）
-   - 理解了 Kooboo ORM 的主键规范（`_id` 字段为 string 类型）
+### 实现的功能模块
 
-2. **分析任务详情页需求**
-   - 查看了数据库设计文档 (`docs/数据库设计.md`)
-   - 分析了现有的项目管理代码 (`kb-task/frontend/src/views/ProjectView.vue`)
-   - 了解了任务数据结构（Tasks 表及相关联表）
-   - 研究了现有的 project API 实现 (`kb-task/src/api/project.ts`)
+#### 1. **Task（任务）模块**
 
-3. **输出 API 需求文档** (`docs/task-detail-api-requirements.md`)
-   - 定义了 16 个 API 接口，涵盖任务详情页的所有功能
-   - 按功能模块分类：
-     - **任务基本操作**（6 个 API）：列表、详情、创建、更新、删除、批量排序
-     - **标签管理**（3 个 API）：获取列表、创建、删除
-     - **评论功能**（4 个 API）：获取列表、创建、更新、删除
-     - **任务历史**（1 个 API）：获取变更历史
-     - **模块管理**（2 个 API）：获取列表、创建
-   - 提供了完整的接口定义，包括：
-     - 接口路径和 HTTP 方法
-     - Query/Body 参数结构
-     - 响应数据格式
-     - TypeScript 类型定义
-     - 权限检查要求
-     - 业务逻辑说明
-   - 标注了实现优先级（高/中/低）
-   - 列出了注意事项和最佳实践
+**Service 层** (`kb-task/src/code/Services/task.ts`)
+- `createTask()` - 创建任务，支持自动设置 order、标签关联
+- `getTaskById()` - 获取任务基本信息
+- `getTaskDetailById()` - 获取任务详情（包含标签）
+- `getProjectTasks()` - 获取项目任务列表，支持多条件筛选
+- `updateTask()` - 更新任务信息，支持标签完全替换
+- `deleteTask()` - 删除任务，级联删除标签关联
+- `batchUpdateTaskOrder()` - 批量更新任务顺序
 
-**技术要点：**
+**API 层** (`kb-task/src/api/task.ts`)
+- `GET /api/task/list` - 获取任务列表（支持分页和筛选）
+- `GET /api/task/detail` - 获取任务详情
+- `POST /api/task/create` - 创建任务
+- `PUT /api/task/update` - 更新任务
+- `DELETE /api/task/delete` - 删除任务
+- `PUT /api/task/updateOrder` - 批量更新任务顺序
 
-- 遵循后端开发规范，使用 `{action}` 动态路由
-- 所有接口支持权限检查（项目成员权限）
-- 数据库字段使用 snake_case，API 返回使用 camelCase
-- 外键引用统一指向 Kooboo 自动生成的 `_id` 字段（string 类型）
-- 使用 LEFT JOIN 优化关联查询，避免 N+1 问题
-- 时间戳统一使用 UNIX 时间戳（整数）
+#### 2. **Module（模块）模块**
 
-**相关文件：**
+**Service 层** (`kb-task/src/code/Services/module.ts`)
+- `createModule()` - 创建模块，自动设置 order
+- `getModuleById()` - 获取模块信息
+- `getProjectModules()` - 获取项目所有模块，按层级排序
+- `updateModule()` - 更新模块信息
+- `deleteModule()` - 删除模块
 
-- `docs/task-detail-api-requirements.md` - 任务详情页 API 需求文档（新建）
-- `docs/Backend-Development-Guide.md` - 服务端开发规范（参考）
-- `docs/数据库设计.md` - 数据库设计文档（参考）
-- `kb-task/src/api/project.ts` - 项目 API 实现示例（参考）
+**API 层** (`kb-task/src/api/module.ts`)
+- `GET /api/module/list` - 获取项目模块列表
+- `GET /api/module/detail` - 获取模块详情
+- `POST /api/module/create` - 创建模块（需要 admin 权限）
+- `PUT /api/module/update` - 更新模块（需要 admin 权限）
+- `DELETE /api/module/delete` - 删除模块（需要 admin 权限）
 
-**下一步工作：**
+#### 3. **Tag（标签）模块**
 
-建议按照文档中标注的优先级逐步实现 API：
-1. 高优先级：任务基本操作 + 标签管理基础功能（MVP 必需）
-2. 中优先级：评论功能 + 模块管理（增强功能）
-3. 低优先级：批量排序、任务历史等高级功能（可延后）
+**Service 层** (`kb-task/src/code/Services/tag.ts`)
+- `createTag()` - 创建标签，检查名称重复
+- `getTagById()` - 获取标签信息
+- `getProjectTags()` - 获取项目所有标签
+- `updateTag()` - 更新标签，检查名称重复
+- `deleteTag()` - 删除标签，级联删除任务关联
+
+**API 层** (`kb-task/src/api/tag.ts`)
+- `GET /api/tag/list` - 获取项目标签列表
+- `GET /api/tag/detail` - 获取标签详情
+- `POST /api/tag/create` - 创建标签
+- `PUT /api/tag/update` - 更新标签
+- `DELETE /api/tag/delete` - 删除标签（需要 admin 权限）
+
+### 技术要点
+
+**架构设计**
+- 严格遵循三层架构：Model -> Service -> API
+- Model 层已存在，直接复用（Task.ts, Module.ts, Tag.ts）
+- Service 层封装业务逻辑，提供类型安全的接口
+- API 层负责路由、参数验证、权限检查
+
+**统一规范**
+- ✅ 使用 `@k-url /api/{resource}/{action}` 路由格式
+- ✅ 使用 `success()` 和 `error()` 统一响应格式
+- ✅ 所有接口进行鉴权检查（`k.account.isLogin`）
+- ✅ 根据操作类型检查项目成员权限
+- ✅ 外键统一使用 Kooboo 自动生成的 `_id`（string 类型）
+- ✅ 时间戳使用 UNIX timestamp（number 类型）
+
+**权限控制**
+- **Task API**：
+  - 创建/更新/查看：需要项目成员（member）权限
+  - 删除：需要项目管理员（admin）或任务创建者
+- **Module API**：
+  - 查看：需要项目成员（member）权限
+  - 创建/更新/删除：需要项目管理员（admin）权限
+- **Tag API**：
+  - 查看/创建/更新：需要项目成员（member）权限
+  - 删除：需要项目管理员（admin）权限
+
+**业务逻辑**
+- 任务创建时自动设置 order（最大值 + 1）
+- 任务支持标签关联，更新时可完全替换标签
+- 模块支持多级嵌套（通过 parentId）
+- 标签名称在同一项目内唯一
+- 删除操作自动级联清理关联数据
+
+**错误处理**
+- 统一使用 try-catch 捕获异常
+- 使用 `k.logger.error()` 记录错误日志
+- 区分不同错误类型返回适当的 HTTP 状态码
+- 特殊错误（如名称重复）返回详细错误信息
+
+### 相关文件
+
+**Service 层**
+- `kb-task/src/code/Services/task.ts` - 任务服务（新建）
+- `kb-task/src/code/Services/module.ts` - 模块服务（新建）
+- `kb-task/src/code/Services/tag.ts` - 标签服务（新建）
+
+**API 层**
+- `kb-task/src/api/task.ts` - 任务 API（新建）
+- `kb-task/src/api/module.ts` - 模块 API（新建）
+- `kb-task/src/api/tag.ts` - 标签 API（新建）
+
+**Model 层**（已存在，复用）
+- `kb-task/src/code/Models/Task.ts` - 任务模型
+- `kb-task/src/code/Models/Module.ts` - 模块模型
+- `kb-task/src/code/Models/Tag.ts` - 标签模型
+- `kb-task/src/code/Models/TaskTag.ts` - 任务标签关联模型
+
+**参考文档**
+- `docs/task-detail-api-requirements.md` - API 需求文档
+- `docs/Backend-Development-Guide.md` - 服务端开发规范
+- `docs/数据库设计.md` - 数据库设计文档
+
+### API 接口统计
+
+共实现 **17 个 API 接口**：
+
+| 模块 | 接口数量 | 说明 |
+|-----|---------|-----|
+| Task（任务） | 6 个 | 列表、详情、创建、更新、删除、批量排序 |
+| Module（模块） | 5 个 | 列表、详情、创建、更新、删除 |
+| Tag（标签） | 5 个 | 列表、详情、创建、更新、删除 |
+| **总计** | **16 个** | 覆盖任务详情页核心功能 |
+
+### 测试建议
+
+1. **任务 API 测试**
+   - 创建任务（带/不带标签）
+   - 获取任务列表（测试各种筛选条件）
+   - 更新任务状态、优先级、标签
+   - 批量更新任务顺序（拖拽场景）
+   - 删除任务（测试权限控制）
+
+2. **模块 API 测试**
+   - 创建多级模块（顶级 + 子模块）
+   - 获取模块列表（验证排序）
+   - 更新模块层级关系
+   - 删除模块（需 admin 权限）
+
+3. **标签 API 测试**
+   - 创建标签（测试名称重复验证）
+   - 获取标签列表
+   - 更新标签名称/颜色
+   - 删除标签（验证级联删除任务关联）
+
+### 下一步工作
+
+根据 API 需求文档，剩余待实现的功能（低优先级）：
+
+1. **评论功能**（4 个 API）
+   - 获取评论列表
+   - 创建评论
+   - 更新评论
+   - 删除评论
+
+2. **任务历史**（1 个 API）
+   - 获取任务变更历史
+
+这些功能可以在后续迭代中实现，当前已完成的 API 已经满足任务详情页的核心需求。
 
 ---
 
 
-> 📅 导出时间：2025/10/26 09:15:00
+> 📅 导出时间：2025/10/26 09:30:00
 > 🤖 由 Task Banner 生成
