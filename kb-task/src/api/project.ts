@@ -5,6 +5,7 @@ import { getUserInfo } from 'code/Services/user'
 import {
   createProject,
   getProjectById,
+  getProjectDetailById,
   getUserProjects,
   updateProject,
   deleteProject,
@@ -62,7 +63,7 @@ k.api.get("detail", () => {
     return error('Invalid project ID', 400)
   }
 
-  // 3. 获取项目详情
+  // 3. 获取项目详情（包含统计信息）
   try {
     // 获取当前用户
     const username = k.account.user.current.userName
@@ -73,7 +74,7 @@ k.api.get("detail", () => {
       return error('You do not have permission to access this project', 403)
     }
 
-    const project = getProjectById(projectId)
+    const project = getProjectDetailById(projectId)
 
     if (!project) {
       return error('Project not found', 404)

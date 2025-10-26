@@ -4,6 +4,7 @@
 
 import { Project, type ProjectType } from 'code/Models/Project'
 import { ProjectMember, type ProjectMemberType } from 'code/Models/ProjectMember'
+import { Task, type TaskType } from 'code/Models/Task'
 
 /**
  * 项目信息接口
@@ -19,6 +20,15 @@ export interface ProjectInfo {
   order: number
   createdAt: number
   updatedAt: number
+}
+
+/**
+ * 项目详情信息接口（包含统计数据）
+ */
+export interface ProjectDetailInfo extends ProjectInfo {
+  taskCount: number          // 总任务数
+  completedTaskCount: number // 已完成任务数
+  memberCount: number        // 成员数量
 }
 
 /**
@@ -73,6 +83,39 @@ export function getProjectById(projectId: string): ProjectInfo | null {
   }
 
   return formatProjectInfo(project)
+}
+
+/**
+ * 根据 ID 获取项目详情（包含统计信息）
+ * @param projectId - 项目 ID（字符串类型）
+ * @returns 项目详情或 null
+ */
+export function getProjectDetailById(projectId: string): ProjectDetailInfo | null {
+  const project = Project.findById(projectId) as ProjectType | null
+
+  if (!project) {
+    return null
+  }
+
+  // 1. 获取基础项目信息
+  const projectInfo = formatProjectInfo(project)
+
+  // 2. 统计任务数量
+  const allTasks = Task.findAll({ projectId: projectId }) as TaskType[]
+  const taskCount = allTasks.length
+  const completedTaskCount = allTasks.filter(task => task.status === 'completed').length
+
+  // 3. 统计成员数量
+  const members = ProjectMember.findAll({ projectId: projectId }) as ProjectMemberType[]
+  const memberCount = members.length
+
+  // 4. 返回包含统计信息的项目详情
+  return {
+    ...projectInfo,
+    taskCount,
+    completedTaskCount,
+    memberCount
+  }
 }
 
 /**
