@@ -178,7 +178,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
@@ -452,8 +452,21 @@ const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     // 如果有未保存的更改，提示用户
     if (!isSaved.value && props.mode === 'create') {
-      const confirmed = confirm('有未保存的更改，确定要关闭吗？')
-      if (!confirmed) return
+      e.preventDefault()
+      ElMessageBox.confirm(
+        '有未保存的更改，确定要关闭吗？',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).then(() => {
+        closeDrawer()
+      }).catch(() => {
+        // 用户取消，不做任何操作
+      })
+      return
     }
     closeDrawer()
   } else if (e.key === 'ArrowUp' && props.mode !== 'create') {
@@ -615,12 +628,22 @@ const handleSaveTask = async (continueCreate = false) => {
 const handleTaskDelete = async () => {
   if (!currentTask.value) return
 
-  const confirmed = confirm(`确定要删除任务 #${currentTask.value.displayId} - ${currentTask.value.title} 吗？`)
-  if (!confirmed) return
-
   try {
+    await ElMessageBox.confirm(
+      `确定要删除任务 #${currentTask.value.displayId} - ${currentTask.value.title} 吗？`,
+      '删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
     emit('task-deleted', currentTask.value._id)
   } catch (err: any) {
+    // 用户取消删除，不做任何操作
+    if (err === 'cancel') return
+
     console.error('Failed to delete task:', err)
     ElMessage.error(err?.message || '删除任务失败')
   }

@@ -66,11 +66,53 @@ export function updateTaskOrder(data: UpdateOrderParams): Promise<void> {
   return request.put('/api/task/updateOrder', data)
 }
 
+/**
+ * 任务活动类型
+ */
+export interface TaskActivity {
+  id: string
+  type: 'comment' | 'field_change' | 'system'
+  userId?: string
+  content?: string
+  mentionedUsers?: string[]
+  field?: string
+  oldValue?: string
+  newValue?: string
+  action?: string
+  timestamp: number
+}
+
+/**
+ * 获取任务活动历史
+ * @param taskId 任务 ID
+ */
+export function getTaskActivities(taskId: string): Promise<TaskActivity[]> {
+  return request.get('/api/task/activities', {
+    params: { taskId }
+  })
+}
+
+/**
+ * 添加任务评论
+ * @param taskId 任务 ID
+ * @param content 评论内容
+ * @param mentionedUsers 被提及的用户 ID 列表
+ */
+export function addTaskComment(taskId: string, content: string, mentionedUsers?: string[]): Promise<TaskActivity> {
+  return request.post('/api/task/comment', {
+    taskId,
+    content,
+    mentionedUsers
+  })
+}
+
 export default {
   getTaskList,
   getTaskDetail,
   createTask,
   updateTask,
   deleteTask,
-  updateTaskOrder
+  updateTaskOrder,
+  getTaskActivities,
+  addTaskComment
 }

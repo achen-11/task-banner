@@ -157,7 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getTaskActivities, addTaskComment, type TaskActivity as APITaskActivity } from '@/api/task'
 
 interface Task {
   _id: string
@@ -172,17 +174,21 @@ interface Activity {
   id: string
   type: 'comment' | 'field_change' | 'system'
   user: string
+  userId?: string
   content: string
   timestamp: number
   grouped?: boolean
   changes?: string[]
+  field?: string
+  oldValue?: string
+  newValue?: string
 }
 
 interface Props {
   task: Task | null
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 // 过滤器
 const filters = [
@@ -196,64 +202,104 @@ const currentFilter = ref<'all' | 'comments' | 'history'>('all')
 // 新评论
 const newComment = ref('')
 
-// Mock 活动数据
-const activities = ref<Activity[]>([
-  {
-    id: '1',
-    type: 'system',
-    user: '系统',
-    content: '任务已创建',
-    timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000
-  },
-  {
-    id: '2',
-    type: 'field_change',
-    user: '张三',
-    content: '将状态从「待办」改为「进行中」',
-    timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000
-  },
-  {
-    id: '3',
-    type: 'comment',
-    user: '李四',
-    content: '这个任务需要注意性能优化，建议使用虚拟滚动。',
-    timestamp: Date.now() - 4 * 24 * 60 * 60 * 1000
-  },
-  {
-    id: '4',
-    type: 'field_change',
-    user: '张三',
-    content: '',
-    timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    grouped: true,
-    changes: [
-      '将优先级从「中」改为「高」',
-      '将指派人设置为「王五」',
-      '添加了标签「紧急」'
-    ]
-  },
-  {
-    id: '5',
-    type: 'comment',
-    user: '王五',
-    content: '我来处理这个任务，预计明天完成。',
-    timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000
-  },
-  {
-    id: '6',
-    type: 'field_change',
-    user: '王五',
-    content: '将进度更新为 60%',
-    timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000
-  },
-  {
-    id: '7',
-    type: 'comment',
-    user: '张三',
-    content: '看起来进展不错，继续加油！',
-    timestamp: Date.now() - 12 * 60 * 60 * 1000
+// 活动数据
+const activities = ref<Activity[]>([])
+const isLoadingActivities = ref(false)
+
+// 加载活动历史
+const loadActivities = async () => {
+  if (!props.task || !props.task._id) return
+
+  isLoadingActivities.value = true
+  try {
+    const data = await getTaskActivities(props.task._id)
+
+    // 转换 API 数据格式为组件格式
+    activities.value = data.map(activity => {
+      if (activity.type === 'comment') {
+        return {
+          id: activity.id,
+          type: 'comment' as const,
+          user: activity.userId || '未知用户',
+          userId: activity.userId,
+          content: activity.content || '',
+          timestamp: activity.timestamp
+        }
+      } else if (activity.type === 'field_change') {
+        // 生成字段变更描述
+        const content = generateFieldChangeContent(
+          activity.field,
+          activity.oldValue,
+          activity.newValue,
+          activity.action
+        )
+        return {
+          id: activity.id,
+          type: 'field_change' as const,
+          user: activity.userId || '未知用户',
+          userId: activity.userId,
+          content,
+          timestamp: activity.timestamp,
+          field: activity.field,
+          oldValue: activity.oldValue,
+          newValue: activity.newValue
+        }
+      } else {
+        return {
+          id: activity.id,
+          type: 'system' as const,
+          user: '系统',
+          content: activity.content || '',
+          timestamp: activity.timestamp
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Failed to load activities:', error)
+    ElMessage.error('加载活动历史失败')
+  } finally {
+    isLoadingActivities.value = false
   }
-])
+}
+
+// 生成字段变更描述
+const generateFieldChangeContent = (
+  field?: string,
+  oldValue?: string,
+  newValue?: string,
+  action?: string
+): string => {
+  if (!field) return '进行了修改'
+
+  const fieldNames: Record<string, string> = {
+    title: '标题',
+    status: '状态',
+    priority: '优先级',
+    assigneeId: '指派人',
+    content: '描述',
+    dueDate: '截止日期',
+    progress: '进度'
+  }
+
+  const fieldName = fieldNames[field] || field
+
+  if (action === 'create') {
+    return `创建了任务`
+  } else if (action === 'delete') {
+    return `删除了${fieldName}`
+  } else {
+    const oldVal = oldValue || '空'
+    const newVal = newValue || '空'
+    return `将${fieldName}从「${oldVal}」改为「${newVal}」`
+  }
+}
+
+// 监听 task 变化，重新加载活动
+watch(() => props.task?._id, (newId) => {
+  if (newId) {
+    loadActivities()
+  }
+}, { immediate: true })
 
 // 过滤后的活动（倒序：最新的在最上面）
 const filteredActivities = computed(() => {
@@ -268,19 +314,33 @@ const filteredActivities = computed(() => {
 })
 
 // 添加评论
-const addComment = () => {
-  if (!newComment.value.trim()) return
+const addComment = async () => {
+  if (!newComment.value.trim() || !props.task || !props.task._id) return
 
-  const comment: Activity = {
-    id: Date.now().toString(),
-    type: 'comment',
-    user: '当前用户',
-    content: newComment.value.trim(),
-    timestamp: Date.now()
-  }
-
-  activities.value.unshift(comment)
+  const commentContent = newComment.value.trim()
   newComment.value = ''
+
+  try {
+    const result = await addTaskComment(props.task._id, commentContent)
+
+    // 将新评论添加到列表
+    const newActivity: Activity = {
+      id: result.id,
+      type: 'comment',
+      user: result.userId || '当前用户',
+      userId: result.userId,
+      content: result.content || '',
+      timestamp: result.timestamp
+    }
+
+    activities.value.unshift(newActivity)
+    ElMessage.success('评论已添加')
+  } catch (error) {
+    console.error('Failed to add comment:', error)
+    ElMessage.error('添加评论失败')
+    // 恢复输入内容
+    newComment.value = commentContent
+  }
 }
 
 // 格式化相对时间

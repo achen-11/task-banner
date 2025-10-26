@@ -12,6 +12,8 @@ import {
   batchUpdateTaskOrder
 } from 'code/Services/task'
 import { checkProjectPermission } from 'code/Services/project'
+import { TaskComment } from 'code/Models/TaskComment'
+import { TaskHistory } from 'code/Models/TaskHistory'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20
 k.api.get("list", () => {
@@ -325,5 +327,133 @@ k.api.put("updateOrder", (body: any) => {
   } catch (err) {
     k.logger.error('UpdateTaskOrderError', err instanceof Error ? err.message : String(err))
     return error('Failed to update task order', 500, err)
+  }
+})
+
+// GET /api/task/activities?taskId=xxx
+k.api.get("activities", () => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const query = k.request.queryString as unknown as { taskId: string }
+  const taskId = query.taskId
+
+  if (!taskId || taskId.trim() === '') {
+    return error('Invalid task ID', 400)
+  }
+
+  // 3. 获取任务活动历史
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取任务信息以检查权限
+    const task = getTaskById(taskId)
+
+    if (!task) {
+      return error('Task not found', 404)
+    }
+
+    // 权限检查（需要是项目成员）
+    if (!checkProjectPermission(task.projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to view this task', 403)
+    }
+
+    // 获取任务评论
+    const comments = TaskComment.findAll({ taskId })
+
+    // 获取任务历史
+    const histories = TaskHistory.findAll({ taskId })
+
+    // 合并活动（评论 + 历史），并按时间倒序排列
+    const activities = [
+      ...comments.map(comment => ({
+        id: comment._id,
+        type: 'comment' as const,
+        userId: comment.userId,
+        content: comment.content,
+        mentionedUsers: comment.mentionedUsers || [],
+        timestamp: comment.createdAt
+      })),
+      ...histories.map(history => ({
+        id: history._id,
+        type: 'field_change' as const,
+        userId: history.userId,
+        field: history.field,
+        oldValue: history.oldValue,
+        newValue: history.newValue,
+        action: history.action,
+        timestamp: history.createdAt
+      }))
+    ].sort((a, b) => b.timestamp - a.timestamp)
+
+    return success(activities)
+
+  } catch (err) {
+    k.logger.error('GetTaskActivitiesError', err instanceof Error ? err.message : String(err))
+    return error('Failed to get task activities', 500, err)
+  }
+})
+
+// POST /api/task/comment
+k.api.post("comment", (body: any) => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const { taskId, content, mentionedUsers } = body
+
+  if (!taskId || typeof taskId !== 'string' || taskId.trim() === '') {
+    return error('Invalid task ID', 400)
+  }
+
+  if (!content || content.trim() === '') {
+    return error('Comment content is required', 400)
+  }
+
+  // 3. 创建评论
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取任务信息以检查权限
+    const task = getTaskById(taskId)
+
+    if (!task) {
+      return error('Task not found', 404)
+    }
+
+    // 权限检查（需要是项目成员）
+    if (!checkProjectPermission(task.projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to comment on this task', 403)
+    }
+
+    const commentId = TaskComment.create({
+      taskId,
+      userId: currentUser._id,
+      content: content.trim(),
+      mentionedUsers: mentionedUsers || []
+    })
+    const comment = TaskComment.findById(commentId)!
+
+    return success({
+      id: comment._id,
+      type: 'comment',
+      userId: comment.userId,
+      content: comment.content,
+      mentionedUsers: comment.mentionedUsers,
+      timestamp: comment.createdAt
+    }, 'Comment added successfully')
+
+  } catch (err) {
+    k.logger.error('CreateCommentError', err instanceof Error ? err.message : String(err))
+    return error('Failed to create comment', 500, err)
   }
 })

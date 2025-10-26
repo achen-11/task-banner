@@ -77,18 +77,108 @@
             @change="toggleSelectAll"
           />
         </div>
-        <div>ID</div>
-        <div>标题</div>
-        <div>指派人</div>
-        <div>优先级</div>
-        <div>最后更新</div>
-        <div>状态</div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('displayId')"
+        >
+          <span>ID</span>
+          <svg
+            v-if="sortField === 'displayId'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('title')"
+        >
+          <span>标题</span>
+          <svg
+            v-if="sortField === 'title'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('assigneeId')"
+        >
+          <span>指派人</span>
+          <svg
+            v-if="sortField === 'assigneeId'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('priority')"
+        >
+          <span>优先级</span>
+          <svg
+            v-if="sortField === 'priority'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('updatedAt')"
+        >
+          <span>最后更新</span>
+          <svg
+            v-if="sortField === 'updatedAt'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+        <div
+          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('status')"
+        >
+          <span>状态</span>
+          <svg
+            v-if="sortField === 'status'"
+            class="w-3 h-3"
+            :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
       </div>
 
       <!-- 表格内容 -->
       <div class="divide-y divide-gray-100">
         <div
-          v-for="task in tasks"
+          v-for="task in sortedTasks"
           :key="task._id"
           class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
           :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }"
@@ -202,6 +292,10 @@ const tasks = ref<Task[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+// 排序状态
+const sortField = ref<string | null>(null)
+const sortDirection = ref<'asc' | 'desc'>('asc')
+
 // 批量选择状态
 const selectedTaskIds = ref<Set<string>>(new Set())
 
@@ -214,6 +308,84 @@ const isAllSelected = computed(() => {
 const isSomeSelected = computed(() => {
   return selectedTaskIds.value.size > 0 && selectedTaskIds.value.size < tasks.value.length
 })
+
+// 计算属性：排序后的任务列表
+const sortedTasks = computed(() => {
+  const tasksCopy = [...tasks.value]
+
+  // 默认排序：待办任务在前，然后根据最后更新时间降序
+  const defaultSort = (a: Task, b: Task) => {
+    // 待办任务优先
+    const statusOrder = { todo: 0, in_progress: 1, completed: 2 }
+    const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+    if (statusDiff !== 0) return statusDiff
+
+    // 然后按更新时间降序
+    return b.updatedAt - a.updatedAt
+  }
+
+  // 如果没有选择排序字段，使用默认排序
+  if (!sortField.value) {
+    return tasksCopy.sort(defaultSort)
+  }
+
+  // 按选定字段排序
+  return tasksCopy.sort((a: Task, b: Task) => {
+    let compareA: any
+    let compareB: any
+
+    switch (sortField.value) {
+      case 'displayId':
+        compareA = a.displayId
+        compareB = b.displayId
+        break
+      case 'title':
+        compareA = a.title.toLowerCase()
+        compareB = b.title.toLowerCase()
+        break
+      case 'assigneeId':
+        compareA = a.assigneeId || ''
+        compareB = b.assigneeId || ''
+        break
+      case 'priority':
+        const priorityOrder = { low: 0, medium: 1, high: 2 }
+        compareA = priorityOrder[a.priority]
+        compareB = priorityOrder[b.priority]
+        break
+      case 'updatedAt':
+        compareA = a.updatedAt
+        compareB = b.updatedAt
+        break
+      case 'status':
+        const statusOrder = { todo: 0, in_progress: 1, completed: 2 }
+        compareA = statusOrder[a.status]
+        compareB = statusOrder[b.status]
+        break
+      default:
+        return 0
+    }
+
+    if (compareA < compareB) {
+      return sortDirection.value === 'asc' ? -1 : 1
+    }
+    if (compareA > compareB) {
+      return sortDirection.value === 'asc' ? 1 : -1
+    }
+    return 0
+  })
+})
+
+// 切换排序
+const toggleSort = (field: string) => {
+  if (sortField.value === field) {
+    // 同一字段：切换方向
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // 新字段：默认升序
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
 
 // 加载任务列表
 const loadTasks = async () => {
