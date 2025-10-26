@@ -98,7 +98,7 @@ export function createTask(data: {
     priority: data.priority || 'medium',
     assigneeId: data.assigneeId || '',
     creatorId: data.creatorId,
-    dueDate: data.dueDate || 0,
+    dueDate: data.dueDate,
     progress: data.progress || 0,
     order: maxOrder + 1
   })

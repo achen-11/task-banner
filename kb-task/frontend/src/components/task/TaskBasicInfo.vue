@@ -198,8 +198,13 @@
         <!-- 附件上传（可折叠） -->
         <div v-if="showUploadArea" class="mb-4">
           <AttachmentUpload
+            v-if="localTask._id && localTask.projectId"
+            :related-type="'task'"
+            :related-id="localTask._id"
+            :project-id="localTask.projectId"
             @upload="handleAttachmentUpload"
             @uploaded="handleAttachmentUploaded"
+            @error="handleAttachmentError"
           />
           <button
             class="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
@@ -214,6 +219,7 @@
           <AttachmentList
             :attachments="localTask.attachments"
             @delete="handleAttachmentDelete"
+            @error="handleAttachmentError"
           />
         </div>
       </div>
@@ -225,15 +231,22 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
+import { getAttachmentList } from '@/api/attachment'
 
 interface Attachment {
   _id: string
+  relatedType: 'task' | 'comment'
+  relatedId: string
   name: string
+  originalName: string
   size: number
-  type: string
+  mimeType: string
   url: string
   thumbnailUrl?: string
-  uploadedAt: number
+  uploaderId: string
+  projectId: string
+  createdAt: number
+  updatedAt: number
 }
 
 interface Task {
@@ -303,9 +316,21 @@ const isFieldsCollapsed = ref(true)
 const showUploadArea = ref(false)
 
 // 监听 props 变化，更新本地副本
-watch(() => props.task, (newTask) => {
+watch(() => props.task, async (newTask) => {
   if (newTask) {
     localTask.value = { ...newTask }
+
+    // 加载附件列表
+    if (newTask._id) {
+      try {
+        const attachments = await getAttachmentList('task', newTask._id)
+        localTask.value.attachments = attachments
+      } catch (error) {
+        console.error('Failed to load attachments:', error)
+        // 如果加载失败，使用空数组
+        localTask.value.attachments = []
+      }
+    }
   }
 }, { immediate: true, deep: true })
 
@@ -360,7 +385,6 @@ const formatDate = (timestamp: number) => {
 // 附件上传处理
 const handleAttachmentUpload = (files: File[]) => {
   console.log('开始上传附件:', files)
-  // TODO: 实际项目中调用上传 API
 }
 
 // 附件上传完成处理
@@ -368,9 +392,15 @@ const handleAttachmentUploaded = (attachments: Attachment[]) => {
   const currentAttachments = localTask.value.attachments || []
   const newAttachments = [...currentAttachments, ...attachments]
   localTask.value.attachments = newAttachments
-  handleUpdate({ attachments: newAttachments })
   // 上传完成后自动收起上传区域
   showUploadArea.value = false
+}
+
+// 附件上传错误处理
+const handleAttachmentError = (message: string) => {
+  // TODO: 显示错误提示（可以使用 Element Plus 的 Message 组件）
+  console.error('附件上传失败:', message)
+  alert(message)
 }
 
 // 附件删除处理
@@ -379,7 +409,6 @@ const handleAttachmentDelete = (attachmentId: string) => {
 
   const newAttachments = localTask.value.attachments.filter(att => att._id !== attachmentId)
   localTask.value.attachments = newAttachments
-  handleUpdate({ attachments: newAttachments })
 }
 
 // 当显示标签输入时，聚焦输入框

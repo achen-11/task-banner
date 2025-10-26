@@ -33,15 +33,22 @@
 import { ref, computed } from 'vue'
 import AttachmentCard from './AttachmentCard.vue'
 import ImageLightbox from './ImageLightbox.vue'
+import { deleteAttachment as deleteAttachmentAPI } from '@/api/attachment'
 
 interface Attachment {
   _id: string
+  relatedType: 'task' | 'comment'
+  relatedId: string
   name: string
+  originalName: string
   size: number
-  type: string
+  mimeType: string
   url: string
   thumbnailUrl?: string
-  uploadedAt: number
+  uploaderId: string
+  projectId: string
+  createdAt: number
+  updatedAt: number
 }
 
 interface Props {
@@ -52,15 +59,17 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'delete', id: string): void
+  (e: 'error', message: string): void
 }>()
 
 // 预览图片索引
 const previewImageIndex = ref<number | null>(null)
+const isDeleting = ref(false)
 
 // 筛选出图片类型的附件
 const imageAttachments = computed(() => {
   return props.attachments
-    .filter(att => att.type.startsWith('image/'))
+    .filter(att => att.mimeType.startsWith('image/'))
     .map(att => ({
       url: att.url,
       name: att.name
@@ -69,7 +78,7 @@ const imageAttachments = computed(() => {
 
 // 处理预览
 const handlePreview = (attachment: Attachment) => {
-  if (attachment.type.startsWith('image/')) {
+  if (attachment.mimeType.startsWith('image/')) {
     // 找到该图片在图片列表中的索引
     const index = imageAttachments.value.findIndex(img => img.url === attachment.url)
     if (index !== -1) {
@@ -82,7 +91,23 @@ const handlePreview = (attachment: Attachment) => {
 }
 
 // 处理删除
-const handleDelete = (id: string) => {
-  emit('delete', id)
+const handleDelete = async (id: string) => {
+  if (isDeleting.value) return
+
+  const confirmed = confirm('确定要删除这个附件吗？')
+  if (!confirmed) return
+
+  isDeleting.value = true
+
+  try {
+    await deleteAttachmentAPI(id)
+    emit('delete', id)
+  } catch (error: any) {
+    const message = error?.message || '删除失败，请重试'
+    emit('error', message)
+    console.error('Delete attachment error:', error)
+  } finally {
+    isDeleting.value = false
+  }
 }
 </script>

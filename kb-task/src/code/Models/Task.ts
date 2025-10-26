@@ -58,7 +58,6 @@ export const Task = ksql.define(
     },
     dueDate: {
       type: DataTypes.Timestamp,
-      default: 0 // 0 表示无截止日期
     },
     progress: {
       type: DataTypes.Number,

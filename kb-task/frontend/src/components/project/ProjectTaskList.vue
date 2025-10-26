@@ -3,9 +3,14 @@
     <!-- 顶部工具栏 - 移除了标题 -->
     <div class="p-3 border-b border-gray-100 flex items-center justify-between">
       <div class="text-sm text-gray-500">
-        共 {{ mockTasks.length }} 个任务
+        <span v-if="isLoading">加载中...</span>
+        <span v-else-if="error" class="text-red-500">{{ error }}</span>
+        <span v-else>共 {{ tasks.length }} 个任务</span>
       </div>
-      <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+      <button
+        class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+        @click="handleCreateTask"
+      >
         <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -13,7 +18,25 @@
       </button>
     </div>
 
-    <div v-if="mockTasks.length === 0" class="p-8 text-center text-gray-400">
+    <div v-if="isLoading" class="p-8 text-center text-gray-400">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p>加载任务中...</p>
+    </div>
+
+    <div v-else-if="error" class="p-8 text-center text-red-500">
+      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p>{{ error }}</p>
+      <button
+        class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+        @click="loadTasks"
+      >
+        重试
+      </button>
+    </div>
+
+    <div v-else-if="tasks.length === 0" class="p-8 text-center text-gray-400">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
@@ -35,40 +58,40 @@
       <!-- 表格内容 -->
       <div class="divide-y divide-gray-100">
         <div
-          v-for="task in mockTasks"
+          v-for="task in tasks"
           :key="task._id"
           class="grid grid-cols-[80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors items-center"
           @click="openTaskDetail(task._id)"
         >
           <!-- ID -->
           <div class="text-sm font-mono text-gray-500">
-            #{{ task.taskId }}
+            #{{ task.displayId }}
           </div>
 
           <!-- 标题 -->
           <div class="min-w-0">
             <div class="font-medium text-gray-900 truncate">{{ task.title }}</div>
-            <div v-if="task.tags && task.tags.length > 0" class="flex items-center gap-1 mt-1">
+            <div v-if="task.tagIds && task.tagIds.length > 0" class="flex items-center gap-1 mt-1">
               <span
-                v-for="tag in task.tags.slice(0, 2)"
-                :key="tag"
+                v-for="tagId in task.tagIds.slice(0, 2)"
+                :key="tagId"
                 class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
               >
-                {{ tag }}
+                {{ tagId }}
               </span>
-              <span v-if="task.tags.length > 2" class="text-xs text-gray-400">
-                +{{ task.tags.length - 2 }}
+              <span v-if="task.tagIds.length > 2" class="text-xs text-gray-400">
+                +{{ task.tagIds.length - 2 }}
               </span>
             </div>
           </div>
 
           <!-- 指派人 -->
           <div class="text-sm text-gray-600">
-            <div v-if="task.assignee" class="flex items-center gap-2">
+            <div v-if="task.assigneeId" class="flex items-center gap-2">
               <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-                {{ task.assignee.charAt(0) }}
+                {{ task.assigneeId.charAt(0) }}
               </div>
-              <span>{{ task.assignee }}</span>
+              <span>{{ task.assigneeId }}</span>
             </div>
             <span v-else class="text-gray-400">未指派</span>
           </div>
@@ -108,115 +131,63 @@
     <TaskDetailDrawer
       :is-open="isDrawerOpen"
       :task-id="selectedTaskId"
-      :all-tasks="mockTasks"
+      :all-tasks="tasks"
       @close="closeDrawer"
       @update:task-id="selectedTaskId = $event"
+      @task-updated="handleTaskUpdated"
+      @task-deleted="handleTaskDeleted"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
-
-interface Task {
-  _id: string
-  taskId: number  // 数字版 ID，更易识别
-  title: string
-  status: 'todo' | 'in_progress' | 'completed'
-  priority: 'low' | 'medium' | 'high'
-  description?: string
-  assignee?: string
-  module?: string
-  tags?: string[]
-  dueDate?: number
-  progress?: number
-  createdAt: number
-  updatedAt: number
-}
+import { getTaskList, createTask as createTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import type { Task } from '@/types/task'
 
 interface Props {
   projectId: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-// Mock 任务数据
-const mockTasks = ref<Task[]>([
-  {
-    _id: 'task-1',
-    taskId: 1001,
-    title: '实现任务详情抽屉组件',
-    status: 'in_progress',
-    priority: 'high',
-    description: '基于 Linear 设计风格，实现可调整宽度的任务详情抽屉，支持两列响应式布局，包含活动历史时间线。',
-    assignee: '张三',
-    module: '前端',
-    tags: ['UI组件', '高优先级'],
-    dueDate: Date.now() + 2 * 24 * 60 * 60 * 1000,
-    progress: 60,
-    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 1 * 60 * 60 * 1000
-  },
-  {
-    _id: 'task-2',
-    taskId: 1002,
-    title: '优化项目成员管理API',
-    status: 'completed',
-    priority: 'medium',
-    description: '完善项目成员增删改查接口，添加权限验证和角色管理功能。',
-    assignee: '李四',
-    module: '后端',
-    tags: ['API', 'Backend'],
-    dueDate: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    progress: 100,
-    createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 6 * 60 * 60 * 1000
-  },
-  {
-    _id: 'task-3',
-    taskId: 1003,
-    title: '设计任务标签系统',
-    status: 'todo',
-    priority: 'low',
-    description: '设计灵活的标签系统，支持自定义颜色、图标，以及标签组功能。',
-    assignee: '王五',
-    module: '设计',
-    tags: ['设计', 'UX'],
-    progress: 0,
-    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 2 * 24 * 60 * 60 * 1000
-  },
-  {
-    _id: 'task-4',
-    taskId: 1004,
-    title: '添加任务批量操作功能',
-    status: 'todo',
-    priority: 'medium',
-    description: '支持批量修改任务状态、优先级、指派人等字段，提升操作效率。',
-    module: '前端',
-    tags: ['功能增强'],
-    dueDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    progress: 0,
-    createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 1 * 24 * 60 * 60 * 1000
-  },
-  {
-    _id: 'task-5',
-    taskId: 1005,
-    title: '集成 Quill.js 富文本编辑器',
-    status: 'in_progress',
-    priority: 'high',
-    description: '为任务描述和评论集成 Quill.js，支持 Markdown、@提及、图片上传等功能。',
-    assignee: '张三',
-    module: '前端',
-    tags: ['富文本', '编辑器'],
-    dueDate: Date.now() + 3 * 24 * 60 * 60 * 1000,
-    progress: 30,
-    createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 2 * 60 * 60 * 1000
+// 任务数据
+const tasks = ref<Task[]>([])
+const isLoading = ref(false)
+const error = ref<string | null>(null)
+
+// 加载任务列表
+const loadTasks = async () => {
+  if (!props.projectId) return
+
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const response = await getTaskList({
+      projectId: props.projectId,
+      page: 1,
+      size: 100 // 暂时加载所有任务
+    })
+    tasks.value = response.items
+  } catch (err: any) {
+    error.value = err?.message || '加载任务失败'
+    console.error('Failed to load tasks:', err)
+  } finally {
+    isLoading.value = false
   }
-])
+}
+
+// 监听projectId变化，重新加载任务
+watch(() => props.projectId, () => {
+  loadTasks()
+}, { immediate: true })
+
+// 组件挂载时加载任务
+onMounted(() => {
+  loadTasks()
+})
 
 // 抽屉状态
 const isDrawerOpen = ref(false)
@@ -231,6 +202,55 @@ const openTaskDetail = (taskId: string) => {
 // 关闭抽屉
 const closeDrawer = () => {
   isDrawerOpen.value = false
+}
+
+// 创建任务
+const handleCreateTask = async () => {
+  const title = prompt('请输入任务标题：')
+  if (!title || title.trim() === '') return
+
+  try {
+    const newTask = await createTaskAPI({
+      projectId: props.projectId,
+      title: title.trim(),
+      status: 'todo',
+      priority: 'medium'
+    })
+
+    // 将新任务添加到列表
+    tasks.value.unshift(newTask)
+
+    // 打开新任务详情
+    selectedTaskId.value = newTask._id
+    isDrawerOpen.value = true
+  } catch (err: any) {
+    alert(err?.message || '创建任务失败')
+    console.error('Failed to create task:', err)
+  }
+}
+
+// 任务更新处理
+const handleTaskUpdated = (updatedTask: Task) => {
+  const index = tasks.value.findIndex(t => t._id === updatedTask._id)
+  if (index !== -1) {
+    tasks.value[index] = updatedTask
+  }
+}
+
+// 任务删除处理
+const handleTaskDeleted = async (taskId: string) => {
+  try {
+    await deleteTaskAPI(taskId)
+
+    // 从列表中移除
+    tasks.value = tasks.value.filter(t => t._id !== taskId)
+
+    // 关闭抽屉
+    isDrawerOpen.value = false
+  } catch (err: any) {
+    alert(err?.message || '删除任务失败')
+    console.error('Failed to delete task:', err)
+  }
 }
 
 // 获取状态图标样式

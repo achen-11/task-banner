@@ -69,13 +69,14 @@
             <!-- 右侧按钮组 -->
             <div class="flex items-center gap-2 flex-shrink-0">
               <button
-                class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
-                title="在新页面打开"
+                class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
+                title="删除任务"
+                @click="handleTaskDelete"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                新窗口打开
+                删除
               </button>
               <button
                 class="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500"
@@ -120,15 +121,22 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
+import { updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 
 interface Attachment {
   _id: string
+  relatedType: 'task' | 'comment'
+  relatedId: string
   name: string
+  originalName: string
   size: number
-  type: string
+  mimeType: string
   url: string
   thumbnailUrl?: string
-  uploadedAt: number
+  uploaderId: string
+  projectId: string
+  createdAt: number
+  updatedAt: number
 }
 
 interface Task {
@@ -162,6 +170,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'update:taskId', taskId: string): void
+  (e: 'task-updated', task: Task): void
+  (e: 'task-deleted', taskId: string): void
 }>()
 
 // 抽屉宽度管理
@@ -251,9 +261,36 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 // 任务更新处理
-const handleTaskUpdate = (updates: Partial<Task>) => {
-  console.log('Task updated:', updates)
-  // TODO: 实际项目中这里会调用 API 更新任务
+const handleTaskUpdate = async (updates: Partial<Task>) => {
+  if (!currentTask.value) return
+
+  try {
+    const updatedTask = await updateTaskAPI({
+      id: currentTask.value._id,
+      ...updates
+    })
+
+    // 通知父组件任务已更新
+    emit('task-updated', updatedTask)
+  } catch (err: any) {
+    console.error('Failed to update task:', err)
+    alert(err?.message || '更新任务失败')
+  }
+}
+
+// 删除任务处理
+const handleTaskDelete = async () => {
+  if (!currentTask.value) return
+
+  const confirmed = confirm(`确定要删除任务 #${currentTask.value.displayId} - ${currentTask.value.title} 吗？`)
+  if (!confirmed) return
+
+  try {
+    emit('task-deleted', currentTask.value._id)
+  } catch (err: any) {
+    console.error('Failed to delete task:', err)
+    alert(err?.message || '删除任务失败')
+  }
 }
 
 onMounted(() => {

@@ -35,7 +35,7 @@
     <!-- 其他文件类型 -->
     <div v-else class="p-4 flex items-center justify-center h-32 bg-gray-50">
       <div class="text-center">
-        <div class="text-4xl mb-2">{{ getFileIcon(attachment.type) }}</div>
+        <div class="text-4xl mb-2">{{ getFileIcon(attachment.mimeType) }}</div>
         <div class="text-xs text-gray-500">{{ getFileExtension(attachment.name) }}</div>
       </div>
     </div>
@@ -47,7 +47,7 @@
       </div>
       <div class="flex items-center justify-between text-xs text-gray-500">
         <span>{{ formatFileSize(attachment.size) }}</span>
-        <span>{{ formatDate(attachment.uploadedAt) }}</span>
+        <span>{{ formatDate(attachment.createdAt) }}</span>
       </div>
     </div>
 
@@ -69,12 +69,18 @@ import { computed } from 'vue'
 
 interface Attachment {
   _id: string
+  relatedType: 'task' | 'comment'
+  relatedId: string
   name: string
+  originalName: string
   size: number
-  type: string
+  mimeType: string
   url: string
   thumbnailUrl?: string
-  uploadedAt: number
+  uploaderId: string
+  projectId: string
+  createdAt: number
+  updatedAt: number
 }
 
 interface Props {
@@ -90,7 +96,7 @@ defineEmits<{
 
 // 是否为图片
 const isImage = computed(() => {
-  return props.attachment.type.startsWith('image/')
+  return props.attachment.mimeType.startsWith('image/')
 })
 
 // 获取文件图标

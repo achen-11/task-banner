@@ -126,7 +126,7 @@ k.api.post("create", (body: any) => {
   }
 
   // 2. 参数验证
-  const { projectId, moduleId, title, content, status, priority, assigneeId, dueDate, progress, tags } = body
+  const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     return error('Invalid project ID', 400)
@@ -149,7 +149,7 @@ k.api.post("create", (body: any) => {
 
     const taskId = createTask({
       projectId,
-      moduleId,
+      moduleIds: moduleIds || [],
       title: title.trim(),
       content,
       status,
@@ -158,7 +158,7 @@ k.api.post("create", (body: any) => {
       creatorId: currentUser._id,
       dueDate,
       progress,
-      tags
+      tags: tags || []
     })
 
     // 获取创建的任务详情
@@ -179,7 +179,7 @@ k.api.put("update", (body: any) => {
   }
 
   // 2. 参数验证
-  const { id, title, content, status, priority, assigneeId, moduleId, dueDate, progress, tags } = body
+  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid task ID', 400)
@@ -211,7 +211,7 @@ k.api.put("update", (body: any) => {
       status,
       priority,
       assigneeId,
-      moduleId,
+      moduleIds,
       dueDate,
       progress,
       tags

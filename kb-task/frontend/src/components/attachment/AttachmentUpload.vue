@@ -65,6 +65,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { uploadAttachments as uploadAttachmentsAPI } from '@/api/attachment'
+import type { Attachment } from '@/api/attachment'
+
+interface Props {
+  relatedType: 'task' | 'comment'
+  relatedId: string
+  projectId: string
+  disabled?: boolean
+}
 
 interface UploadingFile {
   name: string
@@ -72,24 +81,18 @@ interface UploadingFile {
   progress: number
 }
 
-interface Attachment {
-  _id: string
-  name: string
-  size: number
-  type: string
-  url: string
-  thumbnailUrl?: string
-  uploadedAt: number
-}
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'upload', files: File[]): void
   (e: 'uploaded', attachments: Attachment[]): void
+  (e: 'error', message: string): void
 }>()
 
 const fileInputRef = ref<HTMLInputElement>()
 const isDragging = ref(false)
 const uploadingFiles = ref<UploadingFile[]>([])
+const isUploading = ref(false)
 
 // 文件大小限制（50MB）
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -150,10 +153,14 @@ const handlePaste = (event: ClipboardEvent) => {
 
 // 处理文件
 const processFiles = async (files: File[]) => {
+  if (isUploading.value || props.disabled) {
+    return
+  }
+
   // 过滤和验证文件
   const validFiles = files.filter(file => {
     if (file.size > MAX_FILE_SIZE) {
-      alert(`文件 "${file.name}" 超过 50MB 限制`)
+      emit('error', `文件 "${file.name}" 超过 50MB 限制`)
       return false
     }
     return true
@@ -161,15 +168,18 @@ const processFiles = async (files: File[]) => {
 
   if (validFiles.length === 0) return
 
-  // 触发上传事件
+  // 触发上传开始事件
   emit('upload', validFiles)
 
-  // 模拟上传过程（实际项目中替换为真实上传）
-  await mockUpload(validFiles)
+  // 真实上传
+  await realUpload(validFiles)
 }
 
-// 模拟上传（实际项目中替换为真实上传逻辑）
-const mockUpload = async (files: File[]) => {
+// 真实上传逻辑
+const realUpload = async (files: File[]) => {
+  isUploading.value = true
+
+  // 创建上传任务显示进度
   const uploadTasks = files.map(file => ({
     name: file.name,
     size: file.size,
@@ -178,87 +188,52 @@ const mockUpload = async (files: File[]) => {
 
   uploadingFiles.value.push(...uploadTasks)
 
-  // 模拟上传进度
-  for (const task of uploadTasks) {
-    const interval = setInterval(() => {
-      task.progress += 10
-      if (task.progress >= 100) {
-        clearInterval(interval)
-      }
-    }, 100)
-  }
-
-  // 等待所有上传完成
-  await new Promise(resolve => setTimeout(resolve, 1200))
-
-  // 生成模拟的附件数据
-  const attachments: Attachment[] = await Promise.all(
-    files.map(async file => {
-      const url = URL.createObjectURL(file)
-      const thumbnailUrl = file.type.startsWith('image/')
-        ? await generateThumbnail(file)
-        : undefined
-
-      return {
-        _id: `attach-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url,
-        thumbnailUrl,
-        uploadedAt: Date.now()
+  // 模拟进度更新（真实上传时可以通过 axios onUploadProgress 获取真实进度）
+  const progressInterval = setInterval(() => {
+    uploadTasks.forEach(task => {
+      if (task.progress < 90) {
+        task.progress += Math.random() * 30
       }
     })
-  )
+  }, 200)
 
-  // 清空上传列表
-  uploadingFiles.value = []
+  try {
+    // 调用真实的上传 API
+    const attachments = await uploadAttachmentsAPI(
+      files,
+      props.relatedType,
+      props.relatedId,
+      props.projectId
+    )
 
-  // 触发上传完成事件
-  emit('uploaded', attachments)
+    // 完成进度
+    uploadTasks.forEach(task => {
+      task.progress = 100
+    })
+
+    clearInterval(progressInterval)
+
+    // 等待一小段时间让用户看到 100% 进度
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // 清空上传列表
+    uploadingFiles.value = []
+
+    // 触发上传完成事件
+    emit('uploaded', attachments)
+  } catch (error: any) {
+    clearInterval(progressInterval)
+    uploadingFiles.value = []
+    isUploading.value = false
+
+    const message = error?.message || '上传失败，请重试'
+    emit('error', message)
+    console.error('Upload error:', error)
+  } finally {
+    isUploading.value = false
+  }
 }
 
-// 生成图片缩略图
-const generateThumbnail = (file: File): Promise<string> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')!
-
-        // 设置缩略图尺寸
-        const maxSize = 200
-        let width = img.width
-        let height = img.height
-
-        if (width > height) {
-          if (width > maxSize) {
-            height *= maxSize / width
-            width = maxSize
-          }
-        } else {
-          if (height > maxSize) {
-            width *= maxSize / height
-            height = maxSize
-          }
-        }
-
-        canvas.width = width
-        canvas.height = height
-        ctx.drawImage(img, 0, 0, width, height)
-
-        resolve(canvas.toDataURL('image/jpeg', 0.8))
-      }
-
-      img.src = e.target?.result as string
-    }
-
-    reader.readAsDataURL(file)
-  })
-}
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
