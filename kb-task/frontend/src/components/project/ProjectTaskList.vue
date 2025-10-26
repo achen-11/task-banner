@@ -130,10 +130,13 @@
     <!-- 任务详情抽屉 -->
     <TaskDetailDrawer
       :is-open="isDrawerOpen"
+      :mode="drawerMode"
       :task-id="selectedTaskId"
+      :project-id="projectId"
       :all-tasks="tasks"
       @close="closeDrawer"
       @update:task-id="selectedTaskId = $event"
+      @task-created="handleTaskCreated"
       @task-updated="handleTaskUpdated"
       @task-deleted="handleTaskDeleted"
     />
@@ -141,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import { getTaskList, createTask as createTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import type { Task } from '@/types/task'
@@ -184,18 +187,40 @@ watch(() => props.projectId, () => {
   loadTasks()
 }, { immediate: true })
 
-// 组件挂载时加载任务
+// 键盘快捷键处理
+const handleKeydown = (e: KeyboardEvent) => {
+  // N 快捷键创建任务（只在未打开抽屉时生效）
+  if (e.key === 'n' || e.key === 'N') {
+    // 避免在输入框中触发
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return
+    }
+
+    e.preventDefault()
+    handleCreateTask()
+  }
+}
+
+// 组件挂载时加载任务和注册快捷键
 onMounted(() => {
   loadTasks()
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 // 抽屉状态
 const isDrawerOpen = ref(false)
 const selectedTaskId = ref<string>()
+const drawerMode = ref<'view' | 'create'>('view')
 
 // 打开任务详情
 const openTaskDetail = (taskId: string) => {
   selectedTaskId.value = taskId
+  drawerMode.value = 'view'
   isDrawerOpen.value = true
 }
 
@@ -204,29 +229,21 @@ const closeDrawer = () => {
   isDrawerOpen.value = false
 }
 
-// 创建任务
-const handleCreateTask = async () => {
-  const title = prompt('请输入任务标题：')
-  if (!title || title.trim() === '') return
+// 创建任务（打开创建模式的抽屉）
+const handleCreateTask = () => {
+  drawerMode.value = 'create'
+  selectedTaskId.value = undefined
+  isDrawerOpen.value = true
+}
 
-  try {
-    const newTask = await createTaskAPI({
-      projectId: props.projectId,
-      title: title.trim(),
-      status: 'todo',
-      priority: 'medium'
-    })
+// 任务创建完成处理
+const handleTaskCreated = (newTask: Task) => {
+  // 将新任务添加到列表顶部
+  tasks.value.unshift(newTask)
 
-    // 将新任务添加到列表
-    tasks.value.unshift(newTask)
-
-    // 打开新任务详情
-    selectedTaskId.value = newTask._id
-    isDrawerOpen.value = true
-  } catch (err: any) {
-    alert(err?.message || '创建任务失败')
-    console.error('Failed to create task:', err)
-  }
+  // 切换到查看模式
+  drawerMode.value = 'view'
+  selectedTaskId.value = newTask._id
 }
 
 // 任务更新处理

@@ -25,8 +25,8 @@
           <!-- 顶部工具栏 -->
           <div class="border-b border-gray-200 flex items-center justify-between px-6 py-3 flex-shrink-0">
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <!-- 任务导航 -->
-              <div class="flex items-center gap-2 text-sm text-gray-500 flex-shrink-0">
+              <!-- 任务导航（仅查看模式） -->
+              <div v-if="mode !== 'create'" class="flex items-center gap-2 text-sm text-gray-500 flex-shrink-0">
                 <button
                   class="p-1.5 hover:bg-gray-100 rounded transition-colors"
                   @click="goToPrevTask"
@@ -48,27 +48,56 @@
                 <span class="text-xs">{{ currentTaskIndex + 1 }} / {{ totalTasks }}</span>
               </div>
 
-              <!-- 任务 ID -->
-              <div v-if="currentTask" class="text-sm font-mono text-gray-500 flex-shrink-0">
+              <!-- 任务 ID（仅查看模式） -->
+              <div v-if="currentTask && mode !== 'create'" class="text-sm font-mono text-gray-500 flex-shrink-0">
                 #{{ currentTask.displayId }}
+              </div>
+
+              <!-- 创建模式标识 -->
+              <div v-if="mode === 'create'" class="text-sm text-gray-500 flex-shrink-0 flex items-center gap-2">
+                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">新建任务</span>
+                <span v-if="!isSaved" class="text-xs text-orange-500">● 未保存</span>
+                <span v-else class="text-xs text-green-500">● 已保存</span>
               </div>
 
               <!-- 任务标题 -->
               <div class="flex-1 min-w-0 px-3">
                 <input
                   v-if="currentTask"
+                  ref="titleInputRef"
                   :value="currentTask.title"
                   type="text"
-                  class="w-full text-base font-semibold text-gray-900 border-0 border-b-2 border-transparent hover:border-gray-200 px-0 py-1 transition-colors bg-transparent focus:outline-none"
+                  class="w-full text-base font-semibold text-gray-900 border-0 border-b-2 border-transparent hover:border-gray-200 px-0 py-1 transition-colors bg-transparent focus:outline-none focus:border-blue-500"
                   placeholder="任务标题..."
-                  @blur="handleTaskUpdate({ title: ($event.target as HTMLInputElement).value })"
+                  @input="handleTaskUpdate({ title: ($event.target as HTMLInputElement).value })"
+                  @blur="mode === 'view' ? handleTaskUpdate({ title: ($event.target as HTMLInputElement).value }) : null"
                 />
               </div>
             </div>
 
             <!-- 右侧按钮组 -->
             <div class="flex items-center gap-2 flex-shrink-0">
+              <!-- 创建模式：保存按钮 -->
               <button
+                v-if="mode === 'create'"
+                class="px-4 py-1.5 text-sm text-white rounded transition-colors flex items-center gap-1"
+                :class="isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                :disabled="isSaving"
+                title="保存任务 (Cmd+S)"
+                @click="handleSaveTask"
+              >
+                <svg v-if="isSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {{ isSaving ? '保存中...' : '保存' }}
+              </button>
+
+              <!-- 查看模式：删除按钮 -->
+              <button
+                v-if="mode === 'view'"
                 class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
                 title="删除任务"
                 @click="handleTaskDelete"
@@ -78,6 +107,8 @@
                 </svg>
                 删除
               </button>
+
+              <!-- 关闭按钮 -->
               <button
                 class="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500"
                 @click="closeDrawer"
@@ -118,10 +149,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
-import { updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 
 interface Attachment {
   _id: string
@@ -161,18 +192,38 @@ interface Task {
 
 interface Props {
   isOpen: boolean
+  mode?: 'view' | 'create'
   taskId?: string
+  projectId?: string
   allTasks?: Task[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  mode: 'view'
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'update:taskId', taskId: string): void
+  (e: 'task-created', task: Task): void
   (e: 'task-updated', task: Task): void
   (e: 'task-deleted', taskId: string): void
 }>()
+
+// 标题输入框引用
+const titleInputRef = ref<HTMLInputElement>()
+
+// 创建模式下的新任务数据
+const newTaskData = ref<Partial<Task>>({
+  title: '',
+  status: 'todo',
+  priority: 'medium',
+  content: ''
+})
+
+// 保存状态
+const isSaved = ref(true)
+const isSaving = ref(false)
 
 // 抽屉宽度管理
 const drawerWidth = ref(1000) // 默认宽度 1000px
@@ -192,6 +243,12 @@ const currentTaskIndex = computed(() => {
 const totalTasks = computed(() => props.allTasks?.length || 0)
 
 const currentTask = computed(() => {
+  // 创建模式下返回新任务数据
+  if (props.mode === 'create') {
+    return newTaskData.value as Task
+  }
+
+  // 查看模式下返回现有任务
   if (!props.taskId || !props.allTasks) return null
   return props.allTasks.find(t => t._id === props.taskId) || null
 })
@@ -250,13 +307,22 @@ const handleKeydown = (e: KeyboardEvent) => {
   if (!props.isOpen) return
 
   if (e.key === 'Escape') {
+    // 如果有未保存的更改，提示用户
+    if (!isSaved.value) {
+      const confirmed = confirm('有未保存的更改，确定要关闭吗？')
+      if (!confirmed) return
+    }
     closeDrawer()
-  } else if (e.key === 'ArrowUp') {
+  } else if (e.key === 'ArrowUp' && props.mode !== 'create') {
     e.preventDefault()
     goToPrevTask()
-  } else if (e.key === 'ArrowDown') {
+  } else if (e.key === 'ArrowDown' && props.mode !== 'create') {
     e.preventDefault()
     goToNextTask()
+  } else if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    // cmd+s 或 ctrl+s 保存
+    e.preventDefault()
+    handleSaveTask()
   }
 }
 
@@ -264,6 +330,14 @@ const handleKeydown = (e: KeyboardEvent) => {
 const handleTaskUpdate = async (updates: Partial<Task>) => {
   if (!currentTask.value) return
 
+  // 创建模式下，只更新本地数据，标记为未保存
+  if (props.mode === 'create') {
+    Object.assign(newTaskData.value, updates)
+    isSaved.value = false
+    return
+  }
+
+  // 查看模式下，直接调用 API 更新
   try {
     const updatedTask = await updateTaskAPI({
       id: currentTask.value._id,
@@ -276,6 +350,52 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
     console.error('Failed to update task:', err)
     alert(err?.message || '更新任务失败')
   }
+}
+
+// 保存任务（创建或更新）
+const handleSaveTask = async () => {
+  if (isSaving.value) return
+
+  // 创建模式下
+  if (props.mode === 'create') {
+    if (!newTaskData.value.title || newTaskData.value.title.trim() === '') {
+      alert('请输入任务标题')
+      titleInputRef.value?.focus()
+      return
+    }
+
+    if (!props.projectId) {
+      alert('缺少项目ID')
+      return
+    }
+
+    isSaving.value = true
+
+    try {
+      const task = await createTaskAPI({
+        projectId: props.projectId,
+        title: newTaskData.value.title.trim(),
+        status: newTaskData.value.status || 'todo',
+        priority: newTaskData.value.priority || 'medium',
+        content: newTaskData.value.content || '',
+        assigneeId: newTaskData.value.assigneeId,
+        moduleIds: newTaskData.value.moduleIds,
+        tagIds: newTaskData.value.tagIds,
+        dueDate: newTaskData.value.dueDate
+      })
+
+      isSaved.value = true
+
+      // 通知父组件任务已创建
+      emit('task-created', task)
+    } catch (err: any) {
+      console.error('Failed to create task:', err)
+      alert(err?.message || '创建任务失败')
+    } finally {
+      isSaving.value = false
+    }
+  }
+  // 查看模式下不需要手动保存，已经自动保存
 }
 
 // 删除任务处理
@@ -301,9 +421,33 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
 
-// 监听抽屉打开状态，添加/移除 body 滚动锁定
-watch(() => props.isOpen, (newValue) => {
-  // 注意：我们不锁定 body 滚动，因为用户需要能够点击左侧任务列表
-  // 这是与传统抽屉的关键区别
+// 监听抽屉打开状态
+watch(() => props.isOpen, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+    // 抽屉打开时
+    if (props.mode === 'create') {
+      // 创建模式：重置新任务数据
+      newTaskData.value = {
+        title: '',
+        status: 'todo',
+        priority: 'medium',
+        content: ''
+      }
+      isSaved.value = true
+
+      // 等待 DOM 更新后聚焦标题输入框
+      await nextTick()
+      titleInputRef.value?.focus()
+    }
+  }
+})
+
+// 监听模式变化
+watch(() => props.mode, async (newMode) => {
+  if (newMode === 'create' && props.isOpen) {
+    // 切换到创建模式时聚焦标题
+    await nextTick()
+    titleInputRef.value?.focus()
+  }
 })
 </script>
