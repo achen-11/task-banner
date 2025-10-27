@@ -7,24 +7,26 @@ import type { Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-// 自定义插件：在 index.html 添加 @k-url 注释、服务端脚本，并修改 JS 引用路径
+// 自定义插件：在 index.html 添加 @k-url 注释和服务端脚本，并处理 JS 文件中的路径
 function addKoobooUrlPlugin(): Plugin {
   return {
     name: 'add-kooboo-url',
     apply: 'build',
     closeBundle() {
       const htmlPath = path.resolve(__dirname, '../src/index.html')
+      const jsDir = path.resolve(__dirname, '../src/js')
 
+      // 1. 处理 HTML 文件
       if (fs.existsSync(htmlPath)) {
         let html = fs.readFileSync(htmlPath, 'utf-8')
 
-        // 1. 在 HTML 顶部添加 @k-url 注释
+        // 1.1 在 HTML 顶部添加 @k-url 注释
         if (!html.includes('@k-url')) {
           html = '<!-- @k-url / -->\n' + html
           console.log('✅ Added @k-url meta to index.html')
         }
 
-        // 2. 在 <title> 标签后添加服务端脚本
+        // 1.2 在 <title> 标签后添加服务端脚本
         if (!html.includes('env="server"')) {
           const serverScript = `
 
@@ -35,7 +37,7 @@ function addKoobooUrlPlugin(): Plugin {
       // 1. 检查登录状态
       if (!k.account.isLogin) {
         k.response.redirect('/_Admin/login?permission=u&returnurl=/')
-        return 
+        return
       }
 
       // 2. 获取当前登录用户
@@ -50,14 +52,38 @@ function addKoobooUrlPlugin(): Plugin {
           console.log('✅ Added server-side authentication script')
         }
 
-        // 3. 移除 script 和 link 标签中的 /js/ 和 /css/ 路径前缀
+        // 1.3 移除 HTML 中 script 和 link 标签的 /js/ 和 /css/ 路径前缀
         html = html.replace(/src="\/js\//g, 'src="/')
         html = html.replace(/src='\/js\//g, "src='/")
         html = html.replace(/href="\/css\//g, 'href="/')
         html = html.replace(/href='\/css\//g, "href='/")
 
         fs.writeFileSync(htmlPath, html, 'utf-8')
-        console.log('✅ Modified script paths to remove /js/ prefix')
+        console.log('✅ Modified HTML paths to remove /js/ and /css/ prefix')
+      }
+
+      // 2. 处理所有 JS 文件中的动态导入路径
+      if (fs.existsSync(jsDir)) {
+        const jsFiles = fs.readdirSync(jsDir).filter(file => file.endsWith('.js'))
+
+        jsFiles.forEach(file => {
+          const filePath = path.join(jsDir, file)
+          let content = fs.readFileSync(filePath, 'utf-8')
+
+          // 替换 JS 代码中的 "js/ 和 "css/ 路径
+          const originalContent = content
+          content = content.replace(/"js\//g, '"')
+          content = content.replace(/'js\//g, "'")
+          content = content.replace(/"css\//g, '"')
+          content = content.replace(/'css\//g, "'")
+
+          // 只有内容发生变化时才写回文件
+          if (content !== originalContent) {
+            fs.writeFileSync(filePath, content, 'utf-8')
+          }
+        })
+
+        console.log(`✅ Modified ${jsFiles.length} JS files to remove js/ and css/ path prefixes`)
       }
     }
   }
