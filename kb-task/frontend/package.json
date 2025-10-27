@@ -11,7 +11,7 @@
     "build": "run-p type-check \"build-only {@}\" -- && npm run post-build",
     "preview": "vite preview",
     "build-only": "vite build",
-    "post-build": "mkdir -p ../src/page && mv ../src/index.html ../src/page/",
+    "post-build": "node post-build.js",
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
