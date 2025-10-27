@@ -337,7 +337,24 @@ export function getProjectTasks(
  * 任务排序函数
  */
 function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string): TaskInfo[] {
-  const field = sortField || 'order'
+  // 默认排序：先按状态，再按更新时间降序
+  if (!sortField) {
+    return tasks.sort((a, b) => {
+      // 状态优先排序 (todo > in_progress > review > completed)
+      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
+      const statusA = statusOrder[a.status] || 99
+      const statusB = statusOrder[b.status] || 99
+
+      if (statusA !== statusB) {
+        return statusA - statusB
+      }
+
+      // 状态相同时，按更新时间降序
+      return b.updatedAt - a.updatedAt
+    })
+  }
+
+  const field = sortField
   const direction = sortDirection || 'asc'
 
   return tasks.sort((a, b) => {

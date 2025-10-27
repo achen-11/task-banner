@@ -38,8 +38,9 @@ k.api.get("list", () => {
   const projectId = query.projectId
   const page = parseInt(query?.page || '1')
   const size = parseInt(query?.size || '20')
-  const sortField = query.sortField || 'order'
-  const sortDirection = query.sortDirection || 'asc'
+  // 如果 sortField 为空，传递 undefined 让 Service 层使用默认排序
+  const sortField = query.sortField || undefined
+  const sortDirection = query.sortDirection
 
   if (!projectId || projectId.trim() === '') {
     return error('Project ID is required', 400)

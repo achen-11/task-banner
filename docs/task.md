@@ -54,145 +54,204 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 10a36252-54bc-4cf3-b440-45d9e3398cc4 -->
-#### 1. 导入任务-多任务导入
+<!-- task-id: a47cd076-99cd-4fb7-bb50-e15a2cb47eeb -->
+#### 1. 任务列表-获取数据异常
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 22:50:25
-**更新时间：** 2025/10/27 23:05:00
+**创建时间：** 2025/10/27 23:05:55
+**更新时间：** 2025/10/27 23:19:04
 
 **任务描述：**
 
-**任务摘要：** 优化了导入导出功能，修复多任务导入问题，简化导出为复制到剪贴板，更新 AI 提示词生成文件
+**任务摘要：** 修复了任务列表数据获取异常问题，移除前端重复排序逻辑，统一使用服务端排序，默认按状态优先、更新时间降序排列
 
-- [x] 1. 当传入数组时(多任务), 会警告未解析出任务
-- [x] 2.优化提示词, 现在 ai 是会输出 json, 但不会生成文件, 我需要的文件, 可以是 task.md,task.json
-- [x] 3.导出时不需要 json, 有 md 就够了, 另外不是文件, 而是复制到剪切板
+**问题分析：**
+
+由于前后端都存在排序逻辑，且 API handler 强制使用默认排序字段，导致数据获取异常和排序结果不一致。具体问题包括：
+
+1. **双重排序冲突**
+   - 后端在 `task.ts:333` 返回排序后的数据
+   - 前端在 `ProjectTaskList.vue:318-384` 使用 `sortedTasks` 计算属性再次排序
+   - 导致性能浪费和排序结果不可预测
+
+2. **API handler 强制默认排序字段**（根本原因）
+   - API handler 在 `src/api/task.ts:41` 使用了 `query.sortField || 'order'`
+   - 即使前端不传 sortField，也会被强制设置为 'order'
+   - 导致 Service 层的默认排序逻辑永远不会被触发
+
+3. **默认排序不一致**
+   - 后端默认：按 `order` 字段升序
+   - 前端发送：`updatedAt` 作为默认排序字段
+   - 前端计算属性：状态优先，然后按更新时间降序
+
+4. **状态排序顺序不同**
+   - 后端：`{ todo: 1, in_progress: 2, review: 3, completed: 4 }`
+   - 前端：`{ todo: 0, in_progress: 1, completed: 2, review: 3 }`
 
 **实施方案：**
 
-### 核心实现
+### 1. 移除前端排序逻辑
 
-**功能优化**：
-- ✅ 修复多任务 JSON 数组导入失败问题
-- ✅ 优化 AI 提示词，要求使用 Write 工具生成文件
-- ✅ 简化导出功能，只复制 Markdown 到剪贴板
-- ✅ 添加任务验证和默认值处理
+**文件：** `frontend/src/components/project/ProjectTaskList.vue`
 
-### 修改文件
+**变更 1：移除 `sortedTasks` 计算属性**（原 318-384 行）
+- 删除了整个 `sortedTasks` computed 函数
+- 该函数包含默认排序和自定义排序逻辑
+- 前端不再进行任何客户端排序
 
-**1. `frontend/src/utils/export.ts`**
+**变更 2：模板直接使用 `tasks`**（127 行）
+```vue
+<!-- 之前 -->
+<div v-for="task in sortedTasks" :key="task._id">
 
-**修复 importTasksFromJSON 函数**（316-354 行）：
-```typescript
-// 添加验证和过滤逻辑
-return tasksData
-  .filter(taskData => {
-    // 过滤掉 null、undefined 或缺少标题的任务
-    if (!taskData || !taskData.title) {
-      console.warn('Skipping invalid task:', taskData)
-      return false
-    }
-    return true
-  })
-  .map(taskData => ({
-    _id: taskData._id,
-    projectId: projectId,
-    title: taskData.title,
-    status: taskData.status || 'todo',  // 默认值
-    priority: taskData.priority || 'medium',  // 默认值
-    content: taskData.content || '',  // 默认值
-    summary: taskData.summary,
-    tagIds: taskData.tagIds || [],  // 默认值
-    assigneeId: taskData.assigneeId,
-    moduleIds: taskData.moduleIds || [],  // 默认值
-    createdAt: taskData.createdAt || Date.now(),  // 默认值
-    updatedAt: taskData.updatedAt || Date.now()  // 默认值
-  }))
+<!-- 之后 -->
+<div v-for="task in tasks" :key="task._id">
 ```
 
-**更新 AI 提示词**（96-113 行和 206-223 行，两处相同修改）：
-- 从"返回格式"改为"生成文件"
-- 要求使用 Write 工具生成 `/Users/achen/Priv/task-banner/docs/task.json` 文件
-- 要求使用 Write 工具生成 `/Users/achen/Priv/task-banner/docs/task.md` 文件
-- 单任务用对象，多任务用数组
-- 提供详细的格式示例
-
-**2. `frontend/src/components/TaskDetailDrawer.vue`**
-
-**简化导出功能**（322-343 行）：
+**变更 3：修改 `toggleSort` 函数**（318-330 行）
 ```typescript
-// 导出当前任务（复制 Markdown 到剪贴板）
-const handleExportTask = async () => {
-  if (!currentTask.value || !currentTask.value.title) {
-    ElMessage.warning('没有可导出的任务')
-    return
+// 切换排序（重新加载数据）
+const toggleSort = (field: string) => {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  // 重新加载任务以应用新的排序
+  loadTasks()
+}
+```
+- 用户点击列标题时，不再只改变本地状态
+- 而是重新调用 `loadTasks()` 从服务端获取排序后的数据
+
+**变更 4：修改 `loadTasks` 函数**（353 行）
+```typescript
+// 之前
+sortField: sortField.value || 'updatedAt',
+
+// 之后
+sortField: sortField.value || undefined,
+```
+- 不再发送默认排序字段
+- 当 `sortField` 为空时，让后端使用默认排序逻辑
+
+### 2. 配置服务端默认排序
+
+**文件：** `src/code/Services/task.ts`
+
+**变更：重写 `sortTasks` 函数**（339-399 行）
+```typescript
+function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string): TaskInfo[] {
+  // 默认排序：先按状态，再按更新时间降序
+  if (!sortField) {
+    return tasks.sort((a, b) => {
+      // 状态优先排序 (todo > in_progress > review > completed)
+      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
+      const statusA = statusOrder[a.status] || 99
+      const statusB = statusOrder[b.status] || 99
+
+      if (statusA !== statusB) {
+        return statusA - statusB
+      }
+
+      // 状态相同时，按更新时间降序
+      return b.updatedAt - a.updatedAt
+    })
   }
 
-  try {
-    // 导出 Markdown 并复制到剪贴板
-    const markdown = exportTaskToMarkdown(currentTask.value)
-    const success = await copyToClipboard(markdown)
-
-    if (success) {
-      ElMessage.success('任务已导出到剪贴板')
-    } else {
-      ElMessage.error('复制失败，请重试')
-    }
-  } catch (error) {
-    console.error('Export task error:', error)
-    ElMessage.error('导出任务失败')
-  }
+  // 其他排序逻辑保持不变
+  // ...
 }
 ```
 
-**移除不必要的导入**（185 行）：
-- 移除 `exportTaskToJSON`
-- 移除 `downloadAsFile`
+**关键改进：**
+- 当没有指定 `sortField` 时，使用新的默认排序
+- 优先按状态排序：待办 → 进行中 → 评审 → 已完成
+- 状态相同时，按更新时间降序（最新的在前）
+- 符合任务管理的常见需求：优先显示待办任务
+
+### 3. 修复 API handler 的默认排序问题（关键修复）
+
+**文件：** `src/api/task.ts`
+
+**变更：移除强制默认值**（41-43 行）
+```typescript
+// 之前
+const sortField = query.sortField || 'order'
+const sortDirection = query.sortDirection || 'asc'
+
+// 之后
+// 如果 sortField 为空，传递 undefined 让 Service 层使用默认排序
+const sortField = query.sortField || undefined
+const sortDirection = query.sortDirection
+```
+
+**问题根源：**
+- API handler 会将空的 sortField 强制转换为 'order'
+- 这导致 Service 层的 `sortTasks` 函数永远收不到 undefined
+- 因此默认排序逻辑（状态+时间）从未被触发
+- 系统一直按 order 字段排序，看起来像是按 ID 升序
+
+**修复效果：**
+- 现在 API handler 不再强制设置默认值
+- 当前端不传 sortField 时，Service 层会收到 undefined
+- 触发默认排序逻辑：状态优先，时间降序
 
 ### 技术要点
 
-1. **多任务导入修复**
-   - 添加 filter 过滤无效任务
-   - 验证任务对象和标题字段
-   - 输出警告日志便于调试
-   - 为所有可选字段添加默认值
+1. **单一数据源原则**
+   - 排序逻辑只在服务端实现
+   - 前端完全信任服务端返回的顺序
+   - 避免客户端和服务端逻辑不一致
 
-2. **AI 提示词优化**
-   - 明确要求使用 Write 工具
-   - 指定文件路径：`/Users/achen/Priv/task-banner/docs/`
-   - 区分单任务（对象）和多任务（数组）格式
-   - 提供详细的 JSON 示例
+2. **按需加载**
+   - 用户点击列标题时才重新请求数据
+   - 利用后端排序能力，减少前端计算
+   - 支持未来扩展（如数据库级别的排序优化）
 
-3. **导出功能简化**
-   - 移除 JSON 文件导出
-   - 移除文件下载功能
-   - 只保留 Markdown 复制到剪贴板
-   - 简化用户操作流程
+3. **TypeScript 类型安全**
+   - 修复了 `sortField: null` 与接口 `string | undefined` 不兼容的问题
+   - 使用 `|| undefined` 将 `null` 转换为 `undefined`
 
-4. **错误处理**
-   - 添加任务验证逻辑
-   - 提供有意义的错误信息
-   - 使用 console.warn 输出跳过的任务
-   - 保证不会因个别任务失败而中断整个导入
+4. **向后兼容**
+   - 保留了用户自定义排序功能（点击列标题）
+   - 只改变了默认排序行为
+   - API 接口保持不变
+
+5. **问题定位与调试**
+   - 用户提供了请求 URL，帮助快速定位问题
+   - 发现 API handler 层存在强制默认值的问题
+   - 修复后端的三个层次：前端 → API handler → Service 层
 
 ### 验证结果
 
-✅ **构建测试通过**：
+✅ **构建测试通过：**
 ```
 ✓ 3277 modules transformed
-✓ built in 5.29s
+✓ built in 5.62s
 ```
 
-✅ **功能完整性**：
-- 🔧 **多任务导入**：支持 JSON 数组，过滤无效任务
-- 📝 **AI 提示词**：要求生成 task.json 和 task.md 文件
-- 📋 **简化导出**：只复制 Markdown 到剪贴板
-- ✅ **默认值处理**：确保任务数据完整性
+✅ **功能完整性：**
+- 🗑️ **移除前端排序**：删除 `sortedTasks` 计算属性和相关逻辑
+- 🔄 **服务端排序**：`toggleSort` 触发数据重新加载
+- 📊 **默认排序**：状态优先（todo → in_progress → review → completed），然后按更新时间降序
+- 🎯 **自定义排序**：点击列标题仍可按指定字段排序
+- 🔧 **API 修复**：移除 API handler 的强制默认值，确保默认排序逻辑正常触发
+
+✅ **性能优化：**
+- 避免了前端对大量数据的重复排序
+- 服务端排序可以利用数据库索引
+- 减少了客户端计算负担
+
+✅ **问题彻底解决：**
+- 修复了 API handler 层的逻辑问题
+- 默认排序现在可以正常工作
+- 不再显示为 ID 升序排序
 
 ---
 
 
-> 📅 导出时间：2025/10/27 23:05:00
+> 📅 导出时间：2025/10/27 23:32:24
 > 🤖 由 Task-Flow 生成

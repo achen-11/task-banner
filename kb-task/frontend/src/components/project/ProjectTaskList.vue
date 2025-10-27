@@ -124,7 +124,7 @@
 
       <!-- 表格内容 -->
       <div class="divide-y divide-gray-100">
-        <div v-for="task in sortedTasks" :key="task._id"
+        <div v-for="task in tasks" :key="task._id"
           class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
           :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }">
           <!-- Checkbox -->
@@ -315,75 +315,7 @@ const isSomeSelected = computed(() => {
   return selectedTaskIds.value.size > 0 && selectedTaskIds.value.size < tasks.value.length
 })
 
-// 计算属性：排序后的任务列表
-const sortedTasks = computed(() => {
-  const tasksCopy = [...tasks.value]
-
-  // 默认排序：待办任务在前，然后根据最后更新时间降序
-  const defaultSort = (a: Task, b: Task) => {
-    // 待办任务优先
-    const statusOrder: Record<Task['status'], number> = { todo: 0, in_progress: 1, completed: 2, review: 3 }
-    const statusA = statusOrder[a.status] ?? 99
-    const statusB = statusOrder[b.status] ?? 99
-    const statusDiff = statusA - statusB
-    if (statusDiff !== 0) return statusDiff
-
-    // 然后按更新时间降序
-    return b.updatedAt - a.updatedAt
-  }
-
-  // 如果没有选择排序字段，使用默认排序
-  if (!sortField.value) {
-    return tasksCopy.sort(defaultSort)
-  }
-
-  // 按选定字段排序
-  return tasksCopy.sort((a: Task, b: Task) => {
-    let compareA: any
-    let compareB: any
-
-    switch (sortField.value) {
-      case 'displayId':
-        compareA = a.displayId
-        compareB = b.displayId
-        break
-      case 'title':
-        compareA = a.title.toLowerCase()
-        compareB = b.title.toLowerCase()
-        break
-      case 'assigneeId':
-        compareA = a.assigneeId || ''
-        compareB = b.assigneeId || ''
-        break
-      case 'priority':
-        const priorityOrder = { low: 0, medium: 1, high: 2 }
-        compareA = priorityOrder[a.priority]
-        compareB = priorityOrder[b.priority]
-        break
-      case 'updatedAt':
-        compareA = a.updatedAt
-        compareB = b.updatedAt
-        break
-      case 'status':
-        const statusOrder: Record<Task['status'], number> = { todo: 0, in_progress: 1, completed: 2, review: 3 }
-        compareA = statusOrder[a.status] ?? 99
-        compareB = statusOrder[b.status] ?? 99
-        break
-      default:
-        return 0
-    }
-
-    if (compareA < compareB) {
-      return sortDirection.value === 'asc' ? -1 : 1
-    }
-    if (compareA > compareB) {
-      return sortDirection.value === 'asc' ? 1 : -1
-    }
-    return 0
-  })
-})
-
-// 切换排序
+// 切换排序（重新加载数据）
 const toggleSort = (field: string) => {
   if (sortField.value === field) {
     // 同一字段：切换方向
@@ -393,6 +325,8 @@ const toggleSort = (field: string) => {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  // 重新加载任务以应用新的排序
+  loadTasks()
 }
 
 // 加载任务列表（初始加载或重新加载）
@@ -416,7 +350,7 @@ const loadTasks = async (reset = true) => {
       projectId: props.projectId,
       page: reset ? 1 : currentPage.value,
       size: pageSize.value,
-      sortField: sortField.value || 'updatedAt',
+      sortField: sortField.value || undefined,
       sortDirection: sortDirection.value
     })
 
