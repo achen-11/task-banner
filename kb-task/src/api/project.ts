@@ -174,14 +174,15 @@ k.api.post("addMember", (body: any) => {
   }
 
   // 2. 参数验证
-  const { projectId, userId, role } = body
+  const { projectId, userId, username: targetUsername, role } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     return error('Invalid project ID', 400)
   }
 
-  if (!userId) {
-    return error('User ID is required', 400)
+  // 需要 userId 或 username 其中之一
+  if (!userId && !targetUsername) {
+    return error('User ID or username is required', 400)
   }
 
   // 3. 添加成员
@@ -195,7 +196,14 @@ k.api.post("addMember", (body: any) => {
       return error('You do not have permission to add members', 403)
     }
 
-    const memberId = addProjectMember(projectId, userId, role || 'member')
+    // 如果提供了 username，先获取或创建用户（自动注册）
+    let finalUserId = userId
+    if (targetUsername) {
+      const targetUser = getUserInfo(targetUsername)
+      finalUserId = targetUser._id
+    }
+
+    const memberId = addProjectMember(projectId, finalUserId, role || 'member')
 
     return success({ id: memberId }, 'Member added successfully')
 

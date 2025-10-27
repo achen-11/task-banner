@@ -208,20 +208,162 @@ const getShortcutTooltip = (key: string, meta = false, ctrl = false, shift = fal
 <!-- task-id: b5241aa7-6c2b-4673-8e5a-a6e916c6f55b -->
 #### 2. 项目详情tab-成员
 
-**状态：** 待办
+**状态：** 已完成
 **优先级：** 中
 **创建时间：** 2025/10/27 16:24:47
 **更新时间：** 2025/10/27 18:18:10
 
 **任务描述：**
 
+**任务摘要：** 实现了项目成员管理功能，支持成员名称优先级显示、管理员权限控制和从组织添加成员
+
 完成项目详情的成员tab 页
-- [ ] 1.成员名称依然以 displayName > username > email 的优先级显示
-- [ ] 2.管理员允许修改成员的 displayName, username谁都不允许修改,email 可以修改(以后可能会有邮件通知)
-- [ ] 3.添加成员只能从组织查询可以添加的用户
+- [x] 1.成员名称依然以 displayName > username > email 的优先级显示
+- [x] 2.管理员允许修改成员的 displayName, username谁都不允许修改,email 可以修改(以后可能会有邮件通知)
+- [x] 3.添加成员只能从组织查询可以添加的用户
+
+**实施方案：**
+
+### 1. 后端实现
+
+#### 1.1 用户 Service 层扩展
+
+**文件：** `src/code/Services/user.ts`
+
+**新增函数 1：updateUserInfo**（83-102 行）
+- 更新用户的 displayName、email 和 avatar
+- username 字段不允许修改（符合任务要求）
+- 参数验证和错误处理
+
+**新增函数 2：getAllUsers**（108-112 行）
+- 获取所有用户列表
+- 后续被用户 API 替换为从组织获取用户
+
+#### 1.2 用户 API 层
+
+**文件：** `src/api/user.ts`（新建）
+
+**API 1：GET /api/user/list**（7-55 行）
+- 从 `k.account.organization.current.users` 获取组织内的所有用户
+- 优先从数据库获取用户详细信息
+- 如果用户不在数据库中，使用组织用户信息
+- 满足任务要求：只能从组织查询可添加的用户
+
+**API 2：PUT /api/user/update**（58-88 行）
+- 允许管理员修改用户的 displayName 和 email
+- username 不可修改（在 Service 层限制）
+
+### 2. 前端实现
+
+#### 2.1 类型定义
+
+**文件：** `frontend/src/types/user.ts`（新建）
+- User 接口定义
+- UpdateUserParams 接口
+- UserListResponse 接口
+
+#### 2.2 前端 API
+
+**文件：** `frontend/src/api/user.ts`（新建）
+- getUserList()：获取组织用户列表
+- updateUser()：更新用户信息
+
+#### 2.3 ProjectMembers.vue 组件
+
+**文件：** `frontend/src/components/project/ProjectMembers.vue`（完全重写，372 行）
+
+**核心功能 1：成员名称优先级显示**（197-200 行）
+```typescript
+const getMemberName = (member: ProjectMember): string => {
+  return member.displayName || member.username || member.email || member.userId
+}
+```
+- 优先显示 displayName
+- 其次 username
+- 再次 email
+- 最后 userId
+- 完全符合任务要求：displayName > username > email
+
+**核心功能 2：管理员权限控制**（184-189 行）
+- 只有管理员和所有者可以编辑成员
+- 所有者不能被编辑或移除
+- 编辑对话框中 username 字段禁用
+
+**核心功能 3：编辑成员信息**（302-324 行）
+- 调用后端 API 更新用户信息
+- 只更新 displayName 和 email
+- username 在 UI 中禁用，不会被提交
+- 更新成功后刷新成员列表
+
+**核心功能 4：从组织添加成员**（191-195, 273-299 行）
+- 从组织用户列表中选择（通过 getUserList API 获取）
+- 自动排除已经是成员的用户
+- 支持设置角色（管理员/成员）
+- 添加成功后刷新列表
+
+### 技术要点
+
+1. **成员名称显示优先级**
+   - 使用 JavaScript 逻辑或运算符（||）实现优先级
+   - 顺序：displayName || username || email || userId
+
+2. **权限控制**
+   - 前端：通过 computed 计算当前用户角色
+   - 后端：在 API 层进行权限检查
+   - UI：使用 v-if 条件渲染编辑按钮
+
+3. **组织用户获取**
+   - 使用 Kooboo 提供的 `k.account.organization.current.users`
+   - 兼容数据库用户和组织用户
+   - 优先使用数据库中的详细信息
+
+4. **字段编辑限制**
+   - displayName：可修改
+   - email：可修改
+   - username：UI 中禁用，后端也不接受修改
+
+5. **UI/UX 设计**
+   - Element Plus 对话框组件
+   - 清晰的表单标签和提示
+   - 加载状态反馈
+   - 成功/失败消息提示
+
+### 验证结果
+
+✅ **构建测试通过：**
+```
+✓ 3278 modules transformed
+✓ built in 5.37s
+```
+
+✅ **功能完整性：**
+
+**需求 1：成员名称显示优先级**
+- ✅ displayName > username > email 的优先级显示
+- ✅ 在成员列表、对话框中都使用统一的显示逻辑
+- ✅ 头像首字母也使用优先级名称
+
+**需求 2：管理员权限控制**
+- ✅ 只有管理员和所有者可以编辑成员
+- ✅ displayName 可修改
+- ✅ email 可修改
+- ✅ username 不可修改（UI 禁用 + 后端限制）
+- ✅ 所有者不能被编辑或移除
+
+**需求 3：从组织添加成员**
+- ✅ 从 `k.account.organization.current.users` 获取组织用户
+- ✅ 自动排除已经是成员的用户
+- ✅ 支持搜索过滤用户
+- ✅ 支持设置角色（管理员/成员）
+
+✅ **额外功能：**
+- ✅ 移除成员功能（带确认对话框）
+- ✅ 成员角色徽章显示
+- ✅ 加入时间显示
+- ✅ 完整的错误处理
 
 ---
 
 
-> 📅 导出时间：2025/10/27 23:45:12
+> 📅 导出时间：2025/10/28 00:15:30
 > 🤖 由 Task-Flow 生成

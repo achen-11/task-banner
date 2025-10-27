@@ -37,12 +37,18 @@ export function getUserInfo(username: string): UserInfo {
   }
 
   const { fullName, userName, isAdmin } = koobooUser
-  const email = k.account.user.current.email || `${userName}@example.com`
+
+  // 使用目标用户的 email，如果没有则生成唯一的默认 email
+  // 注意：不要使用 k.account.user.current.email（那是当前登录用户的 email）
+  // 检查 email 是否有效（不是 null、undefined 或空字符串）
+  const userEmail = (koobooUser.email && koobooUser.email.trim() !== '')
+    ? koobooUser.email
+    : `${userName}@example.com`
 
   // 4. 创建新用户记录（自动注册，返回用户 ID）
   const userId = User.create({
     username: userName,
-    email: email,
+    email: userEmail,
     password: '', // Kooboo 统一认证，不需要本地密码
     displayName: fullName || userName,
     avatar: '',
@@ -72,6 +78,43 @@ export function getUserById(userId: string): UserInfo | null {
   }
 
   return formatUserInfo(userRecord)
+}
+
+/**
+ * 更新用户信息
+ * @param userId - 用户 ID
+ * @param data - 要更新的数据
+ * @returns 是否更新成功
+ */
+export function updateUserInfo(userId: string, data: {
+  displayName?: string
+  email?: string
+  avatar?: string
+}): boolean {
+  const user = User.findById(userId) as UserType | null
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  // 只允许更新 displayName, email, avatar
+  // username 不允许修改
+  const updateData: any = {}
+  if (data.displayName !== undefined) updateData.displayName = data.displayName
+  if (data.email !== undefined) updateData.email = data.email
+  if (data.avatar !== undefined) updateData.avatar = data.avatar
+
+  return User.updateById(userId, updateData)
+}
+
+/**
+ * 获取所有用户列表
+ * @returns 用户信息列表
+ */
+export function getAllUsers(): UserInfo[] {
+  const users = User.findAll({}) as UserType[]
+
+  return users.map(user => formatUserInfo(user))
 }
 
 /**

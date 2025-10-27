@@ -63,7 +63,8 @@ export interface UpdateProjectParams {
  */
 export interface AddMemberParams {
   projectId: string
-  userId: string
+  userId?: string
+  username?: string  // 组织用户名，用于自动注册
   role?: 'admin' | 'member'
 }
 
