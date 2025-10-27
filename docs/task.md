@@ -9,7 +9,11 @@
    - **添加任务摘要**：在任务描述开头添加 `**任务摘要：** <一句话总结>`
    - 补充实现细节（修改文件、技术要点等）
    - 如有修改文件，在技术要点中注明
-5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容
+5. **发送完成通知**：⚠️ **重要！必须执行！**
+   - 使用命令：`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"`
+   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）
+   - 描述：一句话总结完成的内容
+6. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容
 
 ### 📝 任务摘要编写规范
 - **长度**：20-50 字
@@ -30,72 +34,64 @@
 
 ## 任务列表
 
-共 2 个任务
+共 1 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: ebc745a8-9ed6-4ff2-8a0c-51a51473cbf6 -->
-#### 1. 新增状态
-
-**任务摘要：** 为任务新增 review（待验收）状态，用于 AI 完成任务后等待测试验收，并完整适配前后端所有相关位置
+<!-- task-id: b4a8ac3a-5c54-49b3-bd43-3d59923b5aa0 -->
+#### 1. markdown 优化
 
 **状态：** 已完成
 **优先级：** 中
-**指派人：** 311caa24-691f-4c5b-b5c4-60390dd0c360
-**创建时间：** 2025/10/27 10:14:40
-**更新时间：** 2025/10/27 10:14:40
+**创建时间：** 2025/10/26 16:09:54
+**更新时间：** 2025/10/27 15:31:57
 
 **任务描述：**
 
-- [x] 任务新增一个 review 状态, 用于表示 ai 完成任务后等待测试验收
-- [x] 任务列表, 任务详情都需要做适配, 你自己注意要修改的地方, 不要有的地方支持, 有的地方不支持
+**任务摘要：** 将编辑/预览切换按钮移至描述标签右侧，优化工具栏布局，解决工具栏拥挤问题。
 
-**实现细节：**
-- 修改文件：
-  - 前端类型：`frontend/src/types/task.ts`（Task、CreateTaskParams、UpdateTaskParams 接口）
-  - 前端组件：`frontend/src/components/task/TaskBasicInfo.vue`（状态选择器）
-  - 导出工具：`frontend/src/utils/export.ts`（getStatusLabel、parseStatusFromLabel）
-  - 后端服务：`kb-task/src/code/Services/task.ts`（状态排序逻辑）
-- 技术要点：
-  - 状态值：'review'，显示标签：'待验收'
-  - 状态排序顺序：todo(1) > in_progress(2) > review(3) > completed(4)
-  - 所有涉及状态类型定义、选择器、显示、导出、排序的位置都已适配
+**优化内容：**
+1. ✅ **移除工具栏中的模式切换按钮**：从 MarkdownEditor 工具栏移除编辑/预览按钮，减少工具栏拥挤
+2. ✅ **新位置设计**：将模式切换按钮移至"描述"标签右侧，采用 macOS 风格的分段控制设计
+3. ✅ **视觉优化**：灰色背景容器 + 白色激活状态，带有细微阴影，更加精致
+
+**修改文件：**
+1. `frontend/src/components/common/MarkdownEditor.vue` - Markdown 编辑器组件
+   - 移除工具栏中的编辑/预览切换按钮和相关样式
+   - 暴露 `isPreviewMode` 状态和 `setPreviewMode` 方法给父组件
+   - 移除 `toolbar-right`、`mode-btn` 相关的 CSS 样式
+   - 工具栏布局简化为单一左侧按钮组
+
+2. `frontend/src/components/task/TaskBasicInfo.vue` - 任务详情编辑
+   - 导入 Edit3 和 Eye 图标组件
+   - 在"描述"标签右侧添加模式切换按钮容器
+   - 添加 `markdownEditorRef` 引用和 `isPreviewMode` 状态
+   - 添加 `setEditorMode` 方法控制编辑器模式
+   - 新增 `mode-toggle-btn` 样式（macOS 风格分段控制）
+
+**技术要点：**
+- **组件通信**：通过 ref 调用子组件暴露的方法控制预览模式
+- **状态同步**：父组件维护 isPreviewMode 状态，与编辑器保持同步
+- **样式设计**：采用 macOS Big Sur 风格的分段控制（Segmented Control）
+  - 灰色背景容器（bg-gray-100）
+  - 白色激活状态（bg-white）
+  - 蓝色文字（text-blue-600）
+  - 细微阴影（box-shadow: 0 1px 2px）
+
+**用户体验提升：**
+- 🎨 **工具栏更清爽**：移除模式按钮后，格式化工具一目了然
+- 📍 **位置更合理**：切换按钮紧邻描述区域，语义更明确
+- 💎 **视觉更精致**：macOS 风格设计，专业且美观
+- 🖱️ **操作更流畅**：按钮位置固定，不受工具栏挤压影响
 
 ---
 
-<!-- task-id: 5f42188b-e92b-40f6-b356-8b61bd8cb21c -->
-#### 2. 列表视图优化
+**以下为原始任务需求：**
 
-**任务摘要：** 重构用户信息返回结构为嵌套对象，将 assignee 和 creator 信息封装为独立的 JSON 对象，提供 displayName、username、email 字段
-
-**状态：** 已完成
-**优先级：** 中
-**指派人：** 311caa24-691f-4c5b-b5c4-60390dd0c360
-**创建时间：** 2025/10/27 09:33:42
-**更新时间：** 2025/10/27 10:15:08
-
-**任务描述：**
-
-- [x] 我看到你完成了一些修改, 但基本没有实现我想要的效果
-- [x] 1. 我要的是指派人的用户信息, 而不是 creator, 当然, 获取了 creator 的信息也没关系
-- [x] 2.creator 和指派人的信息都要再一层 json 包裹, 比如 items: [{title: xxx, creator: {displayName: xxx}}]这样子
-
-**实现细节：**
-- 修改文件：
-  - 后端服务：`kb-task/src/code/Services/task.ts`（TaskInfo 接口、getProjectTasks 函数）
-  - 前端类型：`frontend/src/types/task.ts`（Task 接口）
-  - 前端组件：`frontend/src/components/project/ProjectTaskList.vue`、`frontend/src/views/MyTasks.vue`
-  - 导出工具：`frontend/src/utils/export.ts`
-- 结构变更：
-  - 之前：`assigneeDisplayName`, `assigneeUsername`, `assigneeEmail` 等扁平字段
-  - 现在：`assignee: { displayName, username, email }`，`creator: { displayName, username, email }`
-- 技术要点：
-  - 后端在 getProjectTasks 中使用 getUserById 填充嵌套的用户信息对象
-  - 前端使用可选链访问：`task.assignee?.displayName || task.assignee?.username || task.assignee?.email`
-  - 保持向后兼容，同时支持 assigneeId 字段
+- [x] 1. 查看图片"docs/Images/image.png", 现在的工具栏被挤压的很丑, 优化它们, 或者可以把编辑/预览按钮换到其他合适的地方
 
 ---
 
 
-> 📅 导出时间：2025/10/27 10:15:20
+> 📅 导出时间：2025/10/27 15:28:04
 > 🤖 由 Task-Flow 生成

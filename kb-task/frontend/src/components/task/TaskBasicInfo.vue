@@ -193,19 +193,42 @@
 
     <!-- 任务描述区域（可滚动） -->
     <div class="flex-1 overflow-y-auto mt-4">
-      <label class="block text-xs font-medium text-gray-500 mb-2">描述</label>
-      <div class="border border-gray-200 rounded-lg overflow-hidden transition-all">
-        <textarea
-          v-model="localTask.content"
-          rows="12"
-          class="w-full px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none"
-          placeholder="添加任务描述...&#10;&#10;提示：未来将支持富文本编辑（Quill.js）、@提及、Markdown 等功能"
-          @input="handleContentInput"
-          @blur="handleUpdate({ content: localTask.content })"
-        ></textarea>
+      <!-- 描述标签和编辑/预览切换 -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-medium text-gray-500">描述</label>
+        <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button
+            @click="setEditorMode(false)"
+            :class="{ 'active': !isPreviewMode }"
+            class="mode-toggle-btn"
+            title="编辑模式"
+          >
+            <Edit3 :size="14" />
+            <span class="text-xs">编辑</span>
+          </button>
+          <button
+            @click="setEditorMode(true)"
+            :class="{ 'active': isPreviewMode }"
+            class="mode-toggle-btn"
+            title="预览模式"
+          >
+            <Eye :size="14" />
+            <span class="text-xs">预览</span>
+          </button>
+        </div>
       </div>
+
+      <MarkdownEditor
+        ref="markdownEditorRef"
+        v-model="localTask.content"
+        :read-only="false"
+        placeholder="添加任务描述... 支持 Markdown 语法 (Cmd+S 保存)"
+        min-height="300px"
+        @update:model-value="handleContentChange"
+        @save="handleSave"
+      />
       <div class="mt-2 text-xs text-gray-400">
-        支持 Markdown 语法（开发中）
+        支持 Markdown 语法：**加粗** *斜体* - [ ] 任务列表等
       </div>
 
       <!-- 附件区域 -->
@@ -259,12 +282,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import MarkdownEditor from '../common/MarkdownEditor.vue'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
 import { getAttachmentList } from '@/api/attachment'
 import { getProjectMembers } from '@/api/project'
 import { getCurrentUser } from '@/utils/auth'
 import type { ProjectMember } from '@/types/project'
+import { Edit3, Eye } from 'lucide-vue-next'
 
 interface Attachment {
   _id: string
@@ -363,6 +388,18 @@ const isFieldsCollapsed = ref(false)
 // 附件上传区域显示状态
 const showUploadArea = ref(false)
 
+// Markdown 编辑器引用和状态
+const markdownEditorRef = ref<InstanceType<typeof MarkdownEditor>>()
+const isPreviewMode = ref(false)
+
+// 设置编辑器模式
+const setEditorMode = (preview: boolean) => {
+  isPreviewMode.value = preview
+  if (markdownEditorRef.value) {
+    markdownEditorRef.value.setPreviewMode(preview)
+  }
+}
+
 // 加载项目成员列表
 const loadProjectMembers = async () => {
   if (!props.projectId) return
@@ -416,10 +453,18 @@ watch(() => props.projectId, async (newProjectId) => {
   }
 }, { immediate: true })
 
-// 处理任务描述输入（标记为未保存）
-const handleContentInput = () => {
+// 处理任务描述变更（仅更新本地状态，标记未保存）
+const handleContentChange = (newContent: string) => {
+  localTask.value.content = newContent
   if (props.mode === 'view') {
     hasUnsavedChanges.value = true
+  }
+}
+
+// 处理 Cmd+S 保存
+const handleSave = () => {
+  if (props.mode === 'view' && hasUnsavedChanges.value) {
+    handleUpdate({ content: localTask.value.content })
   }
 }
 
@@ -521,3 +566,31 @@ watch(showTagInput, async (show) => {
   }
 })
 </script>
+
+<style scoped>
+.mode-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mode-toggle-btn:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.mode-toggle-btn.active {
+  background-color: #ffffff;
+  color: #3b82f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+</style>

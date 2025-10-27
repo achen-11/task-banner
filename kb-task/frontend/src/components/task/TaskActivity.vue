@@ -53,7 +53,10 @@
                   </svg>
                 </button>
               </div>
-              <div class="text-sm text-gray-700 whitespace-pre-wrap">{{ activity.content }}</div>
+              <MarkdownEditor
+                :model-value="activity.content"
+                :read-only="true"
+              />
 
               <!-- 反应表情（Mock） -->
               <div class="flex items-center gap-2 mt-3">
@@ -163,39 +166,19 @@
 
     <!-- 评论输入框（固定在底部） -->
     <div class="flex-shrink-0 border-t border-gray-200 pt-3">
-      <div class="border border-gray-200 rounded-lg overflow-hidden transition-all">
-        <textarea
-          v-model="newComment"
-          rows="3"
-          class="w-full px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none"
-          placeholder="添加评论... 支持 @提及 (开发中)"
-        ></textarea>
-        <div class="px-4 py-2 bg-gray-50 flex items-center justify-between border-t border-gray-200">
-          <div class="flex items-center gap-2 text-xs text-gray-500">
-            <button class="hover:text-gray-700 transition-colors" title="粗体">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h12M6 6h12M6 18h12" />
-              </svg>
-            </button>
-            <button class="hover:text-gray-700 transition-colors" title="斜体">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16" />
-              </svg>
-            </button>
-            <button class="hover:text-gray-700 transition-colors" title="链接">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </button>
-          </div>
-          <button
-            class="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            :disabled="!newComment.trim()"
-            @click="addComment"
-          >
-            发送
-          </button>
-        </div>
+      <MarkdownEditor
+        v-model="newComment"
+        placeholder="添加评论... 支持 Markdown 语法"
+        min-height="100px"
+      />
+      <div class="flex justify-end mt-2">
+        <button
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          :disabled="!newComment || newComment.trim() === ''"
+          @click="addComment"
+        >
+          发送评论
+        </button>
       </div>
     </div>
 
@@ -253,7 +236,14 @@
                   旧值
                 </div>
                 <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                  <!-- content 字段使用 Markdown 渲染 -->
+                  <MarkdownEditor
+                    v-if="currentFieldChange.field === 'content'"
+                    :model-value="currentFieldChange.oldValue || ''"
+                    :read-only="true"
+                  />
+                  <!-- 其他字段使用纯文本显示 -->
+                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
                     {{ formatFieldValue(currentFieldChange.field, currentFieldChange.oldValue) }}
                   </div>
                 </div>
@@ -266,7 +256,14 @@
                   新值
                 </div>
                 <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                  <!-- content 字段使用 Markdown 渲染 -->
+                  <MarkdownEditor
+                    v-if="currentFieldChange.field === 'content'"
+                    :model-value="currentFieldChange.newValue || ''"
+                    :read-only="true"
+                  />
+                  <!-- 其他字段使用纯文本显示 -->
+                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
                     {{ formatFieldValue(currentFieldChange.field, currentFieldChange.newValue) }}
                   </div>
                 </div>
@@ -292,7 +289,14 @@
                   旧值
                 </div>
                 <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                  <!-- content 字段使用 Markdown 渲染 -->
+                  <MarkdownEditor
+                    v-if="selectedActivity.field === 'content'"
+                    :model-value="selectedActivity.oldValue || ''"
+                    :read-only="true"
+                  />
+                  <!-- 其他字段使用纯文本显示 -->
+                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
                     {{ formatFieldValue(selectedActivity.field, selectedActivity.oldValue) }}
                   </div>
                 </div>
@@ -305,7 +309,14 @@
                   新值
                 </div>
                 <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                  <!-- content 字段使用 Markdown 渲染 -->
+                  <MarkdownEditor
+                    v-if="selectedActivity.field === 'content'"
+                    :model-value="selectedActivity.newValue || ''"
+                    :read-only="true"
+                  />
+                  <!-- 其他字段使用纯文本显示 -->
+                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
                     {{ formatFieldValue(selectedActivity.field, selectedActivity.newValue) }}
                   </div>
                 </div>
@@ -325,6 +336,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import MarkdownEditor from '../common/MarkdownEditor.vue'
 import { getTaskActivities, addTaskComment, type TaskActivity as APITaskActivity } from '@/api/task'
 
 interface Task {
