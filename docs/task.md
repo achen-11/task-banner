@@ -34,62 +34,68 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 4ba9f5f6-6687-41a8-b14d-30955fac3a8e -->
-#### 1. 导入-摘要丢失
+<!-- task-id: ebc745a8-9ed6-4ff2-8a0c-51a51473cbf6 -->
+#### 1. 新增状态
 
-**任务摘要：** 修复了任务导入时摘要丢失的问题，将摘要识别逻辑提到顶层避免遗漏
+**任务摘要：** 为任务新增 review（待验收）状态，用于 AI 完成任务后等待测试验收，并完整适配前后端所有相关位置
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 09:40:23
-**更新时间：** 2025/10/27 09:40:23
+**指派人：** 311caa24-691f-4c5b-b5c4-60390dd0c360
+**创建时间：** 2025/10/27 10:14:40
+**更新时间：** 2025/10/27 10:14:40
 
 **任务描述：**
 
-- [x] 导入时现在摘要又会识别不到了, 你可以查看"docs/task-A.md", 这是你上一次的任务汇报, 检查并修复他
+- [x] 任务新增一个 review 状态, 用于表示 ai 完成任务后等待测试验收
+- [x] 任务列表, 任务详情都需要做适配, 你自己注意要修改的地方, 不要有的地方支持, 有的地方不支持
 
 **实现细节：**
-- 修改文件：`frontend/src/utils/export.ts`
-- 问题原因：摘要的正则匹配被嵌套在任务描述的条件判断内，导致摘要出现在描述之前时无法识别
-- 解决方案：将摘要识别逻辑（`/^\*\*任务摘要：?\*\*\s*(.+)$/`）提取到顶层，使用 `continue` 跳过后续处理
-- 影响范围：`parseSingleTask` 函数（275-303行）
+- 修改文件：
+  - 前端类型：`frontend/src/types/task.ts`（Task、CreateTaskParams、UpdateTaskParams 接口）
+  - 前端组件：`frontend/src/components/task/TaskBasicInfo.vue`（状态选择器）
+  - 导出工具：`frontend/src/utils/export.ts`（getStatusLabel、parseStatusFromLabel）
+  - 后端服务：`kb-task/src/code/Services/task.ts`（状态排序逻辑）
+- 技术要点：
+  - 状态值：'review'，显示标签：'待验收'
+  - 状态排序顺序：todo(1) > in_progress(2) > review(3) > completed(4)
+  - 所有涉及状态类型定义、选择器、显示、导出、排序的位置都已适配
 
 ---
 
 <!-- task-id: 5f42188b-e92b-40f6-b356-8b61bd8cb21c -->
 #### 2. 列表视图优化
 
-**任务摘要：** 将任务列表排序从前端迁移到后端，解决分页场景下排序错误的问题，并为列表添加用户信息填充
+**任务摘要：** 重构用户信息返回结构为嵌套对象，将 assignee 和 creator 信息封装为独立的 JSON 对象，提供 displayName、username、email 字段
 
 **状态：** 已完成
 **优先级：** 中
+**指派人：** 311caa24-691f-4c5b-b5c4-60390dd0c360
 **创建时间：** 2025/10/27 09:33:42
-**更新时间：** 2025/10/27 09:33:42
+**更新时间：** 2025/10/27 10:15:08
 
 **任务描述：**
 
-- [x] Api: 我发现排序竟然是在前端做的, 这是不对的, 如果数据超过了一页, 那结果就不对了
-- [x] 列表查询一样需要 user 信息: displayName > username > email
+- [x] 我看到你完成了一些修改, 但基本没有实现我想要的效果
+- [x] 1. 我要的是指派人的用户信息, 而不是 creator, 当然, 获取了 creator 的信息也没关系
+- [x] 2.creator 和指派人的信息都要再一层 json 包裹, 比如 items: [{title: xxx, creator: {displayName: xxx}}]这样子
 
 **实现细节：**
 - 修改文件：
-  - 后端：`kb-task/src/code/Services/task.ts`、`kb-task/src/api/task.ts`
-  - 前端：`frontend/src/types/task.ts`、`frontend/src/components/project/ProjectTaskList.vue`
-- 后端改动：
-  - 扩展 `TaskInfo` 接口，添加 assignee 和 creator 的用户显示信息字段
-  - `getProjectTasks` 函数新增 sortField 和 sortDirection 参数，使用 `getUserById` 填充用户信息
-  - 新增 `sortTasks` 函数支持多类型字段排序（数字、优先级、状态、字符串）
-  - API 层接收 sortField 和 sortDirection 查询参数并传递给 Service 层
-- 前端改动：
-  - `TaskListFilters` 接口新增 sortField 和 sortDirection 字段
-  - `loadTasks` 函数传递排序参数到 API 调用
+  - 后端服务：`kb-task/src/code/Services/task.ts`（TaskInfo 接口、getProjectTasks 函数）
+  - 前端类型：`frontend/src/types/task.ts`（Task 接口）
+  - 前端组件：`frontend/src/components/project/ProjectTaskList.vue`、`frontend/src/views/MyTasks.vue`
+  - 导出工具：`frontend/src/utils/export.ts`
+- 结构变更：
+  - 之前：`assigneeDisplayName`, `assigneeUsername`, `assigneeEmail` 等扁平字段
+  - 现在：`assignee: { displayName, username, email }`，`creator: { displayName, username, email }`
 - 技术要点：
-  - 优先级排序使用权重值（high: 3, medium: 2, low: 1）
-  - 状态排序使用顺序值（todo: 1, in_progress: 2, completed: 3）
-  - 用户信息优先级：displayName > username > email
+  - 后端在 getProjectTasks 中使用 getUserById 填充嵌套的用户信息对象
+  - 前端使用可选链访问：`task.assignee?.displayName || task.assignee?.username || task.assignee?.email`
+  - 保持向后兼容，同时支持 assigneeId 字段
 
 ---
 
 
-> 📅 导出时间：2025/10/27 09:40:35
+> 📅 导出时间：2025/10/27 10:15:20
 > 🤖 由 Task-Flow 生成

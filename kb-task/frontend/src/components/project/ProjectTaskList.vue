@@ -10,29 +10,23 @@
         </div>
         <div v-if="selectedTaskIds.size > 0" class="flex items-center gap-2">
           <span class="text-sm text-blue-600 font-medium">已选择 {{ selectedTaskIds.size }} 个</span>
-          <button
-            class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            @click="handleBatchExport"
-            title="导出选中任务 (Cmd+E)"
-          >
+          <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            @click="handleBatchExport" title="导出选中任务 (Cmd+E)">
             <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
             </svg>
             批量导出
           </button>
-          <button
-            class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
-            @click="clearSelection"
-          >
+          <button class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            @click="clearSelection">
             取消选择
           </button>
         </div>
       </div>
       <el-tooltip content="快捷键：N" placement="bottom">
-        <button
-          class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-          @click="handleCreateTask"
-        >
+        <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          @click="handleCreateTask">
           <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -48,20 +42,19 @@
 
     <div v-else-if="error" class="p-8 text-center text-red-500">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p>{{ error }}</p>
-      <button
-        class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        @click="loadTasks"
-      >
+      <button class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700" @click="loadTasks">
         重试
       </button>
     </div>
 
     <div v-else-if="tasks.length === 0" class="p-8 text-center text-gray-400">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
       <p>暂无任务</p>
     </div>
@@ -69,109 +62,58 @@
     <!-- 任务表格 -->
     <div v-else>
       <!-- 表头 -->
-      <div class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div
+        class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
         <div class="flex items-center justify-center">
-          <input
-            type="checkbox"
+          <input type="checkbox"
             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-            :checked="isAllSelected"
-            :indeterminate="isSomeSelected"
-            @change="toggleSelectAll"
-          />
+            :checked="isAllSelected" :indeterminate="isSomeSelected" @change="toggleSelectAll" />
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('displayId')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('displayId')">
           <span>ID</span>
-          <svg
-            v-if="sortField === 'displayId'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'displayId'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('title')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('title')">
           <span>标题</span>
-          <svg
-            v-if="sortField === 'title'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'title'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('assigneeId')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('assigneeId')">
           <span>指派人</span>
-          <svg
-            v-if="sortField === 'assigneeId'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'assigneeId'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('priority')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('priority')">
           <span>优先级</span>
-          <svg
-            v-if="sortField === 'priority'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'priority'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('updatedAt')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('updatedAt')">
           <span>最后更新</span>
-          <svg
-            v-if="sortField === 'updatedAt'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'updatedAt'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
-        <div
-          class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
-          @click="toggleSort('status')"
-        >
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+          @click="toggleSort('status')">
           <span>状态</span>
-          <svg
-            v-if="sortField === 'status'"
-            class="w-3 h-3"
-            :class="{ 'rotate-180': sortDirection === 'desc' }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg v-if="sortField === 'status'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
         </div>
@@ -179,20 +121,14 @@
 
       <!-- 表格内容 -->
       <div class="divide-y divide-gray-100">
-        <div
-          v-for="task in sortedTasks"
-          :key="task._id"
+        <div v-for="task in sortedTasks" :key="task._id"
           class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
-          :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }"
-        >
+          :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }">
           <!-- Checkbox -->
           <div class="flex items-center justify-center" @click.stop>
-            <input
-              type="checkbox"
+            <input type="checkbox"
               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-              :checked="selectedTaskIds.has(task._id)"
-              @change="toggleTaskSelection(task._id)"
-            />
+              :checked="selectedTaskIds.has(task._id)" @change="toggleTaskSelection(task._id)" />
           </div>
 
           <!-- ID -->
@@ -204,11 +140,8 @@
           <div class="min-w-0 cursor-pointer" @click="openTaskDetail(task._id)">
             <div class="font-medium text-gray-900 truncate">{{ task.title }}</div>
             <div v-if="task.tagIds && task.tagIds.length > 0" class="flex items-center gap-1 mt-1">
-              <span
-                v-for="tagId in task.tagIds.slice(0, 2)"
-                :key="tagId"
-                class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
-              >
+              <span v-for="tagId in task.tagIds.slice(0, 2)" :key="tagId"
+                class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
                 {{ tagId }}
               </span>
               <span v-if="task.tagIds.length > 2" class="text-xs text-gray-400">
@@ -219,21 +152,25 @@
 
           <!-- 指派人 -->
           <div class="text-sm text-gray-600 cursor-pointer" @click="openTaskDetail(task._id)">
-            <div v-if="task.assigneeId" class="flex items-center gap-2">
-              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-                {{ task.assigneeId.charAt(0) }}
-              </div>
-              <span>{{ task.assigneeId }}</span>
+            <div v-if="task.assignee || task.assigneeId" class="flex items-center gap-2">
+              <el-tooltip
+                :content="task.assignee?.displayName || task.assignee?.username || task.assignee?.email || task.assigneeId"
+                placement="top">
+                <div
+                  class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+                  {{ (task.assignee?.displayName || task.assignee?.username || task.assignee?.email || task.assigneeId
+                    || '').charAt(0).toUpperCase() }}
+                </div>
+
+              </el-tooltip>
             </div>
             <span v-else class="text-gray-400">未指派</span>
           </div>
 
           <!-- 优先级 -->
           <div class="cursor-pointer" @click="openTaskDetail(task._id)">
-            <span
-              class="inline-block px-2 py-1 text-xs font-medium rounded-full"
-              :class="getPriorityBadgeClass(task.priority)"
-            >
+            <span class="inline-block px-2 py-1 text-xs font-medium rounded-full"
+              :class="getPriorityBadgeClass(task.priority)">
               {{ getPriorityText(task.priority) }}
             </span>
           </div>
@@ -245,11 +182,9 @@
 
           <!-- 状态 -->
           <div class="cursor-pointer" @click="openTaskDetail(task._id)">
-            <div
-              class="w-5 h-5 rounded flex items-center justify-center"
-              :class="getStatusIconClass(task.status)"
-            >
-              <svg v-if="task.status === 'completed'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-5 h-5 rounded flex items-center justify-center" :class="getStatusIconClass(task.status)">
+              <svg v-if="task.status === 'completed'" class="w-3 h-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
               </svg>
               <div v-else class="w-2 h-2 rounded-full bg-current"></div>
@@ -260,43 +195,27 @@
     </div>
 
     <!-- 任务详情抽屉 -->
-    <TaskDetailDrawer
-      :is-open="isDrawerOpen"
-      :mode="drawerMode"
-      :task-id="selectedTaskId"
-      :project-id="projectId"
-      :all-tasks="tasks"
-      @close="closeDrawer"
-      @update:task-id="selectedTaskId = $event"
-      @task-created="handleTaskCreated"
-      @task-updated="handleTaskUpdated"
-      @task-deleted="handleTaskDeleted"
-    />
+    <TaskDetailDrawer :is-open="isDrawerOpen" :mode="drawerMode" :task-id="selectedTaskId" :project-id="projectId"
+      :all-tasks="tasks" @close="closeDrawer" @update:task-id="selectedTaskId = $event"
+      @task-created="handleTaskCreated" @task-updated="handleTaskUpdated" @task-deleted="handleTaskDeleted" />
 
     <!-- 导入确认对话框 -->
-    <el-dialog
-      v-model="importConfirmVisible"
-      title="确认导入任务"
-      width="700px"
-      :append-to-body="true"
-    >
+    <el-dialog v-model="importConfirmVisible" title="确认导入任务" width="700px" :append-to-body="true">
       <div class="space-y-4">
         <div class="text-sm text-gray-600 mb-4">
           检测到 {{ tasksToImport.length }} 个任务，请确认并编辑任务摘要：
         </div>
 
         <div class="max-h-96 overflow-y-auto space-y-2">
-          <div
-            v-for="(task, index) in tasksToImport"
-            :key="index"
-            class="border border-gray-200 rounded-lg p-3"
-          >
+          <div v-for="(task, index) in tasksToImport" :key="index" class="border border-gray-200 rounded-lg p-3">
             <div class="flex items-start gap-2 mb-2">
               <div class="flex-1">
                 <h4 class="text-sm font-medium text-gray-900 mb-1">{{ task.title || '未命名任务' }}</h4>
                 <div class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.status === 'todo' ? '待办' : task.status === 'in_progress' ? '进行中' : '已完成' }}</span>
-                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.priority === 'high' ? '高' : task.priority === 'low' ? '低' : '中' }}优先级</span>
+                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.status === 'todo' ? '待办' : task.status
+                    === 'in_progress' ? '进行中' : '已完成' }}</span>
+                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.priority === 'high' ? '高' :
+                    task.priority === 'low' ? '低' : '中' }}优先级</span>
                   <span v-if="task._id" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">更新</span>
                   <span v-else class="px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-xs">新建</span>
                 </div>
@@ -305,15 +224,8 @@
 
             <div class="space-y-1.5">
               <label class="block text-xs font-medium text-gray-700">任务摘要</label>
-              <el-input
-                v-model="editableSummaries[index]"
-                type="textarea"
-                :rows="2"
-                placeholder="简要描述此次变更的内容..."
-                maxlength="100"
-                show-word-limit
-                size="small"
-              />
+              <el-input v-model="editableSummaries[index]" type="textarea" :rows="2" placeholder="简要描述此次变更的内容..."
+                maxlength="100" show-word-limit size="small" />
             </div>
           </div>
         </div>
@@ -378,8 +290,10 @@ const sortedTasks = computed(() => {
   // 默认排序：待办任务在前，然后根据最后更新时间降序
   const defaultSort = (a: Task, b: Task) => {
     // 待办任务优先
-    const statusOrder = { todo: 0, in_progress: 1, completed: 2 }
-    const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+    const statusOrder: Record<Task['status'], number> = { todo: 0, in_progress: 1, completed: 2, review: 3 }
+    const statusA = statusOrder[a.status] ?? 99
+    const statusB = statusOrder[b.status] ?? 99
+    const statusDiff = statusA - statusB
     if (statusDiff !== 0) return statusDiff
 
     // 然后按更新时间降序
@@ -419,9 +333,9 @@ const sortedTasks = computed(() => {
         compareB = b.updatedAt
         break
       case 'status':
-        const statusOrder = { todo: 0, in_progress: 1, completed: 2 }
-        compareA = statusOrder[a.status]
-        compareB = statusOrder[b.status]
+        const statusOrder: Record<Task['status'], number> = { todo: 0, in_progress: 1, completed: 2, review: 3 }
+        compareA = statusOrder[a.status] ?? 99
+        compareB = statusOrder[b.status] ?? 99
         break
       default:
         return 0

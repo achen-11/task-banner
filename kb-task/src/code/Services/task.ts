@@ -28,14 +28,18 @@ export interface TaskInfo {
   order: number
   createdAt: number
   updatedAt: number
-  // 指派人用户信息
-  assigneeDisplayName?: string
-  assigneeUsername?: string
-  assigneeEmail?: string
-  // 创建人用户信息
-  creatorDisplayName?: string
-  creatorUsername?: string
-  creatorEmail?: string
+  // 指派人用户信息（嵌套对象）
+  assignee?: {
+    displayName?: string
+    username?: string
+    email?: string
+  }
+  // 创建人用户信息（嵌套对象）
+  creator?: {
+    displayName?: string
+    username?: string
+    email?: string
+  }
 }
 
 /**
@@ -257,23 +261,27 @@ export function getProjectTasks(
   const formattedTasks = tasks.map(task => {
     const taskInfo = formatTaskInfo(task)
 
-    // 填充指派人信息
+    // 填充指派人信息（嵌套对象）
     if (task.assigneeId) {
       const assigneeUser = getUserById(task.assigneeId)
       if (assigneeUser) {
-        taskInfo.assigneeDisplayName = assigneeUser.displayName
-        taskInfo.assigneeUsername = assigneeUser.username
-        taskInfo.assigneeEmail = assigneeUser.email
+        taskInfo.assignee = {
+          displayName: assigneeUser.displayName,
+          username: assigneeUser.username,
+          email: assigneeUser.email
+        }
       }
     }
 
-    // 填充创建人信息
+    // 填充创建人信息（嵌套对象）
     if (task.creatorId) {
       const creatorUser = getUserById(task.creatorId)
       if (creatorUser) {
-        taskInfo.creatorDisplayName = creatorUser.displayName
-        taskInfo.creatorUsername = creatorUser.username
-        taskInfo.creatorEmail = creatorUser.email
+        taskInfo.creator = {
+          displayName: creatorUser.displayName,
+          username: creatorUser.username,
+          email: creatorUser.email
+        }
       }
     }
 
@@ -314,9 +322,9 @@ function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string
       return direction === 'desc' ? numB - numA : numA - numB
     }
 
-    // 状态特殊排序 (todo > in_progress > completed)
+    // 状态特殊排序 (todo > in_progress > review > completed)
     if (field === 'status') {
-      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, completed: 3 }
+      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
       const numA = statusOrder[aValue] || 0
       const numB = statusOrder[bValue] || 0
       return direction === 'desc' ? numB - numA : numA - numB

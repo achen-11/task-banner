@@ -387,6 +387,7 @@ function getStatusLabel(status: string): string {
   const statusLabels: Record<string, string> = {
     todo: '待办',
     in_progress: '进行中',
+    review: '待验收',
     completed: '已完成',
   }
   return statusLabels[status] || status
@@ -423,6 +424,7 @@ function parseStatusFromLabel(label: string): Task['status'] {
   const statusMap: Record<string, Task['status']> = {
     '待办': 'todo',
     '进行中': 'in_progress',
+    '待验收': 'review',
     '已完成': 'completed',
   }
   return statusMap[label] || 'todo'

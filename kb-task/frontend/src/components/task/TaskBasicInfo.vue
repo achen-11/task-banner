@@ -62,6 +62,7 @@
           >
             <el-option label="待办" value="todo" />
             <el-option label="进行中" value="in_progress" />
+            <el-option label="待验收" value="review" />
             <el-option label="已完成" value="completed" />
           </el-select>
         </div>
@@ -286,7 +287,7 @@ interface Task {
   displayId: number
   projectId: string
   title: string
-  status: 'todo' | 'in_progress' | 'completed'
+  status: 'todo' | 'in_progress' | 'completed' | 'review'
   priority: 'low' | 'medium' | 'high'
   content?: string  // 任务描述内容（支持富文本或普通文本）
   assigneeId?: string

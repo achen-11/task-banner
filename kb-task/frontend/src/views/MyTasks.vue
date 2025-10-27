@@ -59,7 +59,7 @@
           class="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
         >
           <div class="col-span-5 text-gray-900">{{ task.title }}</div>
-          <div class="col-span-2 text-gray-600">{{ task.assignee }}</div>
+          <div class="col-span-2 text-gray-600">{{ task.assignee?.displayName || task.assignee?.username || task.assignee?.email || task.assigneeId || '未指派' }}</div>
           <div class="col-span-2 text-gray-600">{{ task.dueDate }}</div>
           <div class="col-span-1">
             <span

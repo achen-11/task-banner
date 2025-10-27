@@ -8,7 +8,7 @@ export interface Task {
   projectId: string
   title: string
   content?: string
-  status: 'todo' | 'in_progress' | 'completed'
+  status: 'todo' | 'in_progress' | 'completed' | 'review'
   priority: 'low' | 'medium' | 'high'
   assigneeId?: string
   creatorId: string
@@ -20,6 +20,18 @@ export interface Task {
   order: number
   createdAt: number
   updatedAt: number
+  // 指派人用户信息（嵌套对象）
+  assignee?: {
+    displayName?: string
+    username?: string
+    email?: string
+  }
+  // 创建人用户信息（嵌套对象）
+  creator?: {
+    displayName?: string
+    username?: string
+    email?: string
+  }
 }
 
 export interface TaskDetail extends Task {
@@ -45,7 +57,7 @@ export interface CreateTaskParams {
   projectId: string
   title: string
   content?: string
-  status?: 'todo' | 'in_progress' | 'completed'
+  status?: 'todo' | 'in_progress' | 'completed' | 'review'
   priority?: 'low' | 'medium' | 'high'
   assigneeId?: string
   moduleIds?: string[]
@@ -59,7 +71,7 @@ export interface UpdateTaskParams {
   id: string
   title?: string
   content?: string
-  status?: 'todo' | 'in_progress' | 'completed'
+  status?: 'todo' | 'in_progress' | 'completed' | 'review'
   priority?: 'low' | 'medium' | 'high'
   assigneeId?: string
   moduleIds?: string[]
