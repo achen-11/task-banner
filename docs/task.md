@@ -30,46 +30,66 @@
 
 ## 任务列表
 
-共 1 个任务
+共 2 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 2bfd0cce-1939-4e6a-96f4-d808f767eae4 -->
-#### 1. 任务-基本信息优化
+<!-- task-id: 4ba9f5f6-6687-41a8-b14d-30955fac3a8e -->
+#### 1. 导入-摘要丢失
 
-**任务摘要：** 优化指派人显示名称优先级，修复任务描述编辑时保存状态显示问题，提升用户体验
+**任务摘要：** 修复了任务导入时摘要丢失的问题，将摘要识别逻辑提到顶层避免遗漏
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/26 15:18:19
-**更新时间：** 2025/10/26 22:27:49
+**创建时间：** 2025/10/27 09:40:23
+**更新时间：** 2025/10/27 09:40:23
 
 **任务描述：**
 
-- [x] 1. 指派人label显示遵循: displayName > username > email > userId
-- [ ] 2.添加标签依然无效, 这个可以先不处理, 后面我们会有专门的任务来做标签模块
-- [x] 3. 保存状态不对, 我在编辑任务描述时, 它却依然显示已保存, 任务描述有变化时应该是未保存才对
+- [x] 导入时现在摘要又会识别不到了, 你可以查看"docs/task-A.md", 这是你上一次的任务汇报, 检查并修复他
 
-**技术要点：**
+**实现细节：**
+- 修改文件：`frontend/src/utils/export.ts`
+- 问题原因：摘要的正则匹配被嵌套在任务描述的条件判断内，导致摘要出现在描述之前时无法识别
+- 解决方案：将摘要识别逻辑（`/^\*\*任务摘要：?\*\*\s*(.+)$/`）提取到顶层，使用 `continue` 跳过后续处理
+- 影响范围：`parseSingleTask` 函数（275-303行）
 
-1. **指派人显示优化**：
-   - 扩展 `ProjectMember` 接口，添加 `displayName`、`username`、`email`、`avatar` 可选字段
-   - 实现 `getUserDisplayName()` 函数，按优先级返回用户名称：displayName > username > email > userId
-   - 更新 el-option 的 label 使用新函数
+---
 
-2. **保存状态优化**：
-   - 添加 `hasUnsavedChanges` 状态跟踪未保存的变化
-   - 在 textarea 添加 `@input` 事件监听，输入时标记为"未保存"
-   - 在 `handleUpdate` 中，保存时重置 `hasUnsavedChanges`
-   - 更新保存状态显示逻辑：保存中 > 未保存 > 已保存
-   - 在任务切换时重置未保存状态
+<!-- task-id: 5f42188b-e92b-40f6-b356-8b61bd8cb21c -->
+#### 2. 列表视图优化
 
-**修改文件：**
-- `src/types/project.ts`：扩展 ProjectMember 接口
-- `src/components/task/TaskBasicInfo.vue`：实现显示优化和保存状态逻辑
+**任务摘要：** 将任务列表排序从前端迁移到后端，解决分页场景下排序错误的问题，并为列表添加用户信息填充
+
+**状态：** 已完成
+**优先级：** 中
+**创建时间：** 2025/10/27 09:33:42
+**更新时间：** 2025/10/27 09:33:42
+
+**任务描述：**
+
+- [x] Api: 我发现排序竟然是在前端做的, 这是不对的, 如果数据超过了一页, 那结果就不对了
+- [x] 列表查询一样需要 user 信息: displayName > username > email
+
+**实现细节：**
+- 修改文件：
+  - 后端：`kb-task/src/code/Services/task.ts`、`kb-task/src/api/task.ts`
+  - 前端：`frontend/src/types/task.ts`、`frontend/src/components/project/ProjectTaskList.vue`
+- 后端改动：
+  - 扩展 `TaskInfo` 接口，添加 assignee 和 creator 的用户显示信息字段
+  - `getProjectTasks` 函数新增 sortField 和 sortDirection 参数，使用 `getUserById` 填充用户信息
+  - 新增 `sortTasks` 函数支持多类型字段排序（数字、优先级、状态、字符串）
+  - API 层接收 sortField 和 sortDirection 查询参数并传递给 Service 层
+- 前端改动：
+  - `TaskListFilters` 接口新增 sortField 和 sortDirection 字段
+  - `loadTasks` 函数传递排序参数到 API 调用
+- 技术要点：
+  - 优先级排序使用权重值（high: 3, medium: 2, low: 1）
+  - 状态排序使用顺序值（todo: 1, in_progress: 2, completed: 3）
+  - 用户信息优先级：displayName > username > email
 
 ---
 
 
-> 📅 导出时间：2025/10/26 22:27:50
+> 📅 导出时间：2025/10/27 09:40:35
 > 🤖 由 Task-Flow 生成

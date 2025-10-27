@@ -304,13 +304,13 @@
             </div>
 
             <div class="space-y-1.5">
-              <label class="block text-xs font-medium text-gray-700">任务摘要 (20-50字)</label>
+              <label class="block text-xs font-medium text-gray-700">任务摘要</label>
               <el-input
                 v-model="editableSummaries[index]"
                 type="textarea"
                 :rows="2"
                 placeholder="简要描述此次变更的内容..."
-                maxlength="50"
+                maxlength="100"
                 show-word-limit
                 size="small"
               />
@@ -460,7 +460,9 @@ const loadTasks = async () => {
     const response = await getTaskList({
       projectId: props.projectId,
       page: 1,
-      size: 100 // 暂时加载所有任务
+      size: 100, // 暂时加载所有任务
+      sortField: sortField.value || 'updatedAt',
+      sortDirection: sortDirection.value
     })
     tasks.value = response.items
   } catch (err: any) {

@@ -272,6 +272,13 @@ function parseSingleTask(
       continue
     }
 
+    // 先检查是否是任务摘要（摘要可能在任务描述之前或之后）
+    const summaryMatch = trimmedLine.match(/^\*\*任务摘要：?\*\*\s*(.+)$/)
+    if (summaryMatch && summaryMatch[1]) {
+      task.summary = summaryMatch[1].trim()
+      continue
+    }
+
     // 解析任务属性
     if (trimmedLine.startsWith('**状态：**')) {
       const statusText = trimmedLine.replace('**状态：**', '').trim()
@@ -290,15 +297,9 @@ function parseSingleTask(
     } else if (trimmedLine === '---' || trimmedLine.startsWith('###') || trimmedLine.startsWith('>')) {
       // 任务结束或新的小节开始
       currentSection = null
-    } else if (currentSection === 'description' && trimmedLine) {
-      // 先检查是否是任务摘要
-      const summaryMatch = trimmedLine.match(/^\*\*任务摘要：?\*\*\s*(.+)$/)
-      if (summaryMatch && summaryMatch[1]) {
-        task.summary = summaryMatch[1].trim()
-      } else if (!trimmedLine.startsWith('**')) {
-        // 不是摘要且不是其他属性，添加到描述
-        task.content += (task.content ? '\n' : '') + trimmedLine
-      }
+    } else if (currentSection === 'description' && trimmedLine && !trimmedLine.startsWith('**')) {
+      // 在任务描述部分，添加非属性行到描述
+      task.content += (task.content ? '\n' : '') + trimmedLine
     }
   }
 

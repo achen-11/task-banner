@@ -77,6 +77,8 @@ export interface TaskListFilters {
   assigneeId?: string
   page?: number
   size?: number
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
 }
 
 export interface TaskListResponse {

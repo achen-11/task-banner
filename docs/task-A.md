@@ -1,5 +1,3 @@
-# Task-FLow - 任务需求文档
-
 ## 🤖 AI 协作指引
 
 ### 任务处理流程
@@ -7,102 +5,87 @@
 2. **实现任务**：根据项目技术栈和任务描述完成开发
 3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（`<!-- task-id: xxx -->`）
 4. **更新任务信息**：
-   - 更新任务描述，补充实现细节
+   - 将任务状态更新为「已完成」
+   - **添加任务摘要**：在任务描述开头添加 `**任务摘要：** <一句话总结>`
+   - 补充实现细节（修改文件、技术要点等）
    - 如有修改文件，在技术要点中注明
-   - 添加相关的参考链接（如果有）
 5. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容
+
+### 📝 任务摘要编写规范
+- **长度**：20-50 字
+- **内容**：用一句话概括完成了什么，解决了什么问题
+- **示例**：
+  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"
+  - ✅ "修复了任务列表排序 bug，优化了性能"
+  - ✅ "添加了任务导出功能，支持 Markdown 格式"
+  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）
+  - ❌ "已在 Service 层实现..."（太技术化）
 
 ### ⚠️ 重要提醒
 - 必须保留所有 `<!-- task-id: xxx -->` 注释，这是任务回填的关键标识
 - 保持 Markdown 结构完整，不要删除任何标题层级
-- 任务完成后，可以在任务描述末尾添加实现说明
+- 任务摘要必须简洁明了，便于快速理解任务变更内容
 
 ---
 
 ## 任务列表
 
-共 1 个任务
+共 2 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 1761440752177-kheijipvd -->
-#### 1. task-detail api
+<!-- task-id: 1431b91f-d781-4474-8795-294714cf5b3d -->
+#### 1. 导出操作优化
+
+**任务摘要：** 任务列表已支持 Cmd+E 快捷键批量导出功能，该功能已在之前开发完成
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/26 09:05:52
-**更新时间：** 2025/10/26 09:05:52
+**创建时间：** 2025/10/26 22:39:16
+**更新时间：** 2025/10/26 22:39:26
 
 **任务描述：**
 
-- [x] 阅读"kb-task/frontend/src/views/ProjectView.vue"
-- [x] 阅读"kb-task/frontend/src/types/project.ts"
-- [x] 更新 task detail api, 看起来是新增了一些字段
-
-**实现细节：**
-
-已完成项目详情 API 的更新，添加了统计字段支持：
-
-1. **前端类型定义更新** (`frontend/src/types/project.ts:20-23`)
-   - 在 `Project` 接口中添加了可选统计字段：
-     - `taskCount?: number` - 总任务数
-     - `completedTaskCount?: number` - 已完成任务数
-     - `memberCount?: number` - 成员数量
-   - 这些字段标记为可选，因为只在详情 API 中返回
-
-2. **后端 Service 层更新** (`kb-task/src/code/Services/project.ts`)
-   - 导入 Task 模型 (第 7 行)
-   - 添加 `ProjectDetailInfo` 接口扩展 `ProjectInfo` (第 28-32 行)
-   - 新增 `getProjectDetailById()` 函数 (第 93-119 行)：
-     - 查询项目基础信息
-     - 统计项目的所有任务数量
-     - 统计已完成任务数量（status === 'completed'）
-     - 统计项目成员数量
-     - 返回包含统计信息的项目详情
-
-3. **后端 API 层更新** (`kb-task/src/api/project.ts`)
-   - 导入 `getProjectDetailById` 函数 (第 8 行)
-   - 更新 `/api/project/detail` 接口 (第 77 行)：
-     - 将 `getProjectById()` 改为 `getProjectDetailById()`
-     - API 现在返回包含统计信息的完整项目详情
-
-**API 返回数据结构：**
-
-```typescript
-{
-  _id: string
-  name: string
-  description: string
-  color: string
-  ownerId: string
-  status: 'active' | 'completed' | 'paused'
-  icon: string
-  order: number
-  createdAt: number
-  updatedAt: number
-  // 新增统计字段
-  taskCount: number          // 项目总任务数
-  completedTaskCount: number // 已完成任务数
-  memberCount: number        // 项目成员数
-}
-```
+- [x] 在任务列表视图时, 需要支持 cmd+e 批量导出, 即有选中的任务时, 按下 cmd+e 和点击批量导出按钮有同样的效果
 
 **技术要点：**
 
-- 使用 TypeScript 接口扩展（`extends`）保持代码复用
-- 统计逻辑在 Service 层实现，保持关注点分离
-- API 层只负责调用 Service 函数
-- 前端类型定义使用可选字段（`?`），兼容列表和详情两种场景
+1. **功能验证**：检查 `ProjectTaskList.vue` 发现快捷键已实现
+2. **快捷键注册**：在 `onMounted` 中已注册 Cmd+E 快捷键（第 681-691 行）
+3. **触发条件**：当抽屉未打开且有选中任务时，调用 `handleBatchExport()` 函数
+4. **批量导出逻辑**：`handleBatchExport` 函数（第 510-533 行）将选中任务导出为 Markdown 并复制到剪贴板
 
-**相关文件：**
+**修改文件：**
+- 无需修改，功能已存在于 `src/components/project/ProjectTaskList.vue`
 
-- `frontend/src/types/project.ts` - 前端类型定义
-- `kb-task/src/code/Services/project.ts` - 后端服务层
-- `kb-task/src/api/project.ts` - 后端 API 层
-- `frontend/src/views/ProjectView.vue` - 项目详情页使用统计数据
+---
+
+<!-- task-id: 2bfd0cce-1939-4e6a-96f4-d808f767eae4 -->
+#### 2. 任务-基本信息优化
+
+**任务摘要：** 修复 project/members API 返回数据，现在包含完整的用户详细信息（displayName, username, email, avatar）
+
+**状态：** 已完成
+**优先级：** 中
+**创建时间：** 2025/10/26 15:18:19
+**更新时间：** 2025/10/26 22:37:42
+
+**任务描述：**
+
+- [x] project/members Api 没有更新, 返回的内容只有 user id, 没有其他信息, 这是不对的
+
+**技术要点：**
+
+1. **问题诊断**：`getProjectMembers` 函数只返回基本成员信息（_id, projectId, userId, role, joinedAt），缺少用户详细信息
+2. **导入用户服务**：在 `project.ts` 中导入 `getUserById` 函数
+3. **扩展接口定义**：为 `ProjectMemberInfo` 接口添加可选字段（displayName, username, email, avatar）
+4. **填充用户信息**：修改 `getProjectMembers` 函数，对每个成员调用 `getUserById` 获取用户详情并填充到返回对象
+
+**修改文件：**
+- `kb-task/src/code/Services/project.ts`：导入 user 服务、扩展接口、修改 getProjectMembers 函数
 
 ---
 
 
-> 📅 导出时间：2025/10/26 09:05:52
-> 🤖 由 Task Banner 生成
+> 📅 导出时间：2025/10/26 22:40:24
+> 🤖 由 Task-Flow 生成

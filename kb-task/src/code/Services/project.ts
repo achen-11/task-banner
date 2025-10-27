@@ -5,6 +5,7 @@
 import { Project, type ProjectType } from 'code/Models/Project'
 import { ProjectMember, type ProjectMemberType } from 'code/Models/ProjectMember'
 import { Task, type TaskType } from 'code/Models/Task'
+import { getUserById } from 'code/Services/user'
 
 /**
  * 项目信息接口
@@ -40,6 +41,11 @@ export interface ProjectMemberInfo {
   userId: string
   role: 'owner' | 'admin' | 'member'
   joinedAt: number
+  // 用户详细信息
+  displayName?: string
+  username?: string
+  email?: string
+  avatar?: string
 }
 
 /**
@@ -230,18 +236,28 @@ export function removeProjectMember(projectId: string, userId: string): boolean 
 /**
  * 获取项目成员列表
  * @param projectId - 项目 ID（字符串类型）
- * @returns 成员列表
+ * @returns 成员列表（包含用户详细信息）
  */
 export function getProjectMembers(projectId: string): ProjectMemberInfo[] {
   const members = ProjectMember.findAll({ projectId: projectId }) as ProjectMemberType[]
 
-  return members.map(member => ({
-    _id: member._id,
-    projectId: member.projectId,
-    userId: member.userId,
-    role: member.role as 'owner' | 'admin' | 'member',
-    joinedAt: member.joinedAt
-  }))
+  return members.map(member => {
+    // 获取用户详细信息
+    const userInfo = getUserById(member.userId)
+
+    return {
+      _id: member._id,
+      projectId: member.projectId,
+      userId: member.userId,
+      role: member.role as 'owner' | 'admin' | 'member',
+      joinedAt: member.joinedAt,
+      // 填充用户详细信息
+      displayName: userInfo?.displayName,
+      username: userInfo?.username,
+      email: userInfo?.email,
+      avatar: userInfo?.avatar
+    }
+  })
 }
 
 /**

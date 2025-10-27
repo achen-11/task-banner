@@ -15,7 +15,7 @@ import { checkProjectPermission } from 'code/Services/project'
 import { getTaskActivities } from 'code/Services/taskHistory'
 import { TaskComment } from 'code/Models/TaskComment'
 
-// GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20
+// GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
   // 1. 鉴权检查
   if (!k.account.isLogin) {
@@ -31,11 +31,15 @@ k.api.get("list", () => {
     assigneeId?: string
     page?: string
     size?: string
+    sortField?: string
+    sortDirection?: string
   }
 
   const projectId = query.projectId
   const page = parseInt(query?.page || '1')
   const size = parseInt(query?.size || '20')
+  const sortField = query.sortField || 'order'
+  const sortDirection = query.sortDirection || 'asc'
 
   if (!projectId || projectId.trim() === '') {
     return error('Project ID is required', 400)
@@ -59,7 +63,8 @@ k.api.get("list", () => {
     if (query.priority) filters.priority = query.priority
     if (query.assigneeId) filters.assigneeId = query.assigneeId
 
-    const tasks = getProjectTasks(projectId, filters)
+    // 获取任务列表（带排序和用户信息）
+    const tasks = getProjectTasks(projectId, filters, sortField, sortDirection)
 
     // 简单分页
     const total = tasks.length

@@ -8,6 +8,7 @@ import { TaskModule, type TaskModuleType } from 'code/Models/TaskModule'
 import { Tag, type TagType } from 'code/Models/Tag'
 import { Module, type ModuleType } from 'code/Models/Module'
 import { TaskHistory } from 'code/Models/TaskHistory'
+import { getUserById } from 'code/Services/user'
 
 /**
  * 任务信息接口
@@ -27,6 +28,14 @@ export interface TaskInfo {
   order: number
   createdAt: number
   updatedAt: number
+  // 指派人用户信息
+  assigneeDisplayName?: string
+  assigneeUsername?: string
+  assigneeEmail?: string
+  // 创建人用户信息
+  creatorDisplayName?: string
+  creatorUsername?: string
+  creatorEmail?: string
 }
 
 /**
@@ -207,6 +216,8 @@ export function getTaskDetailById(taskId: string): TaskDetailInfo | null {
  * 获取项目的任务列表
  * @param projectId - 项目 ID
  * @param filters - 筛选条件
+ * @param sortField - 排序字段
+ * @param sortDirection - 排序方向（asc/desc）
  * @returns 任务列表
  */
 export function getProjectTasks(
@@ -216,7 +227,9 @@ export function getProjectTasks(
     status?: string
     priority?: string
     assigneeId?: string
-  }
+  },
+  sortField?: string,
+  sortDirection?: string
 ): TaskInfo[] {
   // 构建查询条件
   const query: any = { projectId }
@@ -240,8 +253,83 @@ export function getProjectTasks(
     tasks = tasks.filter(task => taskIdsInModule.has(task._id))
   }
 
-  // 按 order 排序
-  return tasks.map(formatTaskInfo).sort((a, b) => a.order - b.order)
+  // 格式化任务信息并填充用户数据
+  const formattedTasks = tasks.map(task => {
+    const taskInfo = formatTaskInfo(task)
+
+    // 填充指派人信息
+    if (task.assigneeId) {
+      const assigneeUser = getUserById(task.assigneeId)
+      if (assigneeUser) {
+        taskInfo.assigneeDisplayName = assigneeUser.displayName
+        taskInfo.assigneeUsername = assigneeUser.username
+        taskInfo.assigneeEmail = assigneeUser.email
+      }
+    }
+
+    // 填充创建人信息
+    if (task.creatorId) {
+      const creatorUser = getUserById(task.creatorId)
+      if (creatorUser) {
+        taskInfo.creatorDisplayName = creatorUser.displayName
+        taskInfo.creatorUsername = creatorUser.username
+        taskInfo.creatorEmail = creatorUser.email
+      }
+    }
+
+    return taskInfo
+  })
+
+  // 排序
+  return sortTasks(formattedTasks, sortField, sortDirection)
+}
+
+/**
+ * 任务排序函数
+ */
+function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string): TaskInfo[] {
+  const field = sortField || 'order'
+  const direction = sortDirection || 'asc'
+
+  return tasks.sort((a, b) => {
+    let aValue: any = (a as any)[field]
+    let bValue: any = (b as any)[field]
+
+    // 处理 undefined/null 值
+    if (aValue === undefined || aValue === null) aValue = ''
+    if (bValue === undefined || bValue === null) bValue = ''
+
+    // 数字类型排序
+    if (field === 'displayId' || field === 'createdAt' || field === 'updatedAt' || field === 'order' || field === 'dueDate') {
+      const numA = Number(aValue) || 0
+      const numB = Number(bValue) || 0
+      return direction === 'desc' ? numB - numA : numA - numB
+    }
+
+    // 优先级特殊排序 (high > medium > low)
+    if (field === 'priority') {
+      const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 }
+      const numA = priorityOrder[aValue] || 0
+      const numB = priorityOrder[bValue] || 0
+      return direction === 'desc' ? numB - numA : numA - numB
+    }
+
+    // 状态特殊排序 (todo > in_progress > completed)
+    if (field === 'status') {
+      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, completed: 3 }
+      const numA = statusOrder[aValue] || 0
+      const numB = statusOrder[bValue] || 0
+      return direction === 'desc' ? numB - numA : numA - numB
+    }
+
+    // 字符串排序
+    const strA = String(aValue).toLowerCase()
+    const strB = String(bValue).toLowerCase()
+    if (direction === 'desc') {
+      return strB.localeCompare(strA)
+    }
+    return strA.localeCompare(strB)
+  })
 }
 
 /**
