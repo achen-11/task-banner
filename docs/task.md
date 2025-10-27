@@ -54,204 +54,232 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: a47cd076-99cd-4fb7-bb50-e15a2cb47eeb -->
-#### 1. 任务列表-获取数据异常
+<!-- task-id: 10a36252-54bc-4cf3-b440-45d9e3398cc4 -->
+#### 1. 导入任务-多任务导入
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 23:05:55
-**更新时间：** 2025/10/27 23:19:04
+**创建时间：** 2025/10/27 22:50:25
+**更新时间：** 2025/10/27 23:24:07
 
 **任务描述：**
 
-**任务摘要：** 修复了任务列表数据获取异常问题，移除前端重复排序逻辑，统一使用服务端排序，默认按状态优先、更新时间降序排列
+**任务摘要：** 修复了多任务导入解析失败问题，实现了基于 _id 的智能更新/创建逻辑，支持只包含部分字段的任务更新
+
+- [x] 1. 我发现导入竟然是新建..., 你要根据 _id 先判断呀
+- [x] 2.阅读"docs/multiple-task.json", 检查为什么这个多任务导入会解析失败
 
 **问题分析：**
 
-由于前后端都存在排序逻辑，且 API handler 强制使用默认排序字段，导致数据获取异常和排序结果不一致。具体问题包括：
+用户反馈了两个关键问题：
 
-1. **双重排序冲突**
-   - 后端在 `task.ts:333` 返回排序后的数据
-   - 前端在 `ProjectTaskList.vue:318-384` 使用 `sortedTasks` 计算属性再次排序
-   - 导致性能浪费和排序结果不可预测
+1. **多任务导入解析失败**
+   - 问题描述：导入 docs/multiple-task.json 时提示"未能解析出任务"
+   - 根本原因：JSON 文件中的任务对象没有 title 字段
+   - 旧逻辑：importTasksFromJSON 函数强制要求所有任务必须有 title (export.ts:330)
+   - 导致结果：所有任务都被过滤掉，无法导入
 
-2. **API handler 强制默认排序字段**（根本原因）
-   - API handler 在 `src/api/task.ts:41` 使用了 `query.sortField || 'order'`
-   - 即使前端不传 sortField，也会被强制设置为 'order'
-   - 导致 Service 层的默认排序逻辑永远不会被触发
-
-3. **默认排序不一致**
-   - 后端默认：按 `order` 字段升序
-   - 前端发送：`updatedAt` 作为默认排序字段
-   - 前端计算属性：状态优先，然后按更新时间降序
-
-4. **状态排序顺序不同**
-   - 后端：`{ todo: 1, in_progress: 2, review: 3, completed: 4 }`
-   - 前端：`{ todo: 0, in_progress: 1, completed: 2, review: 3 }`
+2. **导入总是新建而非更新**
+   - 问题描述：即使任务有 _id，导入时仍会创建新任务
+   - 根本原因：只检查当前页面加载的任务列表 (ProjectTaskList.vue:525)
+   - 局限性：tasks.value 只包含当前分页的任务（最多 20 个）
+   - 导致结果：数据库中存在但未加载到当前页面的任务会被重复创建
 
 **实施方案：**
 
-### 1. 移除前端排序逻辑
+### 1. 修复 JSON 解析逻辑
+
+**文件：** `frontend/src/utils/export.ts`
+
+**变更：优化任务验证逻辑**（328-355 行）
+```typescript
+// 之前：所有任务都必须有 title
+if (!taskData || !taskData.title) {
+  console.warn('Skipping invalid task:', taskData)
+  return false
+}
+
+// 之后：区分新建和更新
+.filter(taskData => {
+  // 过滤掉 null、undefined
+  if (!taskData) {
+    console.warn('Skipping null/undefined task:', taskData)
+    return false
+  }
+  // 如果有 _id，说明是更新现有任务，不需要 title
+  // 如果没有 _id，说明是新建任务，必须有 title
+  if (!taskData._id && !taskData.title) {
+    console.warn('Skipping task without _id and title:', taskData)
+    return false
+  }
+  return true
+})
+```
+
+**变更：移除默认值**（342-354 行）
+```typescript
+// 之前：强制添加默认值
+status: taskData.status || 'todo',
+priority: taskData.priority || 'medium',
+content: taskData.content || '',
+
+// 之后：保持原值（可能为 undefined）
+status: taskData.status,
+priority: taskData.priority,
+content: taskData.content,
+```
+
+**设计理念：**
+- 有 _id：更新任务，只修改提供的字段
+- 无 _id：新建任务，title 必填，其他可选
+- 支持部分更新：只传入需要修改的字段
+
+### 2. 实现智能更新/创建逻辑
 
 **文件：** `frontend/src/components/project/ProjectTaskList.vue`
 
-**变更 1：移除 `sortedTasks` 计算属性**（原 318-384 行）
-- 删除了整个 `sortedTasks` computed 函数
-- 该函数包含默认排序和自定义排序逻辑
-- 前端不再进行任何客户端排序
-
-**变更 2：模板直接使用 `tasks`**（127 行）
-```vue
-<!-- 之前 -->
-<div v-for="task in sortedTasks" :key="task._id">
-
-<!-- 之后 -->
-<div v-for="task in tasks" :key="task._id">
+**变更 1：添加 getTaskDetail 导入**（269 行）
+```typescript
+import {
+  getTaskList,
+  getTaskDetail,  // 新增
+  createTask as createTaskAPI,
+  updateTask as updateTaskAPI,
+  deleteTask as deleteTaskAPI
+} from '@/api/task'
 ```
 
-**变更 3：修改 `toggleSort` 函数**（318-330 行）
+**变更 2：重构 confirmImportTasks 函数**（510-601 行）
 ```typescript
-// 切换排序（重新加载数据）
-const toggleSort = (field: string) => {
-  if (sortField.value === field) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortField.value = field
-    sortDirection.value = 'asc'
-  }
-  // 重新加载任务以应用新的排序
-  loadTasks()
-}
-```
-- 用户点击列标题时，不再只改变本地状态
-- 而是重新调用 `loadTasks()` 从服务端获取排序后的数据
+const confirmImportTasks = async () => {
+  // 处理每个任务，返回操作类型和结果
+  const promises = finalTasks.map(async task => {
+    // 如果有 _id，先检查任务是否存在
+    if (task._id) {
+      try {
+        // 尝试获取任务详情，检查是否存在
+        const existingTask = await getTaskDetail(task._id)
 
-**变更 4：修改 `loadTasks` 函数**（353 行）
-```typescript
-// 之前
-sortField: sortField.value || 'updatedAt',
-
-// 之后
-sortField: sortField.value || undefined,
-```
-- 不再发送默认排序字段
-- 当 `sortField` 为空时，让后端使用默认排序逻辑
-
-### 2. 配置服务端默认排序
-
-**文件：** `src/code/Services/task.ts`
-
-**变更：重写 `sortTasks` 函数**（339-399 行）
-```typescript
-function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string): TaskInfo[] {
-  // 默认排序：先按状态，再按更新时间降序
-  if (!sortField) {
-    return tasks.sort((a, b) => {
-      // 状态优先排序 (todo > in_progress > review > completed)
-      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
-      const statusA = statusOrder[a.status] || 99
-      const statusB = statusOrder[b.status] || 99
-
-      if (statusA !== statusB) {
-        return statusA - statusB
+        // 任务存在，更新它
+        const result = await updateTaskAPI({
+          id: task._id!,
+          title: task.title || existingTask.title,
+          content: task.content !== undefined ? task.content : existingTask.content,
+          status: task.status || existingTask.status,
+          // ... 其他字段，保持现有值或使用新值
+        })
+        return { type: 'updated' as const, result }
+      } catch (error: any) {
+        // 任务不存在（404错误），创建新任务
+        if (error?.response?.status === 404 || error?.message?.includes('not found')) {
+          const result = await createTaskAPI({ /* ... */ })
+          return { type: 'created' as const, result }
+        }
+        throw error
       }
+    } else {
+      // 没有 _id，直接创建新任务
+      const result = await createTaskAPI({ /* ... */ })
+      return { type: 'created' as const, result }
+    }
+  })
 
-      // 状态相同时，按更新时间降序
-      return b.updatedAt - a.updatedAt
-    })
-  }
+  const results = await Promise.all(promises)
 
-  // 其他排序逻辑保持不变
-  // ...
+  // 统计创建和更新的数量
+  const createdCount = results.filter(r => r.type === 'created').length
+  const updatedCount = results.filter(r => r.type === 'updated').length
 }
 ```
 
-**关键改进：**
-- 当没有指定 `sortField` 时，使用新的默认排序
-- 优先按状态排序：待办 → 进行中 → 评审 → 已完成
-- 状态相同时，按更新时间降序（最新的在前）
-- 符合任务管理的常见需求：优先显示待办任务
-
-### 3. 修复 API handler 的默认排序问题（关键修复）
-
-**文件：** `src/api/task.ts`
-
-**变更：移除强制默认值**（41-43 行）
-```typescript
-// 之前
-const sortField = query.sortField || 'order'
-const sortDirection = query.sortDirection || 'asc'
-
-// 之后
-// 如果 sortField 为空，传递 undefined 让 Service 层使用默认排序
-const sortField = query.sortField || undefined
-const sortDirection = query.sortDirection
-```
-
-**问题根源：**
-- API handler 会将空的 sortField 强制转换为 'order'
-- 这导致 Service 层的 `sortTasks` 函数永远收不到 undefined
-- 因此默认排序逻辑（状态+时间）从未被触发
-- 系统一直按 order 字段排序，看起来像是按 ID 升序
-
-**修复效果：**
-- 现在 API handler 不再强制设置默认值
-- 当前端不传 sortField 时，Service 层会收到 undefined
-- 触发默认排序逻辑：状态优先，时间降序
+**核心改进：**
+1. **通过 API 验证**：调用 getTaskDetail 检查任务是否存在
+2. **智能判断**：
+   - 任务存在 → 更新
+   - 任务不存在（404）→ 创建
+   - 无 _id → 创建
+3. **准确计数**：返回操作类型，最后统计创建/更新数量
+4. **错误处理**：只捕获 404 错误，其他错误继续抛出
 
 ### 技术要点
 
-1. **单一数据源原则**
-   - 排序逻辑只在服务端实现
-   - 前端完全信任服务端返回的顺序
-   - 避免客户端和服务端逻辑不一致
+1. **部分更新支持**
+   - 移除 importTasksFromJSON 中的默认值
+   - 保持字段原始值（undefined 表示不更新）
+   - 在 confirmImportTasks 中使用 || 运算符合并值
 
-2. **按需加载**
-   - 用户点击列标题时才重新请求数据
-   - 利用后端排序能力，减少前端计算
-   - 支持未来扩展（如数据库级别的排序优化）
+2. **API 验证机制**
+   - 使用 getTaskDetail 而不是本地列表
+   - 可以检测所有数据库中的任务
+   - 不受分页限制
 
-3. **TypeScript 类型安全**
-   - 修复了 `sortField: null` 与接口 `string | undefined` 不兼容的问题
-   - 使用 `|| undefined` 将 `null` 转换为 `undefined`
+3. **错误分类处理**
+   - 404 错误：任务不存在，创建新任务
+   - 其他错误：权限、网络等问题，抛出错误
+   - 提供详细的日志输出
 
-4. **向后兼容**
-   - 保留了用户自定义排序功能（点击列标题）
-   - 只改变了默认排序行为
-   - API 接口保持不变
+4. **并发安全**
+   - 使用 Promise.all 并发执行
+   - 返回结果包含操作类型
+   - 避免竞态条件导致的计数错误
 
-5. **问题定位与调试**
-   - 用户提供了请求 URL，帮助快速定位问题
-   - 发现 API handler 层存在强制默认值的问题
-   - 修复后端的三个层次：前端 → API handler → Service 层
+5. **用户体验**
+   - 明确提示创建/更新的数量
+   - 支持批量导入
+   - 导入后自动刷新列表
 
 ### 验证结果
 
 ✅ **构建测试通过：**
 ```
 ✓ 3277 modules transformed
-✓ built in 5.62s
+✓ built in 5.17s
 ```
 
 ✅ **功能完整性：**
-- 🗑️ **移除前端排序**：删除 `sortedTasks` 计算属性和相关逻辑
-- 🔄 **服务端排序**：`toggleSort` 触发数据重新加载
-- 📊 **默认排序**：状态优先（todo → in_progress → review → completed），然后按更新时间降序
-- 🎯 **自定义排序**：点击列标题仍可按指定字段排序
-- 🔧 **API 修复**：移除 API handler 的强制默认值，确保默认排序逻辑正常触发
+- 🔍 **解析优化**：有 _id 的任务不需要 title 字段
+- 🆔 **智能判断**：通过 API 检查任务是否存在
+- ✏️ **智能更新**：存在则更新，不存在则创建
+- 📊 **准确统计**：正确显示创建/更新数量
+- 🔄 **部分更新**：支持只修改部分字段
 
-✅ **性能优化：**
-- 避免了前端对大量数据的重复排序
-- 服务端排序可以利用数据库索引
-- 减少了客户端计算负担
+✅ **multiple-task.json 测试：**
+- ✅ 可以成功解析（不要求 title）
+- ✅ 根据 _id 检测任务是否存在
+- ✅ 存在的任务会被更新
+- ✅ 不存在的任务会被创建
 
-✅ **问题彻底解决：**
-- 修复了 API handler 层的逻辑问题
-- 默认排序现在可以正常工作
-- 不再显示为 ID 升序排序
+### 使用场景
+
+**场景 1：批量更新任务状态**
+```json
+[
+  {"_id": "task-1", "status": "completed"},
+  {"_id": "task-2", "status": "in_progress"}
+]
+```
+只更新状态，其他字段保持不变。
+
+**场景 2：创建新任务**
+```json
+[
+  {"title": "新任务 1", "priority": "high"},
+  {"title": "新任务 2", "status": "todo"}
+]
+```
+没有 _id，会创建新任务。
+
+**场景 3：混合导入**
+```json
+[
+  {"_id": "task-1", "status": "completed"},
+  {"title": "新任务", "priority": "high"}
+]
+```
+第一个更新，第二个创建。
 
 ---
 
 
-> 📅 导出时间：2025/10/27 23:32:24
+> 📅 导出时间：2025/10/27 23:40:47
 > 🤖 由 Task-Flow 生成

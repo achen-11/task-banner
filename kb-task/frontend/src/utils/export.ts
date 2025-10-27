@@ -326,9 +326,15 @@ export function importTasksFromJSON(
     // 转换为 Task 对象，使用目标项目 ID，并过滤掉无效任务
     return tasksData
       .filter(taskData => {
-        // 过滤掉 null、undefined 或缺少标题的任务
-        if (!taskData || !taskData.title) {
-          console.warn('Skipping invalid task:', taskData)
+        // 过滤掉 null、undefined
+        if (!taskData) {
+          console.warn('Skipping null/undefined task:', taskData)
+          return false
+        }
+        // 如果有 _id，说明是更新现有任务，不需要 title
+        // 如果没有 _id，说明是新建任务，必须有 title
+        if (!taskData._id && !taskData.title) {
+          console.warn('Skipping task without _id and title:', taskData)
           return false
         }
         return true
@@ -336,16 +342,16 @@ export function importTasksFromJSON(
       .map(taskData => ({
         _id: taskData._id,
         projectId: projectId, // 使用目标项目 ID
-        title: taskData.title,
-        status: taskData.status || 'todo',
-        priority: taskData.priority || 'medium',
-        content: taskData.content || '',
+        title: taskData.title, // 可能为空（更新任务时）
+        status: taskData.status,
+        priority: taskData.priority,
+        content: taskData.content,
         summary: taskData.summary,
-        tagIds: taskData.tagIds || [],
+        tagIds: taskData.tagIds,
         assigneeId: taskData.assigneeId,
-        moduleIds: taskData.moduleIds || [],
-        createdAt: taskData.createdAt || Date.now(),
-        updatedAt: taskData.updatedAt || Date.now()
+        moduleIds: taskData.moduleIds,
+        createdAt: taskData.createdAt,
+        updatedAt: taskData.updatedAt
       }))
   } catch (error) {
     console.error('Failed to parse JSON:', error)

@@ -266,7 +266,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
-import { getTaskList, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 import { registerShortcut, unregisterShortcut } from '@/composables/useKeyboard'
 import type { Task } from '@/types/task'
@@ -510,39 +510,57 @@ const importTasksHelper = async (content: string) => {
 // 确认导入任务
 const confirmImportTasks = async () => {
   try {
-    let createdCount = 0
-    let updatedCount = 0
-
     // 更新任务的 summary
     const finalTasks = tasksToImport.value.map((task, index) => ({
       ...task,
       summary: editableSummaries.value[index] || ''
     }))
 
-    // 处理每个任务（创建或更新）
+    // 处理每个任务（创建或更新），返回操作类型和结果
     const promises = finalTasks.map(async task => {
-      // 检查任务是否已经存在（通过 _id）
-      const existingTask = task._id && tasks.value.find(t => t._id === task._id)
+      // 如果有 _id，先检查任务是否存在
+      if (task._id) {
+        try {
+          // 尝试获取任务详情，检查是否存在
+          const existingTask = await getTaskDetail(task._id)
 
-      if (existingTask) {
-        // 更新已存在的任务
-        updatedCount++
-        return updateTaskAPI({
-          id: task._id!,
-          title: task.title || existingTask.title,
-          content: task.content !== undefined ? task.content : existingTask.content,
-          status: task.status || existingTask.status,
-          priority: task.priority || existingTask.priority,
-          assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
-          tagIds: task.tagIds || existingTask.tagIds,
-          moduleIds: task.moduleIds || existingTask.moduleIds,
-          dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate,
-          summary: task.summary || ''
-        })
+          // 任务存在，更新它
+          const result = await updateTaskAPI({
+            id: task._id!,
+            title: task.title || existingTask.title,
+            content: task.content !== undefined ? task.content : existingTask.content,
+            status: task.status || existingTask.status,
+            priority: task.priority || existingTask.priority,
+            assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
+            tagIds: task.tagIds || existingTask.tagIds,
+            moduleIds: task.moduleIds || existingTask.moduleIds,
+            dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate,
+            summary: task.summary || ''
+          })
+          return { type: 'updated' as const, result }
+        } catch (error: any) {
+          // 任务不存在（404错误），创建新任务
+          if (error?.response?.status === 404 || error?.message?.includes('not found')) {
+            console.log(`Task ${task._id} not found, creating new task`)
+            const result = await createTaskAPI({
+              projectId: props.projectId!,
+              title: task.title || '未命名任务',
+              content: task.content || '',
+              status: task.status || 'todo',
+              priority: task.priority || 'medium',
+              assigneeId: task.assigneeId,
+              tagIds: task.tagIds || [],
+              moduleIds: task.moduleIds || [],
+              summary: task.summary || ''
+            })
+            return { type: 'created' as const, result }
+          }
+          // 其他错误，继续抛出
+          throw error
+        }
       } else {
-        // 创建新任务
-        createdCount++
-        return createTaskAPI({
+        // 没有 _id，直接创建新任务
+        const result = await createTaskAPI({
           projectId: props.projectId!,
           title: task.title || '未命名任务',
           content: task.content || '',
@@ -553,10 +571,15 @@ const confirmImportTasks = async () => {
           moduleIds: task.moduleIds || [],
           summary: task.summary || ''
         })
+        return { type: 'created' as const, result }
       }
     })
 
-    const processedTasks = await Promise.all(promises)
+    const results = await Promise.all(promises)
+
+    // 统计创建和更新的数量
+    const createdCount = results.filter(r => r.type === 'created').length
+    const updatedCount = results.filter(r => r.type === 'updated').length
 
     // 显示结果消息
     const messages: string[] = []
