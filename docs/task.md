@@ -38,60 +38,137 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: b4a8ac3a-5c54-49b3-bd43-3d59923b5aa0 -->
-#### 1. markdown 优化
+<!-- task-id: 4187d9e1-0122-4f15-8dc9-2267c715737f -->
+#### 1. 创建任务 bug
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/26 16:09:54
-**更新时间：** 2025/10/27 15:31:57
+**创建时间：** 2025/10/27 15:58:16
+**更新时间：** 2025/10/27 17:00:00
 
 **任务描述：**
 
-**任务摘要：** 将编辑/预览切换按钮移至描述标签右侧，优化工具栏布局，解决工具栏拥挤问题。
+**任务摘要：** 优化了创建任务时指派人的默认值设置逻辑，改为等待成员列表加载完成后再设置，避免显示 undefined。
 
-**优化内容：**
-1. ✅ **移除工具栏中的模式切换按钮**：从 MarkdownEditor 工具栏移除编辑/预览按钮，减少工具栏拥挤
-2. ✅ **新位置设计**：将模式切换按钮移至"描述"标签右侧，采用 macOS 风格的分段控制设计
-3. ✅ **视觉优化**：灰色背景容器 + 白色激活状态，带有细微阴影，更加精致
+- [x] 指派人依然显示 undefined, 你的做法麻烦了,而且数据容易出错, 其实只要在等待指派人选项列表加载完成后, 再填入默认指派人(当前用户)就好了
+
+**问题分析：**
+
+之前的临时解决方案（`displayMembers` 计算属性）存在以下问题：
+1. **逻辑复杂**：需要动态创建临时成员对象填充到列表中
+2. **数据冗余**：临时成员数据可能与实际数据不一致
+3. **易出错**：TypeScript 类型要求必须填充所有必需字段
+
+根本原因是异步时序问题：
+- 组件初始化时立即设置了默认指派人（当前用户）
+- 但成员列表的异步加载还未完成
+- 导致 el-select 的 v-model 有值但 options 列表为空
+- 结果显示 "undefined"
+
+**解决方案：**
+
+采用更简洁的方案：**等待成员列表加载完成后，再设置默认指派人**
+
+1. **移除临时方案**：
+   - 删除 `displayMembers` 计算属性
+   - 模板改回直接使用 `projectMembers`
+
+2. **调整设置时机**：
+   - 在 `watch(() => props.task)` 中，创建模式下只设置 `creatorId`，不设置 `assigneeId`
+   - 在 `loadProjectMembers` 完成后，才检查并设置默认指派人
+
+3. **安全性检查**：
+   - 确认当前用户确实在项目成员列表中
+   - 只有确认后才设置 `assigneeId`
 
 **修改文件：**
-1. `frontend/src/components/common/MarkdownEditor.vue` - Markdown 编辑器组件
-   - 移除工具栏中的编辑/预览切换按钮和相关样式
-   - 暴露 `isPreviewMode` 状态和 `setPreviewMode` 方法给父组件
-   - 移除 `toolbar-right`、`mode-btn` 相关的 CSS 样式
-   - 工具栏布局简化为单一左侧按钮组
 
-2. `frontend/src/components/task/TaskBasicInfo.vue` - 任务详情编辑
-   - 导入 Edit3 和 Eye 图标组件
-   - 在"描述"标签右侧添加模式切换按钮容器
-   - 添加 `markdownEditorRef` 引用和 `isPreviewMode` 状态
-   - 添加 `setEditorMode` 方法控制编辑器模式
-   - 新增 `mode-toggle-btn` 样式（macOS 风格分段控制）
+1. `kb-task/frontend/src/components/task/TaskBasicInfo.vue` - 任务基本信息组件
+   - **移除** `displayMembers` 计算属性（原第 421-443 行）
+   - **修改** 模板，el-select 改回使用 `projectMembers`（第 97 行）
+   - **修改** `watch(() => props.task)`，创建模式下不再立即设置 `assigneeId`（第 429-432 行）
+   - **增强** `loadProjectMembers`，在成员列表加载完成后设置默认指派人（第 411-421 行）
+
+**核心代码：**
+
+```typescript
+// 加载项目成员列表
+const loadProjectMembers = async () => {
+  if (!props.projectId) return
+
+  try {
+    const response = await getProjectMembers(props.projectId)
+    projectMembers.value = response.items
+
+    // 创建模式：成员列表加载完成后，设置默认指派人为当前用户
+    if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
+      const currentUserId = String(currentUser.id)
+      // 确认当前用户在成员列表中
+      const isCurrentUserInMembers = projectMembers.value.some(m => m.userId === currentUserId)
+      if (isCurrentUserInMembers) {
+        localTask.value.assigneeId = currentUserId
+        // 通知父组件更新
+        emit('update', { assigneeId: currentUserId })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load project members:', error)
+    projectMembers.value = []
+  }
+}
+```
+
+```typescript
+// 监听 props 变化，更新本地副本
+watch(() => props.task, async (newTask) => {
+  if (newTask) {
+    localTask.value = { ...newTask }
+    hasUnsavedChanges.value = false
+
+    // 创建模式：只设置 creatorId，等待成员列表加载后再设置 assigneeId
+    if (props.mode === 'create' && currentUser && !localTask.value.creatorId) {
+      localTask.value.creatorId = String(currentUser.id)
+    }
+
+    // ... 其他逻辑
+  }
+}, { immediate: true, deep: true })
+```
 
 **技术要点：**
-- **组件通信**：通过 ref 调用子组件暴露的方法控制预览模式
-- **状态同步**：父组件维护 isPreviewMode 状态，与编辑器保持同步
-- **样式设计**：采用 macOS Big Sur 风格的分段控制（Segmented Control）
-  - 灰色背景容器（bg-gray-100）
-  - 白色激活状态（bg-white）
-  - 蓝色文字（text-blue-600）
-  - 细微阴影（box-shadow: 0 1px 2px）
+
+1. **异步时序管理**：
+   - 将依赖数据的初始化延迟到数据加载完成后
+   - 避免在数据未就绪时设置依赖该数据的状态
+
+2. **数据完整性检查**：
+   - 使用 `some()` 方法确认用户在成员列表中
+   - 只有确认后才设置默认值，避免无效数据
+
+3. **代码简洁性**：
+   - 移除了 23 行的临时解决方案代码
+   - 逻辑更清晰，易于维护
+
+**验证结果：**
+
+✅ **构建测试通过**：
+```
+✓ 3272 modules transformed
+✓ built in 4.33s
+```
+
+✅ **修复效果**：
+1. **不再显示 undefined**：成员列表加载完成后才填入默认指派人
+2. **代码更简洁**：移除了复杂的临时数据填充逻辑
+3. **数据更可靠**：默认指派人一定存在于实际的成员列表中
 
 **用户体验提升：**
-- 🎨 **工具栏更清爽**：移除模式按钮后，格式化工具一目了然
-- 📍 **位置更合理**：切换按钮紧邻描述区域，语义更明确
-- 💎 **视觉更精致**：macOS 风格设计，专业且美观
-- 🖱️ **操作更流畅**：按钮位置固定，不受工具栏挤压影响
-
----
-
-**以下为原始任务需求：**
-
-- [x] 1. 查看图片"docs/Images/image.png", 现在的工具栏被挤压的很丑, 优化它们, 或者可以把编辑/预览按钮换到其他合适的地方
+- 🎯 **加载体验更好**：选择框在数据就绪前保持空状态，避免显示错误信息
+- 🔄 **逻辑更合理**：先加载数据，再基于数据做初始化
+- 🐛 **更少的 Bug**：减少了边界情况和数据不一致的可能性
 
 ---
 
 
-> 📅 导出时间：2025/10/27 15:28:04
+> 📅 导出时间：2025/10/27 17:00:15
 > 🤖 由 Task-Flow 生成

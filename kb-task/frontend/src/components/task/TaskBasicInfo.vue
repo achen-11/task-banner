@@ -407,6 +407,18 @@ const loadProjectMembers = async () => {
   try {
     const response = await getProjectMembers(props.projectId)
     projectMembers.value = response.items
+
+    // 创建模式：成员列表加载完成后，设置默认指派人为当前用户
+    if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
+      const currentUserId = String(currentUser.id)
+      // 确认当前用户在成员列表中
+      const isCurrentUserInMembers = projectMembers.value.some(m => m.userId === currentUserId)
+      if (isCurrentUserInMembers) {
+        localTask.value.assigneeId = currentUserId
+        // 通知父组件更新
+        emit('update', { assigneeId: currentUserId })
+      }
+    }
   } catch (error) {
     console.error('Failed to load project members:', error)
     projectMembers.value = []
@@ -426,9 +438,8 @@ watch(() => props.task, async (newTask) => {
     // 重置保存状态
     hasUnsavedChanges.value = false
 
-    // 创建模式：设置默认指派人为当前用户
-    if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
-      localTask.value.assigneeId = String(currentUser.id)
+    // 创建模式：只设置 creatorId，等待成员列表加载后再设置 assigneeId
+    if (props.mode === 'create' && currentUser && !localTask.value.creatorId) {
       localTask.value.creatorId = String(currentUser.id)
     }
 
@@ -453,9 +464,16 @@ watch(() => props.projectId, async (newProjectId) => {
   }
 }, { immediate: true })
 
-// 处理任务描述变更（仅更新本地状态，标记未保存）
+// 处理任务描述变更
 const handleContentChange = (newContent: string) => {
   localTask.value.content = newContent
+
+  // 创建模式：立即通知父组件更新
+  if (props.mode === 'create') {
+    emit('update', { content: newContent })
+  }
+
+  // 查看模式：标记为未保存，等待手动保存
   if (props.mode === 'view') {
     hasUnsavedChanges.value = true
   }
