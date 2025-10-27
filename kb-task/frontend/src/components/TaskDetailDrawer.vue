@@ -165,7 +165,7 @@
               <!-- 右列：活动历史（内部滚动） -->
               <div class="h-full pl-3 -ml-3 overflow-hidden">
                 <div class="h-full pl-3">
-                  <TaskActivity :task="currentTask" />
+                  <TaskActivity ref="taskActivityRef" :task="currentTask" />
                 </div>
               </div>
             </div>
@@ -182,7 +182,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, readFromClipboard } from '@/utils/export'
+import { exportTaskToMarkdown, exportTaskToJSON, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, downloadAsFile } from '@/utils/export'
 import type { Task, TaskDetail } from '@/types/task'
 
 interface Attachment {
@@ -223,6 +223,9 @@ const emit = defineEmits<{
 
 // 标题输入框引用
 const titleInputRef = ref<HTMLInputElement>()
+
+// 活动历史组件引用
+const taskActivityRef = ref<InstanceType<typeof TaskActivity>>()
 
 // 创建模式下的新任务数据
 const newTaskData = ref<Partial<Task>>({
@@ -316,7 +319,7 @@ const closeDrawer = () => {
   emit('close')
 }
 
-// 导出当前任务
+// 导出当前任务（JSON + Markdown 两个文件）
 const handleExportTask = async () => {
   if (!currentTask.value || !currentTask.value.title) {
     ElMessage.warning('没有可导出的任务')
@@ -324,21 +327,25 @@ const handleExportTask = async () => {
   }
 
   try {
-    const markdown = exportTaskToMarkdown(currentTask.value)
-    const success = await copyToClipboard(markdown)
+    const taskTitle = currentTask.value.title.replace(/[\/\\:*?"<>|]/g, '-') // 清理文件名非法字符
+    const timestamp = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
-    if (success) {
-      ElMessage.success('任务已复制到剪贴板')
-    } else {
-      ElMessage.error('复制失败，请重试')
-    }
+    // 1. 导出 JSON 文件
+    const json = exportTaskToJSON(currentTask.value)
+    downloadAsFile(json, `task-${taskTitle}-${timestamp}.json`)
+
+    // 2. 导出 Markdown 文件
+    const markdown = exportTaskToMarkdown(currentTask.value)
+    downloadAsFile(markdown, `task-${taskTitle}-${timestamp}.md`)
+
+    ElMessage.success('任务已导出为 JSON 和 Markdown 文件')
   } catch (error) {
     console.error('Export task error:', error)
     ElMessage.error('导出任务失败')
   }
 }
 
-// 导入任务
+// 导入任务（优先从剪贴板读取 JSON，失败则尝试 Markdown）
 const handleImportTask = async () => {
   if (!props.projectId) {
     ElMessage.warning('缺少项目ID，无法导入任务')
@@ -346,16 +353,16 @@ const handleImportTask = async () => {
   }
 
   try {
-    const markdown = await readFromClipboard()
+    const clipboardContent = await readFromClipboard()
 
-    if (!markdown) {
+    if (!clipboardContent) {
       // 如果无法读取剪贴板，提示用户手动粘贴
-      const input = prompt('请粘贴 Markdown 格式的任务内容：')
+      const input = prompt('请粘贴 JSON 或 Markdown 格式的任务内容：')
       if (!input) return
 
-      await importTaskFromMarkdown(input)
+      await importTask(input)
     } else {
-      await importTaskFromMarkdown(markdown)
+      await importTask(clipboardContent)
     }
   } catch (error) {
     console.error('Import task error:', error)
@@ -363,16 +370,34 @@ const handleImportTask = async () => {
   }
 }
 
-// 从 Markdown 导入任务
-const importTaskFromMarkdown = async (markdown: string) => {
+// 自动识别并导入任务（JSON 或 Markdown）
+const importTask = async (content: string) => {
   try {
-    const tasks = importTasksFromMarkdown(markdown, props.projectId!)
-
-    if (tasks.length === 0) {
-      ElMessage.warning('未能解析出任务，请检查 Markdown 格式')
-      return
+    // 先尝试解析为 JSON
+    const tasks = importTasksFromJSON(content, props.projectId!)
+    await processImportedTasks(tasks)
+    ElMessage.success('从 JSON 导入任务成功')
+  } catch (jsonError) {
+    // JSON 解析失败，尝试 Markdown 解析
+    try {
+      const tasks = importTasksFromMarkdown(content, props.projectId!)
+      await processImportedTasks(tasks)
+      ElMessage.success('从 Markdown 导入任务成功')
+    } catch (mdError) {
+      console.error('Both JSON and Markdown import failed:', { jsonError, mdError })
+      ElMessage.error('导入失败：内容格式不正确（请使用 JSON 或 Markdown 格式）')
     }
+  }
+}
 
+// 处理导入的任务（创建或更新）
+const processImportedTasks = async (tasks: Array<Partial<Task>>) => {
+  if (tasks.length === 0) {
+    ElMessage.warning('未能解析出任务，请检查格式')
+    return
+  }
+
+  try {
     let createdCount = 0
     let updatedCount = 0
 
@@ -541,6 +566,11 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
 
     // 通知父组件任务已更新
     emit('task-updated', updatedTask)
+
+    // 刷新活动历史
+    if (taskActivityRef.value) {
+      await taskActivityRef.value.loadActivities()
+    }
   } catch (err: any) {
     console.error('Failed to update task:', err)
     ElMessage.error(err?.message || '更新任务失败')

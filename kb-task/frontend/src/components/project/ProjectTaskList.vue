@@ -246,7 +246,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import { getTaskList, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { importTasksFromMarkdown, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
+import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 import { registerShortcut, unregisterShortcut } from '@/composables/useKeyboard'
 import type { Task } from '@/types/task'
 
@@ -448,7 +448,7 @@ const handleBatchExport = async () => {
   }
 }
 
-// 从剪贴板导入任务
+// 从剪贴板导入任务（支持 JSON 和 Markdown）
 const handleImportTasks = async () => {
   if (!props.projectId) {
     ElMessage.warning('缺少项目ID，无法导入任务')
@@ -456,16 +456,16 @@ const handleImportTasks = async () => {
   }
 
   try {
-    const markdown = await readFromClipboard()
+    const content = await readFromClipboard()
 
-    if (!markdown) {
+    if (!content) {
       // 如果无法读取剪贴板，提示用户手动粘贴
-      const input = prompt('请粘贴 Markdown 格式的任务内容：')
+      const input = prompt('请粘贴 JSON 或 Markdown 格式的任务内容：')
       if (!input) return
 
-      await importTasksFromMarkdownHelper(input)
+      await importTasksHelper(input)
     } else {
-      await importTasksFromMarkdownHelper(markdown)
+      await importTasksHelper(content)
     }
   } catch (error) {
     console.error('Import tasks error:', error)
@@ -473,13 +473,27 @@ const handleImportTasks = async () => {
   }
 }
 
-// 导入任务辅助函数
-const importTasksFromMarkdownHelper = async (markdown: string) => {
+// 导入任务辅助函数（智能识别 JSON 或 Markdown）
+const importTasksHelper = async (content: string) => {
   try {
-    const parsedTasks = importTasksFromMarkdown(markdown, props.projectId!)
+    let parsedTasks: Array<Partial<Task>> = []
+
+    // 先尝试解析为 JSON
+    try {
+      parsedTasks = importTasksFromJSON(content, props.projectId!)
+    } catch (jsonError) {
+      // JSON 解析失败，尝试 Markdown 解析
+      try {
+        parsedTasks = importTasksFromMarkdown(content, props.projectId!)
+      } catch (mdError) {
+        console.error('Both JSON and Markdown import failed:', { jsonError, mdError })
+        ElMessage.error('导入失败：内容格式不正确（请使用 JSON 或 Markdown 格式）')
+        return
+      }
+    }
 
     if (parsedTasks.length === 0) {
-      ElMessage.warning('未能解析出任务，请检查 Markdown 格式')
+      ElMessage.warning('未能解析出任务，请检查格式')
       return
     }
 

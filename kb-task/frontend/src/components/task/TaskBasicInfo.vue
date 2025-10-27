@@ -4,26 +4,40 @@
     <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200">
       <!-- 折叠按钮和保存状态 -->
       <div class="flex items-center justify-between">
-        <!-- 保存状态（仅查看模式） -->
-        <div v-if="mode === 'view'" class="text-xs">
-          <span v-if="isSaving" class="text-orange-500 flex items-center gap-1">
-            <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            保存中...
-          </span>
-          <span v-else-if="hasUnsavedChanges" class="text-gray-400 flex items-center gap-1">
+        <!-- 保存状态和保存按钮（仅查看模式） -->
+        <div v-if="mode === 'view'" class="flex items-center gap-2">
+          <div class="text-xs">
+            <span v-if="isSaving" class="text-orange-500 flex items-center gap-1">
+              <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              保存中...
+            </span>
+            <span v-else-if="hasUnsavedChanges" class="text-gray-400 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              未保存
+            </span>
+            <span v-else-if="lastSavedAt" class="text-green-500 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              已保存
+            </span>
+          </div>
+          <!-- 保存按钮 -->
+          <button
+            v-if="hasUnsavedChanges && !isSaving"
+            @click="handleSave"
+            class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+            title="保存更改 (Cmd+S)"
+          >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
             </svg>
-            未保存
-          </span>
-          <span v-else-if="lastSavedAt" class="text-green-500 flex items-center gap-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            已保存
-          </span>
+            保存
+          </button>
         </div>
         <div v-else class="flex-1"></div>
 
@@ -505,7 +519,16 @@ const toggleQuickTag = (tagId: string) => {
   }
 
   localTask.value.tagIds = [...tagIds]
-  handleUpdate({ tagIds: localTask.value.tagIds })
+
+  // 创建模式：立即通知父组件更新
+  if (props.mode === 'create') {
+    emit('update', { tagIds: localTask.value.tagIds })
+  }
+
+  // 查看模式：标记为未保存，等待手动保存
+  if (props.mode === 'view') {
+    hasUnsavedChanges.value = true
+  }
 }
 
 // 处理其他标签选择确认
@@ -517,14 +540,32 @@ const handleTagsConfirm = (selectedIds: string[]) => {
   const allTagIds = [...quickTagIds, ...selectedIds]
 
   localTask.value.tagIds = allTagIds
-  handleUpdate({ tagIds: allTagIds })
+
+  // 创建模式：立即通知父组件更新
+  if (props.mode === 'create') {
+    emit('update', { tagIds: allTagIds })
+  }
+
+  // 查看模式：标记为未保存，等待手动保存
+  if (props.mode === 'view') {
+    hasUnsavedChanges.value = true
+  }
 }
 
 // 移除标签
 const removeTag = (tagId: string) => {
   const tagIds = (localTask.value.tagIds || []).filter(id => id !== tagId)
   localTask.value.tagIds = tagIds
-  handleUpdate({ tagIds })
+
+  // 创建模式：立即通知父组件更新
+  if (props.mode === 'create') {
+    emit('update', { tagIds })
+  }
+
+  // 查看模式：标记为未保存，等待手动保存
+  if (props.mode === 'view') {
+    hasUnsavedChanges.value = true
+  }
 }
 
 // 监听 props 变化，更新本地副本
@@ -579,10 +620,13 @@ const handleContentChange = (newContent: string) => {
   }
 }
 
-// 处理 Cmd+S 保存
+// 处理 Cmd+S 保存（同时保存 content 和 tagIds）
 const handleSave = () => {
   if (props.mode === 'view' && hasUnsavedChanges.value) {
-    handleUpdate({ content: localTask.value.content })
+    handleUpdate({
+      content: localTask.value.content,
+      tagIds: localTask.value.tagIds
+    })
   }
 }
 

@@ -1,6 +1,73 @@
 import type { Task, TaskDetail } from '@/types/task'
 
 /**
+ * 任务导出 JSON 数据结构
+ */
+export interface TaskExportData {
+  // 核心字段
+  _id: string
+  projectId: string
+  title: string
+  status: 'todo' | 'in_progress' | 'completed' | 'review'
+  priority: 'low' | 'medium' | 'high'
+  content: string  // 包含所有详细信息（实现方案、修改文件、技术要点等）
+
+  // 可选字段
+  summary?: string
+  tagIds?: string[]
+  assigneeId?: string
+  moduleIds?: string[]
+
+  // 时间戳
+  createdAt: number
+  updatedAt: number
+}
+
+/**
+ * 导出任务为 JSON 格式
+ */
+export function exportTaskToJSON(task: Task | TaskDetail): string {
+  const taskData: TaskExportData = {
+    _id: task._id,
+    projectId: task.projectId,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    content: task.content || '',
+    summary: ('summary' in task) ? task.summary : undefined,
+    tagIds: task.tagIds,
+    assigneeId: task.assigneeId,
+    moduleIds: task.moduleIds,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt
+  }
+
+  return JSON.stringify(taskData, null, 2)
+}
+
+/**
+ * 导出多个任务为 JSON 格式
+ */
+export function exportTasksToJSON(tasks: (Task | TaskDetail)[]): string {
+  const tasksData: TaskExportData[] = tasks.map(task => ({
+    _id: task._id,
+    projectId: task.projectId,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    content: task.content || '',
+    summary: ('summary' in task) ? task.summary : undefined,
+    tagIds: task.tagIds,
+    assigneeId: task.assigneeId,
+    moduleIds: task.moduleIds,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt
+  }))
+
+  return JSON.stringify(tasksData, null, 2)
+}
+
+/**
  * 导出任务为 Markdown 格式
  */
 export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: string): string {
@@ -26,7 +93,18 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
   lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
   lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容\n`)
+  lines.push(`6. **返回格式**：⚠️ **重要！必须同时输出 JSON 和 Markdown**`)
+  lines.push(`   - 第一部分：生成 JSON 数据块（用于程序导入）`)
+  lines.push(`     \`\`\`json`)
+  lines.push(`     {`)
+  lines.push(`       "_id": "任务ID",`)
+  lines.push(`       "status": "completed",`)
+  lines.push(`       "summary": "任务摘要（20-50字）",`)
+  lines.push(`       "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
+  lines.push(`     }`)
+  lines.push(`     \`\`\``)
+  lines.push(`   - 第二部分：返回完整的 Markdown 文档（供人类阅读和 review）`)
+  lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
   lines.push(`### 📝 任务摘要编写规范`)
   lines.push(`- **长度**：20-50 字`)
   lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
@@ -125,7 +203,18 @@ export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?
   lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
   lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
   lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **返回格式**：保持 Markdown 格式不变，返回完整的文档内容\n`)
+  lines.push(`6. **返回格式**：⚠️ **重要！必须同时输出 JSON 和 Markdown**`)
+  lines.push(`   - 第一部分：生成 JSON 数据块（用于程序导入）`)
+  lines.push(`     \`\`\`json`)
+  lines.push(`     {`)
+  lines.push(`       "_id": "任务ID",`)
+  lines.push(`       "status": "completed",`)
+  lines.push(`       "summary": "任务摘要（20-50字）",`)
+  lines.push(`       "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
+  lines.push(`     }`)
+  lines.push(`     \`\`\``)
+  lines.push(`   - 第二部分：返回完整的 Markdown 文档（供人类阅读和 review）`)
+  lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
   lines.push(`### 📝 任务摘要编写规范`)
   lines.push(`- **长度**：20-50 字`)
   lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
@@ -206,6 +295,43 @@ export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?
   lines.push(`> 🤖 由 Task-Flow 生成`)
 
   return lines.join('\n')
+}
+
+/**
+ * 从 JSON 导入任务
+ * @param json JSON 文本（单个任务或任务数组）
+ * @param projectId 目标项目 ID
+ * @returns 解析出的任务列表
+ */
+export function importTasksFromJSON(
+  json: string,
+  projectId: string
+): Array<Partial<Task>> {
+  try {
+    const parsed = JSON.parse(json)
+
+    // 判断是单个任务还是任务数组
+    const tasksData: TaskExportData[] = Array.isArray(parsed) ? parsed : [parsed]
+
+    // 转换为 Task 对象，使用目标项目 ID
+    return tasksData.map(taskData => ({
+      _id: taskData._id,
+      projectId: projectId, // 使用目标项目 ID
+      title: taskData.title,
+      status: taskData.status,
+      priority: taskData.priority,
+      content: taskData.content,
+      summary: taskData.summary,
+      tagIds: taskData.tagIds,
+      assigneeId: taskData.assigneeId,
+      moduleIds: taskData.moduleIds,
+      createdAt: taskData.createdAt,
+      updatedAt: taskData.updatedAt
+    }))
+  } catch (error) {
+    console.error('Failed to parse JSON:', error)
+    throw new Error('JSON 格式错误，请检查数据格式')
+  }
 }
 
 /**

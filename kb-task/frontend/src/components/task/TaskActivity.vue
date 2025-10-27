@@ -763,4 +763,9 @@ const formatRelativeTime = (timestamp: number) => {
     return '刚刚'
   }
 }
+
+// 暴露方法供父组件调用
+defineExpose({
+  loadActivities
+})
 </script>
