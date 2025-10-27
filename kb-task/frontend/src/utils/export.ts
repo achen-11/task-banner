@@ -93,17 +93,22 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
   lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
   lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **返回格式**：⚠️ **重要！必须同时输出 JSON 和 Markdown**`)
-  lines.push(`   - 第一部分：生成 JSON 数据块（用于程序导入）`)
-  lines.push(`     \`\`\`json`)
-  lines.push(`     {`)
-  lines.push(`       "_id": "任务ID",`)
-  lines.push(`       "status": "completed",`)
-  lines.push(`       "summary": "任务摘要（20-50字）",`)
-  lines.push(`       "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
-  lines.push(`     }`)
-  lines.push(`     \`\`\``)
-  lines.push(`   - 第二部分：返回完整的 Markdown 文档（供人类阅读和 review）`)
+  lines.push(`6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**`)
+  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.json\` 文件`)
+  lines.push(`     - 格式：单个任务用对象，多个任务用数组`)
+  lines.push(`     - 示例（单任务）：`)
+  lines.push(`       \`\`\`json`)
+  lines.push(`       {`)
+  lines.push(`         "_id": "任务ID",`)
+  lines.push(`         "status": "completed",`)
+  lines.push(`         "summary": "任务摘要（20-50字）",`)
+  lines.push(`         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
+  lines.push(`       }`)
+  lines.push(`       \`\`\``)
+  lines.push(`     - 示例（多任务）：使用 JSON 数组 \`[{...}, {...}]\``)
+  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.md\` 文件`)
+  lines.push(`     - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）`)
+  lines.push(`     - 必须保留所有 \`<!-- task-id: xxx -->\` 注释`)
   lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
   lines.push(`### 📝 任务摘要编写规范`)
   lines.push(`- **长度**：20-50 字`)
@@ -203,17 +208,22 @@ export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?
   lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
   lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
   lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **返回格式**：⚠️ **重要！必须同时输出 JSON 和 Markdown**`)
-  lines.push(`   - 第一部分：生成 JSON 数据块（用于程序导入）`)
-  lines.push(`     \`\`\`json`)
-  lines.push(`     {`)
-  lines.push(`       "_id": "任务ID",`)
-  lines.push(`       "status": "completed",`)
-  lines.push(`       "summary": "任务摘要（20-50字）",`)
-  lines.push(`       "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
-  lines.push(`     }`)
-  lines.push(`     \`\`\``)
-  lines.push(`   - 第二部分：返回完整的 Markdown 文档（供人类阅读和 review）`)
+  lines.push(`6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**`)
+  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.json\` 文件`)
+  lines.push(`     - 格式：单个任务用对象，多个任务用数组`)
+  lines.push(`     - 示例（单任务）：`)
+  lines.push(`       \`\`\`json`)
+  lines.push(`       {`)
+  lines.push(`         "_id": "任务ID",`)
+  lines.push(`         "status": "completed",`)
+  lines.push(`         "summary": "任务摘要（20-50字）",`)
+  lines.push(`         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
+  lines.push(`       }`)
+  lines.push(`       \`\`\``)
+  lines.push(`     - 示例（多任务）：使用 JSON 数组 \`[{...}, {...}]\``)
+  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.md\` 文件`)
+  lines.push(`     - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）`)
+  lines.push(`     - 必须保留所有 \`<!-- task-id: xxx -->\` 注释`)
   lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
   lines.push(`### 📝 任务摘要编写规范`)
   lines.push(`- **长度**：20-50 字`)
@@ -313,21 +323,30 @@ export function importTasksFromJSON(
     // 判断是单个任务还是任务数组
     const tasksData: TaskExportData[] = Array.isArray(parsed) ? parsed : [parsed]
 
-    // 转换为 Task 对象，使用目标项目 ID
-    return tasksData.map(taskData => ({
-      _id: taskData._id,
-      projectId: projectId, // 使用目标项目 ID
-      title: taskData.title,
-      status: taskData.status,
-      priority: taskData.priority,
-      content: taskData.content,
-      summary: taskData.summary,
-      tagIds: taskData.tagIds,
-      assigneeId: taskData.assigneeId,
-      moduleIds: taskData.moduleIds,
-      createdAt: taskData.createdAt,
-      updatedAt: taskData.updatedAt
-    }))
+    // 转换为 Task 对象，使用目标项目 ID，并过滤掉无效任务
+    return tasksData
+      .filter(taskData => {
+        // 过滤掉 null、undefined 或缺少标题的任务
+        if (!taskData || !taskData.title) {
+          console.warn('Skipping invalid task:', taskData)
+          return false
+        }
+        return true
+      })
+      .map(taskData => ({
+        _id: taskData._id,
+        projectId: projectId, // 使用目标项目 ID
+        title: taskData.title,
+        status: taskData.status || 'todo',
+        priority: taskData.priority || 'medium',
+        content: taskData.content || '',
+        summary: taskData.summary,
+        tagIds: taskData.tagIds || [],
+        assigneeId: taskData.assigneeId,
+        moduleIds: taskData.moduleIds || [],
+        createdAt: taskData.createdAt || Date.now(),
+        updatedAt: taskData.updatedAt || Date.now()
+      }))
   } catch (error) {
     console.error('Failed to parse JSON:', error)
     throw new Error('JSON 格式错误，请检查数据格式')

@@ -26,6 +26,8 @@ export interface TaskInfo {
   dueDate: number
   progress: number
   order: number
+  tagIds?: string[]  // 标签 ID 数组
+  moduleIds?: string[]  // 模块 ID 数组
   createdAt: number
   updatedAt: number
   // 指派人用户信息（嵌套对象）
@@ -169,7 +171,17 @@ export function getTaskById(taskId: string): TaskInfo | null {
     return null
   }
 
-  return formatTaskInfo(task)
+  const taskInfo = formatTaskInfo(task)
+
+  // 获取任务标签 ID
+  const taskTags = TaskTag.findAll({ taskId: taskId }) as TaskTagType[]
+  taskInfo.tagIds = taskTags.map(tt => tt.tagId)
+
+  // 获取任务模块 ID
+  const taskModules = TaskModule.findAll({ taskId: taskId }) as TaskModuleType[]
+  taskInfo.moduleIds = taskModules.map(tm => tm.moduleId)
+
+  return taskInfo
 }
 
 /**
@@ -230,6 +242,8 @@ export function getTaskDetailById(taskId: string): TaskDetailInfo | null {
 
   return {
     ...taskInfo,
+    tagIds: tags.map(t => t._id),  // 添加 tagIds 字段
+    moduleIds: modules.map(m => m._id),  // 添加 moduleIds 字段
     tags,
     modules
   }
@@ -279,6 +293,14 @@ export function getProjectTasks(
   // 格式化任务信息并填充用户数据
   const formattedTasks = tasks.map(task => {
     const taskInfo = formatTaskInfo(task)
+
+    // 获取任务标签 ID
+    const taskTags = TaskTag.findAll({ taskId: task._id }) as TaskTagType[]
+    taskInfo.tagIds = taskTags.map(tt => tt.tagId)
+
+    // 获取任务模块 ID
+    const taskModules = TaskModule.findAll({ taskId: task._id }) as TaskModuleType[]
+    taskInfo.moduleIds = taskModules.map(tm => tm.moduleId)
 
     // 填充指派人信息（嵌套对象）
     if (task.assigneeId) {

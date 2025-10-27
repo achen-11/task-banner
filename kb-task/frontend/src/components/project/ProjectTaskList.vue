@@ -6,7 +6,10 @@
         <div class="text-sm text-gray-500">
           <span v-if="isLoading">加载中...</span>
           <span v-else-if="error" class="text-red-500">{{ error }}</span>
-          <span v-else>共 {{ tasks.length }} 个任务</span>
+          <span v-else>
+            {{ tasks.length }} / {{ total }} 个任务
+            <span v-if="hasMore" class="text-gray-400 ml-1">(向下滚动加载更多)</span>
+          </span>
         </div>
         <div v-if="selectedTaskIds.size > 0" class="flex items-center gap-2">
           <span class="text-sm text-blue-600 font-medium">已选择 {{ selectedTaskIds.size }} 个</span>
@@ -46,7 +49,7 @@
           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p>{{ error }}</p>
-      <button class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700" @click="loadTasks">
+      <button class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700" @click="loadTasks()">
         重试
       </button>
     </div>
@@ -192,6 +195,24 @@
           </div>
         </div>
       </div>
+
+      <!-- 加载更多指示器 -->
+      <div ref="loadMoreTrigger" v-if="hasMore && !isLoading" class="p-4 text-center border-t border-gray-100">
+        <div v-if="isLoadingMore" class="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          <span>加载更多任务...</span>
+        </div>
+        <button v-else
+          class="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+          @click="loadMoreTasks">
+          加载更多 (剩余 {{ total - tasks.length }} 个)
+        </button>
+      </div>
+
+      <!-- 全部加载完成提示 -->
+      <div v-if="!hasMore && tasks.length > 0 && !isLoading" class="p-4 text-center border-t border-gray-100">
+        <span class="text-sm text-gray-400">已加载全部任务</span>
+      </div>
     </div>
 
     <!-- 任务详情抽屉 -->
@@ -261,6 +282,13 @@ const tasks = ref<Task[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+// 分页状态
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const hasMore = ref(true)
+const isLoadingMore = ref(false)
+
 // 排序状态
 const sortField = ref<string | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('asc')
@@ -272,6 +300,10 @@ const selectedTaskIds = ref<Set<string>>(new Set())
 const importConfirmVisible = ref(false)
 const tasksToImport = ref<Array<Partial<Task> & { summary?: string }>>([])
 const editableSummaries = ref<Record<number, string>>({})
+
+// 无限滚动相关
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 // 计算属性：是否全选
 const isAllSelected = computed(() => {
@@ -363,28 +395,59 @@ const toggleSort = (field: string) => {
   }
 }
 
-// 加载任务列表
-const loadTasks = async () => {
+// 加载任务列表（初始加载或重新加载）
+const loadTasks = async (reset = true) => {
   if (!props.projectId) return
 
-  isLoading.value = true
+  // 如果是重置加载，显示全局加载状态
+  if (reset) {
+    isLoading.value = true
+    currentPage.value = 1
+    tasks.value = []
+  } else {
+    // 如果是加载更多，显示加载更多状态
+    isLoadingMore.value = true
+  }
+
   error.value = null
 
   try {
     const response = await getTaskList({
       projectId: props.projectId,
-      page: 1,
-      size: 100, // 暂时加载所有任务
+      page: reset ? 1 : currentPage.value,
+      size: pageSize.value,
       sortField: sortField.value || 'updatedAt',
       sortDirection: sortDirection.value
     })
-    tasks.value = response.items
+
+    // 如果是重置，直接赋值；否则追加
+    if (reset) {
+      tasks.value = response.items
+    } else {
+      tasks.value = [...tasks.value, ...response.items]
+    }
+
+    // 更新分页信息
+    total.value = response.total
+    hasMore.value = tasks.value.length < response.total
   } catch (err: any) {
     error.value = err?.message || '加载任务失败'
     console.error('Failed to load tasks:', err)
   } finally {
-    isLoading.value = false
+    if (reset) {
+      isLoading.value = false
+    } else {
+      isLoadingMore.value = false
+    }
   }
+}
+
+// 加载更多任务
+const loadMoreTasks = async () => {
+  if (!hasMore.value || isLoadingMore.value || isLoading.value) return
+
+  currentPage.value++
+  await loadTasks(false)
 }
 
 // 监听projectId变化，重新加载任务
@@ -584,6 +647,33 @@ const confirmImportTasks = async () => {
 onMounted(() => {
   loadTasks()
 
+  // 设置无限滚动观察器
+  observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      // 当加载更多触发器进入视口时，自动加载更多
+      if (entry && entry.isIntersecting && hasMore.value && !isLoadingMore.value && !isLoading.value) {
+        loadMoreTasks()
+      }
+    },
+    {
+      root: null, // 使用视口作为根元素
+      rootMargin: '100px', // 提前 100px 开始加载
+      threshold: 0.1
+    }
+  )
+
+  // 开始观察加载更多触发器
+  watch(
+    loadMoreTrigger,
+    (el) => {
+      if (el && observer) {
+        observer.observe(el)
+      }
+    },
+    { immediate: true }
+  )
+
   // 注册组件级快捷键
   registerShortcut({
     key: 'n',
@@ -622,6 +712,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 清理无限滚动观察器
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+
   // 移除组件级快捷键
   unregisterShortcut('n')
   unregisterShortcut('i')

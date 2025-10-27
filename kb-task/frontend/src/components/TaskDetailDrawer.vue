@@ -182,7 +182,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { exportTaskToMarkdown, exportTaskToJSON, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, downloadAsFile } from '@/utils/export'
+import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard } from '@/utils/export'
 import type { Task, TaskDetail } from '@/types/task'
 
 interface Attachment {
@@ -319,7 +319,7 @@ const closeDrawer = () => {
   emit('close')
 }
 
-// 导出当前任务（JSON + Markdown 两个文件）
+// 导出当前任务（复制 Markdown 到剪贴板）
 const handleExportTask = async () => {
   if (!currentTask.value || !currentTask.value.title) {
     ElMessage.warning('没有可导出的任务')
@@ -327,18 +327,15 @@ const handleExportTask = async () => {
   }
 
   try {
-    const taskTitle = currentTask.value.title.replace(/[\/\\:*?"<>|]/g, '-') // 清理文件名非法字符
-    const timestamp = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-
-    // 1. 导出 JSON 文件
-    const json = exportTaskToJSON(currentTask.value)
-    downloadAsFile(json, `task-${taskTitle}-${timestamp}.json`)
-
-    // 2. 导出 Markdown 文件
+    // 导出 Markdown 并复制到剪贴板
     const markdown = exportTaskToMarkdown(currentTask.value)
-    downloadAsFile(markdown, `task-${taskTitle}-${timestamp}.md`)
+    const success = await copyToClipboard(markdown)
 
-    ElMessage.success('任务已导出为 JSON 和 Markdown 文件')
+    if (success) {
+      ElMessage.success('任务已导出到剪贴板')
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
   } catch (error) {
     console.error('Export task error:', error)
     ElMessage.error('导出任务失败')

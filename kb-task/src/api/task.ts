@@ -133,7 +133,7 @@ k.api.post("create", (body: any) => {
   }
 
   // 2. 参数验证
-  const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags, summary } = body
+  const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags, tagIds, summary } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     return error('Invalid project ID', 400)
@@ -154,6 +154,9 @@ k.api.post("create", (body: any) => {
       return error('You do not have permission to create tasks in this project', 403)
     }
 
+    // 处理标签字段：支持 tagIds（前端）和 tags（后端）
+    const finalTags = tagIds !== undefined ? tagIds : tags
+
     const taskId = createTask({
       projectId,
       moduleIds: moduleIds || [],
@@ -165,7 +168,7 @@ k.api.post("create", (body: any) => {
       creatorId: currentUser._id,
       dueDate,
       progress,
-      tags: tags || [],
+      tags: finalTags || [],
       summary
     })
 
@@ -187,7 +190,7 @@ k.api.put("update", (body: any) => {
   }
 
   // 2. 参数验证
-  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, summary } = body
+  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, tagIds, summary } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid task ID', 400)
@@ -213,6 +216,9 @@ k.api.put("update", (body: any) => {
       return error('You do not have permission to update this task', 403)
     }
 
+    // 处理标签字段：支持 tagIds（前端）和 tags（后端）
+    const finalTags = tagIds !== undefined ? tagIds : tags
+
     const updated = updateTask(taskId, {
       title: title?.trim(),
       content,
@@ -222,7 +228,7 @@ k.api.put("update", (body: any) => {
       moduleIds,
       dueDate,
       progress,
-      tags,
+      tags: finalTags,
       summary
     }, currentUser._id)
 
