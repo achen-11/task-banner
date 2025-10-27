@@ -68,11 +68,22 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
 
   // 任务描述
   lines.push(`**任务描述：**\n`)
-  if (task.content) {
-    lines.push(task.content)
-  } else {
-    lines.push('暂无描述')
+
+  // 注入标签提示词（如果有）
+  let taskContent = task.content || '暂无描述'
+
+  if ('tags' in task && Array.isArray(task.tags) && task.tags.length > 0) {
+    const tagPrompts = task.tags
+      .filter((tag: any) => tag.prompt && tag.prompt.trim())
+      .map((tag: any) => tag.prompt)
+
+    if (tagPrompts.length > 0) {
+      const promptSection = `**📌 标签提示词：**\n\n${tagPrompts.join('\n\n')}\n\n---\n\n`
+      taskContent = promptSection + taskContent
+    }
   }
+
+  lines.push(taskContent)
   lines.push('')
 
   lines.push('---\n')
@@ -87,7 +98,7 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
 /**
  * 导出多个任务为 Markdown 格式
  */
-export function exportTasksToMarkdown(tasks: Task[], projectName?: string): string {
+export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?: string): string {
   if (tasks.length === 0) {
     return '# 暂无任务'
   }
@@ -167,11 +178,22 @@ export function exportTasksToMarkdown(tasks: Task[], projectName?: string): stri
 
         // 任务描述
         lines.push(`**任务描述：**\n`)
-        if (task.content) {
-          lines.push(task.content)
-        } else {
-          lines.push('暂无描述')
+
+        // 注入标签提示词（如果有）
+        let taskContent = task.content || '暂无描述'
+
+        if ('tags' in task && Array.isArray(task.tags) && task.tags.length > 0) {
+          const tagPrompts = task.tags
+            .filter((tag: any) => tag.prompt && tag.prompt.trim())
+            .map((tag: any) => tag.prompt)
+
+          if (tagPrompts.length > 0) {
+            const promptSection = `**📌 标签提示词：**\n\n${tagPrompts.join('\n\n')}\n\n---\n\n`
+            taskContent = promptSection + taskContent
+          }
         }
+
+        lines.push(taskContent)
         lines.push('')
 
         lines.push('---\n')

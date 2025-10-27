@@ -440,7 +440,7 @@ defineExpose({
 
 .markdown-preview :deep(ul.contains-task-list) {
   list-style: none;
-  padding-left: 1.5em;
+  padding-left: 0em;
 }
 
 .markdown-preview :deep(li.task-list-item) {
@@ -451,7 +451,7 @@ defineExpose({
 .markdown-preview :deep(li.task-list-item input[type="checkbox"]) {
   position: absolute;
   left: 0;
-  top: 0.3em;
+  top: 0.15em;
   cursor: pointer;
 }
 

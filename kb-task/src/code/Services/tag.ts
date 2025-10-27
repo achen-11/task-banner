@@ -13,7 +13,11 @@ export interface TagInfo {
   projectId: string
   name: string
   color: string
+  prompt: string
+  showInQuickBar: boolean
+  order: number
   createdAt: number
+  updatedAt: number
 }
 
 /**
@@ -26,6 +30,9 @@ export function createTag(data: {
   projectId: string
   name: string
   color?: string
+  prompt?: string
+  showInQuickBar?: boolean
+  order?: number
 }): string {
   // 检查标签名称是否已存在
   const existing = Tag.findOne({
@@ -37,11 +44,21 @@ export function createTag(data: {
     throw new Error('Tag name already exists in this project')
   }
 
+  // 如果未指定 order，获取当前最大 order 值并 +1
+  let order = data.order
+  if (order === undefined) {
+    const tags = Tag.findAll({ projectId: data.projectId }) as TagType[]
+    order = tags.length > 0 ? Math.max(...tags.map(t => t.order || 0)) + 1 : 0
+  }
+
   // 创建标签
   const tagId = Tag.create({
     projectId: data.projectId,
     name: data.name,
-    color: data.color || '#10B981'
+    color: data.color || '#10B981',
+    prompt: data.prompt || '',
+    showInQuickBar: data.showInQuickBar || false,
+    order: order
   })
 
   return tagId
@@ -65,15 +82,15 @@ export function getTagById(tagId: string): TagInfo | null {
 /**
  * 获取项目的所有标签
  * @param projectId - 项目 ID
- * @returns 标签列表
+ * @returns 标签列表（按 order 排序）
  */
 export function getProjectTags(projectId: string): TagInfo[] {
   const tags = Tag.findAll({ projectId }) as TagType[]
 
-  // 按创建时间排序
+  // 按 order 排序
   return tags
     .map(formatTagInfo)
-    .sort((a, b) => a.createdAt - b.createdAt)
+    .sort((a, b) => a.order - b.order)
 }
 
 /**
@@ -88,6 +105,9 @@ export function updateTag(
   data: {
     name?: string
     color?: string
+    prompt?: string
+    showInQuickBar?: boolean
+    order?: number
   }
 ): boolean {
   const tag = Tag.findById(tagId) as TagType | null
@@ -111,9 +131,27 @@ export function updateTag(
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
   if (data.color !== undefined) updateData.color = data.color
-
+  if (data.prompt !== undefined) updateData.prompt = data.prompt
+  if (data.showInQuickBar !== undefined) updateData.showInQuickBar = data.showInQuickBar
+  if (data.order !== undefined) updateData.order = data.order
   const updatedId = Tag.updateById(tagId, updateData)
   return updatedId !== null && updatedId !== undefined
+}
+
+/**
+ * 批量更新标签顺序
+ * @param updates - 标签 ID 和新顺序的映射数组
+ * @returns 是否成功
+ */
+export function updateTagOrder(updates: Array<{ id: string; order: number }>): boolean {
+  try {
+    updates.forEach(update => {
+      Tag.updateById(update.id, { order: update.order })
+    })
+    return true
+  } catch (error) {
+    return false
+  }
 }
 
 /**
@@ -141,6 +179,10 @@ function formatTagInfo(tag: TagType): TagInfo {
     projectId: tag.projectId,
     name: tag.name,
     color: tag.color,
-    createdAt: tag.createdAt
+    prompt: tag.prompt || '',
+    showInQuickBar: !!(tag.showInQuickBar) || false,
+    order: tag.order || 0,
+    createdAt: tag.createdAt,
+    updatedAt: tag.updatedAt
   }
 }

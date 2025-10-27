@@ -7,6 +7,7 @@ import {
   getTagById,
   getProjectTags,
   updateTag,
+  updateTagOrder,
   deleteTag
 } from 'code/Services/tag'
 import { checkProjectPermission } from 'code/Services/project'
@@ -98,7 +99,7 @@ k.api.post("create", (body: any) => {
   }
 
   // 2. 参数验证
-  const { projectId, name, color } = body
+  const { projectId, name, color, prompt, showInQuickBar, order } = body
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     return error('Invalid project ID', 400)
@@ -122,7 +123,10 @@ k.api.post("create", (body: any) => {
     const tagId = createTag({
       projectId,
       name: name.trim(),
-      color
+      color,
+      prompt,
+      showInQuickBar,
+      order
     })
 
     // 获取创建的标签详情
@@ -147,7 +151,7 @@ k.api.put("update", (body: any) => {
   }
 
   // 2. 参数验证
-  const { id, name, color } = body
+  const { id, name, color, prompt, showInQuickBar, order } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid tag ID', 400)
@@ -175,7 +179,10 @@ k.api.put("update", (body: any) => {
 
     const updated = updateTag(tagId, {
       name: name?.trim(),
-      color
+      color,
+      prompt,
+      showInQuickBar,
+      order
     })
 
     if (!updated) {
@@ -193,6 +200,56 @@ k.api.put("update", (body: any) => {
       return error(err.message, 400, err)
     }
     return error('Failed to update tag', 500, err)
+  }
+})
+
+// PUT /api/tag/updateOrder
+k.api.put("updateOrder", (body: any) => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const { projectId, updates } = body
+
+  if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
+    return error('Invalid project ID', 400)
+  }
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return error('Invalid updates array', 400)
+  }
+
+  // 验证 updates 数组格式
+  for (const update of updates) {
+    if (!update.id || typeof update.order !== 'number') {
+      return error('Invalid update format: each item must have id and order', 400)
+    }
+  }
+
+  // 3. 更新标签顺序
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 权限检查（需要是项目成员）
+    if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to reorder tags', 403)
+    }
+
+    const updated = updateTagOrder(updates)
+
+    if (!updated) {
+      return error('Failed to update tag order', 500)
+    }
+
+    return success(null, 'Tag order updated successfully')
+
+  } catch (err) {
+    k.logger.error('UpdateTagOrderError', err instanceof Error ? err.message : String(err))
+    return error('Failed to update tag order', 500, err)
   }
 })
 

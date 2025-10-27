@@ -50,6 +50,11 @@ export interface TaskDetailInfo extends TaskInfo {
     _id: string
     name: string
     color: string
+    prompt: string
+    showInQuickBar: boolean
+    order: number
+    createdAt: number
+    updatedAt: number
   }>
   modules?: Array<{
     _id: string
@@ -190,10 +195,24 @@ export function getTaskDetailById(taskId: string): TaskDetailInfo | null {
       return {
         _id: tag._id,
         name: tag.name,
-        color: tag.color
+        color: tag.color,
+        prompt: tag.prompt || '',
+        showInQuickBar: tag.showInQuickBar || false,
+        order: tag.order || 0,
+        createdAt: tag.createdAt,
+        updatedAt: tag.updatedAt
       }
     })
-    .filter(t => t !== null) as Array<{ _id: string; name: string; color: string }>
+    .filter(t => t !== null) as Array<{
+      _id: string
+      name: string
+      color: string
+      prompt: string
+      showInQuickBar: boolean
+      order: number
+      createdAt: number
+      updatedAt: number
+    }>
 
   // 获取任务模块
   const taskModules = TaskModule.findAll({ taskId: taskId }) as TaskModuleType[]

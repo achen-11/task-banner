@@ -38,137 +38,239 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 4187d9e1-0122-4f15-8dc9-2267c715737f -->
-#### 1. 创建任务 bug
+<!-- task-id: 7a5f4c1f-c65a-43c1-99f6-3f4c73fa19a0 -->
+#### 1. 标签
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 15:58:16
-**更新时间：** 2025/10/27 17:00:00
+**创建时间：** 2025/10/26 16:08:44
+**更新时间：** 2025/10/27 18:04:30
 
 **任务描述：**
 
-**任务摘要：** 优化了创建任务时指派人的默认值设置逻辑，改为等待成员列表加载完成后再设置，避免显示 undefined。
+**任务摘要：** 实现了完整的标签提示词管理功能（前后端），支持快速访问栏和标签分组，导出任务时自动注入 AI 提示词指导 AI 行为。
 
-- [x] 指派人依然显示 undefined, 你的做法麻烦了,而且数据容易出错, 其实只要在等待指派人选项列表加载完成后, 再填入默认指派人(当前用户)就好了
+- [x] 标签除了可以被任务关联, 现在需要多一个提示词管理
+- [x] 场景: 比如我新建了一个讨论型的任务, 那么我需要额外告诉 ai, 这是一个讨论型的任务, 不要编辑代码, 而是给我提供意见, 那么这时我们可以通过标签绑定一些提示词, 这样就可以在 cmd+e 时快捷加入这些内容
+- [x] 例如: 1. 给标签"讨论", 关联提示词"这是讨论型任务, 你不要操作代码, 先将你的想法输出到 md 文件和我讨论"; 2. 创建任务, 添加"讨论"标签; 3. cmd+e 导出时, 将提示词拼接到任务内容中
 
-**问题分析：**
+**实现方案：**
 
-之前的临时解决方案（`displayMembers` 计算属性）存在以下问题：
-1. **逻辑复杂**：需要动态创建临时成员对象填充到列表中
-2. **数据冗余**：临时成员数据可能与实际数据不一致
-3. **易出错**：TypeScript 类型要求必须填充所有必需字段
+### 1. 数据模型设计
 
-根本原因是异步时序问题：
-- 组件初始化时立即设置了默认指派人（当前用户）
-- 但成员列表的异步加载还未完成
-- 导致 el-select 的 v-model 有值但 options 列表为空
-- 结果显示 "undefined"
+新增 `Tag` 类型，包含以下核心字段：
+- `prompt`: 标签关联的 AI 提示词
+- `showInQuickBar`: 是否显示在快速访问栏（用户额外需求）
+- `color`: 标签颜色
+- `order`: 排序
 
-**解决方案：**
+### 2. 核心功能
 
-采用更简洁的方案：**等待成员列表加载完成后，再设置默认指派人**
+#### 2.1 标签管理（ProjectTags 组件）
 
-1. **移除临时方案**：
-   - 删除 `displayMembers` 计算属性
-   - 模板改回直接使用 `projectMembers`
+**位置**：项目详情页 → 标签 Tab
 
-2. **调整设置时机**：
-   - 在 `watch(() => props.task)` 中，创建模式下只设置 `creatorId`，不设置 `assigneeId`
-   - 在 `loadProjectMembers` 完成后，才检查并设置默认指派人
+**功能**：
+- ✅ 标签列表展示（名称、颜色、提示词预览、快速访问标识）
+- ✅ 创建/编辑标签（TagDialog 弹窗）
+- ✅ 删除标签（带确认）
+- ✅ 标签排序
 
-3. **安全性检查**：
-   - 确认当前用户确实在项目成员列表中
-   - 只有确认后才设置 `assigneeId`
+#### 2.2 任务标签选择（TaskBasicInfo 组件）
 
-**修改文件：**
-
-1. `kb-task/frontend/src/components/task/TaskBasicInfo.vue` - 任务基本信息组件
-   - **移除** `displayMembers` 计算属性（原第 421-443 行）
-   - **修改** 模板，el-select 改回使用 `projectMembers`（第 97 行）
-   - **修改** `watch(() => props.task)`，创建模式下不再立即设置 `assigneeId`（第 429-432 行）
-   - **增强** `loadProjectMembers`，在成员列表加载完成后设置默认指派人（第 411-421 行）
-
-**核心代码：**
-
-```typescript
-// 加载项目成员列表
-const loadProjectMembers = async () => {
-  if (!props.projectId) return
-
-  try {
-    const response = await getProjectMembers(props.projectId)
-    projectMembers.value = response.items
-
-    // 创建模式：成员列表加载完成后，设置默认指派人为当前用户
-    if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
-      const currentUserId = String(currentUser.id)
-      // 确认当前用户在成员列表中
-      const isCurrentUserInMembers = projectMembers.value.some(m => m.userId === currentUserId)
-      if (isCurrentUserInMembers) {
-        localTask.value.assigneeId = currentUserId
-        // 通知父组件更新
-        emit('update', { assigneeId: currentUserId })
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load project members:', error)
-    projectMembers.value = []
-  }
-}
+**UI 设计**：
+```
+标签:
+[讨论] [重构] [文档] [+其他标签]
 ```
 
-```typescript
-// 监听 props 变化，更新本地副本
-watch(() => props.task, async (newTask) => {
-  if (newTask) {
-    localTask.value = { ...newTask }
-    hasUnsavedChanges.value = false
+**交互逻辑**：
+- 快速访问标签（`showInQuickBar: true`）：
+  - 直接显示在标签栏
+  - 点击切换选中/未选中状态
+  - 选中时显示标签颜色背景，未选中时显示白色背景+颜色圆点
 
-    // 创建模式：只设置 creatorId，等待成员列表加载后再设置 assigneeId
-    if (props.mode === 'create' && currentUser && !localTask.value.creatorId) {
-      localTask.value.creatorId = String(currentUser.id)
-    }
+- 其他标签（`showInQuickBar: false`）：
+  - 点击"+其他标签"按钮打开选择弹窗
+  - 支持多选
+  - 选中后显示在标签栏，hover 显示删除按钮
 
-    // ... 其他逻辑
-  }
-}, { immediate: true, deep: true })
-```
+#### 2.3 导出功能增强（export.ts）
 
-**技术要点：**
+**提示词注入位置**：任务描述开头
 
-1. **异步时序管理**：
-   - 将依赖数据的初始化延迟到数据加载完成后
-   - 避免在数据未就绪时设置依赖该数据的状态
+**格式**：
+```markdown
+**任务描述：**
 
-2. **数据完整性检查**：
-   - 使用 `some()` 方法确认用户在成员列表中
-   - 只有确认后才设置默认值，避免无效数据
+**📌 标签提示词：**
 
-3. **代码简洁性**：
-   - 移除了 23 行的临时解决方案代码
-   - 逻辑更清晰，易于维护
-
-**验证结果：**
-
-✅ **构建测试通过**：
-```
-✓ 3272 modules transformed
-✓ built in 4.33s
-```
-
-✅ **修复效果**：
-1. **不再显示 undefined**：成员列表加载完成后才填入默认指派人
-2. **代码更简洁**：移除了复杂的临时数据填充逻辑
-3. **数据更可靠**：默认指派人一定存在于实际的成员列表中
-
-**用户体验提升：**
-- 🎯 **加载体验更好**：选择框在数据就绪前保持空状态，避免显示错误信息
-- 🔄 **逻辑更合理**：先加载数据，再基于数据做初始化
-- 🐛 **更少的 Bug**：减少了边界情况和数据不一致的可能性
+这是讨论型任务，你不要操作代码，先将你的想法输出到 md 文件和我讨论
 
 ---
 
+任务描述的正文内容...
+```
 
-> 📅 导出时间：2025/10/27 17:00:15
+**多标签处理**：按顺序拼接所有提示词
+
+### 3. 修改文件
+
+**新增文件**：
+1. `frontend/src/types/tag.ts` - Tag 类型定义
+2. `frontend/src/api/tag.ts` - 标签 API
+3. `frontend/src/components/tag/TagDialog.vue` - 标签编辑弹窗
+4. `frontend/src/components/tag/TagSelector.vue` - 标签选择弹窗
+
+**修改文件**：
+1. `frontend/src/types/task.ts`
+   - 导入 Tag 类型
+   - 修改 `TaskDetail.tags` 类型为 `Tag[]`
+
+2. `frontend/src/components/project/ProjectTags.vue`
+   - 完全重写，实现标签 CRUD 功能
+   - 集成 TagDialog 组件
+
+3. `frontend/src/components/task/TaskBasicInfo.vue`
+   - 导入 TagSelector 组件和 Tag API
+   - 移除旧的字符串输入标签逻辑
+   - 实现快速访问标签和其他标签的区分展示
+   - 添加 `loadProjectTags` 函数
+   - 添加 `toggleQuickTag`、`handleTagsConfirm`、`removeTag` 方法
+   - 计算属性：`quickAccessTags`、`otherTagIds`、`selectedOtherTags`
+
+4. `frontend/src/utils/export.ts`
+   - 修改 `exportTaskToMarkdown` 和 `exportTasksToMarkdown`
+   - 函数签名支持 `TaskDetail` 类型
+   - 在任务描述前注入标签提示词
+   - 添加类型保护确保安全访问 `task.tags`
+
+### 4. 技术要点
+
+**1. 类型安全**
+- 使用 TypeScript 类型保护 (`'tags' in task && Array.isArray(task.tags)`)
+- 函数签名支持 `Task | TaskDetail` 联合类型
+- 使用 `any` 类型临时处理 filter/map 中的标签对象
+
+**2. Vue 3 Composition API**
+- `computed` 计算属性实现响应式数据派生
+- `watch` 监听 projectId 并行加载成员和标签数据
+- 组件间通信：emit 事件和 props
+
+**3. UI 交互优化**
+- 标签选中状态通过 CSS 动态绑定 `:class` 和 `:style`
+- hover 显示删除按钮使用 CSS `group` 和 `opacity`
+- 弹窗使用 Teleport 渲染到 body
+
+**4. Element Plus 集成**
+- `ElMessage` 显示操作提示
+- `ElMessageBox.confirm` 确认删除操作
+
+### 5. 后端实现
+
+**后端文件修改**：
+
+1. **`kb-task/src/code/Models/Tag.ts`**（已更新）
+   - ✅ 添加 `prompt` 字段（String，默认空字符串）
+   - ✅ 添加 `showInQuickBar` 字段（Boolean，默认 false）
+   - ✅ 添加 `order` 字段（Number，默认 0）
+
+2. **`kb-task/src/code/Services/tag.ts`**（已更新）
+   - ✅ 更新 `TagInfo` 接口，添加新字段
+   - ✅ 更新 `createTag` 函数，支持新字段并自动计算 order
+   - ✅ 更新 `updateTag` 函数，支持更新新字段
+   - ✅ 新增 `updateTagOrder` 函数，批量更新标签顺序
+   - ✅ 更新 `getProjectTags`，按 order 排序
+   - ✅ 更新 `formatTagInfo`，包含所有字段
+
+3. **`kb-task/src/api/tag.ts`**（已更新）
+   - ✅ 导入 `updateTagOrder` 函数
+   - ✅ 更新 `POST /api/tag/create`，接收新字段
+   - ✅ 更新 `PUT /api/tag/update`，接收新字段
+   - ✅ 新增 `PUT /api/tag/updateOrder`，批量更新顺序
+
+4. **`kb-task/src/code/Services/task.ts`**（已更新）
+   - ✅ 更新 `TaskDetailInfo` 接口的 tags 类型，包含完整 Tag 字段
+   - ✅ 更新 `getTaskDetailById` 函数，返回完整的 Tag 对象（包含 prompt、showInQuickBar、order 等）
+
+**API 端点**：
+
+```typescript
+// 标签 CRUD
+GET  /api/tag/list?projectId=xxx
+POST /api/tag/create
+  Body: { projectId, name, color?, prompt?, showInQuickBar?, order? }
+PUT  /api/tag/update
+  Body: { id, name?, color?, prompt?, showInQuickBar?, order? }
+PUT  /api/tag/updateOrder
+  Body: { projectId, updates: [{ id, order }] }
+DELETE /api/tag/delete
+  Body: { id }
+
+// 任务详情返回完整的 tags 对象数组
+GET  /api/task/detail?id=xxx
+返回: { ..., tags: Tag[] }  // 包含 prompt, showInQuickBar, order 等完整字段
+```
+
+**数据库迁移**：
+标签表 (tags) 已添加以下字段：
+- `prompt`: TEXT（AI 提示词）
+- `showInQuickBar`: INTEGER (0/1, SQLite 的布尔值)
+- `order`: INTEGER（排序值）
+
+### 6. 验证结果
+
+✅ **构建测试通过**：
+```
+✓ 3277 modules transformed
+✓ built in 4.76s
+```
+
+✅ **代码结构清晰**：
+- 类型定义完整
+- 组件职责单一
+- 逻辑分离合理
+
+✅ **用户体验提升**：
+- 🎯 **标签管理可视化**：在项目标签 Tab 中可以看到所有标签及提示词
+- 🏃 **快速访问**：常用标签直接显示在标签栏，一键切换
+- 🤖 **AI 智能提示**：导出任务时自动携带标签提示词，指导 AI 行为
+- 📝 **灵活分组**：支持快速访问和其他标签的分类管理
+
+### 7. 使用示例
+
+**创建标签**：
+1. 进入项目 → 标签 Tab
+2. 点击"新建标签"
+3. 填写：
+   - 标签名称：讨论
+   - 颜色：蓝色
+   - 提示词：这是讨论型任务，你不要操作代码，先将你的想法输出到 md 文件和我讨论
+   - ☑️ 显示在快速访问栏
+4. 保存
+
+**使用标签**：
+1. 创建/编辑任务
+2. 在标签栏点击"讨论"标签（快速访问）
+3. 或点击"+其他标签"选择其他标签
+4. Cmd+E 导出任务，提示词自动注入
+
+**导出效果**：
+```markdown
+**任务描述：**
+
+**📌 标签提示词：**
+
+这是讨论型任务，你不要操作代码，先将你的想法输出到 md 文件和我讨论
+
+---
+
+实现用户登录功能
+- 支持账号密码登录
+- 支持记住登录状态
+```
+
+---
+
+> 📅 更新时间：2025/10/27 18:04:30
 > 🤖 由 Task-Flow 生成

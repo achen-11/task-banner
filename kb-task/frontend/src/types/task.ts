@@ -2,6 +2,8 @@
  * 任务相关类型定义
  */
 
+import type { Tag } from './tag'
+
 export interface Task {
   _id: string
   displayId: number
@@ -39,10 +41,7 @@ export interface TaskDetail extends Task {
     _id: string
     name: string
   }>
-  tags?: Array<{
-    _id: string
-    name: string
-  }>
+  tags?: Tag[]  // 使用完整的 Tag 对象
   creator?: {
     _id: string
     username: string

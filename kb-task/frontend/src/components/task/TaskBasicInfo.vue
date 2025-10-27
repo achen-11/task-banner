@@ -140,42 +140,63 @@
         <div>
         <label class="block text-xs text-gray-500 mb-2">标签</label>
         <div class="flex flex-wrap gap-2">
-          <span
-            v-for="tagId in localTask.tagIds"
-            :key="tagId"
-            class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+          <!-- 快速访问标签 -->
+          <button
+            v-for="tag in quickAccessTags"
+            :key="tag._id"
+            @click="toggleQuickTag(tag._id)"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full transition-all"
+            :class="isTagSelected(tag._id)
+              ? 'text-white border-none'
+              : 'text-gray-700 bg-white border border-gray-300 hover:border-gray-400'"
+            :style="isTagSelected(tag._id) ? { backgroundColor: tag.color || '#3B82F6' } : {}"
           >
-            {{ tagId }}
+            <span
+              v-if="!isTagSelected(tag._id)"
+              class="w-2 h-2 rounded-full flex-shrink-0"
+              :style="{ backgroundColor: tag.color || '#3B82F6' }"
+            ></span>
+            {{ tag.name }}
+          </button>
+
+          <!-- 已选中的其他标签 -->
+          <span
+            v-for="tag in selectedOtherTags"
+            :key="tag._id"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full text-white group transition-all"
+            :style="{ backgroundColor: tag.color || '#3B82F6' }"
+          >
+            {{ tag.name }}
             <button
-              class="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-              @click="removeTag(tagId)"
+              class="opacity-0 group-hover:opacity-100 hover:bg-black/20 rounded-full p-0.5 transition-all"
+              @click="removeTag(tag._id)"
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </span>
+
+          <!-- 添加其他标签按钮 -->
           <button
+            @click="showTagSelector = true"
             class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 border border-dashed border-gray-300 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors"
-            @click="showTagInput = true"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            添加标签
+            其他标签
           </button>
-          <input
-            v-if="showTagInput"
-            ref="tagInputRef"
-            v-model="newTag"
-            type="text"
-            class="inline-block w-24 px-2 py-1 text-xs border border-blue-500 rounded-full"
-            placeholder="标签名..."
-            @keydown.enter="addTag"
-            @blur="addTag"
-          />
         </div>
         </div>
+
+        <!-- 标签选择弹窗 -->
+        <TagSelector
+          v-model="showTagSelector"
+          :tags="projectTags"
+          :selected-ids="otherTagIds"
+          @confirm="handleTagsConfirm"
+        />
 
         <!-- 元数据（仅查看模式显示） -->
         <div v-if="mode === 'view'" class="grid grid-cols-2 gap-4 text-xs text-gray-500 pt-2">
@@ -285,10 +306,13 @@ import { ElMessage } from 'element-plus'
 import MarkdownEditor from '../common/MarkdownEditor.vue'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
+import TagSelector from '../tag/TagSelector.vue'
 import { getAttachmentList } from '@/api/attachment'
 import { getProjectMembers } from '@/api/project'
+import { getProjectTags } from '@/api/tag'
 import { getCurrentUser } from '@/utils/auth'
 import type { ProjectMember } from '@/types/project'
+import type { Tag } from '@/types/tag'
 import { Edit3, Eye } from 'lucide-vue-next'
 
 interface Attachment {
@@ -377,10 +401,29 @@ const localModules = computed({
   }
 })
 
-// 标签输入
-const showTagInput = ref(false)
-const newTag = ref('')
-const tagInputRef = ref<HTMLInputElement>()
+// 项目标签列表
+const projectTags = ref<Tag[]>([])
+
+// 标签选择器状态
+const showTagSelector = ref(false)
+
+// 快速访问标签（showInQuickBar: true）
+const quickAccessTags = computed(() => {
+  return projectTags.value.filter(tag => tag.showInQuickBar).sort((a, b) => a.order - b.order)
+})
+
+// 其他标签的 ID 列表（showInQuickBar: false 且已选中）
+const otherTagIds = computed(() => {
+  const quickTagIds = quickAccessTags.value.map(t => t._id)
+  return (localTask.value.tagIds || []).filter(id => !quickTagIds.includes(id))
+})
+
+// 已选中的其他标签对象
+const selectedOtherTags = computed(() => {
+  return otherTagIds.value
+    .map(id => projectTags.value.find(t => t._id === id))
+    .filter((tag): tag is Tag => tag !== undefined)
+})
 
 // 字段折叠状态（默认收起）
 const isFieldsCollapsed = ref(false)
@@ -430,6 +473,60 @@ const getUserDisplayName = (member: ProjectMember): string => {
   return member.displayName || member.username || member.email || member.userId
 }
 
+// 加载项目标签列表
+const loadProjectTags = async () => {
+  if (!props.projectId) return
+
+  try {
+    const response = await getProjectTags(props.projectId)
+    projectTags.value = response.items
+  } catch (error) {
+    console.error('Failed to load project tags:', error)
+    projectTags.value = []
+  }
+}
+
+// 判断标签是否已选中
+const isTagSelected = (tagId: string): boolean => {
+  return (localTask.value.tagIds || []).includes(tagId)
+}
+
+// 切换快速访问标签
+const toggleQuickTag = (tagId: string) => {
+  const tagIds = localTask.value.tagIds || []
+  const index = tagIds.indexOf(tagId)
+
+  if (index > -1) {
+    // 已选中，取消选中
+    tagIds.splice(index, 1)
+  } else {
+    // 未选中，添加
+    tagIds.push(tagId)
+  }
+
+  localTask.value.tagIds = [...tagIds]
+  handleUpdate({ tagIds: localTask.value.tagIds })
+}
+
+// 处理其他标签选择确认
+const handleTagsConfirm = (selectedIds: string[]) => {
+  // 获取快速访问标签的 ID
+  const quickTagIds = quickAccessTags.value.map(t => t._id).filter(id => isTagSelected(id))
+
+  // 合并快速访问标签和其他标签
+  const allTagIds = [...quickTagIds, ...selectedIds]
+
+  localTask.value.tagIds = allTagIds
+  handleUpdate({ tagIds: allTagIds })
+}
+
+// 移除标签
+const removeTag = (tagId: string) => {
+  const tagIds = (localTask.value.tagIds || []).filter(id => id !== tagId)
+  localTask.value.tagIds = tagIds
+  handleUpdate({ tagIds })
+}
+
 // 监听 props 变化，更新本地副本
 watch(() => props.task, async (newTask) => {
   if (newTask) {
@@ -457,10 +554,13 @@ watch(() => props.task, async (newTask) => {
   }
 }, { immediate: true, deep: true })
 
-// 监听 projectId 变化，加载项目成员
+// 监听 projectId 变化，加载项目成员和标签
 watch(() => props.projectId, async (newProjectId) => {
   if (newProjectId) {
-    await loadProjectMembers()
+    await Promise.all([
+      loadProjectMembers(),
+      loadProjectTags()
+    ])
   }
 }, { immediate: true })
 
@@ -517,25 +617,6 @@ const handleModulesChange = (value: string[]) => {
   handleUpdate({ moduleIds: value })
 }
 
-// 添加标签（注意：现在应该存储标签 ID 而不是名称）
-// TODO: 需要配合标签选择器使用，这里暂时保持兼容
-const addTag = () => {
-  if (newTag.value.trim()) {
-    const tagIds = [...(localTask.value.tagIds || []), newTag.value.trim()]
-    localTask.value.tagIds = tagIds
-    handleUpdate({ tagIds })
-    newTag.value = ''
-    showTagInput.value = false
-  }
-}
-
-// 移除标签
-const removeTag = (tagId: string) => {
-  const tagIds = (localTask.value.tagIds || []).filter(t => t !== tagId)
-  localTask.value.tagIds = tagIds
-  handleUpdate({ tagIds })
-}
-
 // 格式化日期
 const formatDate = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -575,14 +656,6 @@ const handleAttachmentDelete = (attachmentId: string) => {
   const newAttachments = localTask.value.attachments.filter(att => att._id !== attachmentId)
   localTask.value.attachments = newAttachments
 }
-
-// 当显示标签输入时，聚焦输入框
-watch(showTagInput, async (show) => {
-  if (show) {
-    await nextTick()
-    tagInputRef.value?.focus()
-  }
-})
 </script>
 
 <style scoped>
