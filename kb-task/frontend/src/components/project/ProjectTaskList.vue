@@ -13,21 +13,35 @@
         </div>
         <div v-if="selectedTaskIds.size > 0" class="flex items-center gap-2">
           <span class="text-sm text-blue-600 font-medium">已选择 {{ selectedTaskIds.size }} 个</span>
-          <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            @click="handleBatchExport" title="导出选中任务 (Cmd+E)">
-            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            批量导出
-          </button>
+          <el-tooltip placement="bottom">
+            <template #content>
+              <div class="flex items-center gap-1.5">
+                <Keyboard :size="14" />
+                <span>{{ getShortcutTooltip('e', true) }}</span>
+              </div>
+            </template>
+            <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              @click="handleBatchExport">
+              <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              批量导出
+            </button>
+          </el-tooltip>
           <button class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
             @click="clearSelection">
             取消选择
           </button>
         </div>
       </div>
-      <el-tooltip content="快捷键：N" placement="bottom">
+      <el-tooltip placement="bottom">
+        <template #content>
+          <div class="flex items-center gap-1.5">
+            <Keyboard :size="14" />
+            <span>{{ getShortcutTooltip('n') }}</span>
+          </div>
+        </template>
         <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           @click="handleCreateTask">
           <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +282,8 @@ import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
-import { registerShortcut, unregisterShortcut } from '@/composables/useKeyboard'
+import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
+import { Keyboard } from 'lucide-vue-next'
 import type { Task } from '@/types/task'
 
 interface Props {
@@ -740,6 +755,20 @@ const handleTaskDeleted = async (taskId: string) => {
     ElMessage.error(err?.message || '删除任务失败')
     console.error('Failed to delete task:', err)
   }
+}
+
+// 获取快捷键提示文本
+const getShortcutTooltip = (key: string, meta = false, ctrl = false, shift = false, alt = false): string => {
+  const shortcut = formatShortcut({
+    key,
+    meta,
+    ctrl,
+    shift,
+    alt,
+    description: '',
+    handler: () => {}
+  })
+  return `快捷键: ${shortcut}`
 }
 
 // 获取状态图标样式

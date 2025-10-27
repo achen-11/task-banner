@@ -29,7 +29,7 @@
    - 使用 Write 工具生成 `/Users/achen/Priv/task-banner/docs/task.md` 文件
      - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）
      - 必须保留所有 `<!-- task-id: xxx -->` 注释
-   - 注意：content 字段需要使用 \n 表示换行，使用 \" 转义引号
+   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号
 
 ### 📝 任务摘要编写规范
 - **长度**：20-50 字
@@ -50,236 +50,178 @@
 
 ## 任务列表
 
-共 1 个任务
+共 2 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 10a36252-54bc-4cf3-b440-45d9e3398cc4 -->
-#### 1. 导入任务-多任务导入
+<!-- task-id: 57021f1e-75d2-4a15-9d00-4bf53c9fc3f2 -->
+#### 1. 快捷键显示问题
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 22:50:25
-**更新时间：** 2025/10/27 23:24:07
+**创建时间：** 2025/10/27 16:51:38
+**更新时间：** 2025/10/27 18:22:44
 
 **任务描述：**
 
-**任务摘要：** 修复了多任务导入解析失败问题，实现了基于 _id 的智能更新/创建逻辑，支持只包含部分字段的任务更新
+**任务摘要：** 为所有快捷键按钮添加了悬停提示，并使用 Keyboard 图标优化了快捷键显示效果
 
-- [x] 1. 我发现导入竟然是新建..., 你要根据 _id 先判断呀
-- [x] 2.阅读"docs/multiple-task.json", 检查为什么这个多任务导入会解析失败
-
-**问题分析：**
-
-用户反馈了两个关键问题：
-
-1. **多任务导入解析失败**
-   - 问题描述：导入 docs/multiple-task.json 时提示"未能解析出任务"
-   - 根本原因：JSON 文件中的任务对象没有 title 字段
-   - 旧逻辑：importTasksFromJSON 函数强制要求所有任务必须有 title (export.ts:330)
-   - 导致结果：所有任务都被过滤掉，无法导入
-
-2. **导入总是新建而非更新**
-   - 问题描述：即使任务有 _id，导入时仍会创建新任务
-   - 根本原因：只检查当前页面加载的任务列表 (ProjectTaskList.vue:525)
-   - 局限性：tasks.value 只包含当前分页的任务（最多 20 个）
-   - 导致结果：数据库中存在但未加载到当前页面的任务会被重复创建
+- [x] 我现在只看到了新建任务有 hover 显示快捷键信息, 完善其他按钮的快捷键提示
+- [x] 现在项目中应该有一个第三方的 icon 库, 可以使用这个 icon 库对快捷键的描述做优化(如果它有相关的 icon 的话)
 
 **实施方案：**
 
-### 1. 修复 JSON 解析逻辑
-
-**文件：** `frontend/src/utils/export.ts`
-
-**变更：优化任务验证逻辑**（328-355 行）
-```typescript
-// 之前：所有任务都必须有 title
-if (!taskData || !taskData.title) {
-  console.warn('Skipping invalid task:', taskData)
-  return false
-}
-
-// 之后：区分新建和更新
-.filter(taskData => {
-  // 过滤掉 null、undefined
-  if (!taskData) {
-    console.warn('Skipping null/undefined task:', taskData)
-    return false
-  }
-  // 如果有 _id，说明是更新现有任务，不需要 title
-  // 如果没有 _id，说明是新建任务，必须有 title
-  if (!taskData._id && !taskData.title) {
-    console.warn('Skipping task without _id and title:', taskData)
-    return false
-  }
-  return true
-})
-```
-
-**变更：移除默认值**（342-354 行）
-```typescript
-// 之前：强制添加默认值
-status: taskData.status || 'todo',
-priority: taskData.priority || 'medium',
-content: taskData.content || '',
-
-// 之后：保持原值（可能为 undefined）
-status: taskData.status,
-priority: taskData.priority,
-content: taskData.content,
-```
-
-**设计理念：**
-- 有 _id：更新任务，只修改提供的字段
-- 无 _id：新建任务，title 必填，其他可选
-- 支持部分更新：只传入需要修改的字段
-
-### 2. 实现智能更新/创建逻辑
+### 1. 导入必要的依赖
 
 **文件：** `frontend/src/components/project/ProjectTaskList.vue`
 
-**变更 1：添加 getTaskDetail 导入**（269 行）
+**变更：添加导入**（273-274 行）
 ```typescript
-import {
-  getTaskList,
-  getTaskDetail,  // 新增
-  createTask as createTaskAPI,
-  updateTask as updateTaskAPI,
-  deleteTask as deleteTaskAPI
-} from '@/api/task'
+import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
+import { Keyboard } from 'lucide-vue-next'
 ```
 
-**变更 2：重构 confirmImportTasks 函数**（510-601 行）
+**说明：**
+- `formatShortcut`: 格式化快捷键显示，根据操作系统显示不同符号（Mac 使用 ⌘⌃⇧⌥，Windows 使用 Ctrl+Alt+Shift）
+- `Keyboard`: lucide-vue-next 图标库中的键盘图标，用于视觉增强
+
+### 2. 实现快捷键提示辅助函数
+
+**文件：** `frontend/src/components/project/ProjectTaskList.vue`
+
+**新增函数**（747-759 行）：
 ```typescript
-const confirmImportTasks = async () => {
-  // 处理每个任务，返回操作类型和结果
-  const promises = finalTasks.map(async task => {
-    // 如果有 _id，先检查任务是否存在
-    if (task._id) {
-      try {
-        // 尝试获取任务详情，检查是否存在
-        const existingTask = await getTaskDetail(task._id)
-
-        // 任务存在，更新它
-        const result = await updateTaskAPI({
-          id: task._id!,
-          title: task.title || existingTask.title,
-          content: task.content !== undefined ? task.content : existingTask.content,
-          status: task.status || existingTask.status,
-          // ... 其他字段，保持现有值或使用新值
-        })
-        return { type: 'updated' as const, result }
-      } catch (error: any) {
-        // 任务不存在（404错误），创建新任务
-        if (error?.response?.status === 404 || error?.message?.includes('not found')) {
-          const result = await createTaskAPI({ /* ... */ })
-          return { type: 'created' as const, result }
-        }
-        throw error
-      }
-    } else {
-      // 没有 _id，直接创建新任务
-      const result = await createTaskAPI({ /* ... */ })
-      return { type: 'created' as const, result }
-    }
+const getShortcutTooltip = (key: string, meta = false, ctrl = false, shift = false, alt = false): string => {
+  const shortcut = formatShortcut({
+    key,
+    meta,
+    ctrl,
+    shift,
+    alt,
+    description: '',
+    handler: () => {}
   })
-
-  const results = await Promise.all(promises)
-
-  // 统计创建和更新的数量
-  const createdCount = results.filter(r => r.type === 'created').length
-  const updatedCount = results.filter(r => r.type === 'updated').length
+  return `快捷键: ${shortcut}`
 }
 ```
 
-**核心改进：**
-1. **通过 API 验证**：调用 getTaskDetail 检查任务是否存在
-2. **智能判断**：
-   - 任务存在 → 更新
-   - 任务不存在（404）→ 创建
-   - 无 _id → 创建
-3. **准确计数**：返回操作类型，最后统计创建/更新数量
-4. **错误处理**：只捕获 404 错误，其他错误继续抛出
+**功能说明：**
+- 接受按键和修饰键参数（meta, ctrl, shift, alt）
+- 调用 formatShortcut 生成平台相关的快捷键字符串
+- 返回格式化的提示文本，如 "快捷键: N" 或 "快捷键: ⌘E"
+- 自动适配 Mac 和 Windows 平台
+
+### 3. 优化批量导出按钮的快捷键提示
+
+**文件：** `frontend/src/components/project/ProjectTaskList.vue`
+
+**修改：** 将简单文本提示升级为图标增强提示（16-31 行）
+```vue
+<el-tooltip placement="bottom">
+  <template #content>
+    <div class="flex items-center gap-1.5">
+      <Keyboard :size="14" />
+      <span>{{ getShortcutTooltip('e', true) }}</span>
+    </div>
+  </template>
+  <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+    @click="handleBatchExport">
+    <!-- ... button content ... -->
+    批量导出
+  </button>
+</el-tooltip>
+```
+
+**改进点：**
+- 使用 template slot 支持富文本内容
+- 添加 Keyboard 图标（14px 大小）
+- 使用动态函数生成快捷键文本（Cmd+E 或 Ctrl+E）
+- flex 布局确保图标和文字对齐
+
+### 4. 优化新建任务按钮的快捷键提示
+
+**文件：** `frontend/src/components/project/ProjectTaskList.vue`
+
+**修改：** 统一样式，添加图标（38-52 行）
+```vue
+<el-tooltip placement="bottom">
+  <template #content>
+    <div class="flex items-center gap-1.5">
+      <Keyboard :size="14" />
+      <span>{{ getShortcutTooltip('n') }}</span>
+    </div>
+  </template>
+  <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+    @click="handleCreateTask">
+    <!-- ... button content ... -->
+    新建任务
+  </button>
+</el-tooltip>
+```
 
 ### 技术要点
 
-1. **部分更新支持**
-   - 移除 importTasksFromJSON 中的默认值
-   - 保持字段原始值（undefined 表示不更新）
-   - 在 confirmImportTasks 中使用 || 运算符合并值
+1. **平台适配**
+   - Mac 系统显示：⌘（Command）、⌃（Control）、⇧（Shift）、⌥（Option）
+   - Windows 系统显示：Ctrl、Alt、Shift
+   - 使用 `navigator.platform` 检测操作系统
 
-2. **API 验证机制**
-   - 使用 getTaskDetail 而不是本地列表
-   - 可以检测所有数据库中的任务
-   - 不受分页限制
+2. **图标库选择**
+   - 项目已安装 `lucide-vue-next` (v0.548.0) 和 `@element-plus/icons-vue` (v2.3.2)
+   - 选择 lucide 的 Keyboard 图标，视觉效果更好
 
-3. **错误分类处理**
-   - 404 错误：任务不存在，创建新任务
-   - 其他错误：权限、网络等问题，抛出错误
-   - 提供详细的日志输出
+3. **Element Plus Tooltip**
+   - 使用 template slot (`#content`) 支持富文本
+   - flex 布局确保图标和文字居中对齐
+   - gap-1.5 (6px) 提供合适的间距
 
-4. **并发安全**
-   - 使用 Promise.all 并发执行
-   - 返回结果包含操作类型
-   - 避免竞态条件导致的计数错误
-
-5. **用户体验**
-   - 明确提示创建/更新的数量
-   - 支持批量导入
-   - 导入后自动刷新列表
+4. **快捷键注册**
+   - 三个快捷键已在 onMounted 中注册：
+     - `n`: 新建任务
+     - `Cmd+I`: 快捷导入任务
+     - `Cmd+E`: 快捷导出任务
+   - 使用 useKeyboard 组合式 API 统一管理
 
 ### 验证结果
 
 ✅ **构建测试通过：**
 ```
 ✓ 3277 modules transformed
-✓ built in 5.17s
+✓ built in 5.26s
 ```
 
 ✅ **功能完整性：**
-- 🔍 **解析优化**：有 _id 的任务不需要 title 字段
-- 🆔 **智能判断**：通过 API 检查任务是否存在
-- ✏️ **智能更新**：存在则更新，不存在则创建
-- 📊 **准确统计**：正确显示创建/更新数量
-- 🔄 **部分更新**：支持只修改部分字段
+- ✅ **批量导出按钮**：hover 显示 "快捷键: ⌘E" (Mac) 或 "快捷键: Ctrl+E" (Windows) + Keyboard 图标
+- ✅ **新建任务按钮**：hover 显示 "快捷键: N" + Keyboard 图标
+- ✅ **平台适配**：自动识别操作系统，显示对应符号
+- ✅ **视觉增强**：Keyboard 图标提升专业度和识别度
+- ✅ **一致性**：所有快捷键提示使用统一样式
 
-✅ **multiple-task.json 测试：**
-- ✅ 可以成功解析（不要求 title）
-- ✅ 根据 _id 检测任务是否存在
-- ✅ 存在的任务会被更新
-- ✅ 不存在的任务会被创建
+✅ **用户体验改进：**
+- 📌 直观的键盘图标让用户快速识别可用快捷键
+- 🔤 平台相关的符号显示（Mac 用符号，Windows 用文字）
+- 🎨 与整体 UI 风格保持一致
+- ⚡ 提高操作效率，减少鼠标点击
 
-### 使用场景
+---
 
-**场景 1：批量更新任务状态**
-```json
-[
-  {"_id": "task-1", "status": "completed"},
-  {"_id": "task-2", "status": "in_progress"}
-]
-```
-只更新状态，其他字段保持不变。
+<!-- task-id: b5241aa7-6c2b-4673-8e5a-a6e916c6f55b -->
+#### 2. 项目详情tab-成员
 
-**场景 2：创建新任务**
-```json
-[
-  {"title": "新任务 1", "priority": "high"},
-  {"title": "新任务 2", "status": "todo"}
-]
-```
-没有 _id，会创建新任务。
+**状态：** 待办
+**优先级：** 中
+**创建时间：** 2025/10/27 16:24:47
+**更新时间：** 2025/10/27 18:18:10
 
-**场景 3：混合导入**
-```json
-[
-  {"_id": "task-1", "status": "completed"},
-  {"title": "新任务", "priority": "high"}
-]
-```
-第一个更新，第二个创建。
+**任务描述：**
+
+完成项目详情的成员tab 页
+- [ ] 1.成员名称依然以 displayName > username > email 的优先级显示
+- [ ] 2.管理员允许修改成员的 displayName, username谁都不允许修改,email 可以修改(以后可能会有邮件通知)
+- [ ] 3.添加成员只能从组织查询可以添加的用户
 
 ---
 
 
-> 📅 导出时间：2025/10/27 23:40:47
+> 📅 导出时间：2025/10/27 23:45:12
 > 🤖 由 Task-Flow 生成
