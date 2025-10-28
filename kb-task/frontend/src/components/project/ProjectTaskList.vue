@@ -281,7 +281,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
+import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution } from '@/utils/export'
 import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
 import { Keyboard } from 'lucide-vue-next'
 import type { Task } from '@/types/task'
@@ -509,6 +509,17 @@ const importTasksHelper = async (content: string) => {
       return
     }
 
+    // 解析 AI 解决方案
+    const aiSolution = parseAISolution(content)
+
+    // 为每个任务添加 AI 解决方案
+    parsedTasks.forEach((task, index) => {
+      if (aiSolution) {
+        (task as any).aiSolution = aiSolution.content
+        task.summary = aiSolution.summary
+      }
+    })
+
     // 保存待导入的任务并显示确认对话框
     tasksToImport.value = parsedTasks
     editableSummaries.value = {}
@@ -539,7 +550,7 @@ const confirmImportTasks = async () => {
           // 尝试获取任务详情，检查是否存在
           const existingTask = await getTaskDetail(task._id)
 
-          // 任务存在，将内容作为评论导入
+          // 任务存在，将 AI 解决方案作为评论导入
           const response = await fetch('/api/task/import-as-comment', {
             method: 'POST',
             headers: {
@@ -547,7 +558,7 @@ const confirmImportTasks = async () => {
             },
             body: JSON.stringify({
               taskId: task._id!,
-              content: task.content || '',
+              content: (task as any).aiSolution || task.content || '',
               summary: task.summary || '',
               type: 'ai_completion',
               mentionedUsers: []

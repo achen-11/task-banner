@@ -1,7 +1,7 @@
 // @k-url /api/task/{action}
 
 import { success, error } from 'code/Utils/response'
-import { getUserInfo } from 'code/Services/user'
+import { getUserInfo, getUserById } from 'code/Services/user'
 import {
   createTask,
   getTaskById,
@@ -576,14 +576,16 @@ k.api.get("comments", () => {
     }
 
     // 获取评论列表（带用户信息）
-    const comments = TaskComment.findAll({
-      where: whereCondition,
-      orderBy: [{ column: 'createdAt', order: 'desc' }]
-    })
+    const comments = TaskComment.findAll(
+      whereCondition,
+      {
+        order: [{ prop: 'createdAt', order: 'descending' }]
+      }
+    )
 
     // 获取用户信息
     const userIds = [...new Set(comments.map(c => c.userId))]
-    const users = userIds.map(id => getUserInfo(id)).filter(Boolean)
+    const users = userIds.map(id => getUserById(id)).filter(Boolean)
 
     // 简单分页
     const total = comments.length

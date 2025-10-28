@@ -165,14 +165,14 @@
               <!-- 右列：评论列表（内部滚动） -->
               <div class="h-full pl-3 -ml-3 overflow-hidden">
                 <div class="h-full pl-3">
-                  <CommentList v-if="currentTask && mode === 'view'" :task-id="currentTask._id" />
+                  <TaskActivity v-if="currentTask && mode === 'view'" :task="currentTask" />
                   <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400">
                     <div class="text-center">
                       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <p>创建任务后将显示评论</p>
+                      <p>创建任务后将显示活动历史</p>
                     </div>
                   </div>
                 </div>
@@ -189,7 +189,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
-import CommentList from './task/CommentList.vue'
+import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard } from '@/utils/export'
 import type { Task, TaskDetail } from '@/types/task'
@@ -345,8 +345,15 @@ const handleExportTask = async () => {
         {
           confirmButtonText: '包含评论',
           cancelButtonText: '仅任务信息',
-          type: 'question',
+          type: 'warning',
           distinguishCancelAndClose: true,
+          beforeClose: (action, instance, done) => {
+            if (action === 'confirm') {
+              done()
+            } else {
+              done()
+            }
+          }
         }
       ).catch(() => {
         return { includeComments: false }

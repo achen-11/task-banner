@@ -458,7 +458,7 @@ defineExpose({
 
 .markdown-preview :deep(ul),
 .markdown-preview :deep(ol) {
-  padding-left: 2em;
+  padding-left: 1em;
   margin-bottom: 0.5em;
   margin-top: 0.25em;
 }

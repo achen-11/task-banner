@@ -150,8 +150,8 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`**更新时间：** ${formatDate(task.updatedAt)}`)
   lines.push('')
 
-  // 任务描述
-  lines.push(`**任务描述：**\n`)
+  // 任务需求
+  lines.push(`**任务需求：**\n`)
 
   // 注入标签提示词（如果有）
   let taskContent = task.content || '暂无描述'
@@ -168,6 +168,33 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   }
 
   lines.push(taskContent)
+  lines.push('')
+
+  // 添加解决方案区域
+  lines.push(`---\n`)
+  lines.push(`## 🛠️ AI 解决方案`)
+  lines.push(``)
+  lines.push(`**请在此处提供详细的实现方案：**`)
+  lines.push(``)
+  lines.push(`### 实现步骤`)
+  lines.push(`1. 分析任务需求`)
+  lines.push(`2. 设计技术方案`)
+  lines.push(`3. 具体实现步骤`)
+  lines.push(`4. 验证和测试`)
+  lines.push(``)
+  lines.push(`### 修改的文件`)
+  lines.push(`- 文件路径1`)
+  lines.push(`- 文件路径2`)
+  lines.push(``)
+  lines.push(`### 技术要点`)
+  lines.push(`- 关键技术1`)
+  lines.push(`- 关键技术2`)
+  lines.push(``)
+  lines.push(`### 验证结果`)
+  lines.push(`- 测试结果1`)
+  lines.push(`- 测试结果2`)
+  lines.push(``)
+  lines.push(`**任务摘要：** <请在此处填写20-50字的任务摘要>`)
   lines.push('')
 
   // 添加评论历史（如果选择了包含评论）
@@ -542,6 +569,95 @@ function parseSingleTask(
   }
 
   return task
+}
+
+/**
+ * 从 Markdown 中解析 AI 解决方案内容
+ */
+export function parseAISolution(markdown: string): { summary: string, content: string } | null {
+  const lines = markdown.split('\n')
+
+  // 查找 AI 解决方案部分
+  let solutionStart = -1
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line && line.match && line.match(/^## 🛠️ AI 解决方案/)) {
+      solutionStart = i + 1
+      break
+    }
+  }
+
+  if (solutionStart === -1) {
+    return null
+  }
+
+  // 收集解决方案内容
+  const solutionLines: string[] = []
+  let summary = ''
+
+  for (let i = solutionStart; i < lines.length; i++) {
+    const line = lines[i]
+    if (!line) continue
+
+    // 停止条件：遇到下一个主要标题
+    if (line.match(/^## /) && !line.match(/^## 🛠️ AI 解决方案/)) {
+      break
+    }
+
+    // 查找任务摘要
+    const summaryMatch = line.match(/\*\*任务摘要：\*\*\s*(.+)$/)
+    if (summaryMatch && summaryMatch[1]) {
+      summary = summaryMatch[1].trim()
+      continue
+    }
+
+    solutionLines.push(line)
+  }
+
+  if (solutionLines.length === 0) {
+    return null
+  }
+
+  // 清理内容：移除模板占位符
+  let content = solutionLines.join('\n')
+    .replace(/请在此处提供详细的实现方案：\s*\n/g, '')
+    .replace(/### 实现步骤\s*\n1\. 分析任务需求\s*\n2\. 设计技术方案\s*\n3\. 具体实现步骤\s*\n4\. 验证和测试\s*\n/g, '')
+    .replace(/### 修改的文件\s*\n- 文件路径1\s*\n- 文件路径2\s*\n/g, '')
+    .replace(/### 技术要点\s*\n- 关键技术1\s*\n- 关键技术2\s*\n/g, '')
+    .replace(/### 验证结果\s*\n- 测试结果1\s*\n- 测试结果2\s*\n/g, '')
+    .replace(/<请在此处填写20-50字的任务摘要>/g, '')
+    .trim()
+
+  return {
+    summary: summary || generateSummary(content),
+    content
+  }
+}
+
+/**
+ * 生成内容摘要
+ */
+function generateSummary(content: string): string {
+  if (!content) return ''
+
+  // 简单的摘要生成逻辑
+  const sentences = content.split(/[。！？.!?]/).filter(s => s && s.trim().length > 0)
+  if (sentences.length === 0) {
+    return content.substring(0, 50) + (content.length > 50 ? '...' : '')
+  }
+
+  // 取第一句话，如果太长则截取
+  const firstSentence = sentences[0]
+  if (!firstSentence) {
+    return content.substring(0, 50) + (content.length > 50 ? '...' : '')
+  }
+
+  let summary = firstSentence.trim()
+  if (summary.length > 50) {
+    summary = summary.substring(0, 47) + '...'
+  }
+
+  return summary
 }
 
 /**

@@ -53,10 +53,46 @@
                   </svg>
                 </button>
               </div>
-              <MarkdownEditor
-                :model-value="activity.content"
-                :read-only="true"
-              />
+              <!-- 评论内容 - 支持摘要和截断 -->
+              <div class="text-sm text-gray-700">
+                <template v-if="activity.summary">
+                  <!-- 显示摘要 -->
+                  <div class="mb-2">
+                    <div v-html="renderMarkdown(activity.summary)"></div>
+                  </div>
+                  <button
+                    class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                    @click="showDetailModal(activity)"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    查看详情
+                  </button>
+                </template>
+                <template v-else>
+                  <!-- 没有摘要时，检查内容是否需要截断 -->
+                  <div v-if="shouldTruncateContent(activity.content)">
+                    <div class="mb-2">
+                      <div v-html="renderMarkdown(truncateContent(activity.content))"></div>
+                    </div>
+                    <button
+                      class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                      @click="showCommentDetailModal(activity)"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      查看详情
+                    </button>
+                  </div>
+                  <MarkdownEditor
+                    v-else
+                    :model-value="activity.content"
+                    :read-only="true"
+                  />
+                </template>
+              </div>
 
               <!-- 反应表情（Mock） -->
               <div class="flex items-center gap-2 mt-3">
@@ -182,154 +218,8 @@
       </div>
     </div>
 
-    <!-- 详情弹窗 -->
-    <el-dialog
-      v-model="detailModalVisible"
-      title="变更详情"
-      width="1000px"
-      align-center
-      :append-to-body="true"
-      class="task-detail-dialog"
-    >
-      <div v-if="selectedActivity" class="flex flex-col h-full">
-        <!-- 用户信息和摘要 -->
-        <div class="pb-4 border-b">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-              {{ getUserDisplayName(selectedActivity.user).charAt(0).toUpperCase() }}
-            </div>
-            <div>
-              <div class="font-medium text-gray-900">{{ getUserDisplayName(selectedActivity.user) }}</div>
-              <div class="text-xs text-gray-500">{{ formatRelativeTime(selectedActivity.timestamp) }}</div>
-            </div>
-          </div>
-
-          <div v-if="selectedActivity.summary" class="bg-blue-50 rounded-lg p-3">
-            <div class="text-xs font-medium text-blue-700 mb-1">任务摘要</div>
-            <div class="text-sm text-gray-900">{{ selectedActivity.summary }}</div>
-          </div>
-        </div>
-
-        <!-- 合并的多个变更：Tab 栏切换 -->
-        <template v-if="selectedActivity.grouped && selectedActivity.fieldChanges && selectedActivity.fieldChanges.length > 1">
-          <div class="flex gap-2 py-3 overflow-x-auto border-b">
-            <button
-              v-for="(change, idx) in selectedActivity.fieldChanges"
-              :key="idx"
-              @click="currentFieldChangeIndex = idx"
-              class="px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors"
-              :class="currentFieldChangeIndex === idx
-                ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-            >
-              {{ formatFieldName(change.field) }}
-            </button>
-          </div>
-
-          <!-- 当前选中字段的变更对比 -->
-          <div class="flex-1 py-4" style="max-height: 500px; overflow-y: auto;">
-            <div v-if="currentFieldChange" class="grid grid-cols-2 gap-4 h-full">
-              <!-- 旧值 -->
-              <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span class="text-red-600">−</span>
-                  旧值
-                </div>
-                <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
-                  <!-- content 字段使用 Markdown 渲染 -->
-                  <MarkdownEditor
-                    v-if="currentFieldChange.field === 'content'"
-                    :model-value="currentFieldChange.oldValue || ''"
-                    :read-only="true"
-                  />
-                  <!-- 其他字段使用纯文本显示 -->
-                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                    {{ formatFieldValue(currentFieldChange.field, currentFieldChange.oldValue) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- 新值 -->
-              <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span class="text-green-600">+</span>
-                  新值
-                </div>
-                <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
-                  <!-- content 字段使用 Markdown 渲染 -->
-                  <MarkdownEditor
-                    v-if="currentFieldChange.field === 'content'"
-                    :model-value="currentFieldChange.newValue || ''"
-                    :read-only="true"
-                  />
-                  <!-- 其他字段使用纯文本显示 -->
-                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                    {{ formatFieldValue(currentFieldChange.field, currentFieldChange.newValue) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-
-        <!-- 单个字段变更：左右分栏 -->
-        <template v-else>
-          <div class="py-3 border-b">
-            <div class="text-sm font-medium text-gray-700">
-              字段：{{ formatFieldName(selectedActivity.field) }}
-            </div>
-          </div>
-
-          <div class="flex-1 py-4" style="max-height: 500px; overflow-y: auto;">
-            <div class="grid grid-cols-2 gap-4 h-full">
-              <!-- 旧值 -->
-              <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span class="text-red-600">−</span>
-                  旧值
-                </div>
-                <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
-                  <!-- content 字段使用 Markdown 渲染 -->
-                  <MarkdownEditor
-                    v-if="selectedActivity.field === 'content'"
-                    :model-value="selectedActivity.oldValue || ''"
-                    :read-only="true"
-                  />
-                  <!-- 其他字段使用纯文本显示 -->
-                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                    {{ formatFieldValue(selectedActivity.field, selectedActivity.oldValue) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- 新值 -->
-              <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span class="text-green-600">+</span>
-                  新值
-                </div>
-                <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
-                  <!-- content 字段使用 Markdown 渲染 -->
-                  <MarkdownEditor
-                    v-if="selectedActivity.field === 'content'"
-                    :model-value="selectedActivity.newValue || ''"
-                    :read-only="true"
-                  />
-                  <!-- 其他字段使用纯文本显示 -->
-                  <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                    {{ formatFieldValue(selectedActivity.field, selectedActivity.newValue) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <template #footer>
-        <el-button @click="detailModalVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <!-- 详情弹窗组件 -->
+    <DetailModal ref="detailModalRef" />
   </div>
 </template>
 
@@ -337,6 +227,7 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import MarkdownEditor from '../common/MarkdownEditor.vue'
+import DetailModal from '../common/DetailModal.vue'
 import { getTaskActivities, addTaskComment, type TaskActivity as APITaskActivity } from '@/api/task'
 
 interface Task {
@@ -398,16 +289,9 @@ const newComment = ref('')
 const activities = ref<Activity[]>([])
 const isLoadingActivities = ref(false)
 
-// 详情弹窗
-const detailModalVisible = ref(false)
-const selectedActivity = ref<Activity | null>(null)
-const currentFieldChangeIndex = ref(0)
+// 详情弹窗组件引用
+const detailModalRef = ref<InstanceType<typeof DetailModal>>()
 
-// 当前选中的字段变更
-const currentFieldChange = computed(() => {
-  if (!selectedActivity.value?.fieldChanges) return null
-  return selectedActivity.value.fieldChanges[currentFieldChangeIndex.value]
-})
 
 // 加载活动历史
 const loadActivities = async () => {
@@ -426,7 +310,8 @@ const loadActivities = async () => {
           user: activity.user || null,
           userId: activity.userId,
           content: activity.content || '',
-          timestamp: activity.timestamp
+          timestamp: activity.timestamp,
+          summary: activity.summary || ''
         }
       } else if (activity.type === 'field_change') {
         // 生成字段变更描述
@@ -645,11 +530,25 @@ const addComment = async () => {
   }
 }
 
-// 显示详情弹窗
+// 显示字段变更详情弹窗
 const showDetailModal = (activity: Activity) => {
-  selectedActivity.value = activity
-  currentFieldChangeIndex.value = 0 // 重置到第一个 tab
-  detailModalVisible.value = true
+  detailModalRef.value?.showFieldChangeDetail(activity)
+}
+
+// 显示评论详情弹窗
+const showCommentDetailModal = (activity: Activity) => {
+  detailModalRef.value?.showCommentDetail(activity)
+}
+
+// 简单的 Markdown 渲染函数
+const renderMarkdown = (content: string): string => {
+  if (!content) return ''
+  // 简单处理换行
+  return content
+    .replace(/\n/g, '<br>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
 }
 
 // 检查内容是否需要截断（超过50字）
