@@ -1,20 +1,6 @@
-[
-  {
-    "_id": "809a84e6-bf6c-4b32-aa56-d393407c5ae7",
-    "status": "completed",
-    "summary": "在任务列表选择状态下添加ESC键退出选择功能，提升用户体验",
-    "content": "**任务摘要：** 在任务列表选择状态下添加ESC键退出选择功能，提升用户体验。\n\n**任务描述：**\n在任务列表进入选择状态时, 需要支持 esc 退出(即清空选择)\n\n**实现方案：**\n- 在ProjectTaskList.vue组件中添加ESC键快捷键注册\n- 当有选中任务时，按ESC键自动清空选择状态\n- 利用现有的keyboard快捷键系统和clearSelection方法\n- 在组件卸载时正确清理快捷键注册\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/project/ProjectTaskList.vue\n\n**技术要点：**\n- 使用现有的registerShortcut/unregisterShortcut系统\n- ESC键仅在有选中任务时触发清空操作\n- 正确的组件生命周期管理，避免内存泄漏\n- 与现有的快捷键系统完美集成"
-  },
-  {
-    "_id": "682e660d-faee-4af5-90eb-13f7910b157e",
-    "status": "completed",
-    "summary": "启用成员编辑权限，允许用户编辑自己的信息和管理员编辑所有成员信息",
-    "content": "**任务摘要：** 启用成员编辑权限，允许用户编辑自己的信息和管理员编辑所有成员信息。\n\n**任务描述：**\n项目详情页的成员 tab 页\n1. 目前支持添加人员, 但成员不能编辑自己的信息, 管理员也不能编辑所有成员的信息, 要添加这个支持\n\n**实现方案：**\n- 修改ProjectMembers.vue中编辑按钮的显示条件\n- 原条件：仅管理员可编辑非所有者成员\n- 新条件：管理员可编辑非所有者成员 + 用户可编辑自己的信息\n- 利用现有的编辑对话框功能和API接口\n- 保持编辑权限的合理性和安全性\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/project/ProjectMembers.vue\n\n**技术要点：**\n- 修改编辑按钮显示条件逻辑\n- 添加用户自身信息编辑权限\n- 保持现有的编辑对话框和API调用不变\n- 权限控制合理，用户只能编辑自己或管理员可编辑所有成员"
-  },
-  {
-    "_id": "a8e2734f-eb0a-4656-9a5a-764fce2aa866",
-    "status": "completed",
-    "summary": "将重复的formatRelativeTime函数抽离到utils/time.ts，避免代码重复并提高可维护性",
-    "content": "**任务摘要：** 将重复的formatRelativeTime函数抽离到utils/time.ts，避免代码重复并提高可维护性。\n\n**任务描述：**\nformatRelativeTime我看这个方法在很多地方都有用到, 你检查一下并抽离出来放到 utils 中再去调用\n- [x] 活动历史 (TaskActivity.vue)\n- [x] 任务列表 (DetailModal.vue)\n\n**实现方案：**\n- 创建 /utils/time.ts 工具文件\n- 将formatRelativeTime函数抽离为导出函数\n- 更新TaskActivity.vue和DetailModal.vue组件\n- 移除本地函数定义，改为从utils导入\n- 保持函数功能和API完全一致\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/utils/time.ts (新建)\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/task/TaskActivity.vue\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/common/DetailModal.vue\n\n**技术要点：**\n- 函数抽离到工具模块，提高代码复用性\n- 统一时间格式化逻辑，便于维护\n- 完整的TypeScript类型定义\n- 导入路径规范化，使用@/utils别名"
-  }
-]
+{
+  "_id": "34649158-cb45-4bda-882a-93c78250056b",
+  "status": "review",
+  "summary": "修复导入功能问题，优化确认弹窗显示，确保任务状态正确更新，并建立AI提示词规范",
+  "content": "**任务摘要：** 修复导入功能问题，优化确认弹窗显示，确保任务状态正确更新，并建立AI提示词规范。\n\n**任务描述：**\n1. 现在导入任务后不会更新任务的 updatedAt 字段, 理论上是要更新的\n2. 导入任务确认弹窗显示的是未知任务, 导入时应该根据_id 查询然后回填\n3. 任务状态现在不会更新\n4. 更新提示词, 要要求 ai 任务完成后 task.json 的状态要是待验收, 而不是已完成\n\n**实现方案：**\n- **修复 updatedAt 字段更新**：在 `updateTask` 服务函数中添加 `summary` 字段的更新逻辑\n- **优化导入确认弹窗**：根据 `_id` 查询现有任务信息并回填，显示任务对比信息\n- **修复任务状态更新**：为有 `_id` 的任务添加状态更新逻辑，不仅添加评论\n- **建立AI提示词规范**：创建 AI 提示词指南文档，要求完成后状态为 `review`（待验收）\n\n**修改的文件：**\n- `src/code/Services/task.ts` - 修复 summary 字段更新\n- `frontend/src/components/project/ProjectTaskList.vue` - 优化导入逻辑和确认弹窗\n- `frontend/src/types/task.ts` - 添加AI状态说明注释\n- `frontend/src/utils/export.ts` - 添加AI状态说明注释\n- `docs/ai-prompt-guidelines.md` - 新建AI提示词指南文档\n\n**技术要点：**\n- 后端服务层正确处理 summary 字段更新，确保 updatedAt 时间戳更新\n- 前端导入时根据 `_id` 查询现有任务，提供详细对比信息\n- 区分新建、更新、评论三种导入操作类型\n- 确立 `review` 状态作为AI完成的标准，符合质量管控流程"
+}

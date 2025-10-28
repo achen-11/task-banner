@@ -242,17 +242,55 @@
         </div>
 
         <div class="max-h-96 overflow-y-auto space-y-2">
-          <div v-for="(task, index) in tasksToImport" :key="index" class="border border-gray-200 rounded-lg p-3">
+          <div v-for="(task, index) in tasksToImport" :key="index" class="border border-gray-200 rounded-lg p-3"
+               :class="task._id && task.existingInfo ? 'border-blue-200' : ''">
             <div class="flex items-start gap-2 mb-2">
               <div class="flex-1">
-                <h4 class="text-sm font-medium text-gray-900 mb-1">{{ task.title || '未命名任务' }}</h4>
-                <div class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.status === 'todo' ? '待办' : task.status
-                    === 'in_progress' ? '进行中' : '已完成' }}</span>
-                  <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ task.priority === 'high' ? '高' :
-                    task.priority === 'low' ? '低' : '中' }}优先级</span>
-                  <span v-if="task._id" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">更新</span>
-                  <span v-else class="px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-xs">新建</span>
+                <!-- 任务标题 -->
+                <h4 class="text-sm font-medium text-gray-900 mb-1">
+                  {{ task.title || '未命名任务' }}
+                  <span v-if="task._id" class="text-xs text-gray-500 ml-1">#{{ task._id.slice(-6) }}</span>
+                </h4>
+
+                <!-- 状态标签 -->
+                <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
+                  <span class="px-1.5 py-0.5 rounded" :class="getStatusBadgeClass(task.status || 'todo')">
+                    {{ getStatusText(task.status || 'todo') }}
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded" :class="getPriorityBadgeClass(task.priority || 'medium')">
+                    {{ getPriorityText(task.priority || 'medium') }}优先级
+                  </span>
+                  <span v-if="task._id && task.existingInfo" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">
+                    更新现有任务
+                  </span>
+                  <span v-else-if="task._id" class="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-xs">
+                    任务不存在（将新建）
+                  </span>
+                  <span v-else class="px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-xs">
+                    新建任务
+                  </span>
+                </div>
+
+                <!-- 现有任务信息对比 -->
+                <div v-if="task._id && task.existingInfo" class="text-xs text-gray-600 bg-white rounded p-2 mb-2">
+                  <div class="font-medium text-gray-700 mb-1">现有任务信息：</div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <div>
+                      <span class="text-gray-500">标题:</span> {{ task.existingInfo.title }}
+                    </div>
+                    <div>
+                      <span class="text-gray-500">状态:</span>
+                      <span class="ml-1 px-1 py-0.5 rounded text-xs" :class="getStatusBadgeClass(task.existingInfo.status)">
+                        {{ getStatusText(task.existingInfo.status) }}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="text-gray-500">优先级:</span>
+                      <span class="ml-1 px-1 py-0.5 rounded text-xs" :class="getPriorityBadgeClass(task.existingInfo.priority)">
+                        {{ getPriorityText(task.existingInfo.priority) }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,7 +351,15 @@ const selectedTaskIds = ref<Set<string>>(new Set())
 
 // 导入确认对话框状态
 const importConfirmVisible = ref(false)
-const tasksToImport = ref<Array<Partial<Task> & { summary?: string }>>([])
+const tasksToImport = ref<Array<Partial<Task> & {
+  summary?: string
+  existingInfo?: {
+    title: string
+    status: string
+    priority: string
+  }
+  aiSolution?: string
+}>>([])
 const editableSummaries = ref<Record<number, string>>({})
 
 // 无限滚动相关
@@ -520,10 +566,41 @@ const importTasksHelper = async (content: string) => {
       }
     })
 
+    // 为有 _id 的任务查询并回填真实信息
+    const enrichedTasks = await Promise.all(parsedTasks.map(async (task) => {
+      if (task._id) {
+        try {
+          // 尝试获取现有任务信息
+          const existingTask = await getTaskDetail(task._id)
+          return {
+            ...task,
+            // 保留现有任务的信息，但用导入的数据覆盖某些字段
+            title: task.title || existingTask.title,
+            status: task.status || existingTask.status,
+            priority: task.priority || existingTask.priority,
+            assigneeId: task.assigneeId || existingTask.assigneeId,
+            tagIds: task.tagIds || existingTask.tagIds,
+            moduleIds: task.moduleIds || existingTask.moduleIds,
+            // 显示现有任务的一些信息用于确认
+            existingInfo: {
+              title: existingTask.title,
+              status: existingTask.status,
+              priority: existingTask.priority
+            }
+          }
+        } catch (error) {
+          // 任务不存在，保持原样
+          console.warn(`Task ${task._id} not found, treating as new task`)
+          return task
+        }
+      }
+      return task
+    }))
+
     // 保存待导入的任务并显示确认对话框
-    tasksToImport.value = parsedTasks
+    tasksToImport.value = enrichedTasks
     editableSummaries.value = {}
-    parsedTasks.forEach((task, index) => {
+    enrichedTasks.forEach((task, index) => {
       editableSummaries.value[index] = task.summary || ''
     })
     importConfirmVisible.value = true
@@ -550,7 +627,23 @@ const confirmImportTasks = async () => {
           // 尝试获取任务详情，检查是否存在
           const existingTask = await getTaskDetail(task._id)
 
-          // 任务存在，将 AI 解决方案作为评论导入
+          // 任务存在，更新任务状态和摘要，并将 AI 解决方案作为评论导入
+          const updateData: any = {
+            id: task._id,
+            summary: task.summary || ''
+          }
+
+          // 如果导入的任务有状态变化，更新状态
+          if (task.status && task.status !== existingTask.status) {
+            updateData.status = task.status
+          }
+
+          // 更新任务（如果有状态变化或摘要变化）
+          if (updateData.status || updateData.summary) {
+            await updateTaskAPI(updateData)
+          }
+
+          // 将 AI 解决方案作为评论导入
           const response = await fetch('/api/task/import-as-comment', {
             method: 'POST',
             headers: {
@@ -569,7 +662,7 @@ const confirmImportTasks = async () => {
             throw new Error(`Import as comment failed: ${response.statusText}`)
           }
 
-          return { type: 'commented' as const, taskId: task._id }
+          return { type: 'updated' as const, taskId: task._id }
         } catch (error: any) {
           // 任务不存在（404错误），创建新任务
           if (error?.response?.status === 404 || error?.message?.includes('not found')) {
@@ -610,12 +703,14 @@ const confirmImportTasks = async () => {
     const results = await Promise.all(promises)
 
     // 统计操作数量
-    const createdCount = results.filter(r => r.type === 'created').length
-    const commentedCount = results.filter(r => r.type === 'commented').length
+    const createdCount = results.filter((r: any) => r.type === 'created').length
+    const updatedCount = results.filter((r: any) => r.type === 'updated').length
+    const commentedCount = results.filter((r: any) => r.type === 'commented').length
 
     // 显示结果消息
     const messages: string[] = []
     if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
+    if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
     if (commentedCount > 0) messages.push(`导入为评论 ${commentedCount} 个`)
     ElMessage.success(`成功${messages.join('、')}任务`)
 
@@ -698,6 +793,17 @@ onMounted(() => {
       }
     }
   })
+
+  registerShortcut({
+    key: 'escape',
+    description: '退出选择状态',
+    category: '任务操作',
+    handler: () => {
+      if (selectedTaskIds.value.size > 0) {
+        clearSelection()
+      }
+    }
+  })
 })
 
 onUnmounted(() => {
@@ -711,6 +817,7 @@ onUnmounted(() => {
   unregisterShortcut('n')
   unregisterShortcut('i')
   unregisterShortcut('e')
+  unregisterShortcut('escape')
 })
 
 // 抽屉状态
@@ -816,6 +923,28 @@ const getPriorityText = (priority: string) => {
     high: '高'
   }
   return textMap[priority] || priority
+}
+
+// 获取状态徽章样式
+const getStatusBadgeClass = (status: string) => {
+  const classMap: Record<string, string> = {
+    todo: 'bg-gray-100 text-gray-700',
+    in_progress: 'bg-blue-100 text-blue-700',
+    review: 'bg-orange-100 text-orange-700',
+    completed: 'bg-green-100 text-green-700'
+  }
+  return classMap[status] || classMap.todo
+}
+
+// 获取状态文本
+const getStatusText = (status: string) => {
+  const textMap: Record<string, string> = {
+    todo: '待办',
+    in_progress: '进行中',
+    review: '待验收',
+    completed: '已完成'
+  }
+  return textMap[status] || status
 }
 
 // 格式化日期（显示相对时间或完整日期）

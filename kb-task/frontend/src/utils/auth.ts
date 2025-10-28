@@ -34,6 +34,8 @@ export function getCurrentUser() {
   if (isDevelopment) {
     // 开发模式：返回 Mock 用户或 localStorage 中的用户
     const storedUser = localStorage.getItem('dev_user')
+    console.log('currentUser:', storedUser);
+    
     return storedUser ? JSON.parse(storedUser) : MOCK_USER
   } else {
     // 生产模式：从服务端注入的全局变量获取

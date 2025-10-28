@@ -9,6 +9,7 @@ export interface TaskExportData {
   projectId: string
   title: string
   status: 'todo' | 'in_progress' | 'completed' | 'review'
+  // 注意：AI完成任务时应将状态设置为 'review'（待验收）而不是 'completed'（已完成）
   priority: 'low' | 'medium' | 'high'
   content: string  // 包含所有详细信息（实现方案、修改文件、技术要点等）
 
