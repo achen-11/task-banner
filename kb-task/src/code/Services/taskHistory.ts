@@ -22,13 +22,29 @@ export interface Activity {
   timestamp: number
   // comment 特有字段
   content?: string
+  summary?: string
+  commentType?: string // 'user' | 'ai_completion' | 'ai_revision' | 'system'
   mentionedUsers?: string[]
+  attachments?: Array<{
+    _id: string
+    relatedId: string
+    name: string
+    originalName: string
+    size: number
+    mimeType: string
+    url: string
+    thumbnailUrl?: string
+    uploaderId: string
+    projectId: string
+    createdAt: number
+    updatedAt: number
+  }>
+  metadata?: Record<string, any>
   // field_change 特有字段
   field?: string
   oldValue?: string
   newValue?: string
   action?: string
-  summary?: string
 }
 
 /**
@@ -38,10 +54,16 @@ export interface Activity {
  */
 export function getTaskActivities(taskId: string): Activity[] {
   // 1. 获取任务评论
-  const comments = TaskComment.findAll({ taskId })
+  const comments = TaskComment.findAll(
+    { taskId },
+    { order: [{ prop: 'createdAt', order: 'descending' }] }
+  )
 
   // 2. 获取任务历史
-  const histories = TaskHistory.findAll({ taskId })
+  const histories = TaskHistory.findAll(
+    { taskId },
+    { order: [{ prop: 'createdAt', order: 'descending' }] }
+  )
 
   // 3. 转换为统一的活动格式，并关联用户信息
   const activities: Activity[] = [
@@ -59,7 +81,11 @@ export function getTaskActivities(taskId: string): Activity[] {
           email: user.email
         } : null,
         content: comment.content,
+        summary: comment.summary || '',
+        commentType: comment.type || 'user',
         mentionedUsers: comment.mentionedUsers || [],
+        attachments: comment.attachments || [],
+        metadata: comment.metadata || {},
         timestamp: comment.createdAt
       }
     }),

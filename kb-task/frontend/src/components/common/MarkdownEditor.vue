@@ -181,6 +181,10 @@ const handleKeydown = (e: KeyboardEvent) => {
       // Cmd+S 保存，触发自定义事件
       e.preventDefault()
       emit('save')
+    } else if (e.key === 'Enter') {
+      // Cmd+Enter 提交，触发自定义事件
+      e.preventDefault()
+      emit('submit')
     }
   }
 }

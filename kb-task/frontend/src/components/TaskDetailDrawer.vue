@@ -101,14 +101,30 @@
               <template v-if="mode === 'view'">
                 <!-- 导出按钮 -->
                 <button
-                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
-                  title="导出任务 (Cmd+E)"
-                  @click="handleExportTask"
+                  class="px-3 py-1.5 text-sm transition-colors flex items-center gap-1"
+                  :class="isCommentSelectionMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100'"
+                  :title="isCommentSelectionMode ? '导出选中的评论 (Cmd+E)' : '导出任务 (Cmd+E)'"
+                  @click="isCommentSelectionMode ? exportSelectedCommentsToClipboard() : toggleCommentSelectionMode()"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                   </svg>
-                  导出
+                  {{ isCommentSelectionMode ? `导出 (${selectedCommentIds.length})` : '导出' }}
+                </button>
+
+                <!-- 取消选择按钮（仅在选择模式下显示） -->
+                <button
+                  v-if="isCommentSelectionMode"
+                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
+                  title="取消选择 (Esc)"
+                  @click="toggleCommentSelectionMode"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  取消
                 </button>
 
                 <!-- 导入按钮 -->
@@ -165,7 +181,14 @@
               <!-- 右列：评论列表（内部滚动） -->
               <div class="h-full pl-3 -ml-3 overflow-hidden">
                 <div class="h-full pl-3">
-                  <TaskActivity v-if="currentTask && mode === 'view'" :task="currentTask" />
+                  <TaskActivity
+                    v-if="currentTask && mode === 'view'"
+                    ref="taskActivityRef"
+                    :task="currentTask"
+                    :comment-selection-mode="isCommentSelectionMode"
+                    :selected-comment-ids="selectedCommentIds"
+                    @comment-selection-change="handleCommentSelectionChange"
+                  />
                   <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400">
                     <div class="text-center">
                       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,6 +255,7 @@ const emit = defineEmits<{
 
 // 标题输入框引用
 const titleInputRef = ref<HTMLInputElement>()
+const taskActivityRef = ref<InstanceType<typeof TaskActivity>>()
 
 
 // 创建模式下的新任务数据
@@ -254,6 +278,10 @@ const drawerWidth = ref(1000) // 默认宽度 1000px
 const minWidth = 600
 const maxWidth = 1600
 const isResizing = ref(false)
+
+// 评论选择模式相关
+const isCommentSelectionMode = ref(false)
+const selectedCommentIds = ref<string[]>([])
 
 // 响应式布局
 const isWideLayout = computed(() => drawerWidth.value >= 900)
@@ -324,6 +352,131 @@ const goToNextTask = () => {
 
 const closeDrawer = () => {
   emit('close')
+}
+
+// 处理评论选择变化
+const handleCommentSelectionChange = (selectedIds: string[]) => {
+  selectedCommentIds.value = selectedIds
+}
+
+// 切换评论选择模式
+const toggleCommentSelectionMode = () => {
+  isCommentSelectionMode.value = !isCommentSelectionMode.value
+  if (!isCommentSelectionMode.value) {
+    selectedCommentIds.value = []
+  }
+}
+
+// 导出选中评论到剪切板
+const exportSelectedCommentsToClipboard = async () => {
+  if (!currentTask.value) return
+
+  try {
+    // 获取选中的评论数据
+    const selectedComments = taskActivityRef.value?.getSelectedComments() || []
+
+    if (selectedComments.length === 0) {
+      ElMessage.warning('没有选中的评论，将导出任务信息')
+      await exportTaskToClipboard()
+      return
+    }
+
+    // 生成导出内容
+    const exportContent = generateExportContent(currentTask.value, selectedComments)
+
+    // 复制到剪切板
+    await navigator.clipboard.writeText(exportContent)
+
+    ElMessage.success(`已导出任务信息和 ${selectedComments.length} 条评论到剪切板`)
+
+    // 退出选择模式
+    isCommentSelectionMode.value = false
+    selectedCommentIds.value = []
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
+}
+
+// 生成导出内容
+const generateExportContent = (task: Task | TaskDetail, comments: any[]) => {
+  let content = `# ${task.title}\n\n`
+
+  // 基本信息
+  content += `**任务ID:** #${task.displayId || task._id}\n`
+  content += `**状态:** ${getStatusText(task.status)}\n`
+  content += `**优先级:** ${getPriorityText(task.priority)}\n`
+
+  if (task.assignee) {
+    const assigneeName = getUserDisplayName(task.assignee)
+    content += `**指派给:** ${assigneeName}\n`
+  }
+
+  content += `**创建时间:** ${new Date(task.createdAt).toLocaleString('zh-CN')}\n`
+  content += `**更新时间:** ${new Date(task.updatedAt).toLocaleString('zh-CN')}\n\n`
+
+  // 任务描述
+  if (task.content) {
+    content += `## 任务描述\n\n${task.content}\n\n`
+  }
+
+  // 选中的评论
+  if (comments.length > 0) {
+    content += `## 选中评论 (${comments.length}条)\n\n`
+
+    comments.forEach((comment, index) => {
+      content += `### 评论 ${index + 1}\n\n`
+
+      if (comment.user) {
+        content += `**作者:** ${getUserDisplayName(comment.user)}\n`
+      }
+
+      content += `**时间:** ${new Date(comment.timestamp).toLocaleString('zh-CN')}\n\n`
+
+      if (comment.summary) {
+        content += `**摘要:** ${comment.summary}\n\n`
+      }
+
+      content += `**内容:**\n\n${comment.content}\n\n`
+      content += `---\n\n`
+    })
+  }
+
+  return content
+}
+
+// 获取状态文本
+const getStatusText = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    todo: '待办',
+    in_progress: '进行中',
+    completed: '已完成'
+  }
+  return statusMap[status] || status
+}
+
+// 获取优先级文本
+const getPriorityText = (priority: string): string => {
+  const priorityMap: Record<string, string> = {
+    low: '低',
+    medium: '中',
+    high: '高'
+  }
+  return priorityMap[priority] || priority
+}
+
+// 导出任务信息到剪切板（不包含评论）
+const exportTaskToClipboard = async () => {
+  if (!currentTask.value) return
+
+  const content = generateExportContent(currentTask.value, [])
+  await navigator.clipboard.writeText(content)
+}
+
+// 获取用户显示名称
+const getUserDisplayName = (user: any): string => {
+  if (!user) return '未知用户'
+  return user.displayName || user.username || user.email || user._id || '未知用户'
 }
 
 // 导出当前任务（复制 Markdown 到剪贴板）
@@ -530,6 +683,14 @@ const handleKeydown = (e: KeyboardEvent) => {
   if (!props.isOpen) return
 
   if (e.key === 'Escape') {
+    // 如果在选择模式下，退出选择模式而不是关闭抽屉
+    if (isCommentSelectionMode.value) {
+      e.preventDefault()
+      isCommentSelectionMode.value = false
+      selectedCommentIds.value = []
+      return
+    }
+
     // 如果有未保存的更改，提示用户
     if (!isSaved.value && props.mode === 'create') {
       e.preventDefault()
@@ -572,9 +733,13 @@ const handleKeydown = (e: KeyboardEvent) => {
     const continueCreate = e.shiftKey
     handleSaveTask(continueCreate)
   } else if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
-    // cmd+e 或 ctrl+e 导出任务
+    // cmd+e 或 ctrl+e 导出任务或选中评论
     e.preventDefault()
-    handleExportTask()
+    if (isCommentSelectionMode.value) {
+      exportSelectedCommentsToClipboard()
+    } else {
+      toggleCommentSelectionMode()
+    }
   } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
     // cmd+i 或 ctrl+i 导入任务
     e.preventDefault()

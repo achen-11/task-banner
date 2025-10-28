@@ -595,7 +595,7 @@ k.api.get("comments", () => {
 
     // 格式化评论数据
     const formattedItems = items.map(comment => {
-      const user = users.find(u => u._id === comment.userId)
+      const user = users.find(u => u?._id === comment.userId)
       return {
         id: comment._id,
         type: comment.type,

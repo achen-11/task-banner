@@ -2,7 +2,9 @@
   <div class="h-full flex flex-col">
     <!-- 标题和过滤器（固定在顶部） -->
     <div class="flex-shrink-0 flex items-center justify-between pb-3 border-b border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900">活动历史</h3>
+      <h3 class="text-lg font-semibold text-gray-900">
+        {{ props.commentSelectionMode ? `选择评论 (${props.selectedCommentIds?.length || 0})` : '活动历史' }}
+      </h3>
       <div class="flex items-center gap-2">
         <button
           v-for="filter in filters"
@@ -41,13 +43,35 @@
           <!-- 活动内容 -->
           <div class="flex-1 min-w-0">
             <!-- 评论类型 -->
-            <div v-if="activity.type === 'comment'" class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
-              <div class="flex items-start justify-between mb-2">
+            <div v-if="activity.type === 'comment'"
+                 class="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow relative"
+                 :class="props.commentSelectionMode
+                   ? 'border-blue-300 cursor-pointer hover:border-blue-400'
+                   : 'border-gray-200'"
+                 @click="props.commentSelectionMode ? toggleCommentSelection(activity.id) : null">
+              <!-- 选择模式复选框 -->
+              <div v-if="props.commentSelectionMode"
+                   class="absolute top-3 left-3 z-10">
+                <input type="checkbox"
+                       :checked="props.selectedCommentIds?.includes(activity.id)"
+                       @change="toggleCommentSelection(activity.id)"
+                       @click.stop
+                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+              </div>
+
+              <div class="flex items-start justify-between mb-2"
+                   :class="{ 'ml-8': props.commentSelectionMode }">
                 <div class="flex items-center gap-2">
                   <span class="font-medium text-sm text-gray-900">{{ getUserDisplayName(activity.user) }}</span>
+                  <!-- AI 标签 -->
+                  <span v-if="activity.commentType === 'ai_completion'"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    AI
+                  </span>
                   <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
                 </div>
-                <button class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button v-if="!props.commentSelectionMode"
+                        class="text-gray-400 hover:text-gray-600 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                   </svg>
@@ -60,9 +84,11 @@
                   <div class="mb-2">
                     <div v-html="renderMarkdown(activity.summary)"></div>
                   </div>
+                  <!-- 有summary时显示查看详情按钮 -->
                   <button
+                    v-if="!props.commentSelectionMode"
                     class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
-                    @click="showDetailModal(activity)"
+                    @click.stop="showCommentDetailModal(activity)"
                   >
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -77,8 +103,9 @@
                       <div v-html="renderMarkdown(truncateContent(activity.content))"></div>
                     </div>
                     <button
+                      v-if="!props.commentSelectionMode"
                       class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
-                      @click="showCommentDetailModal(activity)"
+                      @click.stop="showCommentDetailModal(activity)"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -95,7 +122,7 @@
               </div>
 
               <!-- 反应表情（Mock） -->
-              <div class="flex items-center gap-2 mt-3">
+              <div v-if="!props.commentSelectionMode" class="flex items-center gap-2 mt-3">
                 <button class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition-colors">
                   👍 <span class="text-gray-600">2</span>
                 </button>
@@ -201,19 +228,23 @@
     </div>
 
     <!-- 评论输入框（固定在底部） -->
-    <div class="flex-shrink-0 border-t border-gray-200 pt-3">
+    <div v-if="!props.commentSelectionMode" class="flex-shrink-0 border-t border-gray-200 pt-3">
       <MarkdownEditor
         v-model="newComment"
         placeholder="添加评论... 支持 Markdown 语法"
         min-height="100px"
+        @submit="addComment"
       />
       <div class="flex justify-end mt-2">
         <button
-          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           :disabled="!newComment || newComment.trim() === ''"
           @click="addComment"
         >
           发送评论
+          <svg v-if="newComment && newComment.trim()" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
         </button>
       </div>
     </div>
@@ -265,13 +296,23 @@ interface Activity {
   oldValue?: string
   newValue?: string
   summary?: string
+  commentType?: string // 'user' | 'ai_completion' | 'ai_revision' | 'system'
 }
 
 interface Props {
   task: Task | null
+  commentSelectionMode?: boolean
+  selectedCommentIds?: string[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  commentSelectionMode: false,
+  selectedCommentIds: () => []
+})
+
+const emit = defineEmits<{
+  (e: 'commentSelectionChange', selectedIds: string[]): void
+}>()
 
 // 过滤器
 const filters = [
@@ -311,7 +352,8 @@ const loadActivities = async () => {
           userId: activity.userId,
           content: activity.content || '',
           timestamp: activity.timestamp,
-          summary: activity.summary || ''
+          summary: activity.summary || '',
+          commentType: activity.commentType || 'user'
         }
       } else if (activity.type === 'field_change') {
         // 生成字段变更描述
@@ -663,8 +705,44 @@ const formatRelativeTime = (timestamp: number) => {
   }
 }
 
+// 切换评论选择状态
+const toggleCommentSelection = (commentId: string) => {
+  if (!props.commentSelectionMode) return
+
+  const currentSelection = [...(props.selectedCommentIds || [])]
+  const index = currentSelection.indexOf(commentId)
+
+  if (index > -1) {
+    currentSelection.splice(index, 1)
+  } else {
+    currentSelection.push(commentId)
+  }
+
+  emit('commentSelectionChange', currentSelection)
+}
+
+// 获取选中的评论数据
+const getSelectedComments = () => {
+  if (!props.selectedCommentIds || props.selectedCommentIds.length === 0) {
+    return []
+  }
+
+  return activities.value
+    .filter(activity =>
+      activity.type === 'comment' && props.selectedCommentIds?.includes(activity.id)
+    )
+    .map(activity => ({
+      id: activity.id,
+      content: activity.content,
+      summary: activity.summary,
+      user: activity.user,
+      timestamp: activity.timestamp
+    }))
+}
+
 // 暴露方法供父组件调用
 defineExpose({
-  loadActivities
+  loadActivities,
+  getSelectedComments
 })
 </script>
