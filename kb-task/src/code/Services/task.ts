@@ -433,6 +433,7 @@ export function updateTask(
   if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate
   if (data.progress !== undefined) updateData.progress = data.progress
+  if (data.summary !== undefined) updateData.summary = data.summary
 
   if (data.dueDate === 0) delete updateData.dueDate
 

@@ -1,6 +1,20 @@
-{
-  "_id": "22566c4e-0560-4d0b-8cf9-e165acd66f1a",
-  "status": "completed",
-  "summary": "优化评论显示和交互体验，支持AI标签、快捷键优化和Cmd+Enter发送",
-  "content": "**任务描述：**\n\n任务详情页新增快捷操作\n1. 在任务详情页时, 按下导出, 或者 cmd + e, 会进去评论选择状态, 可以点击选中要导出哪些任务\n2. 选择后(可以不选)再次按下 cmd + e 则导出任务信息和选中的评论到剪切板\n\n**实现方案：**\n\n### 主要优化内容\n1. **评论显示优化**：支持summary字段显示和AI标签\n2. **快捷键优化**：ESC键在选择模式下退出选择状态\n3. **评论发送优化**：支持Cmd+Enter快捷发送评论\n4. **后端数据优化**：补充评论缺少的字段信息\n\n### 修改的文件\n**前端优化：**\n- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/task/TaskActivity.vue`\n  - 添加AI标签显示逻辑，支持'ai_completion'类型识别\n  - 优化评论内容显示，支持summary字段和查看详情功能\n  - 扩展Activity接口，添加commentType字段映射\n  - 为MarkdownEditor添加submit事件监听，支持Cmd+Enter发送\n  - 正确映射showCommentDetailModal函数调用\n- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/TaskDetailDrawer.vue`\n  - 修改ESC键处理逻辑，支持选择模式退出\n- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/common/MarkdownEditor.vue`\n  - 添加Cmd+Enter快捷键支持，触发submit事件\n\n**后端优化：**\n- `/Users/achen/Priv/task-banner/kb-task/src/code/Services/taskHistory.ts`\n  - 扩展Activity接口，添加评论相关完整字段\n  - 补充commentType、attachments、metadata字段映射\n  - 修正TaskComment.findAll调用，使用正确的K_SQLITE_ORM两参数格式\n  - 添加数据排序选项，确保按时间倒序返回\n- `/Users/achen/Priv/task-banner/kb-task/src/code/Models/TaskComment.ts`\n  - 确认模型定义包含所有必需字段（type、summary、attachments、metadata）\n\n### 技术要点\n- **AI标签显示**：当commentType为'ai_completion'时显示紫色AI标签\n- **摘要显示**：有summary时显示摘要并添加查看详情按钮\n- **快捷键优化**：选择模式下ESC优先退出选择状态\n- **评论发送**：支持Cmd+Enter快捷发送，提升用户体验\n- **ORM规范使用**：按照K_SQLITE_ORM文档使用正确参数格式\n- **数据完整性**：确保前后端数据字段一致，包含完整评论信息\n- **类型安全**：完整的TypeScript类型定义，确保编译通过\n\n### 验证结果\n- ✅ AI评论正确显示紫色AI标签，commentType字段正确映射\n- ✅ 评论摘要正确显示，支持查看详情弹窗功能\n- ✅ ESC键在选择模式下正确退出选择状态\n- ✅ Cmd+Enter快捷发送评论功能正常工作\n- ✅ 后端API返回完整评论数据，包含所有字段\n- ✅ 前后端数据字段完全对齐，类型定义一致\n- ✅ TypeScript编译通过，无类型错误\n- ✅ 后端测试运行成功"
-}
+[
+  {
+    "_id": "809a84e6-bf6c-4b32-aa56-d393407c5ae7",
+    "status": "completed",
+    "summary": "在任务列表选择状态下添加ESC键退出选择功能，提升用户体验",
+    "content": "**任务摘要：** 在任务列表选择状态下添加ESC键退出选择功能，提升用户体验。\n\n**任务描述：**\n在任务列表进入选择状态时, 需要支持 esc 退出(即清空选择)\n\n**实现方案：**\n- 在ProjectTaskList.vue组件中添加ESC键快捷键注册\n- 当有选中任务时，按ESC键自动清空选择状态\n- 利用现有的keyboard快捷键系统和clearSelection方法\n- 在组件卸载时正确清理快捷键注册\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/project/ProjectTaskList.vue\n\n**技术要点：**\n- 使用现有的registerShortcut/unregisterShortcut系统\n- ESC键仅在有选中任务时触发清空操作\n- 正确的组件生命周期管理，避免内存泄漏\n- 与现有的快捷键系统完美集成"
+  },
+  {
+    "_id": "682e660d-faee-4af5-90eb-13f7910b157e",
+    "status": "completed",
+    "summary": "启用成员编辑权限，允许用户编辑自己的信息和管理员编辑所有成员信息",
+    "content": "**任务摘要：** 启用成员编辑权限，允许用户编辑自己的信息和管理员编辑所有成员信息。\n\n**任务描述：**\n项目详情页的成员 tab 页\n1. 目前支持添加人员, 但成员不能编辑自己的信息, 管理员也不能编辑所有成员的信息, 要添加这个支持\n\n**实现方案：**\n- 修改ProjectMembers.vue中编辑按钮的显示条件\n- 原条件：仅管理员可编辑非所有者成员\n- 新条件：管理员可编辑非所有者成员 + 用户可编辑自己的信息\n- 利用现有的编辑对话框功能和API接口\n- 保持编辑权限的合理性和安全性\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/project/ProjectMembers.vue\n\n**技术要点：**\n- 修改编辑按钮显示条件逻辑\n- 添加用户自身信息编辑权限\n- 保持现有的编辑对话框和API调用不变\n- 权限控制合理，用户只能编辑自己或管理员可编辑所有成员"
+  },
+  {
+    "_id": "a8e2734f-eb0a-4656-9a5a-764fce2aa866",
+    "status": "completed",
+    "summary": "将重复的formatRelativeTime函数抽离到utils/time.ts，避免代码重复并提高可维护性",
+    "content": "**任务摘要：** 将重复的formatRelativeTime函数抽离到utils/time.ts，避免代码重复并提高可维护性。\n\n**任务描述：**\nformatRelativeTime我看这个方法在很多地方都有用到, 你检查一下并抽离出来放到 utils 中再去调用\n- [x] 活动历史 (TaskActivity.vue)\n- [x] 任务列表 (DetailModal.vue)\n\n**实现方案：**\n- 创建 /utils/time.ts 工具文件\n- 将formatRelativeTime函数抽离为导出函数\n- 更新TaskActivity.vue和DetailModal.vue组件\n- 移除本地函数定义，改为从utils导入\n- 保持函数功能和API完全一致\n\n**修改的文件：**\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/utils/time.ts (新建)\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/task/TaskActivity.vue\n- /Users/achen/Priv/task-banner/kb-task/frontend/src/components/common/DetailModal.vue\n\n**技术要点：**\n- 函数抽离到工具模块，提高代码复用性\n- 统一时间格式化逻辑，便于维护\n- 完整的TypeScript类型定义\n- 导入路径规范化，使用@/utils别名"
+  }
+]

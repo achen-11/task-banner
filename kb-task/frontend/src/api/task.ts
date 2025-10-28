@@ -80,12 +80,28 @@ export interface TaskActivity {
     email?: string
   } | null
   content?: string
+  summary?: string
+  commentType?: string // 'user' | 'ai_completion' | 'ai_revision' | 'system'
   mentionedUsers?: string[]
+  attachments?: Array<{
+    _id: string
+    relatedId: string
+    name: string
+    originalName: string
+    size: number
+    mimeType: string
+    url: string
+    thumbnailUrl?: string
+    uploaderId: string
+    projectId: string
+    createdAt: number
+    updatedAt: number
+  }>
+  metadata?: Record<string, any>
   field?: string
   oldValue?: string
   newValue?: string
   action?: string
-  summary?: string
   timestamp: number
 }
 

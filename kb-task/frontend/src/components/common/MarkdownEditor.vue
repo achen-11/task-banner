@@ -130,6 +130,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'save'): void
+  (e: 'submit'): void
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement>()

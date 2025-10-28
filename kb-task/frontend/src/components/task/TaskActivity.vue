@@ -260,6 +260,7 @@ import { ElMessage } from 'element-plus'
 import MarkdownEditor from '../common/MarkdownEditor.vue'
 import DetailModal from '../common/DetailModal.vue'
 import { getTaskActivities, addTaskComment, type TaskActivity as APITaskActivity } from '@/api/task'
+import { formatRelativeTime } from '@/utils/time'
 
 interface Task {
   _id: string
@@ -676,34 +677,6 @@ const getUserDisplayName = (user: Activity['user']): string => {
   return user.displayName || user.username || user.email || user._id || '未知用户'
 }
 
-// 格式化相对时间
-const formatRelativeTime = (timestamp: number) => {
-  const now = Date.now()
-  const diff = now - timestamp
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-
-  if (days > 7) {
-    const date = new Date(timestamp)
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } else if (days > 0) {
-    return `${days} 天前`
-  } else if (hours > 0) {
-    return `${hours} 小时前`
-  } else if (minutes > 0) {
-    return `${minutes} 分钟前`
-  } else {
-    return '刚刚'
-  }
-}
 
 // 切换评论选择状态
 const toggleCommentSelection = (commentId: string) => {
