@@ -54,53 +54,100 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 57021f1e-75d2-4a15-9d00-4bf53c9fc3f2 -->
-#### 1. 快捷键显示问题
-
-**任务摘要：** 将所有快捷键提示从原生 title 属性升级为 ElementPlus tooltip 组件，提供更好的悬浮提示体验
+<!-- task-id: ea91a7d0-5a4e-4a61-9716-68ed8ca400f0 -->
+#### 1. 流程改版
 
 **状态：** 已完成
 **优先级：** 中
-**创建时间：** 2025/10/27 16:51:38
-**更新时间：** 2025/10/28 12:09:24
+**创建时间：** 2025/10/28 16:24:57
+**更新时间：** 2025/10/28 16:35:42
+
+**任务摘要：** 将任务导入逻辑从覆盖内容改为创建评论，实现完整的任务变更历史记录
 
 **任务描述：**
 
-你基本明白了我的需求, 只不过不是添加 title 属性, 而是像新建按钮那样,使用 elementplus 的组件, 悬浮有弹窗提醒
+我让 ai 新建了一个 MCP, 结果发现它竟然是将更新记录通过评论的方式来进行, 我才后知后觉, 原来我们的操作逻辑是错误的!
+我们的逻辑确实应该是新建任务->编辑描述->导出->ai 完成->导入(这时其实应该是新建一个评论, 将 ai 的完成情况写在里面)->如果有修改, 我再将需要优化的内容再新建一个评论, 这时再导出(就应该是导出评论了, 或者其他方式), 所以我们应该做的
+- 1. 修改导入方法(单任务导入, 批量导入, 在任务详情页导入), 将导入到 content 变为新建评论
+- 2. ai 的内容通常很多, 所以评论需要一个类似"查看详情"的一个弹窗(当内容超多时), 类似现在已有的显示摘要, 然后查看详情
+- 3. 评论之前一直没有去管, 我看前端很多还是静态的内容, 比如固定会有两个点赞在那里, 这一块应该是还没写活的原因
 
 **实现方案：**
 
-1. 更新 AppHeader.vue 中的收起按钮
-   - 将原生 `title` 属性替换为 `el-tooltip` 组件
-   - 添加 Keyboard 图标增强视觉效果
-   - 快捷键显示：⌘B
+### 1. 数据模型扩展
+- 扩展 `TaskComment` 模型，新增字段：
+  - `summary`: 评论摘要（用于长内容）
+  - `type`: 评论类型（'user' | 'ai_completion' | 'ai_revision' | 'system'）
+  - `attachments`: 支持附件
+  - `metadata`: 额外信息存储
+- 添加相关索引优化查询性能
 
-2. 更新 MarkdownEditor.vue 中的工具栏按钮
-   - 为所有工具栏按钮添加 `el-tooltip` 组件
-   - 有快捷键的按钮（加粗、斜体）使用完整的 tooltip 模板，包含 Keyboard 图标
-   - 无快捷键的按钮使用简单的 `content` 属性
+### 2. API 接口设计
+- `POST /api/task/import-as-comment` - 专门的导入为评论接口
+- `GET /api/task/comments` - 获取任务评论列表，支持分页和类型过滤
+- 扩展原有评论 API，支持新字段和权限控制
+
+### 3. 前端导入逻辑优化
+- 修改 `ProjectTaskList.vue` 的导入功能
+- 导入时默认创建评论而不是覆盖内容
+- 支持批量导入为评论，保持任务原始描述不变
+
+### 4. 评论展示组件
+- 创建 `CommentList.vue` 组件
+- 支持评论类型过滤（用户/AI完成/AI修改/系统）
+- 长内容的"查看详情"展开/收起功能（200字截取）
+- 不同评论类型的视觉区分
+- 支持点赞、回复、编辑、删除等交互功能
+
+### 5. 导出功能扩展
+- 扩展 `exportTaskToMarkdown` 函数，支持评论历史导出
+- AI 评论按摘要导出，完整内容放在附录
+- 用户评论和系统消息分类显示
+- 导出时用户可选择是否包含评论历史
+
+### 6. TaskDetailDrawer 集成
+- 替换活动历史为评论列表
+- 导出时智能检测评论，提供导出选项
+- 完整的评论管理体验
 
 **修改文件：**
-
-- `kb-task/frontend/src/components/AppHeader.vue`
-- `kb-task/frontend/src/components/common/MarkdownEditor.vue`
+- `/Users/achen/Priv/task-banner/kb-task/src/code/Models/TaskComment.ts` - 扩展评论数据模型
+- `/Users/achen/Priv/task-banner/kb-task/src/api/task.ts` - 添加新的评论相关 API
+- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/project/ProjectTaskList.vue` - 修改导入逻辑
+- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/task/CommentList.vue` - 新建评论展示组件
+- `/Users/achen/Priv/task-banner/kb-task/frontend/src/components/TaskDetailDrawer.vue` - 集成评论列表
+- `/Users/achen/Priv/task-banner/kb-task/frontend/src/utils/export.ts` - 扩展导出功能
 
 **技术要点：**
-
-1. 统一使用 ElementPlus 的 `el-tooltip` 组件
-2. 对于有快捷键的按钮，使用自定义模板显示 Keyboard 图标和快捷键说明
-3. 对于无快捷键的按钮，使用简单的 `content` 属性
-4. 所有 tooltip 的 placement 统一为 `bottom`
-5. 导入 `Keyboard` 图标组件从 `lucide-vue-next`
+1. 正确的数据流向：AI 完成内容作为评论保存，不再覆盖原始任务描述
+2. 完整的变更历史：每次导入都作为新评论，保留完整的修改记录
+3. 智能内容展示：长内容自动截取摘要，支持展开查看详情
+4. 灵活的导出选项：可选择是否包含评论历史，AI 评论按摘要导出
+5. 评论类型管理：支持用户评论、AI完成、AI修改、系统消息等不同类型
+6. 权限控制：区分成员和admin权限，支持编辑自己的评论
 
 **验证结果：**
+- ✅ 数据库模型扩展成功，支持新的评论字段
+- ✅ API 接口工作正常，支持导入为评论和评论列表查询
+- ✅ 前端导入逻辑修改完成，默认创建评论而不是覆盖内容
+- ✅ 评论展示组件功能完整，支持类型过滤和内容展开
+- ✅ 导出功能支持评论历史，可选择性导出
+- ✅ TaskDetailDrawer 集成完成，替换活动历史为评论列表
 
-- ✅ 构建成功，无编译错误
-- ✅ 所有快捷键提示已升级为 ElementPlus tooltip 组件
-- ✅ 视觉效果与新建按钮保持一致
+**新的工作流程：**
+```
+1. 新建任务
+2. 编辑描述
+3. 导出任务 → AI 处理
+4. AI 完成 → 导入 → 自动创建评论 ✅
+5. 用户反馈 → 再创建评论 ✅
+6. 导出时 → 可选择包含评论历史 ✅
+```
+
+这个改版完美解决了原有逻辑问题，实现了正确的任务变更历史记录机制。
 
 ---
 
 
-> 📅 导出时间：2025/10/28 12:09:25
-> 🤖 由 Task-Flow 生成
+> 📅 导出时间：2025/10/28 16:24:57
+**> 🤖 由 Task-Flow 生成**

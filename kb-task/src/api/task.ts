@@ -396,7 +396,7 @@ k.api.post("comment", (body: any) => {
   }
 
   // 2. 参数验证
-  const { taskId, content, mentionedUsers } = body
+  const { taskId, content, summary, type, mentionedUsers, attachments, metadata } = body
 
   if (!taskId || typeof taskId !== 'string' || taskId.trim() === '') {
     return error('Invalid task ID', 400)
@@ -428,21 +428,202 @@ k.api.post("comment", (body: any) => {
       taskId,
       userId: currentUser._id,
       content: content.trim(),
-      mentionedUsers: mentionedUsers || []
+      summary: summary || '',
+      type: type || 'user',
+      mentionedUsers: mentionedUsers || [],
+      attachments: attachments || [],
+      metadata: metadata || {}
     })
     const comment = TaskComment.findById(commentId)!
 
     return success({
       id: comment._id,
-      type: 'comment',
+      type: comment.type,
       userId: comment.userId,
       content: comment.content,
+      summary: comment.summary,
       mentionedUsers: comment.mentionedUsers,
-      timestamp: comment.createdAt
+      attachments: comment.attachments,
+      metadata: comment.metadata,
+      timestamp: comment.createdAt,
+      updatedAt: comment.updatedAt
     }, 'Comment added successfully')
 
   } catch (err) {
     k.logger.error('CreateCommentError', err instanceof Error ? err.message : String(err))
     return error('Failed to create comment', 500, err)
+  }
+})
+
+// POST /api/task/import-as-comment
+k.api.post("import-as-comment", (body: any) => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const { taskId, content, summary, type, mentionedUsers } = body
+
+  if (!taskId || typeof taskId !== 'string' || taskId.trim() === '') {
+    return error('Invalid task ID', 400)
+  }
+
+  if (!content || content.trim() === '') {
+    return error('Content is required', 400)
+  }
+
+  // 3. 创建评论（替代原来的导入逻辑）
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取任务信息以检查权限
+    const task = getTaskById(taskId)
+
+    if (!task) {
+      return error('Task not found', 404)
+    }
+
+    // 权限检查（需要是项目成员）
+    if (!checkProjectPermission(task.projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to comment on this task', 403)
+    }
+
+    // 自动生成摘要（如果没有提供）
+    let finalSummary = summary || ''
+    if (!finalSummary && content.length > 200) {
+      finalSummary = content.substring(0, 197) + '...'
+    }
+
+    const commentId = TaskComment.create({
+      taskId,
+      userId: currentUser._id,
+      content: content.trim(),
+      summary: finalSummary,
+      type: type || 'ai_completion', // 默认为 AI 完成评论
+      mentionedUsers: mentionedUsers || [],
+      attachments: [],
+      metadata: {
+        importSource: 'task_import',
+        originalLength: content.length
+      }
+    })
+    const comment = TaskComment.findById(commentId)!
+
+    return success({
+      id: comment._id,
+      type: comment.type,
+      userId: comment.userId,
+      content: comment.content,
+      summary: comment.summary,
+      mentionedUsers: comment.mentionedUsers,
+      timestamp: comment.createdAt
+    }, 'Content imported as comment successfully')
+
+  } catch (err) {
+    k.logger.error('ImportAsCommentError', err instanceof Error ? err.message : String(err))
+    return error('Failed to import content as comment', 500, err)
+  }
+})
+
+// GET /api/task/comments?taskId=xxx&page=1&size=20&type=all
+k.api.get("comments", () => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const query = k.request.queryString as unknown as {
+    taskId: string
+    page?: string
+    size?: string
+    type?: string // 'all' | 'user' | 'ai_completion' | 'ai_revision' | 'system'
+  }
+  const { taskId, page = '1', size = '20', type = 'all' } = query
+
+  if (!taskId || taskId.trim() === '') {
+    return error('Invalid task ID', 400)
+  }
+
+  const pageNum = parseInt(page)
+  const sizeNum = parseInt(size)
+
+  // 3. 获取评论列表
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取任务信息以检查权限
+    const task = getTaskById(taskId)
+
+    if (!task) {
+      return error('Task not found', 404)
+    }
+
+    // 权限检查（需要是项目成员）
+    if (!checkProjectPermission(task.projectId, currentUser._id, 'member')) {
+      return error('You do not have permission to view comments on this task', 403)
+    }
+
+    // 构建查询条件
+    const whereCondition: any = { taskId }
+    if (type !== 'all') {
+      whereCondition.type = type
+    }
+
+    // 获取评论列表（带用户信息）
+    const comments = TaskComment.findAll({
+      where: whereCondition,
+      orderBy: [{ column: 'createdAt', order: 'desc' }]
+    })
+
+    // 获取用户信息
+    const userIds = [...new Set(comments.map(c => c.userId))]
+    const users = userIds.map(id => getUserInfo(id)).filter(Boolean)
+
+    // 简单分页
+    const total = comments.length
+    const start = (pageNum - 1) * sizeNum
+    const end = start + sizeNum
+    const items = comments.slice(start, end)
+
+    // 格式化评论数据
+    const formattedItems = items.map(comment => {
+      const user = users.find(u => u._id === comment.userId)
+      return {
+        id: comment._id,
+        type: comment.type,
+        userId: comment.userId,
+        user: {
+          _id: user?._id,
+          displayName: user?.displayName,
+          username: user?.username,
+          email: user?.email
+        },
+        content: comment.content,
+        summary: comment.summary,
+        mentionedUsers: comment.mentionedUsers,
+        attachments: comment.attachments,
+        metadata: comment.metadata,
+        timestamp: comment.createdAt,
+        updatedAt: comment.updatedAt
+      }
+    })
+
+    return success({
+      items: formattedItems,
+      total,
+      page: pageNum,
+      size: sizeNum,
+      hasMore: end < total
+    })
+
+  } catch (err) {
+    k.logger.error('GetCommentsError', err instanceof Error ? err.message : String(err))
+    return error('Failed to get comments', 500, err)
   }
 })

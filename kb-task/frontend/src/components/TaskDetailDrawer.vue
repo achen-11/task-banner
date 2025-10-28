@@ -162,10 +162,19 @@
                 </div>
               </div>
 
-              <!-- 右列：活动历史（内部滚动） -->
+              <!-- 右列：评论列表（内部滚动） -->
               <div class="h-full pl-3 -ml-3 overflow-hidden">
                 <div class="h-full pl-3">
-                  <TaskActivity ref="taskActivityRef" :task="currentTask" />
+                  <CommentList v-if="currentTask && mode === 'view'" :task-id="currentTask._id" />
+                  <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400">
+                    <div class="text-center">
+                      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <p>创建任务后将显示评论</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -180,7 +189,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
-import TaskActivity from './task/TaskActivity.vue'
+import CommentList from './task/CommentList.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard } from '@/utils/export'
 import type { Task, TaskDetail } from '@/types/task'
@@ -224,8 +233,6 @@ const emit = defineEmits<{
 // 标题输入框引用
 const titleInputRef = ref<HTMLInputElement>()
 
-// 活动历史组件引用
-const taskActivityRef = ref<InstanceType<typeof TaskActivity>>()
 
 // 创建模式下的新任务数据
 const newTaskData = ref<Partial<Task>>({
@@ -327,18 +334,62 @@ const handleExportTask = async () => {
   }
 
   try {
-    // 导出 Markdown 并复制到剪贴板
-    const markdown = exportTaskToMarkdown(currentTask.value)
-    const success = await copyToClipboard(markdown)
+    // 检查是否有评论
+    const hasComments = true // TODO: 从评论组件获取评论数据
 
-    if (success) {
-      ElMessage.success('任务已导出到剪贴板')
+    if (hasComments) {
+      // 显示导出选项对话框
+      const result = await ElMessageBox.confirm(
+        '是否包含评论历史？包含评论可以导出完整的 AI 完成记录和用户反馈。',
+        '导出选项',
+        {
+          confirmButtonText: '包含评论',
+          cancelButtonText: '仅任务信息',
+          type: 'question',
+          distinguishCancelAndClose: true,
+        }
+      ).catch(() => {
+        return { includeComments: false }
+      })
+
+      const includeComments = (result as any) !== 'cancel' && (result as any) !== 'close'
+      const comments = includeComments ? await fetchComments() : []
+
+      // 导出 Markdown 并复制到剪贴板
+      const markdown = exportTaskToMarkdown(currentTask.value, undefined, { includeComments, comments })
+      const success = await copyToClipboard(markdown)
+
+      if (success) {
+        ElMessage.success(`任务已导出到剪贴板${includeComments ? '（包含评论）' : ''}`)
+      } else {
+        ElMessage.error('复制失败，请重试')
+      }
     } else {
-      ElMessage.error('复制失败，请重试')
+      // 没有评论，直接导出
+      const markdown = exportTaskToMarkdown(currentTask.value)
+      const success = await copyToClipboard(markdown)
+
+      if (success) {
+        ElMessage.success('任务已导出到剪贴板')
+      } else {
+        ElMessage.error('复制失败，请重试')
+      }
     }
   } catch (error) {
     console.error('Export task error:', error)
     ElMessage.error('导出任务失败')
+  }
+}
+
+// 获取任务评论
+const fetchComments = async () => {
+  try {
+    const response = await fetch(`/api/task/comments?taskId=${currentTask.value?._id}&size=100`)
+    const data = await response.json()
+    return data.code === 200 ? data.data.items : []
+  } catch (error) {
+    console.error('Failed to fetch comments:', error)
+    return []
   }
 }
 
@@ -564,11 +615,7 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
     // 通知父组件任务已更新
     emit('task-updated', updatedTask)
 
-    // 刷新活动历史
-    if (taskActivityRef.value) {
-      await taskActivityRef.value.loadActivities()
-    }
-  } catch (err: any) {
+    } catch (err: any) {
     console.error('Failed to update task:', err)
     ElMessage.error(err?.message || '更新任务失败')
   }

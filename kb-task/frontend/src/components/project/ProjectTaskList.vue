@@ -531,7 +531,7 @@ const confirmImportTasks = async () => {
       summary: editableSummaries.value[index] || ''
     }))
 
-    // 处理每个任务（创建或更新），返回操作类型和结果
+    // 处理每个任务（导入为评论）
     const promises = finalTasks.map(async task => {
       // 如果有 _id，先检查任务是否存在
       if (task._id) {
@@ -539,20 +539,26 @@ const confirmImportTasks = async () => {
           // 尝试获取任务详情，检查是否存在
           const existingTask = await getTaskDetail(task._id)
 
-          // 任务存在，更新它
-          const result = await updateTaskAPI({
-            id: task._id!,
-            title: task.title || existingTask.title,
-            content: task.content !== undefined ? task.content : existingTask.content,
-            status: task.status || existingTask.status,
-            priority: task.priority || existingTask.priority,
-            assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,
-            tagIds: task.tagIds || existingTask.tagIds,
-            moduleIds: task.moduleIds || existingTask.moduleIds,
-            dueDate: task.dueDate !== undefined ? task.dueDate : existingTask.dueDate,
-            summary: task.summary || ''
+          // 任务存在，将内容作为评论导入
+          const response = await fetch('/api/task/import-as-comment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              taskId: task._id!,
+              content: task.content || '',
+              summary: task.summary || '',
+              type: 'ai_completion',
+              mentionedUsers: []
+            })
           })
-          return { type: 'updated' as const, result }
+
+          if (!response.ok) {
+            throw new Error(`Import as comment failed: ${response.statusText}`)
+          }
+
+          return { type: 'commented' as const, taskId: task._id }
         } catch (error: any) {
           // 任务不存在（404错误），创建新任务
           if (error?.response?.status === 404 || error?.message?.includes('not found')) {
@@ -592,14 +598,14 @@ const confirmImportTasks = async () => {
 
     const results = await Promise.all(promises)
 
-    // 统计创建和更新的数量
+    // 统计操作数量
     const createdCount = results.filter(r => r.type === 'created').length
-    const updatedCount = results.filter(r => r.type === 'updated').length
+    const commentedCount = results.filter(r => r.type === 'commented').length
 
     // 显示结果消息
     const messages: string[] = []
     if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
-    if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
+    if (commentedCount > 0) messages.push(`导入为评论 ${commentedCount} 个`)
     ElMessage.success(`成功${messages.join('、')}任务`)
 
     // 关闭对话框

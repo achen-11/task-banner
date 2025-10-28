@@ -70,7 +70,8 @@ export function exportTasksToJSON(tasks: (Task | TaskDetail)[]): string {
 /**
  * 导出任务为 Markdown 格式
  */
-export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: string): string {
+export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: string, options?: { includeComments?: boolean, comments?: any[] }): string {
+  const { includeComments = false, comments = [] } = options || {}
   const lines: string[] = []
 
   // 添加项目信息（如果有）
@@ -169,11 +170,67 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(taskContent)
   lines.push('')
 
+  // 添加评论历史（如果选择了包含评论）
+  if (includeComments && comments && comments.length > 0) {
+    lines.push('---\n')
+    lines.push('## 📝 评论历史\n')
+
+    // 按类型分组评论
+    const aiComments = comments.filter(c => c.type === 'ai_completion' || c.type === 'ai_revision')
+    const userComments = comments.filter(c => c.type === 'user')
+    const systemComments = comments.filter(c => c.type === 'system')
+
+    // AI 完成记录
+    if (aiComments.length > 0) {
+      lines.push('### 🤖 AI 完成记录\n')
+      aiComments.forEach((comment, index) => {
+        lines.push(`#### AI 完成 ${index + 1} (${formatDate(comment.timestamp)})\n`)
+        lines.push(`**摘要**: ${comment.summary || '无摘要'}\n`)
+        lines.push(`**内容**: ${comment.content.length > 200 ? comment.content.substring(0, 200) + '...' : comment.content}\n`)
+        lines.push(`**完整内容**: [查看完整内容](#ai-full-${index})\n`)
+        lines.push('---\n')
+      })
+    }
+
+    // 用户评论
+    if (userComments.length > 0) {
+      lines.push('### 👥 用户评论\n')
+      userComments.forEach((comment, index) => {
+        lines.push(`#### ${comment.user?.displayName || comment.user?.username || '未知用户'} (${formatDate(comment.timestamp)})\n`)
+        lines.push(`${comment.content}\n`)
+        lines.push('---\n')
+      })
+    }
+
+    // 系统消息
+    if (systemComments.length > 0) {
+      lines.push('### 🔔 系统消息\n')
+      systemComments.forEach(comment => {
+        lines.push(`**${formatDate(comment.timestamp)}**: ${comment.content}\n`)
+      })
+      lines.push('---\n')
+    }
+
+    // AI 完整内容附录
+    if (aiComments.length > 0) {
+      lines.push('## 📎 附录：AI 完成完整内容\n')
+      aiComments.forEach((comment, index) => {
+        lines.push(`<a id="ai-full-${index}"></a>`)
+        lines.push(`### AI 完成 ${index + 1} - 完整内容\n`)
+        lines.push(`${comment.content}\n`)
+        lines.push('---\n')
+      })
+    }
+  }
+
   lines.push('---\n')
 
   // 添加页脚
   lines.push(`\n> 📅 导出时间：${formatDate(Date.now())}`)
   lines.push(`> 🤖 由 Task-Flow 生成`)
+  if (includeComments && comments && comments.length > 0) {
+    lines.push(`> 📝 包含 ${comments.length} 条评论`)
+  }
 
   return lines.join('\n')
 }
