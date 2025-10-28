@@ -36,8 +36,11 @@ export function useKeyboard() {
                        target.tagName === 'TEXTAREA' ||
                        target.contentEditable === 'true'
 
-        // 如果在输入框中，只允许特定的快捷键（Cmd+S, Cmd+E 等）
-        if (isInput && !shortcut.meta && !shortcut.ctrl) {
+        // ESC键是特殊情况，即使在输入框中也应该工作
+        const isEscapeKey = event.key === 'Escape'
+
+        // 如果在输入框中，只允许特定的快捷键（Cmd+S, Cmd+E 等）和ESC键
+        if (isInput && !shortcut.meta && !shortcut.ctrl && !isEscapeKey) {
           continue
         }
 

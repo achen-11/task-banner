@@ -732,7 +732,8 @@ onMounted(() => {
     description: '退出选择状态',
     category: '任务操作',
     handler: () => {
-      if (selectedTaskIds.value.size > 0) {
+      // 只有在抽屉未打开时才清空选择
+      if (selectedTaskIds.value.size > 0 && !isDrawerOpen.value) {
         clearSelection()
       }
     }

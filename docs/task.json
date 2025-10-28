@@ -1,6 +1,6 @@
 {
-  "_id": "34649158-cb45-4bda-882a-93c78250056b",
-  "status": "review",
-  "summary": "修复导入功能问题，优化确认弹窗显示，确保任务状态正确更新，并建立AI提示词规范",
-  "content": "**任务摘要：** 修复导入功能问题，优化确认弹窗显示，确保任务状态正确更新，并建立AI提示词规范。\n\n**任务描述：**\n1. 现在导入任务后不会更新任务的 updatedAt 字段, 理论上是要更新的\n2. 导入任务确认弹窗显示的是未知任务, 导入时应该根据_id 查询然后回填\n3. 任务状态现在不会更新\n4. 更新提示词, 要要求 ai 任务完成后 task.json 的状态要是待验收, 而不是已完成\n\n**实现方案：**\n- **修复 updatedAt 字段更新**：在 `updateTask` 服务函数中添加 `summary` 字段的更新逻辑\n- **优化导入确认弹窗**：根据 `_id` 查询现有任务信息并回填，显示任务对比信息\n- **修复任务状态更新**：为有 `_id` 的任务添加状态更新逻辑，不仅添加评论\n- **建立AI提示词规范**：创建 AI 提示词指南文档，要求完成后状态为 `review`（待验收）\n\n**修改的文件：**\n- `src/code/Services/task.ts` - 修复 summary 字段更新\n- `frontend/src/components/project/ProjectTaskList.vue` - 优化导入逻辑和确认弹窗\n- `frontend/src/types/task.ts` - 添加AI状态说明注释\n- `frontend/src/utils/export.ts` - 添加AI状态说明注释\n- `docs/ai-prompt-guidelines.md` - 新建AI提示词指南文档\n\n**技术要点：**\n- 后端服务层正确处理 summary 字段更新，确保 updatedAt 时间戳更新\n- 前端导入时根据 `_id` 查询现有任务，提供详细对比信息\n- 区分新建、更新、评论三种导入操作类型\n- 确立 `review` 状态作为AI完成的标准，符合质量管控流程"
+  "_id": "1043",
+  "status": "completed",
+  "summary": "修复快捷键ESC功能，支持任务列表选择状态退出和任务详情独立关闭",
+  "content": "**任务摘要：** 修复快捷键ESC功能，支持任务列表选择状态退出和任务详情独立关闭。\n\n**任务描述：**\n1. 在任务列表进入选择状态时, 需要支持 esc 退出(即清空选择)\n\n**用户反馈问题：**\n1. 任务列表-选中任务再按 esc 无效\n2. 选中任务->打开任务详情->按 esc: 会退出任务详情, 且清空已选任务 (期望: 仅关闭任务)\n\n**实现方案：**\n- **修复ESC键在输入框中的限制**：修改 `useKeyboard.ts` 允许ESC键作为特殊情况，即使在输入框中也能触发快捷键\n- **修复任务详情ESC冲突**：修改 `ProjectTaskList.vue` 的ESC处理逻辑，只有在抽屉未打开时才清空任务选择\n\n**修改的文件：**\n- `frontend/src/composables/useKeyboard.ts` - 添加ESC键特殊处理逻辑，允许在输入框中工作\n- `frontend/src/components/project/ProjectTaskList.vue` - 修改ESC处理器，添加抽屉状态检查\n\n**技术要点：**\n- ESC键作为全局快捷键的特殊地位，即使在输入框中也需要工作\n- 组件间快捷键冲突处理，通过状态检查避免误操作\n- 用户体验优化：区分选择状态退出和详情关闭的不同操作\n\n**测试验证：**\n1. 任务列表中选择任务后按ESC可以正常清空选择\n2. 选中任务→打开详情→按ESC仅关闭详情，保持任务选择状态\n3. TypeScript编译无错误"
 }
