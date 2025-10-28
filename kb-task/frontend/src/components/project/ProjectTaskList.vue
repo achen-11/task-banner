@@ -235,82 +235,14 @@
       @task-created="handleTaskCreated" @task-updated="handleTaskUpdated" @task-deleted="handleTaskDeleted" />
 
     <!-- 导入确认对话框 -->
-    <el-dialog v-model="importConfirmVisible" title="确认导入任务" width="700px" :append-to-body="true">
-      <div class="space-y-4">
-        <div class="text-sm text-gray-600 mb-4">
-          检测到 {{ tasksToImport.length }} 个任务，请确认并编辑任务摘要：
-        </div>
-
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          <div v-for="(task, index) in tasksToImport" :key="index" class="border border-gray-200 rounded-lg p-3"
-               :class="task._id && task.existingInfo ? 'border-blue-200' : ''">
-            <div class="flex items-start gap-2 mb-2">
-              <div class="flex-1">
-                <!-- 任务标题 -->
-                <h4 class="text-sm font-medium text-gray-900 mb-1">
-                  {{ task.title || '未命名任务' }}
-                  <span v-if="task._id" class="text-xs text-gray-500 ml-1">#{{ task._id.slice(-6) }}</span>
-                </h4>
-
-                <!-- 状态标签 -->
-                <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
-                  <span class="px-1.5 py-0.5 rounded" :class="getStatusBadgeClass(task.status || 'todo')">
-                    {{ getStatusText(task.status || 'todo') }}
-                  </span>
-                  <span class="px-1.5 py-0.5 rounded" :class="getPriorityBadgeClass(task.priority || 'medium')">
-                    {{ getPriorityText(task.priority || 'medium') }}优先级
-                  </span>
-                  <span v-if="task._id && task.existingInfo" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">
-                    更新现有任务
-                  </span>
-                  <span v-else-if="task._id" class="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-xs">
-                    任务不存在（将新建）
-                  </span>
-                  <span v-else class="px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-xs">
-                    新建任务
-                  </span>
-                </div>
-
-                <!-- 现有任务信息对比 -->
-                <div v-if="task._id && task.existingInfo" class="text-xs text-gray-600 bg-white rounded p-2 mb-2">
-                  <div class="font-medium text-gray-700 mb-1">现有任务信息：</div>
-                  <div class="grid grid-cols-3 gap-2">
-                    <div>
-                      <span class="text-gray-500">标题:</span> {{ task.existingInfo.title }}
-                    </div>
-                    <div>
-                      <span class="text-gray-500">状态:</span>
-                      <span class="ml-1 px-1 py-0.5 rounded text-xs" :class="getStatusBadgeClass(task.existingInfo.status)">
-                        {{ getStatusText(task.existingInfo.status) }}
-                      </span>
-                    </div>
-                    <div>
-                      <span class="text-gray-500">优先级:</span>
-                      <span class="ml-1 px-1 py-0.5 rounded text-xs" :class="getPriorityBadgeClass(task.existingInfo.priority)">
-                        {{ getPriorityText(task.existingInfo.priority) }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="block text-xs font-medium text-gray-700">任务摘要</label>
-              <el-input v-model="editableSummaries[index]" type="textarea" :rows="2" placeholder="简要描述此次变更的内容..."
-                maxlength="100" show-word-limit size="small" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <el-button @click="importConfirmVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmImportTasks">确认导入</el-button>
-        </div>
-      </template>
-    </el-dialog>
+    <ImportTaskDialog
+      :visible="importConfirmVisible"
+      :tasks="tasksToImport"
+      :loading="importing"
+      @update:visible="importConfirmVisible = $event"
+      @confirm="handleImportConfirm"
+      @cancel="importConfirmVisible = false"
+    />
   </div>
 </template>
 
@@ -318,8 +250,17 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
+import ImportTaskDialog from './ImportTaskDialog.vue'
 import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution } from '@/utils/export'
+import { formatDate } from '@/utils/time'
+import {
+  getStatusBadgeClass,
+  getStatusText,
+  getStatusIconClass,
+  getPriorityBadgeClass,
+  getPriorityText
+} from '@/utils/taskStatus'
 import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
 import { Keyboard } from 'lucide-vue-next'
 import type { Task } from '@/types/task'
@@ -351,6 +292,7 @@ const selectedTaskIds = ref<Set<string>>(new Set())
 
 // 导入确认对话框状态
 const importConfirmVisible = ref(false)
+const importing = ref(false)
 const tasksToImport = ref<Array<Partial<Task> & {
   summary?: string
   existingInfo?: {
@@ -360,7 +302,6 @@ const tasksToImport = ref<Array<Partial<Task> & {
   }
   aiSolution?: string
 }>>([])
-const editableSummaries = ref<Record<number, string>>({})
 
 // 无限滚动相关
 const loadMoreTrigger = ref<HTMLElement | null>(null)
@@ -599,10 +540,6 @@ const importTasksHelper = async (content: string) => {
 
     // 保存待导入的任务并显示确认对话框
     tasksToImport.value = enrichedTasks
-    editableSummaries.value = {}
-    enrichedTasks.forEach((task, index) => {
-      editableSummaries.value[index] = task.summary || ''
-    })
     importConfirmVisible.value = true
   } catch (error) {
     console.error('Parse tasks error:', error)
@@ -610,15 +547,10 @@ const importTasksHelper = async (content: string) => {
   }
 }
 
-// 确认导入任务
-const confirmImportTasks = async () => {
+// 处理导入确认
+const handleImportConfirm = async (finalTasks: any[]) => {
+  importing.value = true
   try {
-    // 更新任务的 summary
-    const finalTasks = tasksToImport.value.map((task, index) => ({
-      ...task,
-      summary: editableSummaries.value[index] || ''
-    }))
-
     // 处理每个任务（导入为评论）
     const promises = finalTasks.map(async task => {
       // 如果有 _id，先检查任务是否存在
@@ -717,13 +649,14 @@ const confirmImportTasks = async () => {
     // 关闭对话框
     importConfirmVisible.value = false
     tasksToImport.value = []
-    editableSummaries.value = {}
 
     // 刷新任务列表
     await loadTasks()
   } catch (error: any) {
     console.error('Import from markdown error:', error)
     ElMessage.error(`导入失败：${error?.message || '未知错误'}`)
+  } finally {
+    importing.value = false
   }
 }
 
@@ -895,101 +828,6 @@ const getShortcutTooltip = (key: string, meta = false, ctrl = false, shift = fal
   return `快捷键: ${shortcut}`
 }
 
-// 获取状态图标样式
-const getStatusIconClass = (status: string) => {
-  const classMap: Record<string, string> = {
-    todo: 'border-2 border-gray-300 text-gray-300',
-    in_progress: 'bg-blue-500 text-white',
-    completed: 'bg-green-500 text-white'
-  }
-  return classMap[status] || classMap.todo
-}
-
-// 获取优先级徽章样式
-const getPriorityBadgeClass = (priority: string) => {
-  const classMap: Record<string, string> = {
-    low: 'bg-gray-100 text-gray-600',
-    medium: 'bg-yellow-100 text-yellow-700',
-    high: 'bg-red-100 text-red-700'
-  }
-  return classMap[priority] || classMap.medium
-}
-
-// 获取优先级文本
-const getPriorityText = (priority: string) => {
-  const textMap: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高'
-  }
-  return textMap[priority] || priority
-}
-
-// 获取状态徽章样式
-const getStatusBadgeClass = (status: string) => {
-  const classMap: Record<string, string> = {
-    todo: 'bg-gray-100 text-gray-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    review: 'bg-orange-100 text-orange-700',
-    completed: 'bg-green-100 text-green-700'
-  }
-  return classMap[status] || classMap.todo
-}
-
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const textMap: Record<string, string> = {
-    todo: '待办',
-    in_progress: '进行中',
-    review: '待验收',
-    completed: '已完成'
-  }
-  return textMap[status] || status
-}
 
 // 格式化日期（显示相对时间或完整日期）
-const formatDate = (timestamp: number) => {
-  const now = Date.now()
-  const diff = now - timestamp
-
-  const minute = 60 * 1000
-  const hour = 60 * minute
-  const day = 24 * hour
-
-  if (diff < minute) {
-    return '刚刚'
-  } else if (diff < hour) {
-    const minutes = Math.floor(diff / minute)
-    return `${minutes}分钟前`
-  } else if (diff < day) {
-    const hours = Math.floor(diff / hour)
-    return `${hours}小时前`
-  } else {
-    // 计算今天0点的时间
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayTime = today.getTime()
-
-    // 计算 timestamp 是哪一天，和今天的天数差
-    const inputDate = new Date(timestamp)
-    inputDate.setHours(0, 0, 0, 0)
-    const inputTime = inputDate.getTime()
-    const dayDiff = Math.floor((todayTime - inputTime) / day)
-
-    if (dayDiff === 0) {
-      // 今天，但是前面已判断过 <day，不会到这里
-      return '今天'
-    } else if (dayDiff === 1) {
-      return '昨天'
-    } else if (dayDiff === 2) {
-      return '前天'
-    } else {
-      // 超过前天显示具体日期
-      return new Date(timestamp).toLocaleDateString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit'
-      })
-    }
-  }
-}
 </script>

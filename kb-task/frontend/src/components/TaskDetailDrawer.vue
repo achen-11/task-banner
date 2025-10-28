@@ -215,6 +215,12 @@ import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard } from '@/utils/export'
+import {
+  getStatusBadgeClass,
+  getStatusText,
+  getPriorityBadgeClass,
+  getPriorityText
+} from '@/utils/taskStatus'
 import type { Task, TaskDetail } from '@/types/task'
 
 interface Attachment {
@@ -445,25 +451,6 @@ const generateExportContent = (task: Task | TaskDetail, comments: any[]) => {
   return content
 }
 
-// 获取状态文本
-const getStatusText = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    todo: '待办',
-    in_progress: '进行中',
-    completed: '已完成'
-  }
-  return statusMap[status] || status
-}
-
-// 获取优先级文本
-const getPriorityText = (priority: string): string => {
-  const priorityMap: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高'
-  }
-  return priorityMap[priority] || priority
-}
 
 // 导出任务信息到剪切板（不包含评论）
 const exportTaskToClipboard = async () => {
