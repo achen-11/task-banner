@@ -5,32 +5,60 @@
       <!-- 工具栏 -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <button @click="insertBold" title="加粗 (Cmd/Ctrl+B)" class="toolbar-btn">
-            <Bold :size="16" />
-          </button>
-          <button @click="insertItalic" title="斜体 (Cmd/Ctrl+I)" class="toolbar-btn">
-            <Italic :size="16" />
-          </button>
-          <button @click="insertUnderline" title="下划线" class="toolbar-btn">
-            <Underline :size="16" />
-          </button>
+          <el-tooltip placement="bottom">
+            <template #content>
+              <div class="flex items-center gap-1.5">
+                <Keyboard :size="14" />
+                <span>加粗 (⌘B / Ctrl+B)</span>
+              </div>
+            </template>
+            <button @click="insertBold" class="toolbar-btn">
+              <Bold :size="16" />
+            </button>
+          </el-tooltip>
+          <el-tooltip placement="bottom">
+            <template #content>
+              <div class="flex items-center gap-1.5">
+                <Keyboard :size="14" />
+                <span>斜体 (⌘I / Ctrl+I)</span>
+              </div>
+            </template>
+            <button @click="insertItalic" class="toolbar-btn">
+              <Italic :size="16" />
+            </button>
+          </el-tooltip>
+          <el-tooltip content="下划线" placement="bottom">
+            <button @click="insertUnderline" class="toolbar-btn">
+              <Underline :size="16" />
+            </button>
+          </el-tooltip>
           <span class="divider"></span>
-          <button @click="insertOrderedList" title="有序列表" class="toolbar-btn">
-            <ListOrdered :size="16" />
-          </button>
-          <button @click="insertBulletList" title="无序列表" class="toolbar-btn">
-            <List :size="16" />
-          </button>
-          <button @click="insertTaskList" title="任务列表" class="toolbar-btn">
-            <ListChecks :size="16" />
-          </button>
+          <el-tooltip content="有序列表" placement="bottom">
+            <button @click="insertOrderedList" class="toolbar-btn">
+              <ListOrdered :size="16" />
+            </button>
+          </el-tooltip>
+          <el-tooltip content="无序列表" placement="bottom">
+            <button @click="insertBulletList" class="toolbar-btn">
+              <List :size="16" />
+            </button>
+          </el-tooltip>
+          <el-tooltip content="任务列表" placement="bottom">
+            <button @click="insertTaskList" class="toolbar-btn">
+              <ListChecks :size="16" />
+            </button>
+          </el-tooltip>
           <span class="divider"></span>
-          <button @click="insertCodeBlock" title="代码块" class="toolbar-btn">
-            <Code :size="16" />
-          </button>
-          <button @click="insertLink" title="链接" class="toolbar-btn">
-            <Link :size="16" />
-          </button>
+          <el-tooltip content="代码块" placement="bottom">
+            <button @click="insertCodeBlock" class="toolbar-btn">
+              <Code :size="16" />
+            </button>
+          </el-tooltip>
+          <el-tooltip content="链接" placement="bottom">
+            <button @click="insertLink" class="toolbar-btn">
+              <Link :size="16" />
+            </button>
+          </el-tooltip>
         </div>
       </div>
 
@@ -81,7 +109,8 @@ import {
   Code,
   Link,
   Edit3,
-  Eye
+  Eye,
+  Keyboard
 } from 'lucide-vue-next'
 
 interface Props {

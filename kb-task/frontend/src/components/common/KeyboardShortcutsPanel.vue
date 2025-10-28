@@ -17,7 +17,10 @@
             class="shortcut-item"
           >
             <span class="shortcut-description">{{ shortcut.description }}</span>
-            <kbd class="shortcut-keys">{{ formatShortcut(shortcut) }}</kbd>
+            <kbd class="shortcut-keys">
+              <Keyboard :size="14" class="shortcut-icon" />
+              <span>{{ formatShortcut(shortcut) }}</span>
+            </kbd>
           </div>
         </div>
       </div>
@@ -32,6 +35,7 @@
 <script setup lang="ts">
 import { ref, computed, defineExpose } from 'vue'
 import { shortcuts, formatShortcut, type KeyboardShortcut } from '@/composables/useKeyboard'
+import { Keyboard } from 'lucide-vue-next'
 
 const visible = ref(false)
 
@@ -121,8 +125,8 @@ defineExpose({
 .shortcut-keys {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 6px;
+  padding: 4px 10px;
   background: #ffffff;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
@@ -131,5 +135,10 @@ defineExpose({
   color: #409eff;
   font-weight: 500;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.shortcut-icon {
+  flex-shrink: 0;
+  color: #409eff;
 }
 </style>

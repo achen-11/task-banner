@@ -3,14 +3,22 @@
     <div class="flex justify-between items-center px-6 py-3">
       <!-- 左侧：收起按钮 + 面包屑 -->
       <div class="flex items-center">
-        <button
-          @click="toggleSidebar"
-          class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors mr-3"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        <el-tooltip placement="bottom">
+          <template #content>
+            <div class="flex items-center gap-1.5">
+              <Keyboard :size="14" />
+              <span>展开/收起左侧菜单栏 (⌘B)</span>
+            </div>
+          </template>
+          <button
+            @click="toggleSidebar"
+            class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors mr-3"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </el-tooltip>
 
         <!-- 面包屑 -->
         <nav class="flex items-center text-sm text-gray-500">
@@ -49,6 +57,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { Keyboard } from 'lucide-vue-next'
 
 const emit = defineEmits<{
   toggleSidebar: []
