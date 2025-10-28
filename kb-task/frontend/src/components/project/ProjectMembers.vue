@@ -53,7 +53,7 @@
             {{ getRoleText(member.role) }}
           </span>
           <button
-            v-if="(isAdmin && member.role !== 'owner') || member.userId === String(currentUser?.id)"
+            v-if="(isAdmin) || member._id === String(currentUser?._id)"
             class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="编辑成员"
             @click="openEditDialog(member)"
@@ -183,9 +183,7 @@ const updatingMember = ref(false)
 // 计算当前用户是否是管理员
 const isAdmin = computed(() => {
   if (!currentUser.value) return false
-  const currentUserId = String(currentUser.value.id)
-  const currentMember = members.value.find(m => m.userId === currentUserId)
-  return currentMember?.role === 'admin' || currentMember?.role === 'owner'
+  return currentUser.value.isAdmin
 })
 
 // 计算可添加的用户（排除已经是成员的用户）
