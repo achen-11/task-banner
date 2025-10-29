@@ -56,6 +56,7 @@ export interface UpdateProjectParams {
   name?: string
   description?: string
   color?: string
+  icon?: string
 }
 
 /**

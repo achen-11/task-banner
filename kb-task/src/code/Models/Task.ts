@@ -9,9 +9,9 @@ export const Task = ksql.define(
     displayId: {
       type: DataTypes.Number,
       required: true,
-      unique: true,
       index: true
       // 需要在创建时手动分配递增 ID
+      // 移除全局唯一约束，允许不同项目的 displayId 重复
     },
     projectId: {
       type: DataTypes.String,
@@ -75,6 +75,11 @@ export const Task = ksql.define(
       {
         columns: ['projectId', 'status', 'order'],
         name: 'task_project_status_order_idx'
+      },
+      {
+        columns: ['projectId', 'displayId'],
+        name: 'task_project_displayId_unique_idx',
+        unique: true
       }
     ]
   }

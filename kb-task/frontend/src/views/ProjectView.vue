@@ -20,7 +20,10 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <button class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <button
+              @click="showSettingsDialog = true"
+              class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -162,12 +165,20 @@
       <ProjectTags v-else-if="currentTab === 'tags'" :project-id="projectId" />
       <ProjectMembers v-else-if="currentTab === 'members'" :project-id="projectId" />
     </div>
+
+    <!-- 项目设置对话框 -->
+    <ProjectSettingsDialog
+      v-model:visible="showSettingsDialog"
+      :project="project"
+      @updated="handleProjectUpdated"
+      @deleted="handleProjectDeleted"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import type { Project } from '@/types/project'
 import ProjectOverview from '@/components/project/ProjectOverview.vue'
@@ -176,8 +187,10 @@ import ProjectBoard from '@/components/project/ProjectBoard.vue'
 import ProjectModules from '@/components/project/ProjectModules.vue'
 import ProjectTags from '@/components/project/ProjectTags.vue'
 import ProjectMembers from '@/components/project/ProjectMembers.vue'
+import ProjectSettingsDialog from '@/components/project/ProjectSettingsDialog.vue'
 
 const route = useRoute()
+const router = useRouter()
 const projectStore = useProjectStore()
 
 // 项目信息
@@ -191,6 +204,9 @@ const collapsed = ref(true)
 
 // 当前 Tab
 const currentTab = ref('list')
+
+// 设置对话框状态
+const showSettingsDialog = ref(false)
 
 // Tab 列表
 const tabs = [
@@ -226,8 +242,12 @@ const tabs = [
   }
 ]
 
-// 计算属性 - 项目首字母
+// 计算属性 - 项目首字母或自定义图标
 const projectInitial = computed(() => {
+  // 优先显示自定义图标，如果没有则使用项目名称首字母
+  if (project.value?.icon) {
+    return project.value.icon
+  }
   return project.value?.name?.charAt(0).toUpperCase() || 'P'
 })
 
@@ -314,6 +334,18 @@ watch(currentTab, (newTab) => {
     collapsed.value = true
   }
 })
+
+// 处理项目更新
+const handleProjectUpdated = (updatedProject: Project) => {
+  // 更新store中的项目信息
+  projectStore.setCurrentProject(updatedProject)
+}
+
+// 处理项目删除
+const handleProjectDeleted = () => {
+  // 跳转到首页
+  router.push('/')
+}
 
 // 监听路由变化，重新加载项目
 watch(() => route.params.id, (newId) => {
