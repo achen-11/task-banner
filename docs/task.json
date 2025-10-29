@@ -1,6 +1,14 @@
-{
-  "_id": "0becba30-a411-4a65-a543-e4934bb1541a",
-  "status": "completed",
-  "summary": "统一了任务导出格式，修复了displayId导致的导入失败问题，保持了选中评论的显示",
-  "content": "**任务摘要：** 统一了任务导出格式，修复了displayId导致的导入失败问题，保持了选中评论的显示。\n\n**任务描述：**\n1. 在任务列表导出和在任务详情导出的提示词不统一\n2. 任务详情导出的任务 ID 取的的 displayId, 在导入时会查找不到\n    解决方案1: 导入支持 displayId 查询;\n    解决方案2:导出时要导出_id 而不是displayId\n\n**实现方案：**\n- 统一任务列表导出和任务详情导出的提示词格式\n- 修复任务详情导出中使用displayId的问题，改为使用_id\n- 改进generateExportContent函数，保持选中评论的正确显示\n- 将formatDate函数导出以供组件使用\n\n**修改文件：**\n- `frontend/src/components/TaskDetailDrawer.vue` - 统一导出格式，修复displayId问题，改进评论显示\n- `frontend/src/utils/export.ts` - 导出formatDate函数，删除重复定义\n\n**技术要点：**\n- 使用标准的exportTaskToMarkdown函数获取基础内容（包含AI指引）\n- 自定义插入选中评论部分，确保评论内容正确显示\n- 导出时使用_id作为唯一标识符，确保导入时能正确匹配\n- 保持displayId仅用于界面显示，不影响数据导入导出\n- TypeScript编译通过，无类型错误\n\n**验证结果：**\n- 任务列表导出和任务详情导出格式统一\n- 导出的任务使用_id，导入时可以正确识别\n- 提示词格式一致，包含完整的AI协作指引\n- 选中的评论内容正确显示，不会丢失\n- TypeScript编译通过，无类型错误"
-}
+[
+  {
+    "_id": "15d83955-3985-48f0-b7f1-b2f0ceed065b",
+    "status": "completed",
+    "summary": "抽离了重复的AI提示词代码，减少了代码量和维护工作",
+    "content": "**任务摘要：** 抽离了重复的AI提示词代码，减少了代码量和维护工作。\n\n**任务描述：**\n\"kb-task/frontend/src/utils/export.ts\"的\"exportTaskToMarkdown\"\n和\"exportTasksToMarkdown\"有重复的提示词, 这应该抽离出来, 减少代码量和维护工作\n\n**实现方案：**\n- 创建generateAIGuidelines()函数抽离重复的AI提示词\n- 创建generateAISolutionTemplate()函数抽离AI解决方案模板\n- 更新两个导出函数使用统一的模板函数\n- 删除所有重复代码，提高代码可维护性\n\n**修改文件：**\n- `frontend/src/utils/export.ts` - 抽离重复代码，创建统一的模板生成函数\n\n**技术要点：**\n- 将AI协作指引内容抽离到独立函数\n- 将AI解决方案模板内容抽离到独立函数\n- 使用函数调用替代所有重复代码\n- 保持所有导出格式的统一性\n- TypeScript编译通过，无类型错误\n\n**验证结果：**\n- AI协作指引代码从重复3次减少到1次\n- AI解决方案模板代码完全消除重复\n- 所有重复代码都通过函数调用实现\n- 两个导出函数都正确调用统一的模板函数\n- TypeScript编译通过，无错误\n- 代码维护性大大提高"
+  },
+  {
+    "_id": "29e86b34-e119-453d-b809-167d6fc51386",
+    "status": "completed",
+    "summary": "实现了描述输入框支持Tab键缩进功能，提升了编辑体验",
+    "content": "**任务摘要：** 实现了描述输入框支持Tab键缩进功能，提升了编辑体验。\n\n**任务描述：**\n1. 需要支持 tab 键缩进(四个空格)\n\n**实现方案：**\n- 在MarkdownEditor组件中添加Tab键和Shift+Tab键处理\n- 实现单行和多选文本的缩进/反向缩进功能\n- 添加工具栏提示，告知用户缩进快捷键\n\n**修改文件：**\n- `frontend/src/components/common/MarkdownEditor.vue` - 添加Tab键缩进功能和UI提示\n\n**技术要点：**\n- 支持Tab键插入四个空格缩进\n- 支持Shift+Tab反向缩进\n- 支持多选文本批量缩进处理\n- 正确处理光标位置和选中区域\n- TypeScript编译通过，无类型错误\n\n**验证结果：**\n- Tab键在光标位置插入四个空格\n- Shift+Tab移除当前行开头缩进\n- 多选文本支持批量缩进处理\n- 工具栏显示缩进快捷键提示\n- 光标位置和选中区域处理正确"
+  }
+]

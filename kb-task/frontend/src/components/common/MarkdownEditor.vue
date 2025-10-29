@@ -59,6 +59,24 @@
               <Link :size="16" />
             </button>
           </el-tooltip>
+          <span class="divider"></span>
+          <el-tooltip placement="bottom">
+            <template #content>
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-1.5">
+                  <Keyboard :size="14" />
+                  <span>Tab 缩进</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <ArrowLeft :size="14" />
+                  <span>Shift+Tab 反向缩进</span>
+                </div>
+              </div>
+            </template>
+            <button class="toolbar-btn" disabled>
+              <ArrowRight :size="16" />
+            </button>
+          </el-tooltip>
         </div>
       </div>
 
@@ -110,7 +128,9 @@ import {
   Link,
   Edit3,
   Eye,
-  Keyboard
+  Keyboard,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-vue-next'
 
 interface Props {
@@ -171,6 +191,13 @@ const handleInput = () => {
 
 // 处理键盘快捷键
 const handleKeydown = (e: KeyboardEvent) => {
+  // 处理Tab键缩进
+  if (e.key === 'Tab') {
+    e.preventDefault()
+    handleTabIndent(e.shiftKey) // Shift+Tab 进行反向缩进
+    return
+  }
+
   if (e.metaKey || e.ctrlKey) {
     if (e.key === 'b') {
       e.preventDefault()
@@ -186,6 +213,84 @@ const handleKeydown = (e: KeyboardEvent) => {
       // Cmd+Enter 提交，触发自定义事件
       e.preventDefault()
       emit('submit')
+    }
+  }
+}
+
+// 处理Tab键缩进
+const handleTabIndent = (isShiftTab: boolean = false) => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = localContent.value.substring(start, end)
+
+  if (selectedText) {
+    // 有选中文本，对选中的多行进行缩进处理
+    const lines = selectedText.split('\n')
+    const indentChar = '    ' // 四个空格作为缩进
+
+    if (isShiftTab) {
+      // Shift+Tab：减少缩进
+      const processedLines = lines.map(line => {
+        // 如果行首有4个空格或制表符，则移除
+        return line.startsWith('    ') ? line.substring(4) :
+               line.startsWith('\t') ? line.substring(1) : line
+      })
+
+      const newText = processedLines.join('\n')
+      localContent.value = localContent.value.substring(0, start) + newText + localContent.value.substring(end)
+
+      // 重新设置选中区域
+      nextTick(() => {
+        textarea.selectionStart = start
+        textarea.selectionEnd = start + newText.length
+      })
+    } else {
+      // Tab：增加缩进
+      const processedLines = lines.map(line => indentChar + line)
+      const newText = processedLines.join('\n')
+      localContent.value = localContent.value.substring(0, start) + newText + localContent.value.substring(end)
+
+      // 重新设置选中区域
+      nextTick(() => {
+        textarea.selectionStart = start
+        textarea.selectionEnd = start + newText.length
+      })
+    }
+  } else {
+    // 没有选中文本，在当前行插入缩进
+    const textBeforeCursor = localContent.value.substring(0, start)
+    const textAfterCursor = localContent.value.substring(end)
+
+    // 找到当前行的开始位置
+    const currentLineStart = textBeforeCursor.lastIndexOf('\n') + 1
+    const currentLine = textBeforeCursor.substring(currentLineStart)
+
+    if (isShiftTab) {
+      // Shift+Tab：移除当前行开头的缩进
+      let newLine = currentLine
+      if (currentLine.startsWith('    ')) {
+        newLine = currentLine.substring(4)
+      } else if (currentLine.startsWith('\t')) {
+        newLine = currentLine.substring(1)
+      }
+
+      localContent.value = textBeforeCursor.substring(0, currentLineStart) + newLine + textAfterCursor
+
+      // 重新设置光标位置
+      nextTick(() => {
+        textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLine.length
+      })
+    } else {
+      // Tab：插入四个空格
+      localContent.value = textBeforeCursor + '    ' + textAfterCursor
+
+      // 重新设置光标位置
+      nextTick(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 4
+      })
     }
   }
 }

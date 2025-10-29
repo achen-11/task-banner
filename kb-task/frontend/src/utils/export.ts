@@ -69,6 +69,92 @@ export function exportTasksToJSON(tasks: (Task | TaskDetail)[]): string {
 }
 
 /**
+ * 生成AI协作指引内容
+ */
+export function generateAIGuidelines(): string[] {
+  return [
+    `## 🤖 AI 协作指引\n`,
+    `### 任务处理流程`,
+    `1. **阅读任务**：仔细阅读下方的任务需求，理解每个任务的目标、技术要点和参考资料`,
+    `2. **实现任务**：根据项目技术栈和任务描述完成开发`,
+    `3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`,
+    `4. **更新任务信息**：`,
+    `   - 将任务状态更新为「待验收」`,
+    `   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``,
+    `   - 补充实现细节（修改文件、技术要点等）`,
+    `   - 如有修改文件，在技术要点中注明`,
+    `5. **发送完成通知**：⚠️ **重要！必须执行！**`,
+    `   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``,
+    `   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`,
+    `   - 描述：一句话总结完成的内容`,
+    `6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**`,
+    `   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.json\` 文件`,
+    `     - 格式：单个任务用对象，多个任务用数组`,
+    `     - 示例（单任务）：`,
+    `       \`\`\`json`,
+    `       {`,
+    `         "_id": "任务ID",`,
+    `         "status": "review",`,
+    `         "summary": "任务摘要（20-50字）",`,
+    `         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`,
+    `       }`,
+    `       \`\`\``,
+    `     - 示例（多任务）：使用 JSON 数组 \`[{...}, {...}]\``,
+    `   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.md\` 文件`,
+    `     - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）`,
+    `     - 必须保留所有 \`<!-- task-id: xxx -->\` 注释`,
+    `   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`,
+    `### 📝 任务摘要编写规范`,
+    `- **长度**：20-50 字`,
+    `- **内容**：用一句话概括完成了什么，解决了什么问题`,
+    `- **示例**：`,
+    `  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"`,
+    `  - ✅ "修复了任务列表排序 bug，优化了性能"`,
+    `  - ✅ "添加了任务导出功能，支持 Markdown 格式"`,
+    `  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）`,
+    `  - ❌ "已在 Service 层实现..."（太技术化）\n`,
+    `### ⚠️ 重要提醒`,
+    `- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`,
+    `- 保持 Markdown 结构完整，不要删除任何标题层级`,
+    `- 任务摘要必须简洁明了，便于快速理解任务变更内容\n`,
+    `---\n`
+  ]
+}
+
+/**
+ * 生成AI解决方案模板内容
+ */
+export function generateAISolutionTemplate(): string[] {
+  return [
+    `---\n`,
+    `## 🛠️ AI 解决方案`,
+    ``,
+    `**请在此处提供详细的实现方案：**`,
+    ``,
+    `### 实现步骤`,
+    `1. 分析任务需求`,
+    `2. 设计技术方案`,
+    `3. 具体实现步骤`,
+    `4. 验证和测试`,
+    ``,
+    `### 修改的文件`,
+    `- 文件路径1`,
+    `- 文件路径2`,
+    ``,
+    `### 技术要点`,
+    `- 关键技术1`,
+    `- 关键技术2`,
+    ``,
+    `### 验证结果`,
+    `- 测试结果1`,
+    `- 测试结果2`,
+    ``,
+    `**任务摘要：** <请在此处填写20-50字的任务摘要>`,
+    ``
+  ]
+}
+
+/**
  * 导出任务为 Markdown 格式
  */
 export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: string, options?: { includeComments?: boolean, comments?: any[] }): string {
@@ -81,52 +167,8 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   }
 
   // 添加AI指令
-  lines.push(`## 🤖 AI 协作指引\n`)
-  lines.push(`### 任务处理流程`)
-  lines.push(`1. **阅读任务**：仔细阅读下方的任务需求，理解每个任务的目标、技术要点和参考资料`)
-  lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
-  lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
-  lines.push(`4. **更新任务信息**：`)
-  lines.push(`   - 将任务状态更新为「待验收」`)
-  lines.push(`   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``)
-  lines.push(`   - 补充实现细节（修改文件、技术要点等）`)
-  lines.push(`   - 如有修改文件，在技术要点中注明`)
-  lines.push(`5. **发送完成通知**：⚠️ **重要！必须执行！**`)
-  lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
-  lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
-  lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**`)
-  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.json\` 文件`)
-  lines.push(`     - 格式：单个任务用对象，多个任务用数组`)
-  lines.push(`     - 示例（单任务）：`)
-  lines.push(`       \`\`\`json`)
-  lines.push(`       {`)
-  lines.push(`         "_id": "任务ID",`)
-  lines.push(`         "status": "review",`)
-  lines.push(`         "summary": "任务摘要（20-50字）",`)
-  lines.push(`         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
-  lines.push(`       }`)
-  lines.push(`       \`\`\``)
-  lines.push(`     - 示例（多任务）：使用 JSON 数组 \`[{...}, {...}]\``)
-  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.md\` 文件`)
-  lines.push(`     - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）`)
-  lines.push(`     - 必须保留所有 \`<!-- task-id: xxx -->\` 注释`)
-  lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
-  lines.push(`### 📝 任务摘要编写规范`)
-  lines.push(`- **长度**：20-50 字`)
-  lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
-  lines.push(`- **示例**：`)
-  lines.push(`  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"`)
-  lines.push(`  - ✅ "修复了任务列表排序 bug，优化了性能"`)
-  lines.push(`  - ✅ "添加了任务导出功能，支持 Markdown 格式"`)
-  lines.push(`  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）`)
-  lines.push(`  - ❌ "已在 Service 层实现..."（太技术化）\n`)
-  lines.push(`### ⚠️ 重要提醒`)
-  lines.push(`- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`)
-  lines.push(`- 保持 Markdown 结构完整，不要删除任何标题层级`)
-  lines.push(`- 任务摘要必须简洁明了，便于快速理解任务变更内容\n`)
+  lines.push(...generateAIGuidelines())
 
-  lines.push(`---\n`)
   lines.push(`## 任务列表\n`)
   lines.push(`共 1 个任务\n`)
 
@@ -172,31 +214,7 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push('')
 
   // 添加解决方案区域
-  lines.push(`---\n`)
-  lines.push(`## 🛠️ AI 解决方案`)
-  lines.push(``)
-  lines.push(`**请在此处提供详细的实现方案：**`)
-  lines.push(``)
-  lines.push(`### 实现步骤`)
-  lines.push(`1. 分析任务需求`)
-  lines.push(`2. 设计技术方案`)
-  lines.push(`3. 具体实现步骤`)
-  lines.push(`4. 验证和测试`)
-  lines.push(``)
-  lines.push(`### 修改的文件`)
-  lines.push(`- 文件路径1`)
-  lines.push(`- 文件路径2`)
-  lines.push(``)
-  lines.push(`### 技术要点`)
-  lines.push(`- 关键技术1`)
-  lines.push(`- 关键技术2`)
-  lines.push(``)
-  lines.push(`### 验证结果`)
-  lines.push(`- 测试结果1`)
-  lines.push(`- 测试结果2`)
-  lines.push(``)
-  lines.push(`**任务摘要：** <请在此处填写20-50字的任务摘要>`)
-  lines.push('')
+  lines.push(...generateAISolutionTemplate())
 
   // 添加评论历史（如果选择了包含评论）
   if (includeComments && comments && comments.length > 0) {
@@ -279,110 +297,66 @@ export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?
   }
 
   // 添加AI指令
-  lines.push(`## 🤖 AI 协作指引\n`)
-  lines.push(`### 任务处理流程`)
-  lines.push(`1. **阅读任务**：仔细阅读下方的任务需求，理解每个任务的目标、技术要点和参考资料`)
-  lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
-  lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
-  lines.push(`4. **更新任务信息**：`)
-  lines.push(`   - 将任务状态更新为「已完成」`)
-  lines.push(`   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``)
-  lines.push(`   - 补充实现细节（修改文件、技术要点等）`)
-  lines.push(`   - 如有修改文件，在技术要点中注明`)
-  lines.push(`5. **发送完成通知**：⚠️ **重要！必须执行！**`)
-  lines.push(`   - 使用命令：\`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"\``)
-  lines.push(`   - 标题：简短的任务完成说明（如：✅ XXX 功能完成）`)
-  lines.push(`   - 描述：一句话总结完成的内容`)
-  lines.push(`6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**`)
-  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.json\` 文件`)
-  lines.push(`     - 格式：单个任务用对象，多个任务用数组`)
-  lines.push(`     - 示例（单任务）：`)
-  lines.push(`       \`\`\`json`)
-  lines.push(`       {`)
-  lines.push(`         "_id": "任务ID",`)
-  lines.push(`         "status": "completed",`)
-  lines.push(`         "summary": "任务摘要（20-50字）",`)
-  lines.push(`         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
-  lines.push(`       }`)
-  lines.push(`       \`\`\``)
-  lines.push(`     - 示例（多任务）：使用 JSON 数组 \`[{...}, {...}]\``)
-  lines.push(`   - 使用 Write 工具生成 \`/Users/achen/Priv/task-banner/docs/task.md\` 文件`)
-  lines.push(`     - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）`)
-  lines.push(`     - 必须保留所有 \`<!-- task-id: xxx -->\` 注释`)
-  lines.push(`   - 注意：content 字段需要使用 \\n 表示换行，使用 \\" 转义引号\n`)
-  lines.push(`### 📝 任务摘要编写规范`)
-  lines.push(`- **长度**：20-50 字`)
-  lines.push(`- **内容**：用一句话概括完成了什么，解决了什么问题`)
-  lines.push(`- **示例**：`)
-  lines.push(`  - ✅ "实现了用户登录功能，支持账号密码和第三方登录"`)
-  lines.push(`  - ✅ "修复了任务列表排序 bug，优化了性能"`)
-  lines.push(`  - ✅ "添加了任务导出功能，支持 Markdown 格式"`)
-  lines.push(`  - ❌ "将描述从 xxx 改为 xxx"（太粗暴）`)
-  lines.push(`  - ❌ "已在 Service 层实现..."（太技术化）\n`)
-  lines.push(`### ⚠️ 重要提醒`)
-  lines.push(`- 必须保留所有 \`<!-- task-id: xxx -->\` 注释，这是任务回填的关键标识`)
-  lines.push(`- 保持 Markdown 结构完整，不要删除任何标题层级`)
-  lines.push(`- 任务摘要必须简洁明了，便于快速理解任务变更内容\n`)
+  lines.push(...generateAIGuidelines())
 
-  lines.push(`---\n`)
-  lines.push(`## 任务列表\n`)
+  lines.push(`## 任务列表`)
   lines.push(`共 ${tasks.length} 个任务\n`)
 
-  // 按优先级分组任务
-  const priorityOrder: Array<Task['priority']> = ['high', 'medium', 'low']
-  const priorityLabels = {
-    high: '🟠 高优先级',
-    medium: '🟡 中优先级',
-    low: '🟢 低优先级',
+  // 按优先级分组
+  const tasksByPriority = {
+    high: tasks.filter(task => task.priority === 'high'),
+    medium: tasks.filter(task => task.priority === 'medium'),
+    low: tasks.filter(task => task.priority === 'low')
   }
 
-  priorityOrder.forEach(priority => {
-    const priorityTasks = tasks.filter(t => t.priority === priority)
+  // 生成任务列表
+  Object.entries(tasksByPriority).forEach(([priority, priorityTasks]) => {
+    if (priorityTasks.length === 0) return
 
-    if (priorityTasks.length > 0) {
-      lines.push(`### ${priorityLabels[priority]}\n`)
+    const priorityLabel = getPriorityLabel(priority)
+    lines.push(`### ${priorityLabel}\n`)
 
-      priorityTasks.forEach((task, index) => {
-        // 添加任务 ID 作为隐藏元数据 (HTML 注释)
-        lines.push(`<!-- task-id: ${task._id} -->`)
-        lines.push(`#### ${index + 1}. ${task.title}\n`)
+    priorityTasks.forEach((task, index) => {
+      // 添加任务 ID 作为隐藏元数据 (HTML 注释)
+      lines.push(`<!-- task-id: ${task._id} -->`)
+      lines.push(`#### ${index + 1}. ${task.title}\n`)
 
-        // 任务基本信息
-        lines.push(`**状态：** ${getStatusLabel(task.status)}`)
-        lines.push(`**优先级：** ${getPriorityText(task.priority)}`)
-        if (task.tagIds && task.tagIds.length > 0) {
-          lines.push(`**标签：** ${task.tagIds.join(', ')}`)
+      // 任务基本信息
+      lines.push(`**状态：** ${getStatusLabel(task.status)}`)
+      lines.push(`**优先级：** ${getPriorityText(task.priority)}`)
+      if (task.tagIds && task.tagIds.length > 0) {
+        lines.push(`**标签：** ${task.tagIds.join(', ')}`)
+      }
+      if (task.assigneeId) {
+        lines.push(`**指派人：** ${task.assigneeId}`)
+      }
+      lines.push(`**创建时间：** ${formatDate(task.createdAt)}`)
+      lines.push(`**更新时间：** ${formatDate(task.updatedAt)}`)
+      lines.push('')
+
+      // 任务描述
+      lines.push(`**任务需求：**\n`)
+
+      // 注入标签提示词（如果有）
+      let taskContent = task.content || '暂无描述'
+
+      if ('tags' in task && Array.isArray(task.tags) && task.tags.length > 0) {
+        const tagPrompts = task.tags
+          .filter((tag: any) => tag.prompt && tag.prompt.trim())
+          .map((tag: any) => tag.prompt)
+
+        if (tagPrompts.length > 0) {
+          const promptSection = `**📌 标签提示词：**\n\n${tagPrompts.join('\n\n')}\n\n---\n\n`
+          taskContent = promptSection + taskContent
         }
-        if (task.assigneeId) {
-          lines.push(`**指派人：** ${task.assigneeId}`)
-        }
-        lines.push(`**创建时间：** ${formatDate(task.createdAt)}`)
-        lines.push(`**更新时间：** ${formatDate(task.updatedAt)}`)
-        lines.push('')
+      }
 
-        // 任务描述
-        lines.push(`**任务描述：**\n`)
+      lines.push(taskContent)
+      lines.push('')
 
-        // 注入标签提示词（如果有）
-        let taskContent = task.content || '暂无描述'
-
-        if ('tags' in task && Array.isArray(task.tags) && task.tags.length > 0) {
-          const tagPrompts = task.tags
-            .filter((tag: any) => tag.prompt && tag.prompt.trim())
-            .map((tag: any) => tag.prompt)
-
-          if (tagPrompts.length > 0) {
-            const promptSection = `**📌 标签提示词：**\n\n${tagPrompts.join('\n\n')}\n\n---\n\n`
-            taskContent = promptSection + taskContent
-          }
-        }
-
-        lines.push(taskContent)
-        lines.push('')
-
-        lines.push('---\n')
-      })
-    }
+      // 添加解决方案区域
+      lines.push(...generateAISolutionTemplate())
+    })
   })
 
   // 添加页脚
