@@ -19,7 +19,15 @@
         </div>
 
         <!-- 核心统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div v-for="i in 4" :key="i" class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 animate-pulse">
+            <div class="h-4 bg-gray-200 rounded w-20 mb-4"></div>
+            <div class="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+            <div class="h-4 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
             <div class="flex items-center justify-between mb-4">
               <div class="p-3 bg-blue-100 rounded-xl">
@@ -29,12 +37,12 @@
               </div>
               <span class="text-sm font-medium text-gray-500">总任务</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.todo + stats.inProgress + stats.completed }}</div>
+            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.totalTasks }}</div>
             <div class="flex items-center text-sm">
               <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-              <span class="text-green-600">+12% 本周</span>
+              <span class="text-green-600">+{{ stats.weeklyCompleted }} 本周</span>
             </div>
           </div>
 
@@ -47,7 +55,7 @@
               </div>
               <span class="text-sm font-medium text-gray-500">进行中</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.inProgress }}</div>
+            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.inProgressTasks }}</div>
             <div class="text-sm text-gray-500">需要您的关注</div>
           </div>
 
@@ -60,8 +68,8 @@
               </div>
               <span class="text-sm font-medium text-gray-500">已完成</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.completed }}</div>
-            <div class="text-sm text-gray-500">本周完成 {{ weeklyCompleted }} 个</div>
+            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.completedTasks }}</div>
+            <div class="text-sm text-gray-500">本周完成 {{ stats.weeklyCompleted }} 个</div>
           </div>
 
           <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
@@ -112,33 +120,33 @@
               快捷操作
             </h2>
             <div class="grid grid-cols-2 gap-4">
-              <button class="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-all duration-300">
-                <svg class="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <div class="text-sm font-medium text-blue-900">创建任务</div>
-              </button>
-
-              <button class="group p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-all duration-300">
+              <router-link to="/projects" class="group p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-all duration-300 block">
                 <svg class="w-8 h-8 text-green-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
                 <div class="text-sm font-medium text-green-900">创建项目</div>
+              </router-link>
+
+              <button @click="$router.push('/projects?showCreateTask=true')" class="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-all duration-300">
+                <svg class="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <div class="text-sm font-medium text-blue-900">快速任务</div>
               </button>
 
-              <button class="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl transition-all duration-300">
+              <router-link to="/tasks" class="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl transition-all duration-300 block">
                 <svg class="w-8 h-8 text-purple-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <div class="text-sm font-medium text-purple-900">搜索任务</div>
-              </button>
+              </router-link>
 
-              <button class="group p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl transition-all duration-300">
+              <router-link to="/reports" class="group p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl transition-all duration-300 block">
                 <svg class="w-8 h-8 text-orange-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <div class="text-sm font-medium text-orange-900">筛选任务</div>
-              </button>
+                <div class="text-sm font-medium text-orange-900">数据报表</div>
+              </router-link>
             </div>
           </div>
         </div>
@@ -158,11 +166,23 @@
                 查看全部 →
               </router-link>
             </div>
-            <div class="space-y-3">
+            <div v-if="loading" class="space-y-3">
+              <div v-for="i in 4" :key="i" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl animate-pulse">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                  <div>
+                    <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                    <div class="h-3 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
+                <div class="w-20 h-4 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            <div v-else class="space-y-3">
               <router-link
-                v-for="project in recentProjects"
-                :key="project.id"
-                :to="`/projects/${project.id}`"
+                v-for="project in dashboardData?.recentProjects"
+                :key="project._id"
+                :to="`/projects/${project._id}`"
                 class="group flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
               >
                 <div class="flex items-center gap-3">
@@ -176,9 +196,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="text-right">
-                    <div class="text-sm font-medium text-gray-900">{{ project.completionRate }}%</div>
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ project.taskCount > 0 ? Math.round((project.completedTaskCount / project.taskCount) * 100) : 0 }}%
+                    </div>
                     <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div class="h-full bg-green-500 rounded-full transition-all duration-300" :style="{ width: `${project.completionRate}%` }"></div>
+                      <div class="h-full bg-green-500 rounded-full transition-all duration-300"
+                           :style="{ width: `${project.taskCount > 0 ? (project.completedTaskCount / project.taskCount) * 100 : 0}%` }"></div>
                     </div>
                   </div>
                   <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,26 +221,45 @@
                 </svg>
                 今日待办
               </h2>
-              <span class="text-sm text-gray-500">{{ todayTasks.length }} 项任务</span>
+              <span class="text-sm text-gray-500">{{ dashboardData?.todayTasks?.length || 0 }} 项任务</span>
             </div>
-            <div class="space-y-3">
+            <div v-if="loading" class="space-y-3">
+              <div v-for="i in 4" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg animate-pulse">
+                <div class="w-2 h-2 bg-gray-200 rounded-full"></div>
+                <div class="flex-1">
+                  <div class="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-24"></div>
+                </div>
+                <div class="px-2 py-1 h-4 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            <div v-else class="space-y-3">
               <div
-                v-for="task in todayTasks"
-                :key="task.id"
-                class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                v-for="task in dashboardData?.todayTasks"
+                :key="task._id"
+                class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                @click="$router.push(`/projects/${task.projectId}`)"
               >
                 <div class="w-2 h-2 rounded-full" :class="getPriorityClass(task.priority)"></div>
                 <div class="flex-1">
                   <h4 class="font-medium text-gray-900 text-sm">{{ task.title }}</h4>
                   <div class="flex items-center gap-2 mt-1">
-                    <span class="text-xs text-gray-500">{{ task.project }}</span>
+                    <span class="text-xs text-gray-500">{{ task.projectName }}</span>
                     <span class="text-xs text-gray-400">•</span>
-                    <span class="text-xs text-gray-500">{{ task.time }}</span>
+                    <span class="text-xs text-gray-500">
+                      {{ task.dueDate ? formatTime(task.dueDate) : '无截止时间' }}
+                    </span>
                   </div>
                 </div>
                 <div class="px-2 py-1 text-xs rounded-full" :class="getStatusClass(task.status)">
-                  {{ task.status }}
+                  {{ getStatusText(task.status) }}
                 </div>
+              </div>
+              <div v-if="!dashboardData?.todayTasks?.length" class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p>今天没有待办任务</p>
               </div>
             </div>
           </div>
@@ -228,53 +270,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { getDashboardData, type DashboardData } from '@/api/dashboard'
 
 // 响应式数据
-const stats = ref({
-  todo: 12,
-  inProgress: 5,
-  completed: 28
+const dashboardData = ref<DashboardData | null>(null)
+const loading = ref(true)
+const chartPeriod = ref<'week' | 'month'>('week')
+const currentTime = ref('')
+const currentDate = ref('')
+let timeTimer: number | null = null
+
+// 计算属性
+const stats = computed(() => {
+  if (!dashboardData.value) {
+    return {
+      totalTasks: 0,
+      todoTasks: 0,
+      inProgressTasks: 0,
+      completedTasks: 0,
+      weeklyCompleted: 0
+    }
+  }
+  return dashboardData.value.stats
 })
 
-const weeklyCompleted = ref(15)
-const chartPeriod = ref<'week' | 'month'>('week')
+const completionRate = computed(() => {
+  if (!dashboardData.value) return 0
+  const total = stats.value.totalTasks
+  if (total === 0) return 0
+  return Math.round((stats.value.completedTasks / total) * 100)
+})
 
-const recentProjects = ref([
-  { id: 1, name: 'TaskFlow 开发', color: '#6366f1', taskCount: 15, completionRate: 73 },
-  { id: 2, name: '个人学习计划', color: '#10b981', taskCount: 8, completionRate: 45 },
-  { id: 3, name: '产品设计文档', color: '#f59e0b', taskCount: 12, completionRate: 89 },
-  { id: 4, name: '市场营销策略', color: '#ef4444', taskCount: 6, completionRate: 32 }
-])
-
-const todayTasks = ref([
-  { id: 1, title: '完成项目概览页面设计', project: 'TaskFlow 开发', time: '09:00', priority: 'high', status: '进行中' },
-  { id: 2, title: '团队周会', project: '团队管理', time: '14:00', priority: 'medium', status: '待办' },
-  { id: 3, title: '代码审查', project: 'TaskFlow 开发', time: '16:00', priority: 'low', status: '待办' },
-  { id: 4, title: '更新项目文档', project: '产品设计文档', time: '17:30', priority: 'medium', status: '待办' }
-])
-
-const currentDate = computed(() => {
-  return new Date().toLocaleDateString('zh-CN', {
+// 更新时间的函数
+const updateTime = () => {
+  const now = new Date()
+  currentTime.value = now.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  currentDate.value = now.toLocaleDateString('zh-CN', {
     month: 'long',
     day: 'numeric',
     weekday: 'long'
   })
-})
-
-const currentTime = computed(() => {
-  return new Date().toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-})
-
-const completionRate = computed(() => {
-  const total = stats.value.todo + stats.value.inProgress + stats.value.completed
-  if (total === 0) return 0
-  return Math.round((stats.value.completed / total) * 100)
-})
+}
 
 // 方法
 const getGreeting = () => {
@@ -295,10 +336,85 @@ const getPriorityClass = (priority: string) => {
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case '进行中': return 'bg-blue-100 text-blue-700'
-    case '待办': return 'bg-gray-100 text-gray-700'
-    case '已完成': return 'bg-green-100 text-green-700'
+    case 'in_progress': return 'bg-blue-100 text-blue-700'
+    case 'todo': return 'bg-gray-100 text-gray-700'
+    case 'completed': return 'bg-green-100 text-green-700'
     default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'in_progress': return '进行中'
+    case 'todo': return '待办'
+    case 'completed': return '已完成'
+    default: return status
+  }
+}
+
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp)
+  return date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 加载仪表板数据
+const loadDashboardData = async () => {
+  try {
+    loading.value = true
+    const data = await getDashboardData(chartPeriod.value)
+    dashboardData.value = data
+
+    // 更新图表数据
+    nextTick(() => {
+      initTrendChart()
+    })
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error)
+    // 使用模拟数据作为降级方案
+    dashboardData.value = {
+      stats: {
+        totalTasks: 45,
+        todoTasks: 12,
+        inProgressTasks: 5,
+        completedTasks: 28,
+        weeklyCompleted: 15,
+        totalProjects: 6,
+        activeProjects: 4
+      },
+      taskTrends: chartPeriod.value === 'week'
+        ? [
+            { date: '周一', created: 8, completed: 5 },
+            { date: '周二', created: 12, completed: 8 },
+            { date: '周三', created: 10, completed: 7 },
+            { date: '周四', created: 15, completed: 12 },
+            { date: '周五', created: 9, completed: 6 },
+            { date: '周六', created: 11, completed: 9 },
+            { date: '周日', created: 13, completed: 10 }
+          ]
+        : [
+            { date: '第1周', created: 45, completed: 32 },
+            { date: '第2周', created: 52, completed: 38 },
+            { date: '第3周', created: 48, completed: 35 },
+            { date: '第4周', created: 58, completed: 42 }
+          ],
+      recentProjects: [
+        { _id: '1', name: 'TaskFlow 开发', color: '#6366f1', taskCount: 15, completedTaskCount: 11, status: 'active', updatedAt: Date.now() },
+        { _id: '2', name: '个人学习计划', color: '#10b981', taskCount: 8, completedTaskCount: 4, status: 'active', updatedAt: Date.now() },
+        { _id: '3', name: '产品设计文档', color: '#f59e0b', taskCount: 12, completedTaskCount: 11, status: 'active', updatedAt: Date.now() },
+        { _id: '4', name: '市场营销策略', color: '#ef4444', taskCount: 6, completedTaskCount: 2, status: 'active', updatedAt: Date.now() }
+      ],
+      todayTasks: [
+        { _id: '1', title: '完成项目概览页面设计', projectName: 'TaskFlow 开发', projectId: '1', priority: 'high', status: 'in_progress', dueDate: Date.now() + 3600000, createdAt: Date.now() },
+        { _id: '2', title: '团队周会', projectName: '团队管理', projectId: '2', priority: 'medium', status: 'todo', dueDate: Date.now() + 18000000, createdAt: Date.now() },
+        { _id: '3', title: '代码审查', projectName: 'TaskFlow 开发', projectId: '1', priority: 'low', status: 'todo', dueDate: Date.now() + 28800000, createdAt: Date.now() },
+        { _id: '4', title: '更新项目文档', projectName: '产品设计文档', projectId: '3', priority: 'medium', status: 'todo', dueDate: Date.now() + 32400000, createdAt: Date.now() }
+      ]
+    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -306,7 +422,7 @@ let trendChart: echarts.ECharts | null = null
 
 const initTrendChart = () => {
   const chartEl = document.getElementById('trendChart')
-  if (!chartEl) return
+  if (!chartEl || !dashboardData.value?.taskTrends) return
 
   if (trendChart) {
     trendChart.dispose()
@@ -314,13 +430,10 @@ const initTrendChart = () => {
 
   trendChart = echarts.init(chartEl)
 
-  const isWeek = chartPeriod.value === 'week'
-  const dates = isWeek
-    ? ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    : ['第1周', '第2周', '第3周', '第4周']
-
-  const todoData = isWeek ? [8, 12, 10, 15, 9, 11, 13] : [45, 52, 48, 58]
-  const completedData = isWeek ? [5, 8, 7, 12, 6, 9, 10] : [32, 38, 35, 42]
+  const trends = dashboardData.value.taskTrends
+  const dates = trends.map(item => item.date)
+  const createdData = trends.map(item => item.created)
+  const completedData = trends.map(item => item.completed)
 
   const option = {
     tooltip: {
@@ -373,7 +486,7 @@ const initTrendChart = () => {
         name: '新建任务',
         type: 'line',
         smooth: true,
-        data: todoData,
+        data: createdData,
         itemStyle: {
           color: '#3b82f6'
         },
@@ -413,21 +526,36 @@ const initTrendChart = () => {
   trendChart.setOption(option)
 }
 
-const updateChartPeriod = (period: 'week' | 'month') => {
+const updateChartPeriod = async (period: 'week' | 'month') => {
   chartPeriod.value = period
-  nextTick(() => {
-    initTrendChart()
-  })
+  await loadDashboardData()
 }
 
 const resizeChart = () => {
   trendChart?.resize()
 }
 
-onMounted(() => {
-  nextTick(() => {
-    initTrendChart()
-    window.addEventListener('resize', resizeChart)
-  })
+onMounted(async () => {
+  // 初始化时间
+  updateTime()
+  timeTimer = setInterval(updateTime, 1000)
+
+  // 加载数据
+  await loadDashboardData()
+
+  // 窗口大小变化监听
+  window.addEventListener('resize', resizeChart)
+})
+
+onUnmounted(() => {
+  if (timeTimer) {
+    clearInterval(timeTimer)
+    timeTimer = null
+  }
+  window.removeEventListener('resize', resizeChart)
+  if (trendChart) {
+    trendChart.dispose()
+    trendChart = null
+  }
 })
 </script>
