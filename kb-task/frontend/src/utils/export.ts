@@ -87,7 +87,7 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`2. **实现任务**：根据项目技术栈和任务描述完成开发`)
   lines.push(`3. **保留元数据**：在返回结果时，务必保留每个任务的 task-id 注释（\`<!-- task-id: xxx -->\`）`)
   lines.push(`4. **更新任务信息**：`)
-  lines.push(`   - 将任务状态更新为「已完成」`)
+  lines.push(`   - 将任务状态更新为「待验收」`)
   lines.push(`   - **添加任务摘要**：在任务描述开头添加 \`**任务摘要：** <一句话总结>\``)
   lines.push(`   - 补充实现细节（修改文件、技术要点等）`)
   lines.push(`   - 如有修改文件，在技术要点中注明`)
@@ -102,7 +102,7 @@ export function exportTaskToMarkdown(task: Task | TaskDetail, projectName?: stri
   lines.push(`       \`\`\`json`)
   lines.push(`       {`)
   lines.push(`         "_id": "任务ID",`)
-  lines.push(`         "status": "completed",`)
+  lines.push(`         "status": "review",`)
   lines.push(`         "summary": "任务摘要（20-50字）",`)
   lines.push(`         "content": "完整的任务内容，包含实现方案、修改文件、技术要点、验证结果等所有信息"`)
   lines.push(`       }`)
@@ -800,7 +800,7 @@ function parsePriorityFromLabel(label: string): Task['priority'] {
 /**
  * 格式化日期
  */
-function formatDate(timestamp: number): string {
+export function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',

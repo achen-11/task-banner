@@ -214,7 +214,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard } from '@/utils/export'
+import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, formatDate } from '@/utils/export'
 import {
   getStatusBadgeClass,
   getStatusText,
@@ -406,49 +406,61 @@ const exportSelectedCommentsToClipboard = async () => {
 
 // 生成导出内容
 const generateExportContent = (task: Task | TaskDetail, comments: any[]) => {
-  let content = `# ${task.title}\n\n`
+  // 使用标准的 exportTaskToMarkdown 函数获取基础内容（包含AI指引）
+  const baseMarkdown = exportTaskToMarkdown(task, undefined, { includeComments: false })
 
-  // 基本信息
-  content += `**任务ID:** #${task.displayId || task._id}\n`
-  content += `**状态:** ${getStatusText(task.status)}\n`
-  content += `**优先级:** ${getPriorityText(task.priority)}\n`
+  // 如果有选中的评论，添加自定义评论部分
+  if (comments && comments.length > 0) {
+    const lines = baseMarkdown.split('\n')
 
-  if (task.assignee) {
-    const assigneeName = getUserDisplayName(task.assignee)
-    content += `**指派给:** ${assigneeName}\n`
+    // 在AI解决方案部分之前插入评论部分
+    const aiSolutionIndex = lines.findIndex(line => line.includes('## 🛠️ AI 解决方案'))
+
+    if (aiSolutionIndex !== -1) {
+      // 在AI解决方案之前插入评论
+      const commentLines = [
+        '',
+        '---',
+        '',
+        '## 📝 选中评论',
+        '',
+        `> 共 ${comments.length} 条评论`,
+        ''
+      ]
+
+      // 添加每条评论
+      comments.forEach((comment, index) => {
+        commentLines.push(`### 评论 ${index + 1}`)
+        commentLines.push('')
+
+        if (comment.user) {
+          const userName = getUserDisplayName(comment.user)
+          commentLines.push(`**作者:** ${userName}`)
+        }
+
+        commentLines.push(`**时间:** ${formatDate(comment.timestamp)}`)
+
+        if (comment.summary) {
+          commentLines.push(`**摘要:** ${comment.summary}`)
+        }
+
+        commentLines.push('')
+        commentLines.push('**内容:**')
+        commentLines.push('')
+        commentLines.push(comment.content)
+        commentLines.push('')
+        commentLines.push('---')
+        commentLines.push('')
+      })
+
+      // 将评论插入到AI解决方案之前
+      lines.splice(aiSolutionIndex, 0, ...commentLines)
+
+      return lines.join('\n')
+    }
   }
 
-  content += `**创建时间:** ${new Date(task.createdAt).toLocaleString('zh-CN')}\n`
-  content += `**更新时间:** ${new Date(task.updatedAt).toLocaleString('zh-CN')}\n\n`
-
-  // 任务描述
-  if (task.content) {
-    content += `## 任务描述\n\n${task.content}\n\n`
-  }
-
-  // 选中的评论
-  if (comments.length > 0) {
-    content += `## 选中评论 (${comments.length}条)\n\n`
-
-    comments.forEach((comment, index) => {
-      content += `### 评论 ${index + 1}\n\n`
-
-      if (comment.user) {
-        content += `**作者:** ${getUserDisplayName(comment.user)}\n`
-      }
-
-      content += `**时间:** ${new Date(comment.timestamp).toLocaleString('zh-CN')}\n\n`
-
-      if (comment.summary) {
-        content += `**摘要:** ${comment.summary}\n\n`
-      }
-
-      content += `**内容:**\n\n${comment.content}\n\n`
-      content += `---\n\n`
-    })
-  }
-
-  return content
+  return baseMarkdown
 }
 
 

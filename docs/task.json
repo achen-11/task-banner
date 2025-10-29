@@ -1,14 +1,6 @@
-[
-  {
-    "_id": "9c486221-2a16-4880-ae0f-aafb69317421",
-    "status": "completed",
-    "summary": "修复Task模型displayId字段唯一约束，允许不同项目的任务displayId重复",
-    "content": "**任务摘要：** 修复了Task模型displayId字段的唯一约束，允许不同项目的任务displayId重复。\n\n**任务描述：**\n不同项目的 task 的 displayId 是可以重复的, 现在的 model 定义了 unique 导致不能重复。\n\n**实现方案：**\n- 移除Task模型中displayId的全局unique约束\n- 添加复合唯一索引（projectId + displayId），确保同一项目内displayId唯一\n- 修改数据库索引结构，支持跨项目的displayId重复\n\n**修改文件：**\n- `kb-task/src/code/Models/Task.ts` - 移除全局unique约束，添加复合唯一索引\n\n**技术要点：**\n- 使用复合唯一索引 `[projectId, displayId]` 替代全局unique约束\n- 保持数据完整性的同时支持业务需求\n- 确保同一项目内displayId仍然唯一，避免混乱\n\n**验证结果：**\n- TypeScript编译通过\n- 数据库索引结构正确\n- 支持不同项目的任务displayId重复，同一项目内保持唯一"
-  },
-  {
-    "_id": "3bb335fe-59dd-4643-9d60-033892572d8e",
-    "status": "completed",
-    "summary": "实现完整的项目信息编辑功能，包括基础信息编辑、项目删除和自定义图标支持",
-    "content": "**任务摘要：** 实现了完整的项目信息编辑功能，包括基础信息编辑、项目删除和自定义图标支持。\n\n**任务描述：**\n现在项目只有左侧菜单的\"➕\"可以添加, 没有编辑入口\n1. 编辑任务基础信息\n2.删除项目(需要二次确认!)\n3.任务需要支持 icon 字段的上传\n\n**实现方案：**\n- 创建ProjectSettingsDialog组件，提供完整的项目设置界面\n- 集成到ProjectView.vue中，通过\"项目设置\"按钮触发\n- 支持项目名称、描述、颜色、图标的编辑\n- 实现二次确认的项目删除功能\n- 更新前端类型定义，支持icon字段\n\n**修改文件：**\n- `frontend/src/components/project/ProjectSettingsDialog.vue` - 新建项目设置对话框组件\n- `frontend/src/views/ProjectView.vue` - 集成设置对话框，更新图标显示逻辑\n- `frontend/src/types/project.ts` - 更新UpdateProjectParams接口，添加icon字段\n\n**技术要点：**\n- 使用ElementPlus Dialog组件构建模态对话框\n- 实现表单双向绑定和数据验证\n- 双重确认删除机制：输入项目名称 + 确认对话框\n- 优先显示自定义图标，回退到项目名称首字母\n- 响应式设计，支持实时预览颜色和图标效果\n\n**验证结果：**\n- TypeScript编译通过\n- 功能完整：项目信息编辑、删除确认、自定义图标\n- 用户体验良好，界面美观直观"
-  }
-]
+{
+  "_id": "0becba30-a411-4a65-a543-e4934bb1541a",
+  "status": "completed",
+  "summary": "统一了任务导出格式，修复了displayId导致的导入失败问题，保持了选中评论的显示",
+  "content": "**任务摘要：** 统一了任务导出格式，修复了displayId导致的导入失败问题，保持了选中评论的显示。\n\n**任务描述：**\n1. 在任务列表导出和在任务详情导出的提示词不统一\n2. 任务详情导出的任务 ID 取的的 displayId, 在导入时会查找不到\n    解决方案1: 导入支持 displayId 查询;\n    解决方案2:导出时要导出_id 而不是displayId\n\n**实现方案：**\n- 统一任务列表导出和任务详情导出的提示词格式\n- 修复任务详情导出中使用displayId的问题，改为使用_id\n- 改进generateExportContent函数，保持选中评论的正确显示\n- 将formatDate函数导出以供组件使用\n\n**修改文件：**\n- `frontend/src/components/TaskDetailDrawer.vue` - 统一导出格式，修复displayId问题，改进评论显示\n- `frontend/src/utils/export.ts` - 导出formatDate函数，删除重复定义\n\n**技术要点：**\n- 使用标准的exportTaskToMarkdown函数获取基础内容（包含AI指引）\n- 自定义插入选中评论部分，确保评论内容正确显示\n- 导出时使用_id作为唯一标识符，确保导入时能正确匹配\n- 保持displayId仅用于界面显示，不影响数据导入导出\n- TypeScript编译通过，无类型错误\n\n**验证结果：**\n- 任务列表导出和任务详情导出格式统一\n- 导出的任务使用_id，导入时可以正确识别\n- 提示词格式一致，包含完整的AI协作指引\n- 选中的评论内容正确显示，不会丢失\n- TypeScript编译通过，无类型错误"
+}
