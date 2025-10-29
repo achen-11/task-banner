@@ -419,6 +419,7 @@ const loadDashboardData = async () => {
 }
 
 let trendChart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const initTrendChart = () => {
   const chartEl = document.getElementById('trendChart')
@@ -524,6 +525,24 @@ const initTrendChart = () => {
   }
 
   trendChart.setOption(option)
+
+  // 设置 ResizeObserver 监听容器尺寸变化
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.target === chartEl && trendChart) {
+        // 使用 requestAnimationFrame 确保在下一个渲染帧重绘
+        requestAnimationFrame(() => {
+          trendChart?.resize()
+        })
+      }
+    }
+  })
+
+  resizeObserver.observe(chartEl)
 }
 
 const updateChartPeriod = async (period: 'week' | 'month') => {
@@ -553,6 +572,10 @@ onUnmounted(() => {
     timeTimer = null
   }
   window.removeEventListener('resize', resizeChart)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
   if (trendChart) {
     trendChart.dispose()
     trendChart = null
