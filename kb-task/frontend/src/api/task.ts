@@ -129,6 +129,60 @@ export function addTaskComment(taskId: string, content: string, mentionedUsers?:
   })
 }
 
+/**
+ * 编辑任务评论
+ * @param commentId 评论 ID
+ * @param content 评论内容
+ * @param summary 评论摘要（可选）
+ */
+export function updateTaskComment(commentId: string, content: string, summary?: string): Promise<TaskActivity> {
+  return request.put('/api/task/comment', {
+    commentId,
+    content,
+    summary
+  })
+}
+
+/**
+ * 删除任务评论
+ * @param commentId 评论 ID
+ */
+export function deleteTaskComment(commentId: string): Promise<{ deletedId: string }> {
+  return request.delete('/api/task/comment', {
+    params: { commentId }
+  })
+}
+
+/**
+ * 添加/移除评论反应
+ * @param commentId 评论 ID
+ * @param emoji 表情符号
+ */
+export function toggleCommentReaction(commentId: string, emoji: string): Promise<{
+  action: 'added' | 'removed' | 'updated'
+  emoji: string
+  oldEmoji?: string
+}> {
+  return request.post('/api/task/reaction', {
+    commentId,
+    emoji
+  })
+}
+
+/**
+ * 获取评论反应列表
+ * @param commentId 评论 ID
+ */
+export function getCommentReactions(commentId: string): Promise<{
+  commentId: string
+  reactions: Record<string, { count: number; users: any[] }>
+  userReactions: string[]
+}> {
+  return request.get('/api/task/reactions', {
+    params: { commentId }
+  })
+}
+
 export default {
   getTaskList,
   getTaskDetail,
@@ -137,5 +191,9 @@ export default {
   deleteTask,
   updateTaskOrder,
   getTaskActivities,
-  addTaskComment
+  addTaskComment,
+  updateTaskComment,
+  deleteTaskComment,
+  toggleCommentReaction,
+  getCommentReactions
 }

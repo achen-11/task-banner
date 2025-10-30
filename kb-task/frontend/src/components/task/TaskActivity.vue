@@ -61,21 +61,34 @@
 
               <div class="flex items-start justify-between mb-2"
                    :class="{ 'ml-8': props.commentSelectionMode }">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-sm text-gray-900">{{ getUserDisplayName(activity.user) }}</span>
-                  <!-- AI 标签 -->
-                  <span v-if="activity.commentType === 'ai_completion'"
-                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                    AI
-                  </span>
-                  <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
+                <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-sm text-gray-900">{{ getUserDisplayName(activity.user) }}</span>
+                    <!-- AI 标签 -->
+                    <span v-if="activity.commentType === 'ai_completion'"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                      AI
+                    </span>
+                    <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
+                  </div>
+                  <!-- 编辑删除按钮组 -->
+                  <div v-if="!props.commentSelectionMode && canEditComment(activity)" class="flex items-center gap-1">
+                    <button @click="startEditComment(activity)"
+                            class="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                            title="编辑评论">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button @click="deleteComment(activity.id)"
+                            class="text-gray-400 hover:text-red-600 transition-colors p-1"
+                            title="删除评论">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <button v-if="!props.commentSelectionMode"
-                        class="text-gray-400 hover:text-gray-600 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                  </svg>
-                </button>
               </div>
               <!-- 评论内容 - 支持摘要和截断 -->
               <div class="text-sm text-gray-700">
@@ -113,6 +126,7 @@
                       查看详情
                     </button>
                   </div>
+                  <!-- 正常显示模式（不需要截断时） -->
                   <MarkdownEditor
                     v-else
                     :model-value="activity.content"
@@ -121,14 +135,41 @@
                 </template>
               </div>
 
-              <!-- 反应表情（Mock） -->
+              <!-- 反应表情 -->
               <div v-if="!props.commentSelectionMode" class="flex items-center gap-2 mt-3">
-                <button class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition-colors">
-                  👍 <span class="text-gray-600">2</span>
-                </button>
-                <button class="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                  添加反应
-                </button>
+                <!-- 显示现有反应 -->
+                <div class="flex items-center gap-1">
+                  <template v-for="(reaction, emoji) in reactions[activity.id]" :key="emoji">
+                    <button @click="handleToggleReaction(activity.id, emoji)"
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors"
+                            :class="isUserReaction(activity.id, emoji)
+                              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'">
+                      {{ emoji }} <span>{{ reaction.count }}</span>
+                    </button>
+                  </template>
+                </div>
+
+                <!-- 表情选择器 -->
+                <div class="relative">
+                  <button @click="toggleReactionPicker(activity.id)"
+                          class="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                    添加反应
+                  </button>
+
+                  <!-- 表情选择面板 -->
+                  <div v-if="showReactionPicker === activity.id"
+                       class="absolute bottom-full left-0 mb-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-64 min-w-64">
+                    <div class="grid grid-cols-5 gap-2">
+                      <button v-for="emoji in commonEmojis"
+                              :key="emoji"
+                              @click="addReaction(activity.id, emoji)"
+                              class="p-3 hover:bg-gray-100 rounded transition-colors text-lg flex items-center justify-center min-h-[2rem] min-w-[2rem]">
+                        {{ emoji }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -229,19 +270,33 @@
 
     <!-- 评论输入框（固定在底部） -->
     <div v-if="!props.commentSelectionMode" class="flex-shrink-0 border-t border-gray-200 pt-3">
+      <!-- 编辑模式指示器 -->
+      <div v-if="editingCommentId" class="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-blue-700">正在编辑评论</span>
+          <button @click="cancelEdit"
+                  class="text-xs text-blue-600 hover:text-blue-700 hover:underline">
+            取消编辑
+          </button>
+        </div>
+      </div>
+
       <MarkdownEditor
         v-model="newComment"
-        placeholder="添加评论... 支持 Markdown 语法"
+        :placeholder="editingCommentId ? '编辑评论... 支持 Markdown 语法' : '添加评论... 支持 Markdown 语法'"
         min-height="100px"
         @submit="addComment"
       />
       <div class="flex justify-end mt-2">
         <button
-          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2"
+          :class="editingCommentId
+            ? 'bg-green-600 hover:bg-green-700'
+            : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed'"
           :disabled="!newComment || newComment.trim() === ''"
           @click="addComment"
         >
-          发送评论
+          {{ editingCommentId ? '保存编辑' : '发送评论' }}
           <svg v-if="newComment && newComment.trim()" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
@@ -255,12 +310,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import MarkdownEditor from '../common/MarkdownEditor.vue'
 import DetailModal from '../common/DetailModal.vue'
-import { getTaskActivities, addTaskComment, type TaskActivity as APITaskActivity } from '@/api/task'
+import { getTaskActivities, addTaskComment, updateTaskComment, deleteTaskComment, toggleCommentReaction, getCommentReactions, type TaskActivity as APITaskActivity } from '@/api/task'
 import { formatRelativeTime } from '@/utils/time'
+import { getCurrentUser } from '@/utils/auth'
 
 interface Task {
   _id: string
@@ -334,6 +390,38 @@ const isLoadingActivities = ref(false)
 // 详情弹窗组件引用
 const detailModalRef = ref<InstanceType<typeof DetailModal>>()
 
+// 编辑状态
+const editingCommentId = ref<string | null>(null)
+const editingContent = ref('')
+const editingMode = ref<'edit' | 'delete'>('edit')
+
+// 反应相关状态
+const reactions = ref<Record<string, Record<string, { count: number; users: any[] }>>>({})
+const showReactionPicker = ref<string | null>(null)
+
+// 常用表情符号
+const commonEmojis = ['👍', '👎', '❤️', '😄', '😮', '😢', '😂', '🎉', '🔥', '💯']
+
+// 当前用户信息
+const currentUser = computed(() => getCurrentUser())
+
+// 检查用户是否可以编辑/删除评论
+const canEditComment = (activity: Activity): boolean => {
+  const user = currentUser.value
+  if (!user || !activity.user) return false
+
+  // 如果是评论作者，可以编辑
+  if (activity.user._id === user._id.toString() || activity.userId === user._id.toString()) {
+    return true
+  }
+
+  // 如果是管理员，可以编辑
+  if (user.isAdmin) {
+    return true
+  }
+
+  return false
+}
 
 // 加载活动历史
 const loadActivities = async () => {
@@ -389,6 +477,15 @@ const loadActivities = async () => {
 
     // 合并同一时段的变更
     activities.value = mergeActivities(activities.value)
+
+    // 加载反应数据
+    const commentIds = activities.value
+      .filter(a => a.type === 'comment')
+      .map(a => a.id)
+
+    if (commentIds.length > 0) {
+      await loadReactions(commentIds)
+    }
   } catch (error) {
     console.error('Failed to load activities:', error)
     ElMessage.error('加载活动历史失败')
@@ -543,31 +640,54 @@ const filteredActivities = computed(() => {
   return [...filtered].sort((a, b) => b.timestamp - a.timestamp)
 })
 
-// 添加评论
+// 添加或编辑评论
 const addComment = async () => {
   if (!newComment.value.trim() || !props.task || !props.task._id) return
 
   const commentContent = newComment.value.trim()
+  const isEditing = !!editingCommentId.value
+
+  // 清空输入框
   newComment.value = ''
 
   try {
-    const result = await addTaskComment(props.task._id, commentContent)
+    if (isEditing) {
+      // 编辑模式
+      await updateTaskComment(editingCommentId.value!, commentContent)
 
-    // 将新评论添加到列表
-    const newActivity: Activity = {
-      id: result.id,
-      type: 'comment',
-      user: result.user || null,
-      userId: result.userId,
-      content: result.content || '',
-      timestamp: result.timestamp
+      // 更新本地活动列表中的评论
+      const activityIndex = activities.value.findIndex(a => a.id === editingCommentId.value)
+      if (activityIndex !== -1) {
+        activities.value[activityIndex].content = commentContent
+      }
+
+      ElMessage.success('评论更新成功')
+      editingCommentId.value = null
+      editingContent.value = ''
+    } else {
+      // 添加新评论
+      const result = await addTaskComment(props.task._id, commentContent)
+
+      // 将新评论添加到列表，确保有用户信息
+      const newActivity: Activity = {
+        id: result.id,
+        type: 'comment',
+        user: result.user || {
+          _id: result.userId,
+          displayName: '当前用户',
+          username: 'current_user'
+        },
+        userId: result.userId,
+        content: result.content || '',
+        timestamp: result.timestamp
+      }
+
+      activities.value.unshift(newActivity)
+      ElMessage.success('评论已添加')
     }
-
-    activities.value.unshift(newActivity)
-    ElMessage.success('评论已添加')
   } catch (error) {
-    console.error('Failed to add comment:', error)
-    ElMessage.error('添加评论失败')
+    console.error(`Failed to ${isEditing ? 'update' : 'add'} comment:`, error)
+    ElMessage.error(isEditing ? '更新评论失败' : '添加评论失败')
     // 恢复输入内容
     newComment.value = commentContent
   }
@@ -712,6 +832,158 @@ const getSelectedComments = () => {
       timestamp: activity.timestamp
     }))
 }
+
+// 开始编辑评论
+const startEditComment = (activity: Activity) => {
+  editingCommentId.value = activity.id
+  editingContent.value = activity.content || ''
+  newComment.value = activity.content || ''
+
+  // 滚动到底部输入框
+  const container = document.querySelector('.overflow-y-auto')
+  if (container) {
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight
+    }, 100)
+  }
+
+  // 聚焦输入框
+  const markdownEditor = document.querySelector('.markdown-editor textarea')
+  if (markdownEditor) {
+    setTimeout(() => {
+      ;(markdownEditor as HTMLTextAreaElement).focus()
+    }, 150)
+  }
+}
+
+// 取消编辑
+const cancelEdit = () => {
+  editingCommentId.value = null
+  editingContent.value = ''
+  newComment.value = ''
+}
+
+
+// 删除评论
+const deleteComment = async (commentId: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这条评论吗？删除后无法恢复。',
+      '删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    await deleteTaskComment(commentId)
+
+    // 从本地数据中移除
+    activities.value = activities.value.filter(a => a.id !== commentId)
+
+    ElMessage.success('评论删除成功')
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Failed to delete comment:', error)
+      ElMessage.error('删除评论失败')
+    }
+  }
+}
+
+// 加载反应数据
+const loadReactions = async (commentIds: string[]) => {
+  try {
+    const reactionPromises = commentIds.map(async (commentId) => {
+      try {
+        const data = await getCommentReactions(commentId)
+        return { commentId, reactions: data.reactions }
+      } catch (error) {
+        console.error(`Failed to load reactions for comment ${commentId}:`, error)
+        return { commentId, reactions: {} }
+      }
+    })
+
+    const reactionData = await Promise.all(reactionPromises)
+    const newReactions: Record<string, Record<string, { count: number; users: any[] }>> = {}
+
+    reactionData.forEach(({ commentId, reactions }) => {
+      newReactions[commentId] = reactions
+    })
+
+    reactions.value = newReactions
+  } catch (error) {
+    console.error('Failed to load reactions:', error)
+  }
+}
+
+// 切换反应选择器
+const toggleReactionPicker = (commentId: string) => {
+  showReactionPicker.value = showReactionPicker.value === commentId ? null : commentId
+}
+
+// 添加反应
+const addReaction = async (commentId: string, emoji: string) => {
+  try {
+    await toggleCommentReaction(commentId, emoji)
+    showReactionPicker.value = null
+    await loadReactions([commentId])
+  } catch (error) {
+    console.error('Failed to add reaction:', error)
+    ElMessage.error('添加反应失败')
+  }
+}
+
+// 切换反应
+const handleToggleReaction = async (commentId: string, emoji: string) => {
+  try {
+    await toggleCommentReaction(commentId, emoji)
+    await loadReactions([commentId])
+  } catch (error) {
+    console.error('Failed to toggle reaction:', error)
+    ElMessage.error('反应操作失败')
+  }
+}
+
+// 检查是否是用户的反应
+const isUserReaction = (commentId: string, emoji: string): boolean => {
+  const commentReactions = reactions.value[commentId]
+  if (!commentReactions || !commentReactions[emoji]) {
+    return false
+  }
+
+  // 这里需要获取当前用户ID进行判断
+  // 暂时返回false，后续可以从API返回的userReactions中获取
+  return false
+}
+
+// 点击外部关闭表情选择器
+const handleClickOutside = (event: Event) => {
+  if (showReactionPicker.value) {
+    showReactionPicker.value = null
+  }
+}
+
+// ESC键退出编辑模式
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && editingCommentId.value) {
+    // 阻止事件冒泡
+    event.stopPropagation()
+    event.preventDefault()
+
+    // 取消编辑
+    cancelEdit()
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown, true)
+})
 
 // 暴露方法供父组件调用
 defineExpose({

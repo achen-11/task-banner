@@ -14,6 +14,7 @@ import {
 import { checkProjectPermission } from 'code/Services/project'
 import { getTaskActivities } from 'code/Services/taskHistory'
 import { TaskComment } from 'code/Models/TaskComment'
+import { CommentReaction } from 'code/Models/CommentReaction'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
@@ -440,6 +441,13 @@ k.api.post("comment", (body: any) => {
       id: comment._id,
       type: comment.type,
       userId: comment.userId,
+      user: {
+        _id: currentUser._id,
+        username: currentUser.username,
+        displayName: currentUser.displayName,
+        email: currentUser.email,
+        avatar: currentUser.avatar
+      },
       content: comment.content,
       summary: comment.summary,
       mentionedUsers: comment.mentionedUsers,
@@ -447,7 +455,7 @@ k.api.post("comment", (body: any) => {
       metadata: comment.metadata,
       timestamp: comment.createdAt,
       updatedAt: comment.updatedAt
-    }, 'Comment added successfully')
+    }, '评论添加成功')
 
   } catch (err) {
     k.logger.error('CreateCommentError', err instanceof Error ? err.message : String(err))
@@ -516,11 +524,18 @@ k.api.post("import-as-comment", (body: any) => {
       id: comment._id,
       type: comment.type,
       userId: comment.userId,
+      user: {
+        _id: currentUser._id,
+        username: currentUser.username,
+        displayName: currentUser.displayName,
+        email: currentUser.email,
+        avatar: currentUser.avatar
+      },
       content: comment.content,
       summary: comment.summary,
       mentionedUsers: comment.mentionedUsers,
       timestamp: comment.createdAt
-    }, 'Content imported as comment successfully')
+    }, '内容导入为评论成功')
 
   } catch (err) {
     k.logger.error('ImportAsCommentError', err instanceof Error ? err.message : String(err))
@@ -627,5 +642,281 @@ k.api.get("comments", () => {
   } catch (err) {
     k.logger.error('GetCommentsError', err instanceof Error ? err.message : String(err))
     return error('Failed to get comments', 500, err)
+  }
+})
+
+// PUT /api/task/comment
+k.api.put("comment", (body: any) => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const { commentId, content, summary } = body
+
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    return error('参数错误：缺少评论ID', 400)
+  }
+
+  if (!content || content.trim() === '') {
+    return error('参数错误：评论内容不能为空', 400)
+  }
+
+  // 3. 更新评论
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取评论信息
+    const comment = TaskComment.findById(commentId) as any
+
+    if (!comment) {
+      return error('评论不存在', 404)
+    }
+
+    // 检查权限：只有评论作者或项目成员可以编辑
+    const task = getTaskById(comment.taskId)
+    if (!task) {
+      return error('任务不存在', 404)
+    }
+
+    const isAuthor = comment.userId === currentUser._id
+    const hasProjectPermission = checkProjectPermission(task.projectId, currentUser._id, 'member')
+
+    if (!isAuthor && !hasProjectPermission) {
+      return error('权限不足：无法编辑该评论', 403)
+    }
+
+    // 更新评论
+    const updatedId = TaskComment.updateById(commentId, {
+      content: content.trim(),
+      summary: summary || '',
+      updatedAt: Date.now()
+    })
+
+    if (!updatedId) {
+      return error('更新评论失败', 500)
+    }
+
+    const updatedComment = TaskComment.findById(updatedId) as any
+
+    return success({
+      id: updatedComment._id,
+      type: updatedComment.type,
+      userId: updatedComment.userId,
+      content: updatedComment.content,
+      summary: updatedComment.summary,
+      mentionedUsers: updatedComment.mentionedUsers,
+      attachments: updatedComment.attachments,
+      metadata: updatedComment.metadata,
+      timestamp: updatedComment.createdAt,
+      updatedAt: updatedComment.updatedAt
+    }, '评论更新成功')
+
+  } catch (err) {
+    k.logger.error('更新评论失败', err instanceof Error ? err.message : String(err))
+    return error('更新评论失败', 500, err)
+  }
+})
+
+// DELETE /api/task/comment
+k.api.delete("comment", () => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const query = k.request.queryString as unknown as { commentId?: string }
+  const commentId = query.commentId
+
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    return error('参数错误：缺少评论ID', 400)
+  }
+
+  // 3. 删除评论
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 获取评论信息
+    const comment = TaskComment.findById(commentId) as any
+
+    if (!comment) {
+      return error('评论不存在', 404)
+    }
+
+    // 检查权限：只有评论作者或项目管理者可以删除
+    const task = getTaskById(comment.taskId)
+    if (!task) {
+      return error('任务不存在', 404)
+    }
+
+    const isAuthor = comment.userId === currentUser._id
+    const hasProjectPermission = checkProjectPermission(task.projectId, currentUser._id, 'admin')
+
+    if (!isAuthor && !hasProjectPermission) {
+      return error('权限不足：无法删除该评论', 403)
+    }
+
+    // 删除评论
+    const deletedId = TaskComment.deleteById(commentId)
+
+    if (!deletedId) {
+      return error('删除评论失败', 500)
+    }
+
+    return success({ deletedId }, '评论删除成功')
+
+  } catch (err) {
+    k.logger.error('删除评论失败', err instanceof Error ? err.message : String(err))
+    return error('删除评论失败', 500, err)
+  }
+})
+
+// POST /api/task/reaction
+k.api.post("reaction", (body: any) => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const { commentId, emoji } = body
+
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    return error('参数错误：缺少评论ID', 400)
+  }
+
+  if (!emoji || typeof emoji !== 'string' || emoji.trim() === '') {
+    return error('参数错误：缺少表情符号', 400)
+  }
+
+  // 3. 添加/移除反应
+  try {
+    // 获取当前用户
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+
+    // 检查评论是否存在
+    const comment = TaskComment.findById(commentId) as any
+    if (!comment) {
+      return error('评论不存在', 404)
+    }
+
+    // 检查权限：只有项目成员可以添加反应
+    const task = getTaskById(comment.taskId)
+    if (!task) {
+      return error('任务不存在', 404)
+    }
+
+    const hasPermission = checkProjectPermission(task.projectId, currentUser._id, 'member')
+    if (!hasPermission) {
+      return error('权限不足：无法对该评论添加反应', 403)
+    }
+
+    // 检查用户是否已经对该评论有反应
+    const existingReaction = CommentReaction.findOne({
+      commentId: commentId,
+      userId: currentUser._id
+    }) as any
+
+    if (existingReaction) {
+      // 如果已有反应且emoji相同，则移除反应
+      if (existingReaction.emoji === emoji) {
+        const deletedId = CommentReaction.deleteById(existingReaction._id)
+        if (!deletedId) {
+          return error('移除反应失败', 500)
+        }
+        return success({ action: 'removed', emoji }, '反应已移除')
+      } else {
+        // 如果emoji不同，则更新反应
+        const updatedId = CommentReaction.updateById(existingReaction._id, {
+          emoji: emoji.trim(),
+          updatedAt: Date.now()
+        })
+        if (!updatedId) {
+          return error('更新反应失败', 500)
+        }
+        return success({ action: 'updated', emoji, oldEmoji: existingReaction.emoji }, '反应已更新')
+      }
+    } else {
+      // 添加新反应
+      const reactionId = CommentReaction.create({
+        commentId: commentId,
+        userId: currentUser._id,
+        emoji: emoji.trim()
+      })
+
+      if (!reactionId) {
+        return error('添加反应失败', 500)
+      }
+
+      return success({ action: 'added', emoji }, '反应已添加')
+    }
+
+  } catch (err) {
+    k.logger.error('反应操作失败', err instanceof Error ? err.message : String(err))
+    return error('反应操作失败', 500, err)
+  }
+})
+
+// GET /api/task/reactions?commentId=xxx
+k.api.get("reactions", () => {
+  // 1. 鉴权检查
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  // 2. 参数验证
+  const query = k.request.queryString as unknown as { commentId?: string }
+  const commentId = query.commentId
+
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    return error('参数错误：缺少评论ID', 400)
+  }
+
+  // 3. 获取反应列表
+  try {
+    // 检查评论是否存在
+    const comment = TaskComment.findById(commentId) as any
+    if (!comment) {
+      return error('评论不存在', 404)
+    }
+
+    // 获取所有反应
+    const reactions = CommentReaction.findAll({ commentId: commentId }) as any[]
+
+    // 获取反应统计信息
+    const reactionStats: Record<string, { count: number; users: any[] }> = {}
+
+    reactions.forEach(reaction => {
+      if (!reactionStats[reaction.emoji]) {
+        reactionStats[reaction.emoji] = { count: 0, users: [] }
+      }
+      reactionStats[reaction.emoji].count++
+      reactionStats[reaction.emoji].users.push({
+        userId: reaction.userId,
+        reactedAt: reaction.createdAt
+      })
+    })
+
+    // 获取当前用户的反应
+    const username = k.account.user.current.userName
+    const currentUser = getUserInfo(username)
+    const userReactions = reactions.filter(r => r.userId === currentUser._id)
+
+    return success({
+      commentId,
+      reactions: reactionStats,
+      userReactions: userReactions.map(r => r.emoji)
+    }, '获取反应列表成功')
+
+  } catch (err) {
+    k.logger.error('获取反应列表失败', err instanceof Error ? err.message : String(err))
+    return error('获取反应列表失败', 500, err)
   }
 })

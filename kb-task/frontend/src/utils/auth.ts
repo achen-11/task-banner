@@ -6,7 +6,7 @@ const isDevelopment = import.meta.env.DEV
 
 // 开发模式的 Mock 用户数据
 const MOCK_USER = {
-  id: 1000,
+  _id: '1000',
   username: 'dev_user',
   email: 'dev@example.com',
   displayName: '开发用户',
