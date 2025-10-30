@@ -658,7 +658,10 @@ const addComment = async () => {
       // 更新本地活动列表中的评论
       const activityIndex = activities.value.findIndex(a => a.id === editingCommentId.value)
       if (activityIndex !== -1) {
-        activities.value[activityIndex].content = commentContent
+        const activity = activities.value[activityIndex]
+        if (activity) {
+          activity.content = commentContent
+        }
       }
 
       ElMessage.success('评论更新成功')
@@ -673,7 +676,7 @@ const addComment = async () => {
         id: result.id,
         type: 'comment',
         user: result.user || {
-          _id: result.userId,
+          _id: result.userId || 'unknown',
           displayName: '当前用户',
           username: 'current_user'
         },

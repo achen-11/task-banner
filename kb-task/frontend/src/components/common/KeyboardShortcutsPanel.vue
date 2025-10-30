@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineExpose } from 'vue'
+import { ref, computed } from 'vue'
 import { shortcuts, formatShortcut, type KeyboardShortcut } from '@/composables/useKeyboard'
 import { Keyboard } from 'lucide-vue-next'
 

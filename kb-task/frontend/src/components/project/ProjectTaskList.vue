@@ -252,7 +252,7 @@ import { ElMessage } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import ImportTaskDialog from './ImportTaskDialog.vue'
 import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution } from '@/utils/export'
+import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution, ImportService } from '@/utils/export'
 import { formatDate } from '@/utils/time'
 import {
   getStatusBadgeClass,
@@ -475,32 +475,15 @@ const handleImportTasks = async () => {
 // 导入任务辅助函数（智能识别 JSON 或 Markdown）
 const importTasksHelper = async (content: string) => {
   try {
-    let parsedTasks: Array<Partial<Task>> = []
-
-    // 先尝试解析为 JSON
-    try {
-      parsedTasks = importTasksFromJSON(content, props.projectId!)
-    } catch (jsonError) {
-      // JSON 解析失败，尝试 Markdown 解析
-      try {
-        parsedTasks = importTasksFromMarkdown(content, props.projectId!)
-      } catch (mdError) {
-        console.error('Both JSON and Markdown import failed:', { jsonError, mdError })
-        ElMessage.error('导入失败：内容格式不正确（请使用 JSON 或 Markdown 格式）')
-        return
-      }
-    }
-
-    if (parsedTasks.length === 0) {
-      ElMessage.warning('未能解析出任务，请检查格式')
-      return
-    }
+    // 使用统一的ImportService自动识别并导入
+    const { tasks, format } = ImportService.autoImport(content, props.projectId!)
+    ImportService.validateTasks(tasks)
 
     // 解析 AI 解决方案
     const aiSolution = parseAISolution(content)
 
     // 为每个任务添加 AI 解决方案
-    parsedTasks.forEach((task, index) => {
+    tasks.forEach((task, index) => {
       if (aiSolution) {
         (task as any).aiSolution = aiSolution.content
         task.summary = aiSolution.summary
@@ -508,7 +491,7 @@ const importTasksHelper = async (content: string) => {
     })
 
     // 为有 _id 的任务查询并回填真实信息
-    const enrichedTasks = await Promise.all(parsedTasks.map(async (task) => {
+    const enrichedTasks = await Promise.all(tasks.map(async (task) => {
       if (task._id) {
         try {
           // 尝试获取现有任务信息

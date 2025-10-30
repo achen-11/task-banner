@@ -214,7 +214,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
 import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
-import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, formatDate } from '@/utils/export'
+import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, formatDate, ImportService } from '@/utils/export'
 import {
   getStatusBadgeClass,
   getStatusText,
@@ -577,32 +577,22 @@ const handleImportTask = async () => {
   }
 }
 
-// 自动识别并导入任务（JSON 或 Markdown）
+// 自动识别并导入任务（使用统一的ImportService）
 const importTask = async (content: string) => {
   try {
-    // 先尝试解析为 JSON
-    const tasks = importTasksFromJSON(content, props.projectId!)
+    const { tasks, format } = ImportService.autoImport(content, props.projectId!)
+    ImportService.validateTasks(tasks)
     await processImportedTasks(tasks)
-    ElMessage.success('从 JSON 导入任务成功')
-  } catch (jsonError) {
-    // JSON 解析失败，尝试 Markdown 解析
-    try {
-      const tasks = importTasksFromMarkdown(content, props.projectId!)
-      await processImportedTasks(tasks)
-      ElMessage.success('从 Markdown 导入任务成功')
-    } catch (mdError) {
-      console.error('Both JSON and Markdown import failed:', { jsonError, mdError })
-      ElMessage.error('导入失败：内容格式不正确（请使用 JSON 或 Markdown 格式）')
-    }
+    ElMessage.success(ImportService.getSuccessMessage(format, tasks.length))
+  } catch (error) {
+    console.error('Import failed:', error)
+    ElMessage.error(error instanceof Error ? error.message : '导入失败')
   }
 }
 
 // 处理导入的任务（创建或更新）
 const processImportedTasks = async (tasks: Array<Partial<Task>>) => {
-  if (tasks.length === 0) {
-    ElMessage.warning('未能解析出任务，请检查格式')
-    return
-  }
+  // 验证逻辑已在ImportService中处理
 
   try {
     let createdCount = 0

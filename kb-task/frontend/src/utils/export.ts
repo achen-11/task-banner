@@ -1,6 +1,29 @@
 import type { Task, TaskDetail } from '@/types/task'
 
 /**
+ * 标准化内容格式，处理换行符和其他格式问题
+ * @param content 原始内容
+ * @returns 标准化后的内容
+ */
+function normalizeContent(content?: string): string | undefined {
+  if (!content) return content
+
+  return content
+    // 处理转义的换行符 \n -> 实际换行符
+    .replace(/\\n/g, '\n')
+    // 处理转义的制表符 \t -> 实际制表符
+    .replace(/\\t/g, '\t')
+    // 处理转义的引号 \" -> 实际引号
+    .replace(/\\"/g, '"')
+    // 处理转义的斜杠 \\ -> 实际斜杠
+    .replace(/\\\\/g, '\\')
+    // 清理多余的空白行（连续超过2个换行符替换为2个）
+    .replace(/\n{3,}/g, '\n\n')
+    // 移除首尾空白
+    .trim()
+}
+
+/**
  * 任务导出 JSON 数据结构
  */
 export interface TaskExportData {
@@ -367,6 +390,56 @@ export function exportTasksToMarkdown(tasks: (Task | TaskDetail)[], projectName?
 }
 
 /**
+ * 统一的导入服务类
+ */
+class ImportService {
+  /**
+   * 自动识别并导入任务（JSON 或 Markdown）
+   * @param content 导入内容
+   * @param projectId 目标项目 ID
+   * @returns 解析出的任务列表和导入格式
+   */
+  static autoImport(
+    content: string,
+    projectId: string
+  ): { tasks: Array<Partial<Task>>; format: 'json' | 'markdown' } {
+    // 先尝试解析为 JSON
+    try {
+      const tasks = importTasksFromJSON(content, projectId)
+      return { tasks, format: 'json' }
+    } catch (jsonError) {
+      // JSON 解析失败，尝试 Markdown 解析
+      try {
+        const tasks = importTasksFromMarkdown(content, projectId)
+        return { tasks, format: 'markdown' }
+      } catch (mdError) {
+        console.error('Both JSON and Markdown import failed:', { jsonError, mdError })
+        throw new Error('导入失败：内容格式不正确（请使用 JSON 或 Markdown 格式）')
+      }
+    }
+  }
+
+  /**
+   * 验证导入的任务数据
+   * @param tasks 任务列表
+   */
+  static validateTasks(tasks: Array<Partial<Task>>): void {
+    if (tasks.length === 0) {
+      throw new Error('未能解析出任务，请检查格式')
+    }
+  }
+
+  /**
+   * 获取导入成功消息
+   * @param format 导入格式
+   * @param count 任务数量
+   */
+  static getSuccessMessage(format: 'json' | 'markdown', count: number): string {
+    return `从 ${format.toUpperCase()} 导入 ${count} 个任务成功`
+  }
+}
+
+/**
  * 从 JSON 导入任务
  * @param json JSON 文本（单个任务或任务数组）
  * @param projectId 目标项目 ID
@@ -404,8 +477,8 @@ export function importTasksFromJSON(
         title: taskData.title, // 可能为空（更新任务时）
         status: taskData.status,
         priority: taskData.priority,
-        content: taskData.content,
-        summary: taskData.summary,
+        content: normalizeContent(taskData.content), // 处理换行符
+        summary: normalizeContent(taskData.summary), // 处理换行符
         tagIds: taskData.tagIds,
         assigneeId: taskData.assigneeId,
         moduleIds: taskData.moduleIds,
@@ -845,3 +918,6 @@ export function downloadAsFile(content: string, filename: string) {
   link.click()
   URL.revokeObjectURL(url)
 }
+
+// 导出ImportService类
+export { ImportService }

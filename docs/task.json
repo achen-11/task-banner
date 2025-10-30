@@ -4,5 +4,11 @@
     "status": "review",
     "summary": "完成了权限控制、截断逻辑修复、ESC键退出编辑三项优化，提升了评论功能的用户体验",
     "content": "**任务需求：**\n评论 item 的操作还没有接活\n1. 增删改查\n2. 添加反应 (可以指定一些表情以供选择), 参考 slack\n3. 发送评论成功后push 的新评论显示的是未知用户, 刷新(或退出该任务再进来)后才能正确显示\n\n**用户反馈优化：**\n- **评论1**：编辑和删除按钮需要权限控制，只有评论作者或管理员才能看到\n- **评论2**：修复评论截断显示逻辑，避免同时显示截断和全部内容\n- **评论3**：在编辑状态下支持ESC键退出编辑模式\n\n**实现方案：**\n\n### 实现步骤\n1. **权限控制优化**：添加用户权限检查，只显示有权限的操作按钮\n2. **截断逻辑修复**：修复评论显示逻辑，要么截断要么显示全部\n3. **键盘交互优化**：添加ESC键监听器，支持退出编辑模式\n4. **之前完成的优化**：编辑体验优化、反应弹窗修复等\n\n**修改的文件**\n- `kb-task/frontend/src/components/task/TaskActivity.vue`\n\n**技术要点**\n- **权限控制**：基于`getCurrentUser()`获取用户信息，检查是否为评论作者或管理员\n- **显示逻辑修复**：使用`v-if/v-else`确保评论内容只显示一种形式\n- **键盘事件处理**：使用`onMounted/onUnmounted`管理全局键盘事件监听器\n- **编辑体验优化**：点击编辑按钮时，评论内容回填到底部输入框，自动滚动并聚焦\n- **反应弹窗优化**：表情选择面板固定宽度256px，增加内边距和间距\n- **状态管理**：添加编辑模式指示器，支持取消编辑操作\n\n**验证结果**\n- ✅ 编辑和删除按钮只对评论作者和管理员显示\n- ✅ 评论截断逻辑正常，不再重复显示内容\n- ✅ ESC键可以退出编辑模式，且阻止事件冒泡\n- ✅ 编辑评论时内容正确回填到底部输入框\n- ✅ 自动滚动到底部并聚焦输入框\n- ✅ 编辑模式有清晰的视觉指示和取消选项\n- ✅ 反应弹窗宽度合适，emoji不再挤在一起\n- ✅ 保存编辑功能正常工作，实时更新评论内容"
+  },
+  {
+    "_id": "fa5d1b56-9ce6-4c84-959e-fcf080c5bfba",
+    "status": "review",
+    "summary": "修复了JSON导入换行符处理问题，并重构导入代码为统一的ImportService，提升了可维护性",
+    "content": "**任务需求：**\\n1. 现在通过 json 导入时换行符不会进行处理, 导致内容可读性很差\\n2. 导入方法的代码过于分散, 应该适当抽离, 统一管理维护\\n\\n**实现方案：**\\n\\n### 实现步骤\\n1. **分析JSON导入问题**：发现换行符被转义为`\\n`但没有正确转换\\n2. **创建内容标准化函数**：`normalizeContent`处理转义字符和格式问题\\n3. **设计统一导入服务**：创建`ImportService`类抽离共同逻辑\\n4. **重构现有导入代码**：更新两个组件使用新的ImportService\\n\\n**修改的文件**\\n- `kb-task/frontend/src/utils/export.ts` - 添加normalizeContent函数和ImportService类\\n- `kb-task/frontend/src/components/TaskDetailDrawer.vue` - 使用ImportService重构导入逻辑\\n- `kb-task/frontend/src/components/project/ProjectTaskList.vue` - 使用ImportService重构导入逻辑\\n\\n**技术要点**\\n- **内容标准化**：处理转义的换行符、制表符、引号等特殊字符\\n- **统一导入服务**：ImportService类提供autoImport、validateTasks、getSuccessMessage等方法\\n- **代码复用**：消除重复的try-catch和验证逻辑\\n- **错误处理**：统一的错误消息和异常处理机制\\n\\n**验证结果**\\n- ✅ JSON导入时换行符正确转换为实际换行，内容可读性显著提升\\n- ✅ 导入代码成功重构，消除了TaskDetailDrawer和ProjectTaskList中的重复逻辑\\n- ✅ ImportService提供统一的API，便于后续维护和扩展\\n- ✅ 错误处理更加一致，用户体验得到改善"
   }
 ]
