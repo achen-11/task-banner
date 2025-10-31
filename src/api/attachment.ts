@@ -99,7 +99,7 @@ k.api.post("upload", () => {
       // 检查文件大小（50MB 限制）
       const MAX_SIZE = 50 * 1024 * 1024
       if (bytes.length > MAX_SIZE) {
-        k.logger.warn('FileTooLarge', `File ${fileName} exceeds 50MB limit`)
+        k.logger.warning('FileTooLarge', `File ${fileName} exceeds 50MB limit`)
         continue
       }
 
@@ -230,7 +230,7 @@ k.api.delete("delete", (body: any) => {
     try {
       k.file.delete(attachment.storagePath)
     } catch (fileErr) {
-      k.logger.warn('DeleteFileError', `Failed to delete file: ${attachment.storagePath}`)
+      k.logger.warning('DeleteFileError', `Failed to delete file: ${attachment.storagePath}`)
     }
 
     // 删除附件记录
