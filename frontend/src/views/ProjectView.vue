@@ -161,7 +161,7 @@
       <ProjectOverview v-if="currentTab === 'overview'" :project="project" />
       <ProjectTaskList v-else-if="currentTab === 'list'" :project-id="projectId" />
       <ProjectBoard v-else-if="currentTab === 'board'" :project="project" />
-      <ProjectModules v-else-if="currentTab === 'modules'" :project-id="projectId" />
+      <ProjectDocuments v-else-if="currentTab === 'documents'" :project-id="projectId" />
       <ProjectTags v-else-if="currentTab === 'tags'" :project-id="projectId" />
       <ProjectMembers v-else-if="currentTab === 'members'" :project-id="projectId" />
     </div>
@@ -187,6 +187,7 @@ import ProjectBoard from '@/components/project/ProjectBoard.vue'
 import ProjectModules from '@/components/project/ProjectModules.vue'
 import ProjectTags from '@/components/project/ProjectTags.vue'
 import ProjectMembers from '@/components/project/ProjectMembers.vue'
+import ProjectDocuments from '@/components/project/ProjectDocuments.vue'
 import ProjectSettingsDialog from '@/components/project/ProjectSettingsDialog.vue'
 
 const route = useRoute()
@@ -225,11 +226,11 @@ const tabs = [
     label: '看板',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
   },
-  // {
-  //   value: 'modules',
-  //   label: '模块',
-  //   icon: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z'
-  // },
+  {
+    value: 'documents',
+    label: '文档',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2 2v5a2 2 0 002 2h5.5a1.5 1.5 0 001.5-1.5v-5a1.5 1.5 0 00-1.5-1.5h-5.5z'
+  },
   {
     value: 'tags',
     label: '标签',

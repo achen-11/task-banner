@@ -14,6 +14,8 @@ import { TaskHistory, type TaskHistoryType } from 'code/Models/TaskHistory'
 import { TaskComment, type TaskCommentType } from 'code/Models/TaskComment'
 import { Attachment, type AttachmentType } from 'code/Models/Attachment'
 import { Notification, type NotificationType } from 'code/Models/Notification'
+import { Document, type DocumentType } from 'code/Models/Document'
+import { DocumentVersion, type DocumentVersionType } from 'code/Models/DocumentVersion'
 
 // 重新导出所有模型和类型
 export { User, type UserType }
@@ -28,6 +30,8 @@ export { TaskHistory, type TaskHistoryType }
 export { TaskComment, type TaskCommentType }
 export { Attachment, type AttachmentType }
 export { Notification, type NotificationType }
+export { Document, type DocumentType }
+export { DocumentVersion, type DocumentVersionType }
 
 // 导出所有模型实例供批量操作使用
 export const Models = {
@@ -42,7 +46,9 @@ export const Models = {
   TaskHistory,
   TaskComment,
   Attachment,
-  Notification
+  Notification,
+  Document,
+  DocumentVersion
 } as const
 
 export default Models

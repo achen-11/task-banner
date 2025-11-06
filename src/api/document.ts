@@ -1,0 +1,355 @@
+// @k-url /api/document/{action}
+
+import { success, error } from 'code/Utils/response'
+import { getUserInfo } from 'code/Services/user'
+import {
+  createDocument,
+  getDocumentById,
+  getDocumentDetailById,
+  getProjectDocuments,
+  updateDocument,
+  deleteDocument,
+  getDocumentVersions,
+  getDocumentVersion,
+  checkDocumentPermission
+} from 'code/Services/document'
+import { checkProjectPermission } from 'code/Services/project'
+
+interface DocumentListQuery {
+  projectId: string
+  page: string
+  size: string
+  status: string
+  type: string
+  keyword: string
+}
+// GET /api/document/list?projectId=xxx&page=1&size=20&status=draft&type=markdown&keyword=xxx
+k.api.get("list", () => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const query = k.request.queryString as unknown as DocumentListQuery
+  const projectId = query?.projectId
+  const page = parseInt(query?.page) || 1
+  const size = parseInt(query?.size) || 20
+  const status = query?.status
+  const type = query?.type
+  const keyword = query?.keyword
+
+  if (!projectId || projectId.trim() === '') {
+    return error('Project ID is required', 400)
+  }
+
+  // 检查项目权限（需要成员权限才能查看文档列表）
+  if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
+    return error('You do not have permission to view documents in this project', 403)
+  }
+
+  try {
+    // 获取文档列表
+    const documents = getProjectDocuments(projectId, {
+      status,
+      type,
+      keyword
+    })
+
+    // 手动分页
+    const total = documents.length
+    const startIndex = (page - 1) * size
+    const endIndex = startIndex + size
+    const paginatedDocuments = documents.slice(startIndex, endIndex)
+
+    return success({
+      items: paginatedDocuments,
+      total,
+      page,
+      size
+    })
+
+  } catch (err) {
+    return error('Failed to get document list', 500, err)
+  }
+})
+
+// GET /api/document/detail?id=xxx
+k.api.get("detail", (id: string) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const documentId = id
+
+  if (!documentId || documentId.trim() === '') {
+    return error('Document ID is required', 400)
+  }
+
+  // 检查文档权限
+  if (!checkDocumentPermission(documentId, currentUser._id, 'view')) {
+    return error('You do not have permission to view this document', 403)
+  }
+
+  try {
+    const document = getDocumentDetailById(documentId)
+
+    if (!document) {
+      return error('Document not found', 404)
+    }
+
+    return success(document)
+
+  } catch (err) {
+    return error('Failed to get document', 500, err)
+  }
+})
+
+// POST /api/document/create
+k.api.post("create", (body: any) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const { title, content, projectId, type, tags, status } = body
+
+  // 参数验证
+  if (!title || title.trim() === '') {
+    return error('Document title is required', 400)
+  }
+
+  if (!projectId || projectId.trim() === '') {
+    return error('Project ID is required', 400)
+  }
+
+  // 检查项目权限（需要成员权限才能创建文档）
+  if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
+    return error('You do not have permission to create documents in this project', 403)
+  }
+
+  try {
+    const documentId = createDocument(
+      {
+        title: title.trim(),
+        content: content || '',
+        projectId,
+        type: type || 'markdown',
+        tags: tags || [],
+        status: status || 'draft'
+      },
+      currentUser._id
+    )
+
+    const document = getDocumentById(documentId)
+    return success(document, 'Document created successfully')
+
+  } catch (err) {
+    return error('Failed to create document', 500, err)
+  }
+})
+
+// PUT /api/document/update
+k.api.put("update", (body: any) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const { id, title, content, status, tags, order, changeLog } = body
+
+  if (!id || id.trim() === '') {
+    return error('Document ID is required', 400)
+  }
+
+  // 检查文档权限
+  if (!checkDocumentPermission(id, currentUser._id, 'edit')) {
+    return error('You do not have permission to update this document', 403)
+  }
+
+  try {
+    const res = updateDocument(
+      id,
+      {
+        title: title?.trim(),
+        content,
+        status,
+        tags,
+        order
+      },
+      currentUser._id,
+      changeLog
+    )
+
+    if (!res) {
+      return error('Failed to update document', 500)
+    }
+
+    const document = getDocumentById(id)
+    return success(document, 'Document updated successfully')
+
+  } catch (err) {
+    return error('Failed to update document', 500, err)
+  }
+})
+
+// DELETE /api/document/delete
+k.api.delete("delete", (body: any) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const { id } = body
+
+  if (!id || id.trim() === '') {
+    return error('Document ID is required', 400)
+  }
+
+  // 检查文档权限（需要管理员权限才能删除）
+  if (!checkDocumentPermission(id, currentUser._id, 'delete')) {
+    return error('You do not have permission to delete this document', 403)
+  }
+
+  try {
+    const res = deleteDocument(id)
+
+    if (!res) {
+      return error('Failed to delete document', 500)
+    }
+
+    return success(null, 'Document deleted successfully')
+
+  } catch (err) {
+    return error('Failed to delete document', 500, err)
+  }
+})
+
+// GET /api/document/versions?documentId=xxx
+k.api.get("versions", (documentId: string) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+
+  if (!documentId || documentId.trim() === '') {
+    return error('Document ID is required', 400)
+  }
+
+  // 检查文档权限
+  if (!checkDocumentPermission(documentId, currentUser._id, 'view')) {
+    return error('You do not have permission to view this document', 403)
+  }
+
+  try {
+    const versions = getDocumentVersions(documentId)
+    return success(versions)
+
+  } catch (err) {
+    return error('Failed to get document versions', 500, err)
+  }
+})
+
+// GET /api/document/version?documentId=xxx&version=1
+k.api.get("version", (documentId: string, version: string) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const query = k.request.queryString
+  const versionNumber = parseInt(version)
+
+  if (!documentId || documentId.trim() === '') {
+    return error('Document ID is required', 400)
+  }
+
+  if (!version || isNaN(versionNumber)) {
+    return error('Valid version number is required', 400)
+  }
+
+  // 检查文档权限
+  if (!checkDocumentPermission(documentId, currentUser._id, 'view')) {
+    return error('You do not have permission to view this document', 403)
+  }
+
+  try {
+    const versionDocument = getDocumentVersion(documentId, versionNumber)
+
+    if (!versionDocument) {
+      return error('Document version not found', 404)
+    }
+
+    return success(versionDocument)
+
+  } catch (err) {
+    return error('Failed to get document version', 500, err)
+  }
+})
+
+// POST /api/document/batch-delete
+k.api.post("batch-delete", (body: any) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const currentUser = getUserInfo(k.account.user.current.userName)
+  const { documentIds } = body
+
+  if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
+    return error('Document IDs array is required', 400)
+  }
+
+  try {
+    const results = []
+    let successCount = 0
+    let failCount = 0
+
+    for (const documentId of documentIds) {
+      try {
+        // 检查每个文档的权限
+        if (!checkDocumentPermission(documentId, currentUser._id, 'delete')) {
+          results.push({
+            documentId,
+            success: false,
+            error: 'No permission'
+          })
+          failCount++
+          continue
+        }
+
+        const success = deleteDocument(documentId)
+        results.push({
+          documentId,
+          success,
+          error: success ? null : 'Delete failed'
+        })
+
+        if (success) {
+          successCount++
+        } else {
+          failCount++
+        }
+
+      } catch (err) {
+        results.push({
+          documentId,
+          success: false,
+          error: (err as Error).message
+        })
+        failCount++
+      }
+    }
+
+    return success({
+      total: documentIds.length,
+      successCount,
+      failCount,
+      results
+    }, `Batch delete completed: ${successCount} success, ${failCount} failed`)
+
+  } catch (err) {
+    return error('Failed to batch delete documents', 500, err)
+  }
+})
