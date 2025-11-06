@@ -360,10 +360,10 @@ const showToc = ref(true) // 目录显示状态
 const showLeftSidebar = ref(true) // 左侧目录显示状态
 
 // 注入专注模式状态（从ProjectView组件提供）
-const focusMode = inject('focusMode')
+const focusMode = inject<boolean>('focusMode', false)
 
 // 注入专注模式切换方法（从ProjectView组件提供）
-const toggleFocusMode = inject('toggleFocusMode')
+const toggleFocusMode = inject<(() => void) | null>('toggleFocusMode')
 
 // 计算属性
 const filteredDocuments = computed(() => {
@@ -393,11 +393,39 @@ const markdownContent = computed(() => {
   try {
     // 配置 marked 为标题添加 ID
     const renderer = new marked.Renderer()
-    renderer.heading = function (text: any, level: number) {
-      // 确保text是字符串类型
-      const textStr = String(text || '')
+    renderer.heading = function (heading: { tokens?: any, depth?: number, text?: any, raw?: any }): string {
+      // 新版本marked.js的heading函数签名，参数是单个heading对象
+      const text = heading.tokens || heading.text || ''
+      const level = heading.depth || 1
+
+      // 处理text参数
+      let textStr = ''
+
+      // 处理文本内容
+      if (Array.isArray(text)) {
+        // 如果text是数组，提取文本内容
+        textStr = text.map((token: any) => {
+          if (typeof token === 'string') return token
+          if (token && token.text) return String(token.text)
+          if (token && token.type === 'text') return String(token.raw || token.text)
+          return ''
+        }).join('')
+      } else if (text && typeof text === 'object') {
+        // 如果text是对象，尝试提取文本
+        textStr = String(text.text || text.raw || '')
+      } else {
+        // 如果是其他类型，直接转换
+        textStr = String(text || '')
+      }
+
+      // 清理文本，移除多余的HTML标签
+      textStr = textStr.replace(/<[^>]*>/g, '').trim()
+
+      // 确保level是数字
+      const headerLevel = typeof level === 'number' ? level : 1
+
       const id = textStr.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-      return `<h${level} id="${id}" class="heading-${level}">${textStr}</h${level}>`
+      return `<h${headerLevel} id="${id}" class="heading-${headerLevel}">${textStr}</h${headerLevel}>`
     }
 
     // 使用 marked.use 配置渲染器（兼容新版本）
@@ -419,12 +447,37 @@ const tableOfContents = computed(() => {
     const tokens = marked.lexer(selectedDocument.value.content || '')
     const headings = tokens.filter(token => token.type === 'heading')
 
-    return headings.map(heading => {
-      const textStr = String(heading.text || '')
+    return headings.map((heading: any) => {
+      let textStr = ''
+
+      if (heading.text) {
+        if (Array.isArray(heading.text)) {
+          // 如果text是数组，提取文本内容
+          textStr = heading.text.map((token: any) => {
+            if (typeof token === 'string') return token
+            if (token && token.text) return String(token.text)
+            if (token && token.type === 'text') return String(token.raw || token.text)
+            return ''
+          }).join('')
+        } else if (typeof heading.text === 'object') {
+          // 如果text是对象，尝试提取文本
+          textStr = String(heading.text.text || heading.text.raw || heading.text.tokens || '')
+        } else {
+          // 如果是其他类型，直接转换
+          textStr = String(heading.text || '')
+        }
+      }
+
+      // 清理文本，移除多余的HTML标签
+      textStr = textStr.replace(/<[^>]*>/g, '').trim()
+
+      // 确保level是数字
+      const headerLevel = typeof heading.depth === 'number' ? heading.depth : 1
+
       return {
         id: textStr.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-'),
         text: textStr,
-        level: heading.depth
+        level: headerLevel
       }
     })
   } catch (error) {
