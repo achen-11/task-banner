@@ -9,13 +9,67 @@ export interface KeyboardShortcut {
   meta?: boolean  // Cmd on Mac, Ctrl on Windows
   shift?: boolean
   alt?: boolean
-  description: string
-  handler: () => void
+  description?: string
+  handler?: () => void
   category?: string
 }
 
 // 快捷键配置
 export const shortcuts: KeyboardShortcut[] = []
+
+// 文档快捷键配置
+export const documentShortcuts: KeyboardShortcut[] = [
+  {
+    key: 'F1',
+    description: '专注模式',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  },
+  {
+    key: 'F2',
+    description: '左侧目录',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  },
+  {
+    key: 'F3',
+    description: '右侧目录',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  },
+  {
+    key: 'F4',
+    description: '编辑模式',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  },
+  {
+    key: 'F5',
+    description: '刷新列表',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  },
+  {
+    key: 'n',
+    ctrl: true,
+    meta: true,
+    description: '新建文档',
+    handler: () => {
+      // 将在组件中动态设置
+    },
+    category: '文档'
+  }
+]
 
 /**
  * 注册全局快捷键
@@ -45,7 +99,9 @@ export function useKeyboard() {
         }
 
         event.preventDefault()
-        shortcut.handler()
+        if (shortcut.handler) {
+          shortcut.handler()
+        }
         break
       }
     }
@@ -98,4 +154,57 @@ export function formatShortcut(shortcut: KeyboardShortcut): string {
   parts.push(shortcut.key.toUpperCase())
 
   return parts.join(isMac ? '' : '+')
+}
+
+/**
+ * 文档快捷键管理
+ */
+export function useDocumentKeyboard(handlers: {
+  toggleFocusMode?: () => void
+  toggleLeftSidebar?: () => void
+  toggleRightToc?: () => void
+  toggleEditMode?: () => void
+  refreshDocuments?: () => void
+  createDocument?: () => void
+}) {
+  // 创建快捷键副本，避免修改原始配置
+  const shortcutsToRegister = documentShortcuts.map(shortcut => ({ ...shortcut }))
+
+  // 动态设置处理函数
+  if (handlers?.toggleFocusMode) {
+    shortcutsToRegister[0]!.handler = handlers.toggleFocusMode
+  }
+  if (handlers?.toggleLeftSidebar) {
+    shortcutsToRegister[1]!.handler = handlers.toggleLeftSidebar
+  }
+  if (handlers.toggleRightToc) {
+    shortcutsToRegister[2]!.handler = handlers.toggleRightToc
+  }
+  if (handlers.toggleEditMode) {
+    shortcutsToRegister[3]!.handler = handlers.toggleEditMode
+  }
+  if (handlers.refreshDocuments) {
+    shortcutsToRegister[4]!.handler = handlers.refreshDocuments
+  }
+  if (handlers.createDocument) {
+    shortcutsToRegister[5]!.handler = handlers.createDocument
+  }
+
+  onMounted(() => {
+    // 注册文档快捷键
+    shortcutsToRegister.forEach(shortcut => {
+      registerShortcut(shortcut)
+    })
+  })
+
+  onUnmounted(() => {
+    // 取消注册文档快捷键
+    shortcutsToRegister.forEach(shortcut => {
+      unregisterShortcut(shortcut.key)
+    })
+  })
+
+  return {
+    shortcuts: shortcutsToRegister
+  }
 }

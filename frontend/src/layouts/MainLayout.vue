@@ -10,7 +10,7 @@
 
       <!-- 页面内容 -->
       <main class="flex-1 overflow-auto">
-        <div class="w-full px-4 py-4 mx-auto">
+        <div class="w-full px-4 py-4 mx-auto h-full">
           <router-view />
         </div>
       </main>

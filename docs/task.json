@@ -1,0 +1,8 @@
+[
+  {
+    "_id": "b4f9d450-e9fb-4978-96f7-03530e1c8281",
+    "status": "review",
+    "summary": "修复Markdown解析错误、优化目录为左右收起展开、改进快捷键说明展示、实现专注模式隐藏项目头部",
+    "content": "**任务需求：**\n\n1. 正确的 content,却显示markdown 解析错误\n2. 目录我要的是左右收起展开(给内容区更多的空间, 而不是上下收起)\n3. 快捷键说明展示, 需要找一个更合适的展示方式和展示位置\n4. 专注模式时, 头部的项目详情也要收起的, 详见: docs/Images/image.png\n\n**实现方案**\n\n### 实现步骤\n1. **修复Markdown解析错误**：升级marked.js API调用方式，使用marked.use替代marked.setOptions，添加详细错误日志\n2. **优化目录收起方式**：将目录改为左右滑动收起，使用悬浮按钮控制，增加过渡动画效果\n3. **改进快捷键说明**：使用Popover悬浮提示替代固定面板，右下角显示悬浮按钮，hover显示快捷键列表\n4. **实现专注模式隐藏头部**：使用provide/inject机制在组件间传递专注模式状态，隐藏项目头部信息\n\n**修改的文件**\n- `frontend/src/components/project/ProjectDocuments.vue` - 修复Markdown解析、优化目录收起方式、改进快捷键说明\n- `frontend/src/views/ProjectView.vue` - 添加专注模式状态注入、隐藏项目头部\n\n**技术要点**\n- **Markdown渲染优化**：使用marked.use配置渲染器，兼容新版本API，增强错误处理\n- **左右收起动画**：使用Vue transition组件实现滑动动画，absolute定位悬浮目录面板\n- **Popover提示组件**：使用Element Plus的el-popover组件，hover触发显示快捷键说明\n- **provide/inject状态管理**：跨组件传递专注模式状态，实现父子组件通信\n- **动态样式控制**：使用v-show和动态class控制头部显示和内容区域高度\n\n**验证结果**\n- ✅ Markdown解析错误已修复，支持正常的标题渲染和目录生成\n- ✅ 目录改为左右收起展开，给内容区域更多空间，过渡动画流畅\n- ✅ 快捷键说明改为悬浮按钮+Popover提示，界面更简洁\n- ✅ 专注模式时成功隐藏项目头部，内容区域占满全屏"
+  }
+]

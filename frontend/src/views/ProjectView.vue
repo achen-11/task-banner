@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col bg-gray-50">
-    <!-- 项目头部 -->
-    <div class="bg-white border-b border-gray-200">
+    <!-- 项目头部 - 专注模式时完全隐藏 -->
+    <div class="bg-white border-b border-gray-200" v-show="!focusMode">
       <!-- 展开状态的头部 -->
       <div v-if="!collapsed" class="px-6 py-4">
         <!-- 项目标题和操作 -->
@@ -157,7 +157,7 @@
     </div>
 
     <!-- Tab 内容 -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="overflow-auto p-6" :class="focusMode ? 'h-full' : 'flex-1'">
       <ProjectOverview v-if="currentTab === 'overview'" :project="project" />
       <ProjectTaskList v-else-if="currentTab === 'list'" :project-id="projectId" />
       <ProjectBoard v-else-if="currentTab === 'board'" :project="project" />
@@ -177,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, inject, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import type { Project } from '@/types/project'
@@ -208,6 +208,20 @@ const currentTab = ref('list')
 
 // 设置对话框状态
 const showSettingsDialog = ref(false)
+
+// 专注模式状态（在ProjectView中管理）
+const focusMode = ref(false)
+
+// 向子组件提供专注模式状态
+provide('focusMode', focusMode)
+
+// 专注模式切换方法
+const toggleFocusMode = () => {
+  focusMode.value = !focusMode.value
+}
+
+// 向子组件提供专注模式切换方法
+provide('toggleFocusMode', toggleFocusMode)
 
 // Tab 列表
 const tabs = [

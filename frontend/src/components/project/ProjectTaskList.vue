@@ -1,6 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100">
-    <!-- 顶部工具栏 - 移除了标题 -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-100 h-full overflow-auto">
     <div class="p-3 border-b border-gray-100 flex items-center justify-between">
       <div class="flex items-center gap-4">
         <div class="text-sm text-gray-500">
@@ -137,7 +136,7 @@
       </div>
 
       <!-- 表格内容 -->
-      <div class="divide-y divide-gray-100">
+      <div class="divide-y divide-gray-100 overflow-auto">
         <div v-for="task in tasks" :key="task._id"
           class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
           :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }">
