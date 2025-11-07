@@ -213,7 +213,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
-import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'
+import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI, addTaskComment } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, formatDate, ImportService } from '@/utils/export'
 import {
   getStatusBadgeClass,
@@ -606,10 +606,17 @@ const processImportedTasks = async (tasks: Array<Partial<Task>>) => {
       if (existingTask) {
         // 更新已存在的任务
         updatedCount++
+
+        // 在任务详情抽屉中，如果导入的是当前打开的任务，则将内容作为评论添加
+        if (currentTask.value && currentTask.value._id === task._id && task.content) {
+          // 添加评论而不是更新描述
+          await addTaskComment(currentTask.value._id, `导入内容：\n\n${task.content}`)
+        }
+
         return updateTaskAPI({
           id: task._id!,
           title: task.title || existingTask.title,
-          content: task.content !== undefined ? task.content : existingTask.content,
+          content: task.content !== undefined && (!currentTask.value || currentTask.value._id !== task._id) ? task.content : existingTask.content,
           status: task.status || existingTask.status,
           priority: task.priority || existingTask.priority,
           assigneeId: task.assigneeId !== undefined ? task.assigneeId : existingTask.assigneeId,

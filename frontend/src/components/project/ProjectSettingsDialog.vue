@@ -156,7 +156,8 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project, UpdateProjectParams } from '@/types/project'
-import { updateProject, deleteProject } from '@/api/project'
+import { updateProject } from '@/api/project'
+import { useProjectStore } from '@/stores/project'
 
 interface Props {
   visible: boolean
@@ -174,6 +175,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// Project store
+const projectStore = useProjectStore()
 
 // 表单数据
 const formData = ref<UpdateProjectParams>({
@@ -259,7 +263,7 @@ const handleDelete = async () => {
 
     deleteLoading.value = true
 
-    await deleteProject(props.project._id)
+    await projectStore.deleteProject(props.project._id)
 
     ElMessage.success('项目已删除')
     emit('deleted')

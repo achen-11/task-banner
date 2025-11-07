@@ -73,13 +73,13 @@
         <div v-if="projectStore.loading" class="px-2 py-4 text-center">
           <div class="text-sm text-gray-500">加载中...</div>
         </div>
-        <router-link
+        <div
           v-else
           v-for="project in projectStore.projects"
           :key="project._id"
-          :to="`/projects/${project._id}`"
           class="sidebar-menu"
           :class="{ 'bg-zinc-200': isActive(`/projects/${project._id}`) }"
+          @click="handleProjectClick(project)"
         >
           <div
             class="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
@@ -88,7 +88,7 @@
             {{ project.name.substring(0, 1) }}
           </div>
           <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2 truncate">{{ project.name }}</div>
-        </router-link>
+        </div>
       </nav>
 
       <!-- 创建项目对话框 -->
@@ -143,9 +143,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getCurrentUser, logout } from '@/utils/auth'
 import { useProjectStore } from '@/stores/project'
+import { useUIStore } from '@/stores/ui'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 
 defineProps<{
@@ -153,7 +154,9 @@ defineProps<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 const projectStore = useProjectStore()
+const uiStore = useUIStore()
 
 // 当前用户
 const currentUser = ref<any>(null)
@@ -202,6 +205,15 @@ const loadProjects = async () => {
   } catch (error) {
     console.error('Failed to load projects:', error)
   }
+}
+
+// 处理项目点击
+const handleProjectClick = (project: any) => {
+  // 导航到项目页面
+  router.push(`/projects/${project._id}`)
+
+  // 自动收起左侧菜单
+  uiStore.setSidebarCollapsed(true)
 }
 
 // 项目创建成功回调
