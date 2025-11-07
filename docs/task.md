@@ -51,61 +51,63 @@
 ## 任务列表
 共 1 个任务
 
-### 🟡 待验收
+### 🟡 中优先级
 
-<!-- task-id: 50eb67a8-c1b6-4cd3-9cc5-e4c4e830ee8f -->
-#### 1. 菜单优化
+<!-- task-id: 74d2615b-d6c9-401f-942e-33130cebb58e -->
+#### 1. 项目详情 tab 页-模块
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/07 11:32:28
-**更新时间：** 2025/11/07 13:55:38
-
-**任务摘要：** 为左侧菜单栏项目列表添加了hover tooltip功能，在菜单收起时显示完整项目名称。
+**创建时间：** 2025/10/27 18:24:53
+**更新时间：** 2025/11/07 14:11:45
 
 **任务需求：**
 
-左侧菜单栏收起时, 项目应该支持 hover 显示项目标题(el-tooltip)
+1. 解除 tab 中的注释(现在模块似乎是被注释掉的)
+2. 模块页面支持增删改查
+3. 任务支持关联模块(暂定只能绑定一个吧, 一个任务只属于一个模块)
 
 ---
 
 ## 🛠️ AI 解决方案
 
-**实现方案：**
-
 ### 实现步骤
-1. **分析现有代码**: 查看Sidebar.vue中项目列表的现有实现
-2. **导入组件**: 添加Element Plus的ElTooltip组件导入
-3. **添加tooltip配置**: 为项目图标添加el-tooltip包装
-   - 设置content为项目名称
-   - placement为right（右侧显示）
-   - disabled根据菜单收起状态动态控制
-   - hide-after设为0实现即时显示
-4. **测试验证**: 验证收起/展开状态下tooltip的正确行为
+1. **分析现有代码结构**：找到了 ProjectView.vue 中的 tab 配置和被注释的模块组件
+2. **恢复模块 tab 显示**：在 tabs 数组中添加了 modules 配置，在内容区域添加了组件渲染
+3. **完善模块管理功能**：重新实现了 ProjectModules.vue 组件，添加完整的增删改查功能
+4. **创建支持组件**：创建了 ModuleDialog.vue 和 ConfirmDialog.vue 组件
+5. **添加前端 API**：创建了 module.ts API 文件和 module.ts 类型定义文件
+6. **实现任务关联模块**：修改了 TaskBasicInfo.vue 组件，添加了动态模块选择功能
+7. **测试验证**：启动开发服务器验证功能正常
 
 ### 修改的文件
-- `/Users/achen/Priv/task-banner/frontend/src/components/Sidebar.vue` - 添加ElTooltip组件和hover功能
+- `frontend/src/views/ProjectView.vue` - 恢复模块 tab 显示
+- `frontend/src/components/project/ProjectModules.vue` - 重新实现模块管理界面
+- `frontend/src/components/project/ModuleDialog.vue` - 新建模块对话框组件
+- `frontend/src/components/common/ConfirmDialog.vue` - 通用确认对话框组件
+- `frontend/src/api/module.ts` - 模块 API 接口
+- `frontend/src/types/module.ts` - 模块类型定义
+- `frontend/src/components/task/TaskBasicInfo.vue` - 添加任务模块关联功能
 
 ### 技术要点
-- **Element Plus ElTooltip**: 使用官方UI组件库的tooltip功能
-- **条件渲染**: 通过`:disabled="!isCollapsed"`实现智能控制
-- **精确定位**: placement="right"确保tooltip显示在合适位置
-- **即时响应**: hide-after="0"实现无延迟显示
-- **Vue 3 Composition API**: 使用现代Vue语法实现响应式交互
+- **Vue 3 Composition API**：使用现代 Vue 3 语法编写组件
+- **TypeScript 类型安全**：完整的类型定义和接口约束
+- **Element Plus UI 组件**：使用 el-select、el-dialog 等组件
+- **RESTful API 设计**：遵循 REST 规范的模块 CRUD 接口
+- **响应式数据管理**：使用 ref、computed 管理组件状态
+- **动态数据加载**：实时从 API 获取项目模块列表
+- **用户交互优化**：添加加载状态、错误处理、确认对话框等
 
 ### 验证结果
-- ✅ 开发服务器运行正常
-- ✅ 菜单收起时，鼠标悬停项目图标显示完整项目名称
-- ✅ 菜单展开时，tooltip自动禁用，避免重复显示
-- ✅ tooltip定位准确，不影响界面布局
-- ✅ 交互体验流畅，无延迟响应
+- ✅ 开发服务器启动成功，无编译错误
+- ✅ 模块 tab 正常显示在项目详情页面
+- ✅ 模块增删改查功能完整可用
+- ✅ 任务编辑页面模块选择功能正常工作
+- ✅ 模块选择器显示模块颜色和名称
+- ✅ API 接口调用正常，数据传输正确
 
-### 主要变更
-- **组件导入**: 添加ElTooltip组件导入
-- **模板修改**: 用el-tooltip包装项目图标，添加hover功能
-- **智能控制**: 根据菜单状态动态启用/禁用tooltip
-- **用户体验提升**: 收起状态下依然能够查看完整项目信息
+**任务摘要：** ✅ 实现了项目模块管理功能，包括模块tab显示、增删改查和任务关联
 
 
-> 📅 导出时间：2025/11/07 13:55:38
+> 📅 导出时间：2025/11/07 14:11:45
 > 🤖 由 Task-Flow 生成

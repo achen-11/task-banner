@@ -246,6 +246,7 @@ const emit = defineEmits<{
   (e: 'task-created', task: Task | TaskDetail): void
   (e: 'task-updated', task: Task | TaskDetail): void
   (e: 'task-deleted', taskId: string): void
+  (e: 'import-tasks'): void
 }>()
 
 // 标题输入框引用

@@ -141,11 +141,20 @@
             placeholder="选择模块"
             @change="handleModulesChange"
           >
-            <el-option label="前端" value="前端" />
-            <el-option label="后端" value="后端" />
-            <el-option label="设计" value="设计" />
-            <el-option label="测试" value="测试" />
-            <el-option label="运维" value="运维" />
+            <el-option
+              v-for="module in projectModules"
+              :key="module._id"
+              :label="module.name"
+              :value="module._id"
+            >
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-3 h-3 rounded"
+                  :style="{ backgroundColor: module.color }"
+                ></div>
+                <span>{{ module.name }}</span>
+              </div>
+            </el-option>
           </el-select>
         </div>
         </div>
@@ -324,9 +333,11 @@ import TagSelector from '../tag/TagSelector.vue'
 import { getAttachmentList } from '@/api/attachment'
 import { getProjectMembers } from '@/api/project'
 import { getProjectTags } from '@/api/tag'
+import { getModuleList } from '@/api/module'
 import { getCurrentUser } from '@/utils/auth'
 import type { ProjectMember } from '@/types/project'
 import type { Tag } from '@/types/tag'
+import type { Module } from '@/types/module'
 import { Edit3, Eye } from 'lucide-vue-next'
 
 interface Attachment {
@@ -382,6 +393,9 @@ const emit = defineEmits<{
 // 项目成员列表
 const projectMembers = ref<ProjectMember[]>([])
 
+// 项目模块列表
+const projectModules = ref<Module[]>([])
+
 // 保存状态（查看模式）
 const isSaving = ref(false)
 const lastSavedAt = ref<number | null>(null)
@@ -414,6 +428,18 @@ const localModules = computed({
     localTask.value.moduleIds = value
   }
 })
+
+// 加载项目模块列表
+const loadProjectModules = async () => {
+  if (!props.projectId) return
+  try {
+    const response = await getModuleList(props.projectId)
+    projectModules.value = response.items
+  } catch (error) {
+    console.error('Failed to load project modules:', error)
+    projectModules.value = []
+  }
+}
 
 // 项目标签列表
 const projectTags = ref<Tag[]>([])
@@ -600,6 +626,7 @@ watch(() => props.projectId, async (newProjectId) => {
   if (newProjectId) {
     await Promise.all([
       loadProjectMembers(),
+      loadProjectModules(),
       loadProjectTags()
     ])
   }
