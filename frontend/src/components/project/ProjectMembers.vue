@@ -2,15 +2,17 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-100">
     <div class="p-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900">项目成员 ({{ members.length }})</h2>
-      <button
-        class="px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-        @click="showAddMemberDialog = true"
-      >
-        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-        </svg>
-        添加成员
-      </button>
+      <el-tooltip content="添加成员 (N)" placement="bottom">
+        <button
+          class="px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+          @click="showAddMemberDialog = true"
+        >
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          添加成员
+        </button>
+      </el-tooltip>
     </div>
 
     <div v-if="loading" class="p-8 text-center">
@@ -150,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ProjectMember } from '@/types/project'
 import type { User } from '@/types/user'
@@ -376,5 +378,25 @@ watch(() => props.projectId, () => {
 onMounted(() => {
   loadMembers()
   loadAllUsers()
+  // 添加快捷键监听
+  document.addEventListener('keydown', handleKeyDown)
 })
+
+// 组件卸载时移除监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
+
+// 处理快捷键
+const handleKeyDown = (event: KeyboardEvent) => {
+  // 检查是否在其他输入框中
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+  // N键 - 添加成员
+  if (event.key === 'n' || event.key === 'N') {
+    event.preventDefault()
+    showAddMemberDialog.value = true
+  }
+}
 </script>

@@ -24,16 +24,11 @@
               @click="showSettingsDialog = true"
               class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Settings class="w-4 h-4 inline-block mr-1" />
               项目设置
             </button>
             <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-              <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus class="w-4 h-4 inline-block mr-1" />
               新建任务
             </button>
             <button
@@ -41,9 +36,7 @@
               class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="收起"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-              </svg>
+              <ChevronUp class="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -63,33 +56,25 @@
 
           <!-- 创建时间 -->
           <div class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <Calendar class="w-4 h-4" />
             <span>创建: {{ formatDate(project?.createdAt) }}</span>
           </div>
 
           <!-- 更新时间 -->
           <div class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <RefreshCw class="w-4 h-4" />
             <span>更新: {{ formatDate(project?.updatedAt) }}</span>
           </div>
 
           <!-- 成员数 -->
           <div class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+            <Users class="w-4 h-4" />
             <span>成员: {{ memberCount }}</span>
           </div>
 
           <!-- 任务完成度 -->
           <div class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
+            <CheckSquare class="w-4 h-4" />
             <span>任务: {{ taskCompletionText }}</span>
             <div class="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div
@@ -131,9 +116,7 @@
           class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           title="展开"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown class="w-5 h-5" />
         </button>
       </div>
 
@@ -148,9 +131,7 @@
             ? 'border-blue-500 text-blue-600'
             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="tab.icon" />
-          </svg>
+          <component :is="tab.icon" class="w-4 h-4" />
           {{ tab.label }}
         </button>
       </nav>
@@ -183,6 +164,23 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
 import type { Project } from '@/types/project'
+import {
+  Settings,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  Calendar,
+  RefreshCw,
+  Users,
+  CheckSquare,
+  BarChart3,
+  List,
+  LayoutGrid,
+  Grid3x3,
+  FileText,
+  Tag,
+  User
+} from 'lucide-vue-next'
 import ProjectOverview from '@/components/project/ProjectOverview.vue'
 import ProjectTaskList from '@/components/project/ProjectTaskList.vue'
 import ProjectBoard from '@/components/project/ProjectBoard.vue'
@@ -265,37 +263,37 @@ const tabs = [
   {
     value: 'overview',
     label: '概览',
-    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
+    icon: BarChart3
   },
   {
     value: 'list',
     label: '列表',
-    icon: 'M4 6h16M4 10h16M4 14h16M4 18h16'
+    icon: List
   },
   {
     value: 'board',
     label: '看板',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+    icon: LayoutGrid
   },
   {
     value: 'modules',
     label: '模块',
-    icon: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z'
+    icon: Grid3x3
   },
   {
     value: 'documents',
     label: '文档',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2 2v5a2 2 0 002 2h5.5a1.5 1.5 0 001.5-1.5v-5a1.5 1.5 0 00-1.5-1.5h-5.5z'
+    icon: FileText
   },
   {
     value: 'tags',
     label: '标签',
-    icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'
+    icon: Tag
   },
   {
     value: 'members',
     label: '成员',
-    icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'
+    icon: User
   }
 ]
 

@@ -3,15 +3,17 @@
     <!-- Header -->
     <div class="p-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900">项目标签</h2>
-      <button
-        @click="handleCreate"
-        class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        新建标签
-      </button>
+      <el-tooltip content="新建标签 (N)" placement="bottom">
+        <button
+          @click="handleCreate"
+          class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          新建标签
+        </button>
+      </el-tooltip>
     </div>
 
     <!-- Loading -->
@@ -91,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getProjectTags, deleteTag } from '@/api/tag'
 import TagDialog from '@/components/tag/TagDialog.vue'
@@ -166,5 +168,25 @@ const handleSuccess = async () => {
 
 onMounted(() => {
   loadTags()
+  // 添加快捷键监听
+  document.addEventListener('keydown', handleKeyDown)
 })
+
+// 组件卸载时移除监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
+
+// 处理快捷键
+const handleKeyDown = (event: KeyboardEvent) => {
+  // 检查是否在其他输入框中
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+  // N键 - 新建标签
+  if (event.key === 'n' || event.key === 'N') {
+    event.preventDefault()
+    handleCreate()
+  }
+}
 </script>
