@@ -127,18 +127,7 @@
                   取消
                 </button>
 
-                <!-- 导入按钮 -->
-                <button
-                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
-                  title="导入任务 (Cmd+I)"
-                  @click="handleImportTask"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17l4-4m0 0l4 4m-4-4v12M4 4h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                  </svg>
-                  导入
-                </button>
-
+                
                 <!-- 删除按钮 -->
                 <button
                   class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
@@ -737,9 +726,9 @@ const handleKeydown = (e: KeyboardEvent) => {
       toggleCommentSelectionMode()
     }
   } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
-    // cmd+i 或 ctrl+i 导入任务
+    // cmd+i 或 ctrl+i 导入任务 - 委托给父组件处理
     e.preventDefault()
-    handleImportTask()
+    emit('import-tasks')
   }
 }
 

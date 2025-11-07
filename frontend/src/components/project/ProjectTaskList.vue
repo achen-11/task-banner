@@ -231,7 +231,8 @@
     <!-- 任务详情抽屉 -->
     <TaskDetailDrawer :is-open="isDrawerOpen" :mode="drawerMode" :task-id="selectedTaskId" :project-id="projectId"
       :all-tasks="tasks" @close="closeDrawer" @update:task-id="selectedTaskId = $event"
-      @task-created="handleTaskCreated" @task-updated="handleTaskUpdated" @task-deleted="handleTaskDeleted" />
+      @task-created="handleTaskCreated" @task-updated="handleTaskUpdated" @task-deleted="handleTaskDeleted"
+      @import-tasks="handleImportTasks" />
 
     <!-- 导入确认对话框 -->
     <ImportTaskDialog
