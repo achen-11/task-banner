@@ -27,7 +27,7 @@
     </div>
 
     <!-- 专注模式悬浮按钮 -->
-    <div v-if="focusMode" class="fixed top-4 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
+    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
       <el-button type="default" @click="toggleFocusMode" circle size="small" title="退出专注模式">
         <el-icon>
           <View />
@@ -35,16 +35,14 @@
       </el-button>
     </div>
 
-    <!-- 左右布局 - 独立滚动 -->
+    <!-- 左右布局 - 同级分栏布局 -->
     <div class="flex overflow-hidden" :class="focusMode ? 'h-full' : 'h-[calc(100%-73px)]'">
-      <!-- 左侧文档目录悬浮按钮 -->
-      <div class="relative">
-        <!-- 左侧目录面板 - 可收起 -->
+      <!-- 左侧文档目录 - 同级布局 -->
         <transition name="slide-left">
           <div v-if="showLeftSidebar"
-            class="absolute left-0 top-0 h-full w-80 border-r border-gray-200 bg-white shadow-lg z-10 flex flex-col">
+            class="w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
             <!-- 目录头部 -->
-            <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+            <div class="p-4 pb-0 border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
               <h3 class="text-sm font-medium text-gray-700">文档列表</h3>
               <el-button type="text" size="small" @click="toggleLeftSidebar"
                 class="!text-gray-500 hover:!text-gray-700">
@@ -55,7 +53,7 @@
             </div>
 
             <!-- 搜索和过滤区域 -->
-            <div class="p-4 border-b border-gray-200">
+            <div class="p-4 border-b border-gray-200 flex-shrink-0">
               <el-input v-model="searchKeyword" placeholder="搜索文档..." class="mb-3" @input="handleSearch">
                 <template #prefix>
                   <el-icon>
@@ -86,81 +84,64 @@
                   <p class="mt-2 text-sm text-gray-500">暂无文档</p>
                 </div>
 
-                <div v-else class="space-y-3">
-                  <!-- 按状态分组的文档 -->
-                  <div v-for="(group, status) in groupedDocuments" :key="status"
-                    class="border border-gray-200 rounded-lg overflow-hidden">
-                    <!-- 分组标题 -->
-                    <div @click="toggleGroup(status)"
-                      class="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
-                      <div class="flex items-center space-x-2">
-                        <el-icon :class="[
-                          'transition-transform duration-200',
-                          expandedGroups.includes(status) ? 'rotate-90' : ''
-                        ]">
-                          <ArrowRight />
-                        </el-icon>
-                        <span class="font-medium text-sm text-gray-700">
-                          {{ getStatusText(status) }} ({{ group.length }})
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- 文档列表 -->
-                    <div v-show="expandedGroups.includes(status)" class="divide-y divide-gray-100">
-                      <div v-for="document in group" :key="document._id" @click="selectDocument(document)" :class="[
-                        'p-3 cursor-pointer transition-colors hover:bg-gray-50',
-                        selectedDocument?._id === document._id
-                          ? 'bg-blue-50 border-l-4 border-l-blue-500'
-                          : ''
-                      ]">
-                        <div class="flex items-start justify-between">
-                          <div class="flex-1 min-w-0">
-                            <h4 class="text-sm font-medium text-gray-900 truncate">{{ document.title }}</h4>
-                            <div class="flex items-center mt-1 space-x-2">
-                              <span v-for="tag in document.tags" :key="tag"
-                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                {{ tag }}
-                              </span>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">
-                              {{ formatDate(document.updatedAt) }}
-                            </p>
-                          </div>
-                          <div class="flex items-center space-x-1 ml-2">
-                            <el-button type="text" size="small" @click.stop="editDocument(document)" title="编辑">
-                              <el-icon>
-                                <Edit />
-                              </el-icon>
-                            </el-button>
-                            <el-button type="text" size="small" @click.stop="deleteDocument(document)" title="删除"
-                              class="!text-red-500 hover:!text-red-600">
-                              <el-icon>
-                                <Delete />
-                              </el-icon>
-                            </el-button>
-                          </div>
+                <div v-else class="space-y-2">
+                  <!-- 文档列表 - 简单列表，无分组 -->
+                  <div v-for="document in filteredDocuments" :key="document._id"
+                    @click="selectDocument(document)" :class="[
+                      'p-3 cursor-pointer transition-colors border border-gray-200 rounded-lg',
+                      'hover:bg-blue-50 hover:border-blue-200',
+                      selectedDocument?._id === document._id
+                        ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                        : 'border-l-4 border-l-transparent'
+                    ]">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-gray-900 truncate">{{ document.title }}</h4>
+                        <div class="flex items-center mt-1 space-x-2">
+                          <span :class="[
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                            document.status === 'published' ? 'bg-green-100 text-green-800' :
+                            document.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          ]">
+                            {{ getStatusText(document.status) }}
+                          </span>
                         </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                          {{ formatDate(document.updatedAt) }}
+                        </p>
+                      </div>
+                      <div class="flex items-center space-x-1 ml-2">
+                        <el-button type="text" size="small" @click.stop="editDocument(document)" title="编辑">
+                          <el-icon>
+                            <Edit />
+                          </el-icon>
+                        </el-button>
+                        <el-button type="text" size="small" @click.stop="deleteDocument(document)" title="删除"
+                          class="!text-red-500 hover:!text-red-600">
+                          <el-icon>
+                            <Delete />
+                          </el-icon>
+                        </el-button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+                  </div>
         </transition>
 
-        <!-- 展开左侧目录按钮 -->
-        <div v-if="!showLeftSidebar" class="absolute -left-2 top-4 z-10">
-          <div type="default" @click="toggleLeftSidebar"
-            class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center">
-            <ChevronRight class="w-4 h-4" />
+        <!-- 展开左侧目录按钮 - 收起时显示 -->
+        <div v-if="!showLeftSidebar" class="w-8 flex-shrink-0 flex items-start justify-center pt-4">
+          <div @click="toggleLeftSidebar"
+            class="bg-white border border-gray-200 rounded-r-lg p-1 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+            <ChevronRight class="w-4 h-4 text-gray-600" />
           </div>
         </div>
-      </div>
 
-      <!-- 右侧文档内容 - 独立滚动 -->
-      <div class="flex-1 flex flex-col">
+      <!-- 右侧文档内容 - 同级布局 -->
+      <div class="flex-1 flex flex-col min-w-0">
         <div v-if="!selectedDocument" class="flex items-center justify-center h-full text-gray-400">
           <div class="text-center">
             <el-icon class="mx-auto h-12 w-12 text-gray-400 mb-2">
@@ -315,7 +296,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue'
 import { formatShortcut } from '@/composables/useKeyboard'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
 import { ChevronRight, ChevronLeft } from 'lucide-vue-next'
 import { marked } from 'marked'
 import CreateDocumentDialog from '../document/CreateDocumentDialog.vue'
@@ -355,7 +336,6 @@ const viewingDocumentId = ref<string | null>(null)
 const isEditMode = ref(false)
 const editingContent = ref('')
 const originalContent = ref('')
-const expandedGroups = ref<string[]>(['draft', 'published', 'archived']) // 默认展开所有分组
 const showToc = ref(true) // 目录显示状态
 const showLeftSidebar = ref(true) // 左侧目录显示状态
 
@@ -487,28 +467,6 @@ const tableOfContents = computed(() => {
 })
 
 // 按状态分组的文档
-const groupedDocuments = computed(() => {
-  const groups: Record<string, Document[]> = {}
-
-  filteredDocuments.value.forEach(doc => {
-    if (!groups[doc.status]) {
-      groups[doc.status] = []
-    }
-    groups[doc.status]!.push(doc)
-  })
-
-  // 按优先级排序：草稿 > 已发布 > 已归档
-  const priorityOrder = ['draft', 'published', 'archived']
-  const orderedGroups: Record<string, Document[]> = {}
-
-  priorityOrder.forEach(status => {
-    if (groups[status] && groups[status].length > 0) {
-      orderedGroups[status] = groups[status]
-    }
-  })
-
-  return orderedGroups
-})
 
 // 方法
 const fetchDocuments = async () => {
@@ -543,14 +501,6 @@ const handleStatusFilter = () => {
   // 过滤逻辑已在 computed 中处理
 }
 
-const toggleGroup = (status: string) => {
-  const index = expandedGroups.value.indexOf(status)
-  if (index > -1) {
-    expandedGroups.value.splice(index, 1)
-  } else {
-    expandedGroups.value.push(status)
-  }
-}
 
 const selectDocument = (document: Document) => {
   selectedDocument.value = document
@@ -737,16 +687,6 @@ const toggleLeftSidebar = () => {
   showLeftSidebar.value = !showLeftSidebar.value
 }
 
-// 左侧目录内容展开/收起方法
-const toggleGroupExpansion = () => {
-  // 切换所有分组的展开状态
-  const allExpanded = expandedGroups.value.length === 3
-  if (allExpanded) {
-    expandedGroups.value = []
-  } else {
-    expandedGroups.value = ['draft', 'published', 'archived']
-  }
-}
 
 // 快捷键处理
 const handleKeyboardShortcuts = (event: KeyboardEvent) => {
