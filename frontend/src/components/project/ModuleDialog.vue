@@ -38,19 +38,38 @@
             <label for="moduleColor" class="block text-sm font-medium text-gray-700 mb-1">
               模块颜色
             </label>
-            <div class="flex items-center gap-2">
-              <input
-                id="moduleColor"
-                v-model="formData.color"
-                type="color"
-                class="h-10 w-20 border border-gray-300 rounded cursor-pointer"
-              />
-              <input
-                v-model="formData.color"
-                type="text"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                placeholder="#6B7280"
-              />
+            <div class="space-y-3">
+              <!-- 预设颜色选择 -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <button
+                  v-for="presetColor in presetColors"
+                  :key="presetColor"
+                  type="button"
+                  @click="formData.color = presetColor"
+                  class="w-8 h-8 rounded border-2 transition-all"
+                  :class="formData.color === presetColor
+                    ? 'border-blue-500 shadow-md scale-110'
+                    : 'border-gray-300 hover:border-gray-400'"
+                  :style="{ backgroundColor: presetColor }"
+                  :title="presetColor"
+                ></button>
+              </div>
+
+              <!-- 自定义颜色选择 -->
+              <div class="flex items-center gap-2">
+                <input
+                  id="moduleColor"
+                  v-model="formData.color"
+                  type="color"
+                  class="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  v-model="formData.color"
+                  type="text"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  placeholder="#6B7280"
+                />
+              </div>
             </div>
           </div>
 
@@ -124,26 +143,61 @@ const formData = ref({
   parentId: ''
 })
 
+// 预设颜色选项
+const presetColors = [
+  '#EF4444', // 红色
+  '#F97316', // 橙色
+  '#F59E0B', // 黄色
+  '#84CC16', // 绿色
+  '#10B981', // 青色
+  '#06B6D4', // 天蓝色
+  '#3B82F6', // 蓝色
+  '#6366F1', // 靛蓝色
+  '#8B5CF6', // 紫色
+  '#A855F7', // 紫红色
+  '#EC4899', // 粉色
+  '#F43F5E', // 玫红色
+  '#6B7280', // 灰色（默认）
+  '#0EA5E9', // 天蓝色
+  '#14B8A6', // 青绿色
+  '#22C55E', // 绿色
+  '#EAB308', // 金黄色
+  '#DC2626', // 深红色
+  '#7C3AED', // 深紫色
+  '#0891B2', // 深青色
+  '#15803D', // 深绿色
+]
+
 // 计算属性
 const isEditing = computed(() => !!props.module)
 
-// 监听对话框显示状态，重置表单
+// 监听对话框显示状态和模块数据变化
 watch(() => props.visible, (visible) => {
   if (visible) {
-    resetForm()
+    if (props.module) {
+      // 编辑模式：填充模块数据
+      formData.value = {
+        name: props.module.name,
+        color: props.module.color,
+        parentId: props.module.parentId
+      }
+    } else {
+      // 创建模式：重置表单
+      resetForm()
+    }
   }
 })
 
-// 监听模块数据变化，填充表单
+// 监听模块数据变化（用于编辑时切换不同模块）
 watch(() => props.module, (module) => {
-  if (module) {
+  if (module && props.visible) {
     formData.value = {
       name: module.name,
       color: module.color,
       parentId: module.parentId
     }
   }
-}, { immediate: true })
+})
 
 // 重置表单
 const resetForm = () => {

@@ -71,7 +71,7 @@
 🎯 目标：确保功能正常工作
 📝 关键动作：
 - 运行构建测试：npm run build
-- 启动开发服务器：npm run dev
+- 启动开发服务器：cd frontend && npm run dev
 - 手动测试关键功能
 - 检查热更新是否正常
 - 使用 Chrome DevTools MCP 深度调试
