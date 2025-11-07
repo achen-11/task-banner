@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { createModule, updateModule } from '@/api/module'
 import type { Module, CreateModuleParams, UpdateModuleParams } from '@/types/module'
 
@@ -254,4 +254,23 @@ const handleCancel = () => {
 const handleBackdropClick = () => {
   emit('cancelled')
 }
+
+// 处理键盘事件
+const handleKeyDown = (event: KeyboardEvent) => {
+  // ESC键关闭弹窗
+  if (event.key === 'Escape' && props.visible) {
+    event.preventDefault()
+    emit('cancelled')
+  }
+}
+
+// 监听键盘事件
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+// 组件卸载时移除监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
 </script>

@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { createTag, updateTag } from '@/api/tag'
 import type { Tag, CreateTagParams } from '@/types/tag'
 import { ElMessage } from 'element-plus'
@@ -204,6 +204,25 @@ const handleClose = () => {
   if (loading.value) return
   emit('update:modelValue', false)
 }
+
+// 处理键盘事件
+const handleKeyDown = (event: KeyboardEvent) => {
+  // ESC键关闭弹窗
+  if (event.key === 'Escape' && props.modelValue) {
+    event.preventDefault()
+    handleClose()
+  }
+}
+
+// 监听键盘事件
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+// 组件卸载时移除监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
 
 const handleSubmit = async () => {
   if (loading.value) return
