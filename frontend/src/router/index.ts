@@ -43,6 +43,14 @@ const router = createRouter({
           meta: {
             title: 'TaskFlow - 项目'
           }
+        },
+        {
+          path: 'projects/:projectId/documents/:documentId',
+          name: 'document',
+          component: () => import('../views/ProjectView.vue'),
+          meta: {
+            title: 'TaskFlow - 文档'
+          }
         }
       ]
     }

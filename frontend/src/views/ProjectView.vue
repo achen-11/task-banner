@@ -177,9 +177,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, inject, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, inject, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
+import { useUIStore } from '@/stores/ui'
 import type { Project } from '@/types/project'
 import ProjectOverview from '@/components/project/ProjectOverview.vue'
 import ProjectTaskList from '@/components/project/ProjectTaskList.vue'
@@ -193,12 +194,18 @@ import ProjectSettingsDialog from '@/components/project/ProjectSettingsDialog.vu
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
+const uiStore = useUIStore()
 
 // 项目信息
 const project = computed<Project | null>(() => projectStore.currentProject)
 
-// 项目 ID
-const projectId = computed(() => route.params.id as string)
+// 项目 ID - 兼容两种路由参数名称
+const projectId = computed(() => {
+  return (route.params.projectId || route.params.id) as string
+})
+
+// 文档 ID（从路由参数获取）
+const documentId = computed(() => route.params.documentId as string | undefined)
 
 // 头部展开/收起状态
 const collapsed = ref(true)
@@ -215,13 +222,42 @@ const focusMode = ref(false)
 // 向子组件提供专注模式状态
 provide('focusMode', focusMode)
 
-// 专注模式切换方法
+// 专注模式切换方法 - F1专用
 const toggleFocusMode = () => {
   focusMode.value = !focusMode.value
+
+  // 直接控制三个元素的状态
+  if (focusMode.value) {
+    // 进入专注模式：收起所有元素
+    collapsed.value = true // 收起顶部项目详情
+    uiStore.setSidebarCollapsed(true) // 收起左侧菜单栏
+    // 左侧文件列表由子组件的watch处理
+  } else {
+    // 退出专注模式：展开所有元素
+    collapsed.value = false // 展开顶部项目详情
+    uiStore.setSidebarCollapsed(false) // 展开左侧菜单栏
+    // 左侧文件列表由子组件的watch处理
+  }
+
+  // 通知子组件状态变化
 }
 
 // 向子组件提供专注模式切换方法
 provide('toggleFocusMode', toggleFocusMode)
+
+// 向子组件提供文档ID
+provide('documentId', documentId)
+
+// 处理全局快捷键
+const handleGlobalKeyboardShortcuts = (event: KeyboardEvent) => {
+  // F1 - 仅在文档tab中切换专注模式
+  if (event.key === 'F1' && currentTab.value === 'documents') {
+    event.preventDefault()
+    toggleFocusMode()
+  }
+
+  // Cmd/Ctrl + B 已在MainLayout中处理，此处不需要重复处理
+}
 
 // Tab 列表
 const tabs = [
@@ -329,7 +365,7 @@ const formatDate = (timestamp: number | undefined) => {
 
 // 加载项目详情
 const loadProject = async () => {
-  const id = route.params.id as string
+  const id = projectId.value
   if (!id) return
 
   try {
@@ -362,14 +398,31 @@ const handleProjectDeleted = () => {
   router.push('/')
 }
 
+// 监听文档ID变化，自动切换到文档标签
+watch(documentId, (newDocumentId) => {
+  if (newDocumentId) {
+    // 当URL中包含文档ID时，自动切换到文档标签
+    currentTab.value = 'documents'
+  }
+}, { immediate: true })
+
 // 监听路由变化，重新加载项目
-watch(() => route.params.id, (newId) => {
-  if (newId) {
+watch(() => [route.params.id, route.params.projectId], ([id, projectId]) => {
+  const effectiveProjectId = projectId || id
+  if (effectiveProjectId) {
     loadProject()
   }
 }, { immediate: true })
 
 onMounted(() => {
   loadProject()
+
+  // 添加全局键盘事件监听
+  document.addEventListener('keydown', handleGlobalKeyboardShortcuts)
+})
+
+// 组件卸载时移除事件监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleGlobalKeyboardShortcuts)
 })
 </script>

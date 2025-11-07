@@ -9,30 +9,54 @@
 
       <div class="flex items-center space-x-2">
         <!-- 专注模式按钮 -->
-        <el-button type="default" @click="toggleFocusMode" :title="focusMode ? '退出专注模式' : '专注模式'">
-          <el-icon>
-            <View v-if="!focusMode" />
-            <Edit v-else />
-          </el-icon>
-          {{ focusMode ? '退出专注' : '专注模式' }}
-        </el-button>
+        <el-tooltip>
+          <template #content>
+            <div class="flex items-center gap-1.5">
+              <Keyboard :size="14" />
+              <span>{{ focusMode ? '退出专注模式 (F1)' : '专注模式 (F1)' }}</span>
+            </div>
+          </template>
+          <el-button type="default" @click="toggleFocusMode">
+            <el-icon>
+              <View v-if="!focusMode" />
+              <Edit v-else />
+            </el-icon>
+            {{ focusMode ? '退出专注' : '专注模式' }}
+          </el-button>
+        </el-tooltip>
 
-        <el-button type="primary" @click="showCreateDialog = true">
-          <el-icon class="mr-1">
-            <Plus />
-          </el-icon>
-          新建文档
-        </el-button>
+        <el-tooltip>
+          <template #content>
+            <div class="flex items-center gap-1.5">
+              <Keyboard :size="14" />
+              <span>新建文档 (N)</span>
+            </div>
+          </template>
+          <el-button type="primary" @click="showCreateDialog = true">
+            <el-icon class="mr-1">
+              <Plus />
+            </el-icon>
+            新建文档
+          </el-button>
+        </el-tooltip>
       </div>
     </div>
 
     <!-- 专注模式悬浮按钮 -->
     <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
-      <el-button type="default" @click="toggleFocusMode" circle size="small" title="退出专注模式">
-        <el-icon>
-          <View />
-        </el-icon>
-      </el-button>
+      <el-tooltip>
+        <template #content>
+          <div class="flex items-center gap-1.5">
+            <Keyboard :size="14" />
+            <span>退出专注模式 (F1)</span>
+          </div>
+        </template>
+        <el-button type="default" @click="toggleFocusMode" circle size="small">
+          <el-icon>
+            <View />
+          </el-icon>
+        </el-button>
+      </el-tooltip>
     </div>
 
     <!-- 左右布局 - 同级分栏布局 -->
@@ -118,6 +142,11 @@
                       </p>
                     </div>
                     <div class="flex items-center space-x-1 ml-2">
+                      <el-button type="text" size="small" @click.stop="shareDocument(document)" title="复制链接">
+                        <el-icon>
+                          <Document />
+                        </el-icon>
+                      </el-button>
                       <el-button type="text" size="small" @click.stop="editDocument(document)" title="编辑">
                         <el-icon>
                           <Edit />
@@ -173,13 +202,21 @@
                 </span>
               </div>
               <div class="flex items-center space-x-2">
-                <el-button size="small" @click="toggleEditMode" :type="isEditMode ? 'default' : 'primary'">
-                  <el-icon class="mr-1">
-                    <Edit v-if="!isEditMode" />
-                    <View v-else />
-                  </el-icon>
-                  {{ isEditMode ? '查看' : '编辑' }}
-                </el-button>
+                <el-tooltip>
+                  <template #content>
+                    <div class="flex items-center gap-1.5">
+                      <Keyboard :size="14" />
+                      <span>{{ isEditMode ? '查看模式 (F4)' : '编辑模式 (F4)' }}</span>
+                    </div>
+                  </template>
+                  <el-button size="small" @click="toggleEditMode" :type="isEditMode ? 'default' : 'primary'">
+                    <el-icon class="mr-1">
+                      <Edit v-if="!isEditMode" />
+                      <View v-else />
+                    </el-icon>
+                    {{ isEditMode ? '查看' : '编辑' }}
+                  </el-button>
+                </el-tooltip>
               </div>
             </div>
           </div>
@@ -189,7 +226,7 @@
             <!-- 编辑模式 - 编辑和预览双模式 -->
             <div v-if="isEditMode" class="flex-1 flex">
               <!-- 左侧编辑器区域 -->
-              <div class="flex-1 p-6 border-r border-gray-200">
+              <div class="flex-1 p-6 pb-8 border-r border-gray-200">
                 <!-- 编辑器头部 -->
                 <div class="mb-4 pb-4 border-b border-gray-200">
                   <div class="flex items-center justify-between">
@@ -252,7 +289,7 @@
               </div>
 
               <!-- 右侧预览区域 -->
-              <div ref="previewContainer" class="flex-1 p-6 overflow-y-auto bg-gray-50" @scroll="handlePreviewScroll">
+              <div ref="previewContainer" class="flex-1 p-6 pb-8 overflow-y-auto bg-white" @scroll="handlePreviewScroll">
                 <div class="mb-4 pb-4 border-b border-gray-200">
                   <h3 class="text-lg font-semibold text-gray-800">预览</h3>
                 </div>
@@ -263,10 +300,10 @@
                 </h1>
 
                 <!-- 预览内容 -->
-                <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body">
+                <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body mb-8">
                   <div v-html="markdownPreviewContent"></div>
                 </div>
-                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">{{
+                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed mb-8">{{
                   editingContent }}
                 </pre>
               </div>
@@ -275,11 +312,11 @@
             <!-- 查看模式 -->
             <div v-else class="flex-1 flex">
               <!-- 内容区域 -->
-              <div class="flex-1 p-6 overflow-y-auto">
-                <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body">
+              <div class="flex-1 p-6 pb-8 overflow-y-auto">
+                <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body mb-8">
                   <div v-html="markdownContent"></div>
                 </div>
-                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">{{
+                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed mb-8">{{
                   selectedDocument.content }}
                 </pre>
               </div>
@@ -293,12 +330,20 @@
                     <!-- 目录头部 -->
                     <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
                       <h3 class="text-sm font-medium text-gray-700">目录</h3>
-                      <el-button type="text" size="small" @click="toggleToc"
-                        class="!text-gray-500 hover:!text-gray-700">
-                        <el-icon>
-                          <ArrowRight />
-                        </el-icon>
-                      </el-button>
+                      <el-tooltip>
+                        <template #content>
+                          <div class="flex items-center gap-1.5">
+                            <Keyboard :size="14" />
+                            <span>收起目录 (F3)</span>
+                          </div>
+                        </template>
+                        <el-button type="text" size="small" @click="toggleToc"
+                          class="!text-gray-500 hover:!text-gray-700">
+                          <el-icon>
+                            <ArrowRight />
+                          </el-icon>
+                        </el-button>
+                      </el-tooltip>
                     </div>
 
                     <!-- 目录内容 -->
@@ -319,10 +364,18 @@
 
                 <!-- 展开目录按钮 -->
                 <div v-if="!showToc" class="absolute -right-2 top-4 z-10">
-                  <div @click="toggleToc"
-                    class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center">
-                    <ChevronLeft class="w-4 h-4" />
-                  </div>
+                  <el-tooltip>
+                    <template #content>
+                      <div class="flex items-center gap-1.5">
+                        <Keyboard :size="14" />
+                        <span>展开目录 (F3)</span>
+                      </div>
+                    </template>
+                    <div @click="toggleToc"
+                      class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center cursor-pointer hover:bg-gray-50">
+                      <ChevronLeft class="w-4 h-4" />
+                    </div>
+                  </el-tooltip>
                 </div>
               </div>
             </div>
@@ -372,8 +425,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">新建文档</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">
-              {{ formatShortcut({ key: 'n', ctrl: true, meta: true }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">N</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">保存文档</span>
@@ -387,7 +439,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, inject, type Ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { formatShortcut } from '@/composables/useKeyboard'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft, Loading, Check, Close } from '@element-plus/icons-vue'
@@ -416,6 +469,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// Router实例
+const router = useRouter()
 
 // 响应式数据
 const loading = ref(false)
@@ -448,6 +504,9 @@ const focusMode = inject<boolean>('focusMode', false)
 
 // 注入专注模式切换方法（从ProjectView组件提供）
 const toggleFocusMode = inject<(() => void) | null>('toggleFocusMode')
+
+// 注入文档ID（从ProjectView组件提供）
+const documentId = inject<Ref<string | undefined>>('documentId')
 
 // 计算属性
 const filteredDocuments = computed(() => {
@@ -634,8 +693,17 @@ const fetchDocuments = async () => {
 
     if (result.code === 200) {
       documents.value = result.data.items
-      // 如果有文档但没有选中的，默认选中第一个
-      if (documents.value.length > 0 && !selectedDocument.value) {
+      // 如果URL中有文档ID，优先选择对应的文档
+      if (documentId?.value) {
+        const targetDocument = documents.value.find(doc => doc._id === documentId.value)
+        if (targetDocument) {
+          selectedDocument.value = targetDocument
+        } else if (documents.value.length > 0 && !selectedDocument.value) {
+          // 如果找不到对应文档，且没有选中任何文档，默认选中第一个
+          selectedDocument.value = documents.value[0] || null
+        }
+      } else if (documents.value.length > 0 && !selectedDocument.value) {
+        // 如果没有URL文档ID，且没有选中任何文档，默认选中第一个
         selectedDocument.value = documents.value[0] || null
       }
     } else {
@@ -647,6 +715,18 @@ const fetchDocuments = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 监听文档ID变化，更新选中的文档
+if (documentId) {
+  watch(documentId, (newDocumentId) => {
+    if (newDocumentId && documents.value.length > 0) {
+      const targetDocument = documents.value.find(doc => doc._id === newDocumentId)
+      if (targetDocument) {
+        selectedDocument.value = targetDocument
+      }
+    }
+  }, { immediate: true })
 }
 
 const handleSearch = () => {
@@ -696,6 +776,40 @@ const cancelEdit = () => {
   isEditMode.value = false
   isSave.value = true
   savingStatus.value = 'idle'
+}
+
+// 复制文档链接
+const shareDocument = async (document: Document) => {
+  try {
+    // 检查projectId是否有效
+    if (!props.projectId) {
+      ElMessage.error('项目ID无效，无法生成链接')
+      return
+    }
+
+    // 生成文档的唯一URL
+    const documentUrl = router.resolve({
+      name: 'document',
+      params: {
+        projectId: props.projectId,
+        documentId: document._id
+      }
+    }).href
+
+    // 获取当前域名并构建完整URL
+    const baseUrl = window.location.origin + window.location.pathname.replace(/#.*$/, '')
+    // hash模式下，documentUrl已经包含#号，不需要再加
+    const fullUrl = baseUrl + documentUrl
+
+    console.log('Generated document URL:', fullUrl) // 调试日志
+
+    // 复制到剪贴板
+    await navigator.clipboard.writeText(fullUrl)
+    ElMessage.success('文档链接已复制到剪贴板')
+  } catch (error) {
+    console.error('复制链接失败:', error)
+    ElMessage.error('复制链接失败')
+  }
 }
 
 const toggleEditMode = () => {
@@ -885,6 +999,18 @@ const scrollToHeading = (id: string) => {
 }
 
 
+// 监听专注模式变化 - F1专用
+watch(() => focusMode, (newFocusMode) => {
+  if (newFocusMode) {
+    // 进入专注模式：收起左侧文件列表和右侧目录
+    showLeftSidebar.value = false
+    showToc.value = false
+  } else {
+    // 退出专注模式：展开左侧文件列表（保持右侧目录原状态）
+    showLeftSidebar.value = true
+  }
+}, { flush: 'post' })
+
 // 监听选中文档变化，自动退出编辑模式
 watch(selectedDocument, (newDoc) => {
   if (newDoc) {
@@ -958,13 +1084,7 @@ const handlePreviewScroll = (event: Event) => {
 
 // 快捷键处理
 const handleKeyboardShortcuts = (event: KeyboardEvent) => {
-  // F1 - 切换专注模式
-  if (event.key === 'F1') {
-    event.preventDefault()
-    if (toggleFocusMode) {
-      toggleFocusMode()
-    }
-  }
+  // F1 已移至ProjectView组件统一处理，避免重复监听
 
   // F2 - 切换左侧目录展开/收起
   if (event.key === 'F2') {
@@ -990,8 +1110,8 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
     fetchDocuments()
   }
 
-  // Ctrl/Cmd + N - 新建文档
-  if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+  // N - 新建文档（不使用修饰符，避免浏览器快捷键冲突）
+  if (event.key === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault()
     showCreateDialog.value = true
   }

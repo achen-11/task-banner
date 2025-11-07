@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen bg-gray-50">
     <!-- 侧边栏 -->
-    <Sidebar :is-collapsed="sidebarCollapsed" />
+    <Sidebar :is-collapsed="uiStore.sidebarCollapsed" />
 
     <!-- 主内容区域 -->
     <div class="flex-1 flex flex-col min-h-screen overflow-hidden">
@@ -27,16 +27,17 @@ import Sidebar from '@/components/Sidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import KeyboardShortcutsPanel from '@/components/common/KeyboardShortcutsPanel.vue'
 import { useKeyboard, registerShortcut } from '@/composables/useKeyboard'
+import { useUIStore } from '@/stores/ui'
 
-// 侧边栏收起状态
-const sidebarCollapsed = ref(false)
+// UI状态管理
+const uiStore = useUIStore()
 
 // 快捷键面板引用
 const shortcutsPanelRef = ref<InstanceType<typeof KeyboardShortcutsPanel> | null>(null)
 
 // 切换侧边栏
 const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value
+  uiStore.toggleSidebar()
 }
 
 // 初始化快捷键系统
