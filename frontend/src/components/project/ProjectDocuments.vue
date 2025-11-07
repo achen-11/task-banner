@@ -38,107 +38,113 @@
     <!-- 左右布局 - 同级分栏布局 -->
     <div class="flex overflow-hidden" :class="focusMode ? 'h-full' : 'h-[calc(100%-73px)]'">
       <!-- 左侧文档目录 - 同级布局 -->
-        <transition name="slide-left">
-          <div v-if="showLeftSidebar"
-            class="w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
-            <!-- 目录头部 -->
-            <div class="p-4 pb-0 border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
-              <h3 class="text-sm font-medium text-gray-700">文档列表</h3>
+      <transition name="slide-left">
+        <div v-if="showLeftSidebar" class="w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
+          <!-- 目录头部 -->
+          <div class="p-4 py-2 border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
+            <h3 class="text-sm font-medium text-gray-700">文档列表</h3>
+            <el-tooltip>
+              <template #content>
+                <div class="flex items-center gap-1.5">
+                  <Keyboard :size="14" />
+                  <span>展开/收起左侧文档列表 (F2)</span>
+                </div>
+              </template>
               <el-button type="text" size="small" @click="toggleLeftSidebar"
                 class="!text-gray-500 hover:!text-gray-700">
-                <el-icon>
+                <el-icon class="ml-1">
                   <ArrowLeft />
-                </el-icon>
+                </el-icon>收起
               </el-button>
-            </div>
+            </el-tooltip>
+          </div>
 
-            <!-- 搜索和过滤区域 -->
-            <div class="p-4 border-b border-gray-200 flex-shrink-0">
-              <el-input v-model="searchKeyword" placeholder="搜索文档..." class="mb-3" @input="handleSearch">
-                <template #prefix>
-                  <el-icon>
-                    <Search />
-                  </el-icon>
-                </template>
-              </el-input>
+          <!-- 搜索和过滤区域 -->
+          <div class="p-4 border-b border-gray-200 flex-shrink-0">
+            <el-input v-model="searchKeyword" placeholder="搜索文档..." class="mb-3" @input="handleSearch">
+              <template #prefix>
+                <el-icon>
+                  <Search />
+                </el-icon>
+              </template>
+            </el-input>
 
-              <el-select v-model="statusFilter" placeholder="选择状态" class="w-full" @change="handleStatusFilter">
-                <el-option label="所有状态" value="" />
-                <el-option label="草稿" value="draft" />
-                <el-option label="已发布" value="published" />
-                <el-option label="已归档" value="archived" />
-              </el-select>
-            </div>
+            <el-select v-model="statusFilter" placeholder="选择状态" class="w-full" @change="handleStatusFilter">
+              <el-option label="所有状态" value="" />
+              <el-option label="草稿" value="draft" />
+              <el-option label="已发布" value="published" />
+              <el-option label="已归档" value="archived" />
+            </el-select>
+          </div>
 
-            <!-- 文档列表 - 可滚动 -->
-            <div class="flex-1 overflow-y-auto">
-              <div class="p-4">
-                <div v-if="loading" class="flex items-center justify-center py-8">
-                  <el-loading text="加载中..." />
-                </div>
+          <!-- 文档列表 - 可滚动 -->
+          <div class="flex-1 overflow-y-auto">
+            <div class="p-4">
+              <div v-if="loading" class="flex items-center justify-center py-8">
+                <el-loading text="加载中..." />
+              </div>
 
-                <div v-else-if="filteredDocuments.length === 0" class="text-center py-8">
-                  <el-icon class="mx-auto h-12 w-12 text-gray-400">
-                    <FolderOpened />
-                  </el-icon>
-                  <p class="mt-2 text-sm text-gray-500">暂无文档</p>
-                </div>
+              <div v-else-if="filteredDocuments.length === 0" class="text-center py-8">
+                <el-icon class="mx-auto h-12 w-12 text-gray-400">
+                  <FolderOpened />
+                </el-icon>
+                <p class="mt-2 text-sm text-gray-500">暂无文档</p>
+              </div>
 
-                <div v-else class="space-y-2">
-                  <!-- 文档列表 - 简单列表，无分组 -->
-                  <div v-for="document in filteredDocuments" :key="document._id"
-                    @click="selectDocument(document)" :class="[
-                      'p-3 cursor-pointer transition-colors border border-gray-200 rounded-lg',
-                      'hover:bg-blue-50 hover:border-blue-200',
-                      selectedDocument?._id === document._id
-                        ? 'bg-blue-50 border-l-4 border-l-blue-500'
-                        : 'border-l-4 border-l-transparent'
-                    ]">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1 min-w-0">
-                        <h4 class="text-sm font-medium text-gray-900 truncate">{{ document.title }}</h4>
-                        <div class="flex items-center mt-1 space-x-2">
-                          <span :class="[
-                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                            document.status === 'published' ? 'bg-green-100 text-green-800' :
+              <div v-else class="space-y-2">
+                <!-- 文档列表 - 简单列表，无分组 -->
+                <div v-for="document in filteredDocuments" :key="document._id" @click="selectDocument(document)" :class="[
+                  'p-3 cursor-pointer transition-colors border border-gray-200 rounded-lg',
+                  'hover:bg-blue-50 hover:border-blue-200',
+                  selectedDocument?._id === document._id
+                    ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                    : 'border-l-4 border-l-transparent'
+                ]">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                      <h4 class="text-sm font-medium text-gray-900 truncate">{{ document.title }}</h4>
+                      <div class="flex items-center mt-1 space-x-2">
+                        <span :class="[
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                          document.status === 'published' ? 'bg-green-100 text-green-800' :
                             document.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          ]">
-                            {{ getStatusText(document.status) }}
-                          </span>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">
-                          {{ formatDate(document.updatedAt) }}
-                        </p>
+                              'bg-gray-100 text-gray-800'
+                        ]">
+                          {{ getStatusText(document.status) }}
+                        </span>
                       </div>
-                      <div class="flex items-center space-x-1 ml-2">
-                        <el-button type="text" size="small" @click.stop="editDocument(document)" title="编辑">
-                          <el-icon>
-                            <Edit />
-                          </el-icon>
-                        </el-button>
-                        <el-button type="text" size="small" @click.stop="deleteDocument(document)" title="删除"
-                          class="!text-red-500 hover:!text-red-600">
-                          <el-icon>
-                            <Delete />
-                          </el-icon>
-                        </el-button>
-                      </div>
+                      <p class="text-xs text-gray-500 mt-1">
+                        {{ formatDate(document.updatedAt) }}
+                      </p>
+                    </div>
+                    <div class="flex items-center space-x-1 ml-2">
+                      <el-button type="text" size="small" @click.stop="editDocument(document)" title="编辑">
+                        <el-icon>
+                          <Edit />
+                        </el-icon>
+                      </el-button>
+                      <el-button type="text" size="small" @click.stop="deleteDocument(document)" title="删除"
+                        class="!text-red-500 hover:!text-red-600">
+                        <el-icon>
+                          <Delete />
+                        </el-icon>
+                      </el-button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-                  </div>
-        </transition>
-
-        <!-- 展开左侧目录按钮 - 收起时显示 -->
-        <div v-if="!showLeftSidebar" class="w-8 flex-shrink-0 flex items-start justify-center pt-4">
-          <div @click="toggleLeftSidebar"
-            class="bg-white border border-gray-200 rounded-r-lg p-1 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
-            <ChevronRight class="w-4 h-4 text-gray-600" />
           </div>
         </div>
+      </transition>
+
+      <!-- 展开左侧目录按钮 - 收起时显示 -->
+      <div v-if="!showLeftSidebar" class="w-8 flex-shrink-0 flex items-start justify-center pt-4">
+        <div @click="toggleLeftSidebar"
+          class="bg-white border border-gray-200 rounded-r-lg p-1 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+          <ChevronRight class="w-4 h-4 text-gray-600" />
+        </div>
+      </div>
 
       <!-- 右侧文档内容 - 同级布局 -->
       <div class="flex-1 flex flex-col min-w-0">
@@ -180,12 +186,89 @@
 
           <!-- 文档内容区域 - 可滚动 -->
           <div class="flex-1 overflow-hidden flex">
-            <!-- 编辑模式 -->
+            <!-- 编辑模式 - 编辑和预览双模式 -->
             <div v-if="isEditMode" class="flex-1 flex">
-              <!-- 编辑器区域 -->
-              <div class="flex-1 p-6">
-                <el-input v-model="editingContent" type="textarea" :rows="30" placeholder="开始编辑文档内容..." class="h-full"
-                  resize="none" />
+              <!-- 左侧编辑器区域 -->
+              <div class="flex-1 p-6 border-r border-gray-200">
+                <!-- 编辑器头部 -->
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                  <div class="flex items-center justify-between">
+                    <!-- 左侧：保存状态指示器 -->
+                    <div class="flex items-center space-x-3">
+                      <div class="flex items-center space-x-2">
+                        <div v-if="savingStatus === 'saving'" class="flex items-center text-blue-600">
+                          <el-icon class="animate-spin mr-1">
+                            <Loading />
+                          </el-icon>
+                          <span class="text-sm">保存中...</span>
+                        </div>
+                        <div v-else-if="savingStatus === 'saved'" class="flex items-center text-green-600">
+                          <el-icon class="mr-1">
+                            <Check />
+                          </el-icon>
+                          <span class="text-sm">已保存</span>
+                        </div>
+                        <div v-else-if="savingStatus === 'error'" class="flex items-center text-red-600">
+                          <el-icon class="mr-1">
+                            <Close />
+                          </el-icon>
+                          <span class="text-sm">保存失败</span>
+                        </div>
+                        <div v-else-if="!isSave" class="flex items-center text-orange-600">
+                          <div class="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
+                          <span class="text-sm">未保存</span>
+                        </div>
+                      </div>
+
+                      <!-- 文档状态选择 -->
+                      <el-select v-model="documentStatus" size="small" class="w-24">
+                        <el-option label="草稿" value="draft" />
+                        <el-option label="已发布" value="published" />
+                        <el-option label="已归档" value="archived" />
+                      </el-select>
+                    </div>
+
+                    <!-- 右侧：保存按钮 -->
+                    <div class="flex items-center space-x-2">
+                      <el-button type="primary" size="small" @click="saveDocument" :disabled="isSave"
+                        :loading="savingStatus === 'saving'">
+                        保存 (Ctrl+S)
+                      </el-button>
+                      <el-button type="default" size="small" @click="cancelEdit">
+                        取消
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 标题编辑 -->
+                <div class="mb-4">
+                  <el-input v-model="editingTitle" placeholder="文档标题" class="text-xl font-bold" size="large" />
+                </div>
+
+                <!-- 内容编辑器 -->
+                <el-input ref="editorTextarea" v-model="editingContent" type="textarea" :rows="25"
+                  placeholder="开始编辑文档内容..." resize="none" class="h-full" @scroll="handleEditorScroll" />
+              </div>
+
+              <!-- 右侧预览区域 -->
+              <div ref="previewContainer" class="flex-1 p-6 overflow-y-auto bg-gray-50" @scroll="handlePreviewScroll">
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                  <h3 class="text-lg font-semibold text-gray-800">预览</h3>
+                </div>
+
+                <!-- 预览标题 -->
+                <h1 v-if="editingTitle" class="text-2xl font-bold text-gray-900 mb-4">
+                  {{ editingTitle }}
+                </h1>
+
+                <!-- 预览内容 -->
+                <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body">
+                  <div v-html="markdownPreviewContent"></div>
+                </div>
+                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">{{
+                  editingContent }}
+                </pre>
               </div>
             </div>
 
@@ -236,9 +319,10 @@
 
                 <!-- 展开目录按钮 -->
                 <div v-if="!showToc" class="absolute -right-2 top-4 z-10">
-                  <div @click="toggleToc" class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center">
+                  <div @click="toggleToc"
+                    class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center">
                     <ChevronLeft class="w-4 h-4" />
-                  </div>  
+                  </div>
                 </div>
               </div>
             </div>
@@ -263,28 +347,38 @@
         <div class="space-y-1 text-xs">
           <div class="flex justify-between">
             <span class="text-gray-600">专注模式</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F1' }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F1' })
+              }}</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">左侧目录</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F2' }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F2' })
+              }}</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">右侧目录</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F3' }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F3' })
+              }}</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">编辑模式</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F4' }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F4' })
+              }}</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">刷新列表</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F5' }) }}</kbd>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F5' })
+              }}</kbd>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">新建文档</span>
             <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">
               {{ formatShortcut({ key: 'n', ctrl: true, meta: true }) }}</kbd>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">保存文档</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">
+              {{ formatShortcut({ key: 's', ctrl: true, meta: true }) }}</kbd>
           </div>
         </div>
       </el-popover>
@@ -296,8 +390,8 @@
 import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue'
 import { formatShortcut } from '@/composables/useKeyboard'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
-import { ChevronRight, ChevronLeft } from 'lucide-vue-next'
+import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft, Loading, Check, Close } from '@element-plus/icons-vue'
+import { ChevronRight, ChevronLeft, Keyboard } from 'lucide-vue-next'
 import { marked } from 'marked'
 import CreateDocumentDialog from '../document/CreateDocumentDialog.vue'
 
@@ -336,8 +430,18 @@ const viewingDocumentId = ref<string | null>(null)
 const isEditMode = ref(false)
 const editingContent = ref('')
 const originalContent = ref('')
+const editingTitle = ref('') // 编辑中的标题
+const originalTitle = ref('') // 原始标题
+const isSave = ref(true) // 内容是否有变更的标识
+const savingStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle') // 保存状态
+const documentStatus = ref<'draft' | 'published' | 'archived'>('draft') // 当前文档状态
 const showToc = ref(true) // 目录显示状态
 const showLeftSidebar = ref(true) // 左侧目录显示状态
+
+// 滚动同步相关的refs
+const editorTextarea = ref()
+const previewContainer = ref()
+let isScrolling = ref(false) // 防止循环滚动
 
 // 注入专注模式状态（从ProjectView组件提供）
 const focusMode = inject<boolean>('focusMode', false)
@@ -416,6 +520,58 @@ const markdownContent = computed(() => {
     console.error('Markdown 解析错误:', error)
     console.error('文档内容:', selectedDocument.value?.content)
     return `<p class="text-red-500">Markdown 解析错误: ${error instanceof Error ? error.message : '未知错误'}</p>`
+  }
+})
+
+// Markdown 渲染内容（编辑模式预览）
+const markdownPreviewContent = computed(() => {
+  if (!editingContent.value || !selectedDocument.value || selectedDocument.value.type !== 'markdown') return ''
+  try {
+    // 使用相同的渲染器配置
+    const renderer = new marked.Renderer()
+
+    renderer.heading = function (heading: { tokens?: any, depth?: number, text?: any, raw?: any }): string {
+      // 新版本marked.js的heading函数签名，参数是单个heading对象
+      const text = heading.tokens || heading.text || ''
+      const level = heading.depth || 1
+
+      // 处理text参数
+      let textStr = ''
+
+      // 处理文本内容
+      if (Array.isArray(text)) {
+        // 如果text是数组，提取文本内容
+        textStr = text.map((token: any) => {
+          if (typeof token === 'string') return token
+          if (token && token.text) return String(token.text)
+          if (token && token.type === 'text') return String(token.raw || token.text)
+          return ''
+        }).join('')
+      } else if (text && typeof text === 'object') {
+        // 如果text是对象，尝试提取文本
+        textStr = String(text.text || text.raw || '')
+      } else {
+        // 如果是其他类型，直接转换
+        textStr = String(text || '')
+      }
+
+      // 清理文本，移除多余的HTML标签
+      textStr = textStr.replace(/<[^>]*>/g, '').trim()
+
+      // 确保level是数字
+      const headerLevel = typeof level === 'number' ? level : 1
+
+      const id = textStr.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+      return `<h${headerLevel} id="${id}" class="heading-${headerLevel}">${textStr}</h${headerLevel}>`
+    }
+
+    // 使用 marked.use 配置渲染器（兼容新版本）
+    marked.use({ renderer })
+
+    return marked(editingContent.value || '')
+  } catch (error) {
+    console.error('Markdown 预览解析错误:', error)
+    return '<p>Markdown 预览解析错误</p>'
   }
 })
 
@@ -517,6 +673,29 @@ const editDocument = (document: Document) => {
   isEditMode.value = true
   editingContent.value = document.content
   originalContent.value = document.content
+  editingTitle.value = document.title
+  originalTitle.value = document.title
+  documentStatus.value = (document.status as 'draft' | 'published' | 'archived') || 'draft'
+  isSave.value = true
+
+  // 智能进入编辑模式：自动打开专注模式，收起侧边栏
+  if (toggleFocusMode && !focusMode) {
+    toggleFocusMode() // 打开专注模式
+  }
+  showLeftSidebar.value = false // 收起左侧文档列表
+  showToc.value = false // 收起右侧目录
+}
+
+const cancelEdit = () => {
+  // 恢复原始内容
+  if (selectedDocument.value) {
+    editingContent.value = selectedDocument.value.content
+    editingTitle.value = selectedDocument.value.title
+    documentStatus.value = selectedDocument.value.status
+  }
+  isEditMode.value = false
+  isSave.value = true
+  savingStatus.value = 'idle'
 }
 
 const toggleEditMode = () => {
@@ -529,12 +708,25 @@ const toggleEditMode = () => {
       isEditMode.value = true
       editingContent.value = selectedDocument.value.content
       originalContent.value = selectedDocument.value.content
+      editingTitle.value = selectedDocument.value.title
+      originalTitle.value = selectedDocument.value.title
+      documentStatus.value = (selectedDocument.value.status as 'draft' | 'published' | 'archived') || 'draft'
+      isSave.value = true
+
+      // 智能进入编辑模式：自动打开专注模式，收起侧边栏
+      if (toggleFocusMode && !focusMode) {
+        toggleFocusMode() // 打开专注模式
+      }
+      showLeftSidebar.value = false // 收起左侧文档列表
+      showToc.value = false // 收起右侧目录
     }
   }
 }
 
 const saveDocument = async () => {
   if (!selectedDocument.value) return
+
+  savingStatus.value = 'saving'
 
   try {
     const response = await fetch('/api/document/update', {
@@ -544,33 +736,52 @@ const saveDocument = async () => {
       },
       body: JSON.stringify({
         id: selectedDocument.value._id,
-        title: selectedDocument.value.title,
+        title: editingTitle.value || selectedDocument.value.title,
         content: editingContent.value,
-        changeLog: '编辑文档内容'
+        status: documentStatus.value,
+        changeLog: '编辑文档内容和状态'
       })
     })
 
     const result = await response.json()
 
     if (result.code === 200) {
+      savingStatus.value = 'saved'
       ElMessage.success('文档保存成功')
+
       // 更新文档列表中的内容
       const docId = selectedDocument.value?._id
       if (docId) {
         const docIndex = documents.value.findIndex(d => d._id === docId)
         if (docIndex > -1) {
           documents.value[docIndex]!.content = editingContent.value
+          documents.value[docIndex]!.title = editingTitle.value || documents.value[docIndex]!.title
+          documents.value[docIndex]!.status = documentStatus.value
           documents.value[docIndex]!.updatedAt = Date.now()
         }
       }
       if (selectedDocument.value) {
         selectedDocument.value.content = editingContent.value
+        selectedDocument.value.title = editingTitle.value || selectedDocument.value.title
+        selectedDocument.value.status = documentStatus.value
+        selectedDocument.value.updatedAt = Date.now()
       }
-      isEditMode.value = false
+
+      // 重置编辑状态
+      originalContent.value = editingContent.value
+      originalTitle.value = editingTitle.value || selectedDocument.value.title
+      isSave.value = true
+
+      // 2秒后重置保存状态
+      setTimeout(() => {
+        savingStatus.value = 'idle'
+      }, 2000)
     } else {
+      savingStatus.value = 'error'
       ElMessage.error(result.message || '保存失败')
     }
   } catch (error) {
+    savingStatus.value = 'error'
     console.error('保存文档失败:', error)
     ElMessage.error('保存失败')
   }
@@ -679,12 +890,69 @@ watch(selectedDocument, (newDoc) => {
   if (newDoc) {
     isEditMode.value = false
     editingContent.value = newDoc.content
+    editingTitle.value = newDoc.title
+    originalTitle.value = newDoc.title
+    documentStatus.value = (newDoc.status as 'draft' | 'published' | 'archived') || 'draft'
+    isSave.value = true
+    savingStatus.value = 'idle'
   }
 })
+
+// 监听内容和标题变化，检测是否有变更
+watch([editingContent, editingTitle], ([newContent, newTitle]) => {
+  if (selectedDocument.value) {
+    const contentChanged = newContent !== selectedDocument.value.content
+    const titleChanged = newTitle !== selectedDocument.value.title
+    isSave.value = !contentChanged && !titleChanged
+  }
+}, { deep: true })
 
 // 左侧目录切换方法
 const toggleLeftSidebar = () => {
   showLeftSidebar.value = !showLeftSidebar.value
+}
+
+// 滚动同步处理函数
+const handleEditorScroll = (event: Event) => {
+  if (isScrolling.value) return
+
+  isScrolling.value = true
+  const editorElement = event.target as HTMLTextAreaElement
+  const scrollPercentage = editorElement.scrollTop / (editorElement.scrollHeight - editorElement.clientHeight)
+
+  // 同步到预览区域
+  if (previewContainer.value) {
+    const previewElement = previewContainer.value
+    const targetScrollTop = scrollPercentage * (previewElement.scrollHeight - previewElement.clientHeight)
+    previewElement.scrollTop = targetScrollTop
+  }
+
+  // 防抖，避免循环滚动
+  setTimeout(() => {
+    isScrolling.value = false
+  }, 50)
+}
+
+const handlePreviewScroll = (event: Event) => {
+  if (isScrolling.value) return
+
+  isScrolling.value = true
+  const previewElement = event.target as HTMLElement
+  const scrollPercentage = previewElement.scrollTop / (previewElement.scrollHeight - previewElement.clientHeight)
+
+  // 同步到编辑器
+  if (editorTextarea.value) {
+    const editorElement = editorTextarea.value.$el.querySelector('textarea') as HTMLTextAreaElement
+    if (editorElement) {
+      const targetScrollTop = scrollPercentage * (editorElement.scrollHeight - editorElement.clientHeight)
+      editorElement.scrollTop = targetScrollTop
+    }
+  }
+
+  // 防抖，避免循环滚动
+  setTimeout(() => {
+    isScrolling.value = false
+  }, 50)
 }
 
 
@@ -726,6 +994,14 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
     event.preventDefault()
     showCreateDialog.value = true
+  }
+
+  // Ctrl/Cmd + S - 保存文档
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault()
+    if (isEditMode.value && !isSave.value) {
+      saveDocument()
+    }
   }
 }
 
