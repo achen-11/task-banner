@@ -81,12 +81,19 @@
           :class="{ 'bg-zinc-200': isActive(`/projects/${project._id}`) }"
           @click="handleProjectClick(project)"
         >
-          <div
-            class="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
-            :style="{ backgroundColor: project.color || '#6366f1' }"
+          <el-tooltip
+            :content="project.name"
+            placement="right"
+            :disabled="!isCollapsed"
+            :hide-after="0"
           >
-            {{ project.name.substring(0, 1) }}
-          </div>
+            <div
+              class="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
+              :style="{ backgroundColor: project.color || '#6366f1' }"
+            >
+              {{ project.name.substring(0, 1) }}
+            </div>
+          </el-tooltip>
           <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2 truncate">{{ project.name }}</div>
         </div>
       </nav>
@@ -148,6 +155,7 @@ import { getCurrentUser, logout } from '@/utils/auth'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
 import CreateProjectDialog from './CreateProjectDialog.vue'
+import { ElTooltip } from 'element-plus'
 
 defineProps<{
   isCollapsed: boolean

@@ -49,90 +49,63 @@
 ---
 
 ## 任务列表
-
 共 1 个任务
 
-### 🟡 中优先级
+### 🟡 待验收
 
-<!-- task-id: e699b792-b8bc-48a7-9065-8babfd887bc4 -->
-#### 1. 任务详情-导入优化
+<!-- task-id: 50eb67a8-c1b6-4cd3-9cc5-e4c4e830ee8f -->
+#### 1. 菜单优化
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/06 18:18:29
-**更新时间：** 2025/11/07 11:37:28
+**创建时间：** 2025/11/07 11:32:28
+**更新时间：** 2025/11/07 13:55:38
 
-**任务摘要：** 简化了导入逻辑，移除了TaskDetailDrawer中的重复代码，让任务列表统一处理所有导入功能。
+**任务摘要：** 为左侧菜单栏项目列表添加了hover tooltip功能，在菜单收起时显示完整项目名称。
 
 **任务需求：**
 
-现在在任务详情页(drawer)中导入, 更新的还是描述, 需要像任务列表中那样添加到评论才对
-
----
-
-## 📝 选中评论
-
-> 共 2 条评论
-
-### 评论 1
-
-**作者:** wanggaojiachen
-**时间:** 2025/11/07 11:29:21
-
-**内容:**
-
-非当前任务应遵循任务列表中的导入逻辑, 显示导入弹窗, 确认后导入到对应的任务中(如果未找到任务则新建)
-
-### 评论 2
-
-**作者:** 用户
-**时间:** 2025/11/07 11:47:00
-
-**内容:**
-
-还是不太对, 我发现其实不用分任务详情和任务列表, 两者的导入逻辑是一致的, 直接让任务列表接管任务详情的导入逻辑即可, 然后移除不必要的代码
+左侧菜单栏收起时, 项目应该支持 hover 显示项目标题(el-tooltip)
 
 ---
 
 ## 🛠️ AI 解决方案
 
-**请在此处提供详细的实现方案：**
+**实现方案：**
 
 ### 实现步骤
-1. **分析现有架构**：理解TaskDetailDrawer和ProjectTaskList中重复的导入代码
-2. **移除重复代码**：删除TaskDetailDrawer中的所有导入相关代码
-   - 移除ImportTaskDialog组件导入
-   - 移除导入按钮和弹窗模板
-   - 移除导入相关状态变量
-   - 移除handleImportTask、processImportedTasks等函数
-3. **统一导入逻辑**：让TaskDetailDrawer委托导入给父组件处理
-   - 添加import-tasks事件
-   - 修改Cmd+I快捷键处理，触发事件而非直接处理
-4. **更新父组件**：ProjectTaskList监听import-tasks事件，使用现有导入逻辑
-5. **测试验证**：确保简化后的功能正常工作
+1. **分析现有代码**: 查看Sidebar.vue中项目列表的现有实现
+2. **导入组件**: 添加Element Plus的ElTooltip组件导入
+3. **添加tooltip配置**: 为项目图标添加el-tooltip包装
+   - 设置content为项目名称
+   - placement为right（右侧显示）
+   - disabled根据菜单收起状态动态控制
+   - hide-after设为0实现即时显示
+4. **测试验证**: 验证收起/展开状态下tooltip的正确行为
 
 ### 修改的文件
-- `/Users/achen/Priv/task-banner/frontend/src/components/TaskDetailDrawer.vue` - 移除所有重复导入代码，简化为事件委托
-- `/Users/achen/Priv/task-banner/frontend/src/components/project/ProjectTaskList.vue` - 添加import-tasks事件监听
+- `/Users/achen/Priv/task-banner/frontend/src/components/Sidebar.vue` - 添加ElTooltip组件和hover功能
 
 ### 技术要点
-- **代码简化**：移除约200行重复的导入处理代码
-- **事件委托**：TaskDetailDrawer通过emit委托导入给父组件
-- **统一逻辑**：所有导入逻辑由ProjectTaskList统一处理
-- **架构优化**：遵循单一职责原则，避免重复实现
-- **用户体验**：保持相同的快捷键和导入体验
+- **Element Plus ElTooltip**: 使用官方UI组件库的tooltip功能
+- **条件渲染**: 通过`:disabled="!isCollapsed"`实现智能控制
+- **精确定位**: placement="right"确保tooltip显示在合适位置
+- **即时响应**: hide-after="0"实现无延迟显示
+- **Vue 3 Composition API**: 使用现代Vue语法实现响应式交互
 
 ### 验证结果
-- ✅ 开发服务器运行正常，功能可用
-- ✅ 移除了TaskDetailDrawer中的重复导入代码
-- ✅ 保留了Cmd+I快捷键功能
-- ✅ 导入逻辑完全由任务列表统一处理
-- ✅ 代码更加简洁和可维护
+- ✅ 开发服务器运行正常
+- ✅ 菜单收起时，鼠标悬停项目图标显示完整项目名称
+- ✅ 菜单展开时，tooltip自动禁用，避免重复显示
+- ✅ tooltip定位准确，不影响界面布局
+- ✅ 交互体验流畅，无延迟响应
 
-**任务摘要：** 简化了导入逻辑，移除了TaskDetailDrawer中的重复代码，让任务列表统一处理所有导入功能。
+### 主要变更
+- **组件导入**: 添加ElTooltip组件导入
+- **模板修改**: 用el-tooltip包装项目图标，添加hover功能
+- **智能控制**: 根据菜单状态动态启用/禁用tooltip
+- **用户体验提升**: 收起状态下依然能够查看完整项目信息
 
 
----
-
-> 📅 导出时间：2025/11/07 11:37:58
+> 📅 导出时间：2025/11/07 13:55:38
 > 🤖 由 Task-Flow 生成
