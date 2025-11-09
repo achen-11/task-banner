@@ -64,20 +64,9 @@
 - 添加必要的注释
 ```
 
-### 6. 验证开发结果
-```
-✅ 步骤：功能验证
-🛠️ 工具：Bash（构建测试）、开发服务器、Chrome DevTools MCP
-🎯 目标：确保功能正常工作
-📝 关键动作：
-- 运行构建测试：npm run build
-- 启动开发服务器：cd frontend && npm run dev
-- 手动测试关键功能
-- 检查热更新是否正常
-- 使用 Chrome DevTools MCP 深度调试
-```
 
-### 7. Chrome DevTools 深度调试
+
+### 6. Chrome DevTools 深度调试
 ```
 ✅ 步骤：浏览器端调试和分析
 🛠️ 工具：Chrome DevTools MCP (chrome-devtools)
@@ -91,7 +80,7 @@
 - 验证 DOM 结构和事件绑定
 ```
 
-### 8. TypeScript 错误修复
+### 7. TypeScript 错误修复
 ```
 ✅ 步骤：类型检查和修复
 🛠️ 工具：TypeScript 编译器

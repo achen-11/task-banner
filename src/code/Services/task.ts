@@ -9,6 +9,7 @@ import { Tag, type TagType } from 'code/Models/Tag'
 import { Module, type ModuleType } from 'code/Models/Module'
 import { TaskHistory } from 'code/Models/TaskHistory'
 import { getUserById } from 'code/Services/user'
+import { getUserProjects, getProjectById } from 'code/Services/project'
 
 /**
  * 任务信息接口
@@ -30,6 +31,12 @@ export interface TaskInfo {
   moduleIds?: string[]  // 模块 ID 数组
   createdAt: number
   updatedAt: number
+  // 项目信息（嵌套对象）
+  project?: {
+    _id: string
+    name: string
+    color: string
+  }
   // 指派人用户信息（嵌套对象）
   assignee?: {
     displayName?: string
@@ -340,8 +347,8 @@ function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string
   // 默认排序：先按状态，再按更新时间降序
   if (!sortField) {
     return tasks.sort((a, b) => {
-      // 状态优先排序 (todo > in_progress > review > completed)
-      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
+      // 状态优先排序 (待验收 > 待办 > 进行中 > 已完成)
+      const statusOrder: Record<string, number> = {  review: 1, todo: 2, in_progress: 3, completed: 4 }
       const statusA = statusOrder[a.status] || 99
       const statusB = statusOrder[b.status] || 99
 
@@ -380,9 +387,9 @@ function sortTasks(tasks: TaskInfo[], sortField?: string, sortDirection?: string
       return direction === 'desc' ? numB - numA : numA - numB
     }
 
-    // 状态特殊排序 (todo > in_progress > review > completed)
+    // 状态特殊排序 (待验收 > 待办 > 进行中 > 已完成)
     if (field === 'status') {
-      const statusOrder: Record<string, number> = { todo: 1, in_progress: 2, review: 3, completed: 4 }
+      const statusOrder: Record<string, number> = {  review: 1, todo: 2, in_progress: 3, completed: 4 }
       const numA = statusOrder[aValue] || 0
       const numB = statusOrder[bValue] || 0
       return direction === 'desc' ? numB - numA : numA - numB
@@ -570,6 +577,191 @@ export function batchUpdateTaskOrder(
     return true
   } catch (err) {
     return false
+  }
+}
+
+/**
+ * 获取用户相关任务列表（跨项目）
+ * @param userId - 用户 ID
+ * @param filters - 筛选条件
+ * @param sortField - 排序字段
+ * @param sortDirection - 排序方向
+ * @returns 任务列表
+ */
+export function getUserTasks(
+  userId: string,
+  filters?: {
+    projectId?: string
+    projectIds?: string[]
+    status?: string | string[]
+    priority?: string
+    search?: string
+  },
+  sortField?: string,
+  sortDirection?: string
+): TaskInfo[] {
+  // 1. 获取用户有权限的所有项目ID
+  const userProjects = getUserProjects(userId)
+  const userProjectIds = userProjects.map(p => p._id)
+
+  // 如果指定了项目ID，进一步过滤
+  let targetProjectIds = userProjectIds
+  if (filters?.projectId) {
+    if (!userProjectIds.includes(filters.projectId)) {
+      return [] // 用户没有权限访问该项目
+    }
+    targetProjectIds = [filters.projectId]
+  } else if (filters?.projectIds && filters.projectIds.length > 0) {
+    // 过滤出用户有权限的项目
+    targetProjectIds = filters.projectIds.filter(id => userProjectIds.includes(id))
+    if (targetProjectIds.length === 0) {
+      return []
+    }
+  }
+
+  // 2. 在这些项目中查询任务（指派给用户或用户创建的）
+  const allTasks: TaskType[] = []
+
+  for (const projectId of targetProjectIds) {
+    const tasks = Task.findAll({ projectId }) as TaskType[]
+    allTasks.push(...tasks)
+  }
+
+  // 3. 过滤出指派给当前用户或由当前用户创建的任务
+  let filteredTasks = allTasks.filter(task =>
+    task.assigneeId === userId || task.creatorId === userId
+  )
+
+  // 4. 应用其他筛选条件
+  if (filters?.status) {
+    if (Array.isArray(filters.status)) {
+      // 多个状态筛选
+      filteredTasks = filteredTasks.filter(task => filters.status!.includes(task.status))
+    } else {
+      // 单个状态筛选
+      filteredTasks = filteredTasks.filter(task => task.status === filters.status)
+    }
+  }
+
+  if (filters?.priority) {
+    filteredTasks = filteredTasks.filter(task => task.priority === filters.priority)
+  }
+
+  if (filters?.search) {
+    const searchTerm = filters.search.toLowerCase()
+    filteredTasks = filteredTasks.filter(task =>
+      task.title.toLowerCase().includes(searchTerm) ||
+      (task.content && task.content.toLowerCase().includes(searchTerm))
+    )
+  }
+
+  // 5. 获取所有项目的详细信息，避免重复查询
+  const projectMap = new Map<string, any>()
+  const uniqueProjectIds = [...new Set(filteredTasks.map(task => task.projectId))]
+
+  for (const projectId of uniqueProjectIds) {
+    const project = getProjectById(projectId)
+    if (project) {
+      projectMap.set(projectId, {
+        _id: project._id,
+        name: project.name,
+        color: project.color
+      })
+    }
+  }
+
+  // 6. 格式化任务信息并填充用户数据
+  const formattedTasks = filteredTasks.map(task => {
+    const taskInfo = formatTaskInfo(task)
+
+    // 填充项目信息（嵌套对象）
+    taskInfo.project = projectMap.get(task.projectId)
+
+    // 获取任务标签 ID
+    const taskTags = TaskTag.findAll({ taskId: task._id }) as TaskTagType[]
+    taskInfo.tagIds = taskTags.map(tt => tt.tagId)
+
+    // 获取任务模块 ID
+    const taskModules = TaskModule.findAll({ taskId: task._id }) as TaskModuleType[]
+    taskInfo.moduleIds = taskModules.map(tm => tm.moduleId)
+
+    // 填充指派人信息（嵌套对象）
+    if (task.assigneeId) {
+      const assigneeUser = getUserById(task.assigneeId)
+      if (assigneeUser) {
+        taskInfo.assignee = {
+          displayName: assigneeUser.displayName,
+          username: assigneeUser.username,
+          email: assigneeUser.email
+        }
+      }
+    }
+
+    // 填充创建人信息（嵌套对象）
+    if (task.creatorId) {
+      const creatorUser = getUserById(task.creatorId)
+      if (creatorUser) {
+        taskInfo.creator = {
+          displayName: creatorUser.displayName,
+          username: creatorUser.username,
+          email: creatorUser.email
+        }
+      }
+    }
+
+    return taskInfo
+  })
+
+  // 7. 排序
+  return sortTasks(formattedTasks, sortField, sortDirection)
+}
+
+/**
+ * 分页获取用户相关任务列表
+ * @param userId - 用户 ID
+ * @param page - 页码
+ * @param pageSize - 每页大小
+ * @param filters - 筛选条件
+ * @param sortField - 排序字段
+ * @param sortDirection - 排序方向
+ * @returns 分页任务列表
+ */
+export function getUserTasksPaginated(
+  userId: string,
+  page: number = 1,
+  pageSize: number = 20,
+  filters?: {
+    projectId?: string
+    projectIds?: string[]
+    status?: string
+    priority?: string
+    search?: string
+  },
+  sortField?: string,
+  sortDirection?: string
+): {
+  items: TaskInfo[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+} {
+  // 获取所有符合条件的任务
+  const allTasks = getUserTasks(userId, filters, sortField, sortDirection)
+
+  // 计算分页
+  const total = allTasks.length
+  const totalPages = Math.ceil(total / pageSize)
+  const startIndex = (page - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const items = allTasks.slice(startIndex, endIndex)
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages
   }
 }
 

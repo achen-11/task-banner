@@ -7,6 +7,45 @@ import type {
   UpdateUserParams,
   UserListResponse
 } from '@/types/user'
+import type { Task } from '@/types/task'
+
+export interface UserTaskFilters {
+  projectId?: string
+  projectIds?: string[]
+  status?: string[]
+  priority?: string
+  search?: string
+  page?: number
+  pageSize?: number
+  sortField?: string
+  sortDirection?: string
+}
+
+export interface UserTasksStats {
+  total: number
+  todo: number
+  inProgress: number
+  completed: number
+  review: number
+  dueToday: number
+  overdue: number
+}
+
+export interface TaskListResponse {
+  items: Task[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  hasMore: boolean
+}
+
+export interface BatchUpdateData {
+  status?: string
+  priority?: string
+  dueDate?: number
+  assigneeId?: string
+}
 
 /**
  * 获取用户列表（组织内的所有用户）
@@ -23,7 +62,58 @@ export function updateUser(data: UpdateUserParams): Promise<User> {
   return request.put('/api/user/update', data)
 }
 
+/**
+ * 获取用户任务列表
+ */
+export function getUserTasks(filters: UserTaskFilters = {}): Promise<TaskListResponse> {
+  return request.get('/api/user/tasks', {
+    params: filters
+  })
+}
+
+/**
+ * 获取用户任务统计
+ */
+export function getUserTasksStats(): Promise<UserTasksStats> {
+  return request({
+    url: '/api/user/tasks/stats',
+    method: 'GET'
+  })
+}
+
+/**
+ * 批量更新任务
+ */
+export function updateTasksBatch(taskIds: string[], updates: BatchUpdateData): Promise<void> {
+  return request({
+    url: '/api/tasks/batch',
+    method: 'PUT',
+    data: { taskIds, updates }
+  })
+}
+
+/**
+ * 快速创建任务
+ */
+export function createQuickTask(data: {
+  title: string
+  projectId: string
+  priority?: string
+  dueDate?: number
+  summary?: string
+}): Promise<Task> {
+  return request({
+    url: '/api/tasks/quick',
+    method: 'POST',
+    data
+  })
+}
+
 export default {
   getUserList,
-  updateUser
+  updateUser,
+  getUserTasks,
+  getUserTasksStats,
+  updateTasksBatch,
+  createQuickTask
 }

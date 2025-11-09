@@ -11,7 +11,6 @@ export interface Task {
   title: string
   content?: string
   status: 'todo' | 'in_progress' | 'completed' | 'review'
-  // 注意：AI完成任务时应将状态设置为 'review'（待验收）而不是 'completed'（已完成）
   priority: 'low' | 'medium' | 'high'
   assigneeId?: string
   creatorId: string
@@ -23,6 +22,12 @@ export interface Task {
   order: number
   createdAt: number
   updatedAt: number
+  // 项目信息（嵌套对象）
+  project?: {
+    _id: string
+    name: string
+    color: string
+  }
   // 指派人用户信息（嵌套对象）
   assignee?: {
     displayName?: string
