@@ -4,15 +4,18 @@
     <div class="p-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900">项目标签</h2>
       <el-tooltip content="新建标签 (N)" placement="bottom">
-        <button
+        <el-button
           @click="handleCreate"
-          class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          type="primary"
+          :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
         >
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+          <el-icon class="mr-1">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </el-icon>
           新建标签
-        </button>
+        </el-button>
       </el-tooltip>
     </div>
 
@@ -94,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox, ElMessage, ElIcon } from 'element-plus'
 import { getProjectTags, deleteTag } from '@/api/tag'
 import TagDialog from '@/components/tag/TagDialog.vue'
 import type { Tag } from '@/types/tag'

@@ -41,13 +41,18 @@
             <span>{{ getShortcutTooltip('n') }}</span>
           </div>
         </template>
-        <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-          @click="handleCreateTask">
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+        <el-button
+          @click="handleCreateTask"
+          type="primary"
+          :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
+        >
+          <el-icon class="mr-1">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </el-icon>
           新建任务
-        </button>
+        </el-button>
       </el-tooltip>
     </div>
 
@@ -248,7 +253,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElIcon } from 'element-plus'
 import TaskDetailDrawer from '../TaskDetailDrawer.vue'
 import ImportTaskDialog from './ImportTaskDialog.vue'
 import { getTaskList, getTaskDetail, createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI } from '@/api/task'

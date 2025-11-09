@@ -32,7 +32,11 @@
               <span>新建文档 (N)</span>
             </div>
           </template>
-          <el-button type="primary" @click="showCreateDialog = true">
+          <el-button
+            type="primary"
+            @click="showCreateDialog = true"
+            :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
+          >
             <el-icon class="mr-1">
               <Plus />
             </el-icon>

@@ -27,10 +27,15 @@
               <Settings class="w-4 h-4 inline-block mr-1" />
               项目设置
             </button>
-            <button class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-              <Plus class="w-4 h-4 inline-block mr-1" />
+            <el-button
+              type="primary"
+              :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
+            >
+              <el-icon class="mr-1">
+                <Plus />
+              </el-icon>
               新建任务
-            </button>
+            </el-button>
             <button
               @click="collapsed = true"
               class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -160,6 +165,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, inject, provide } from 'vue'
+import { ElIcon } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'

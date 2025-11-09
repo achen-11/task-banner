@@ -3,15 +3,18 @@
     <div class="p-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900">项目成员 ({{ members.length }})</h2>
       <el-tooltip content="添加成员 (N)" placement="bottom">
-        <button
-          class="px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+        <el-button
           @click="showAddMemberDialog = true"
+          type="primary"
+          :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
         >
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-          </svg>
+          <el-icon class="mr-1">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+          </el-icon>
           添加成员
-        </button>
+        </el-button>
       </el-tooltip>
     </div>
 
@@ -153,7 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElIcon } from 'element-plus'
 import type { ProjectMember } from '@/types/project'
 import type { User } from '@/types/user'
 import * as projectApi from '@/api/project'
