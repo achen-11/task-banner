@@ -10,9 +10,9 @@
     <p v-if="task.summary" class="text-sm text-gray-500 mb-3 line-clamp-2">{{ task.summary }}</p>
 
     <!-- 标签 -->
-    <div v-if="task.tags && task.tags.length > 0" class="flex flex-wrap gap-1 mb-3">
+    <div v-if="(task as any).tags && (task as any).tags.length > 0" class="flex flex-wrap gap-1 mb-3">
       <span
-        v-for="tag in task.tags.slice(0, 3)"
+        v-for="tag in (task as any).tags.slice(0, 3)"
         :key="tag._id"
         class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
         :style="{ backgroundColor: tag.color + '20', color: tag.color }"
@@ -20,10 +20,10 @@
         {{ tag.name }}
       </span>
       <span
-        v-if="task.tags.length > 3"
+        v-if="(task as any).tags.length > 3"
         class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
       >
-        +{{ task.tags.length - 3 }}
+        +{{ (task as any).tags.length - 3 }}
       </span>
     </div>
 

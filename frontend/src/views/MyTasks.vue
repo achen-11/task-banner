@@ -13,7 +13,7 @@
     <div class="min-h-[400px]">
       <!-- 列表视图 -->
       <TaskListView v-if="currentView === 'list'" :tasks="tasks" :loading="loading" :selected-task-ids="selectedTaskIds"
-        @select-task="selectTask" @refresh="refresh" @load-more="loadMore" />
+        :selected-tasks-count="selectedTasksCount" @select-task="selectTask" @refresh="refresh" @load-more="loadMore" @task-click="handleTaskClick" />
 
       <!-- 看板视图 -->
       <TaskBoardView v-else-if="currentView === 'board'" :tasks="tasks" :loading="loading" @refresh="refresh" />
@@ -29,6 +29,18 @@
 
     <!-- 快速创建任务弹窗 -->
     <QuickTaskModal v-model:visible="showQuickCreateModal" @created="handleTaskCreated" />
+
+    <!-- 任务详情抽屉 -->
+    <TaskDetailDrawer
+      :is-open="showTaskDetail"
+      :task-id="selectedTaskId"
+      :project-id="selectedTaskProjectId"
+      :all-tasks="tasks"
+      @close="closeTaskDetail"
+      @update:task-id="handleTaskUpdate"
+      @task-updated="handleTaskUpdated"
+      @task-deleted="handleTaskDeleted"
+    />
   </div>
 </template>
 
@@ -45,6 +57,8 @@ import TaskFilters from '@/components/my-tasks/TaskFilters.vue'
 import TaskListView from '@/components/my-tasks/TaskListView.vue'
 import TaskBoardView from '@/components/my-tasks/TaskBoardView.vue'
 import QuickTaskModal from '@/components/my-tasks/QuickTaskModal.vue'
+import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
+import type { Task } from '@/types/task'
 
 // Store
 const projectStore = useProjectStore()
@@ -52,6 +66,9 @@ const userTasksStore = useUserTasksStore()
 
 // 响应式数据
 const showQuickCreateModal = ref(false)
+const showTaskDetail = ref(false)
+const selectedTaskId = ref<string>()
+const selectedTaskProjectId = ref<string>()
 
 // 计算属性
 const tasks = computed(() => userTasksStore.tasks)
@@ -81,6 +98,38 @@ const handleTaskCreated = () => {
 // 处理导出
 const handleExport = () => {
   ElMessage.info('导出功能正在开发中')
+}
+
+// 处理任务点击
+const handleTaskClick = (task: Task) => {
+  selectedTaskId.value = task._id
+  selectedTaskProjectId.value = task.projectId
+  showTaskDetail.value = true
+}
+
+// 关闭任务详情
+const closeTaskDetail = () => {
+  showTaskDetail.value = false
+  selectedTaskId.value = undefined
+  selectedTaskProjectId.value = undefined
+}
+
+// 处理任务更新（切换到其他任务）
+const handleTaskUpdate = (taskId: string) => {
+  selectedTaskId.value = taskId
+}
+
+// 处理任务更新完成
+const handleTaskUpdated = (task: Task) => {
+  ElMessage.success('任务更新成功')
+  refresh() // 刷新任务列表
+}
+
+// 处理任务删除
+const handleTaskDeleted = (taskId: string) => {
+  ElMessage.success('任务删除成功')
+  closeTaskDetail()
+  refresh() // 刷新任务列表
 }
 
 // 键盘快捷键

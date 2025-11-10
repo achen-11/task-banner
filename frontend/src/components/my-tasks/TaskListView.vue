@@ -61,11 +61,12 @@
         <div
           v-for="task in tasks"
           :key="task._id"
-          class="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 transition-colors duration-200"
+          class="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
           :class="{ 'bg-blue-50': selectedTaskIds.includes(task._id) }"
+          @click="handleTaskClick(task)"
         >
           <!-- 选择框 -->
-          <div class="col-span-1 flex items-center">
+          <div class="col-span-1 flex items-center" @click.stop>
             <el-checkbox
               :model-value="selectedTaskIds.includes(task._id)"
               @change="handleSelectTask(task._id, $event)"
@@ -79,9 +80,9 @@
               <p v-if="task.summary" class="text-sm text-gray-500 truncate">{{ task.summary }}</p>
             </div>
             <!-- 标签 -->
-            <div v-if="task.tags && task.tags.length > 0" class="flex gap-1 ml-2">
+            <div v-if="(task as any).tags && (task as any).tags.length > 0" class="flex gap-1 ml-2">
               <span
-                v-for="tag in task.tags.slice(0, 2)"
+                v-for="tag in (task as any).tags.slice(0, 2)"
                 :key="tag._id"
                 class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
                 :style="{ backgroundColor: tag.color + '20', color: tag.color }"
@@ -89,10 +90,10 @@
                 {{ tag.name }}
               </span>
               <span
-                v-if="task.tags.length > 2"
+                v-if="(task as any).tags.length > 2"
                 class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
               >
-                +{{ task.tags.length - 2 }}
+                +{{ (task as any).tags.length - 2 }}
               </span>
             </div>
           </div>
@@ -170,12 +171,14 @@ interface Props {
   tasks: Task[]
   loading: boolean
   selectedTaskIds: string[]
+  selectedTasksCount: number
 }
 
 interface Emits {
   (e: 'select-task', taskId: string, selected: boolean): void
   (e: 'refresh'): void
   (e: 'load-more'): void
+  (e: 'task-click', task: Task): void
 }
 
 const props = defineProps<Props>()
@@ -294,5 +297,10 @@ const toggleSelectAll = () => {
 // 加载更多
 const handleLoadMore = () => {
   emit('load-more')
+}
+
+// 处理任务点击
+const handleTaskClick = (task: Task) => {
+  emit('task-click', task)
 }
 </script>
