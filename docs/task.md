@@ -49,107 +49,95 @@
 ---
 
 ## 任务列表
-共 2 个任务
+
+共 1 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: c6d2c0a9-a464-4c11-aa73-bc57747e0fc6 -->
-#### 1. 项目详情-按钮优化
+<!-- task-id: 1a75710f-bb90-4195-b3e4-709abad95ffc -->
+#### 1. 项目详情 tab 页-看板
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/09 14:03:25
-**更新时间：** 2025/11/09 14:28:15
+**创建时间：** 2025/10/27 18:24:40
+**更新时间：** 2025/11/14 10:06:03
+
+**任务摘要：** 优化看板视图UI，将checkbox直接显示在标题左侧，任务总数移至看板视图右侧
 
 **任务需求：**
 
-项目详情页下的所有 tab 的新建按钮都没有对齐, 我建议换成 el-button, 但是按钮的颜色要适配成"#3762E3"
+1. 接活 api
+2. 支持拖拽
+3. 支持自定义栏目
 
-**任务摘要：** 统一项目详情页所有tab的新建按钮为el-button组件并适配品牌颜色#3762E3，解决按钮样式不一致和对齐问题
+---
+
+**实现方案：**
+
+### 实现步骤
+1. 分析现有看板视图代码结构
+2. 修改头部布局，将任务总数移至看板视图右侧
+3. 调整任务卡片布局，将checkbox从悬浮改为直接显示在标题左侧
+4. 测试拖拽功能和自定义栏目功能
+
+### 修改的文件
+- `/frontend/src/components/project/ProjectBoard.vue`
+
+### 技术要点
+- 使用flex布局调整头部元素排列
+- 将任务卡片内容包装在flex容器中，实现checkbox与内容的并排显示
+- 保留原有的拖拽和自定义栏目功能
+
+### 验证结果
+- 任务总数已成功移至看板视图右侧
+- Checkbox已改为直接显示在任务标题左侧，不再悬浮
+- 拖拽功能正常工作
+- 自定义栏目功能正常工作
+
+---
+
+## 📝 选中评论
+
+> 共 1 条评论
+
+### 评论 1
+
+**作者:** wanggaojiachen
+**时间:** 2025/11/14 10:07:47
+
+**内容:**
+
+1. checkbox 不要用悬浮, 直接显示在标题的左边
+2. 把任务总数(xx 个任务)移动到"看板视图"的右侧, 不然头部空间占用太多了
 
 ---
 
 ## 🛠️ AI 解决方案
 
+**请在此处提供详细的实现方案：**
+
 ### 实现步骤
-1. 分析项目详情页各个tab组件的按钮样式差异
-2. 设计统一的el-button组件替换方案
-3. 逐个修改六个组件的按钮实现
-4. 添加ElIcon导入和配置统一的颜色样式
-5. 验证所有按钮的对齐和视觉效果
+1. 分析任务需求
+2. 设计技术方案
+3. 具体实现步骤
+4. 验证和测试
 
 ### 修改的文件
-- `frontend/src/components/project/ProjectModules.vue` - 新建模块按钮优化
-- `frontend/src/components/project/ProjectTags.vue` - 新建标签按钮优化
-- `frontend/src/components/project/ProjectMembers.vue` - 添加成员按钮优化
-- `frontend/src/views/ProjectView.vue` - 新建任务按钮优化
-- `frontend/src/components/project/ProjectTaskList.vue` - 任务列表新建按钮优化
-- `frontend/src/components/project/ProjectDocuments.vue` - 文档新建按钮优化
+- 文件路径1
+- 文件路径2
 
 ### 技术要点
-- **Element Plus组件集成**：使用el-button组件替换原生button元素
-- **图标处理**：使用el-icon组件包裹SVG图标，保持原有图标结构
-- **品牌色彩统一**：所有按钮统一使用"#3762E3"作为背景色和边框色
-- **组件依赖管理**：为每个组件添加ElIcon导入，确保TypeScript类型支持
+- 关键技术1
+- 关键技术2
 
 ### 验证结果
-- [x] ProjectModules.vue：新建模块按钮统一为el-button + #3762E3颜色
-- [x] ProjectTags.vue：新建标签按钮统一为el-button + #3762E3颜色
-- [x] ProjectMembers.vue：添加成员按钮统一为el-button + #3762E3颜色
-- [x] ProjectView.vue：新建任务按钮统一为el-button + #3762E3颜色
-- [x] ProjectTaskList.vue：任务列表新建按钮统一为el-button + #3762E3颜色
-- [x] ProjectDocuments.vue：文档新建按钮统一为el-button + #3762E3颜色
-- [x] 所有按钮样式完全统一，视觉对齐一致
-- [x] 按钮交互体验保持不变，点击事件正常工作
-- [x] 图标显示正常，间距和对齐效果良好
+- 测试结果1
+- 测试结果2
 
-<!-- task-id: eccdeebe-72a7-4212-81ba-63cdf40c53d9 -->
-#### 2. 我的任务-任务详情
-
-**状态：** 待验收
-**优先级：** 中
-**创建时间：** 2025/11/09 14:01:59
-**更新时间：** 2025/11/09 14:45:32
-
-**任务需求：**
-
-我的任务:
-1. 任务列表视图的任务详情并不能正常打开, 建议直接复用,适配, 项目详情页中的任务详情 drawer
-
-**任务摘要：** 适配项目详情页任务详情drawer到我的任务列表，实现任务详情查看功能
+**任务摘要：** <请在此处填写20-50字的任务摘要>
 
 ---
 
-## 🛠️ AI 解决方案
 
-### 实现步骤
-1. 分析我的任务页面的任务列表结构和TaskDetailDrawer组件
-2. 设计TaskDetailDrawer组件的适配方案
-3. 修改TaskListView组件添加任务点击事件
-4. 在MyTasks组件中集成TaskDetailDrawer
-5. 实现完整的事件处理逻辑
-6. 修复TypeScript类型错误
-
-### 修改的文件
-- `frontend/src/components/my-tasks/TaskListView.vue` - 添加任务点击事件处理
-- `frontend/src/views/MyTasks.vue` - 集成TaskDetailDrawer组件和事件处理
-- `frontend/src/components/my-tasks/TaskCard.vue` - 修复TypeScript类型错误
-
-### 技术要点
-- **组件复用策略**：直接复用现有的TaskDetailDrawer组件，无需重复开发
-- **事件处理机制**：完整的任务点击、打开、关闭、更新、删除事件处理链路
-- **TypeScript类型处理**：使用类型断言解决Task接口缺少tags属性问题
-- **用户交互优化**：任务行添加点击效果，选择框防止事件冒泡
-
-### 验证结果
-- [x] TaskListView：任务行点击打开任务详情
-- [x] MyTasks：集成TaskDetailDrawer组件
-- [x] 事件处理：完整的任务详情交互逻辑
-- [x] 数据传递：正确的任务ID和项目ID传递
-- [x] 类型安全：修复所有TypeScript类型错误
-- [x] 用户体验：保持与项目详情页一致的交互体验
-- [x] 功能完整：支持任务查看、编辑、导航、删除等所有功能
-
-
-> 📅 导出时间：2025/11/09 14:45:32
+> 📅 导出时间：2025/11/14 10:07:50
 > 🤖 由 Task-Flow 生成

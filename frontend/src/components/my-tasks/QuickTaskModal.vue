@@ -215,8 +215,8 @@ watch(() => props.visible, (newValue) => {
   if (newValue) {
     resetForm()
     // 如果只有一个项目，自动选中
-    if (projects.value.length === 1) {
-      formData.value.projectId = projects.value[0]._id
+    if (projects.value && projects.value.length === 1) {
+      formData.value.projectId = projects.value[0]!._id
     }
   }
 })
