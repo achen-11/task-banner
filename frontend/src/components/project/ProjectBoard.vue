@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- 看板头部 -->
-    <div class="px-4 mb-4">
+    <div class="px-4 mb-4" :class="{ 'hidden': focusMode }">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center">
           <h2 class="text-lg font-semibold text-gray-900">看板视图</h2>
@@ -42,6 +42,26 @@
               <template #content>
                 <div class="flex items-center gap-1.5">
                   <Keyboard :size="14" />
+                  <span>{{ getShortcutTooltip('i', true) }}</span>
+                </div>
+              </template>
+              <el-button
+                @click="handleImportTasks"
+                type="default"
+              >
+                <el-icon class="mr-1">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </el-icon>
+                导入任务
+              </el-button>
+            </el-tooltip>
+
+            <el-tooltip placement="bottom">
+              <template #content>
+                <div class="flex items-center gap-1.5">
+                  <Keyboard :size="14" />
                   <span>{{ getShortcutTooltip('n') }}</span>
                 </div>
               </template>
@@ -59,22 +79,55 @@
               </el-button>
             </el-tooltip>
 
-            <button
-              @click="showColumnManager = true"
-              class="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-              </svg>
-              管理栏目
-            </button>
+            <el-tooltip placement="bottom">
+              <template #content>
+                <div class="flex items-center gap-1.5">
+                  <Keyboard :size="14" />
+                  <span>{{ focusMode ? '退出专注模式 (F1)' : '专注模式 (F1)' }}</span>
+                </div>
+              </template>
+              <el-button
+                @click="toggleFocusMode"
+                :type="focusMode ? 'default' : 'primary'"
+              >
+                <el-icon class="mr-1">
+                  <svg v-if="!focusMode" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <svg v-else fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                </el-icon>
+                {{ focusMode ? '退出专注' : '专注模式' }}
+              </el-button>
+            </el-tooltip>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 专注模式悬浮按钮 -->
+    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
+      <el-tooltip>
+        <template #content>
+          <div class="flex items-center gap-1.5">
+            <Keyboard :size="14" />
+            <span>退出专注模式 (F1)</span>
+          </div>
+        </template>
+        <el-button type="default" @click="toggleFocusMode" circle size="small">
+          <el-icon>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+          </el-icon>
+        </el-button>
+      </el-tooltip>
+    </div>
+
     <!-- 看板内容 -->
-    <div class="flex-1 flex gap-4 overflow-hidden">
+    <div class="flex-1 flex gap-4 overflow-hidden" :class="focusMode ? 'h-full' : 'h-[calc(100%-73px)]'">
       <!-- 加载状态 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <div class="text-center">
@@ -206,87 +259,10 @@
     </template>
     </div>
 
-    <!-- 栏目管理对话框 -->
-    <el-dialog
-      v-model="showColumnManager"
-      title="管理看板栏目"
-      width="600px"
-      :before-close="handleColumnManagerClose"
-    >
-      <!-- 添加新栏 -->
-      <div class="mb-6">
-        <h4 class="text-sm font-medium text-gray-900 mb-3">添加新栏目</h4>
-        <div class="flex gap-3">
-          <el-input
-            v-model="newColumnForm.title"
-            placeholder="栏目名称"
-            style="flex: 1"
-          />
-          <el-select v-model="newColumnForm.badgeClass" placeholder="标签颜色">
-            <el-option
-              v-for="option in badgeClassOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            >
-              <span class="flex items-center gap-2">
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                  :class="option.value"
-                >
-                  {{ option.label }}
-                </span>
-              </span>
-            </el-option>
-          </el-select>
-          <el-button type="primary" @click="handleAddColumn">添加</el-button>
-        </div>
-      </div>
-
-      <!-- 现有栏目列表 -->
-      <div>
-        <h4 class="text-sm font-medium text-gray-900 mb-3">现有栏目</h4>
-        <div class="space-y-2">
-          <div
-            v-for="column in columns"
-            :key="column.id"
-            class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                :class="column.badgeClass"
-              >
-                {{ column.title }}
-              </span>
-              <span v-if="column.isDefault" class="text-xs text-gray-500">默认栏目</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <el-button
-                v-if="!column.isDefault"
-                size="small"
-                @click="handleEditColumn(column)"
-              >
-                编辑
-              </el-button>
-              <el-button
-                v-if="!column.isDefault"
-                size="small"
-                type="danger"
-                plain
-                @click="handleDeleteColumn(column)"
-              >
-                删除
-              </el-button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
-
     <!-- 任务详情抽屉 -->
     <TaskDetailDrawer
       :is-open="showTaskDetail"
+      :mode="drawerMode"
       :task-id="selectedTaskId"
       :project-id="selectedTaskProjectId"
       :all-tasks="tasks"
@@ -294,12 +270,23 @@
       @update:task-id="handleTaskUpdate"
       @task-updated="handleTaskUpdated"
       @task-deleted="handleTaskDeleted"
+      @task-created="handleTaskCreated"
+    />
+
+    <!-- 导入确认对话框 -->
+    <ImportTaskDialog
+      :visible="importConfirmVisible"
+      :tasks="tasksToImport"
+      :loading="importing"
+      @update:visible="importConfirmVisible = $event"
+      @confirm="handleImportConfirm"
+      @cancel="importConfirmVisible = false"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, provide } from 'vue'
 import draggable from 'vuedraggable'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTaskList, updateTask, updateTaskOrder } from '@/api/task'
@@ -308,6 +295,8 @@ import { Keyboard } from 'lucide-vue-next'
 import type { Project } from '@/types/project'
 import type { Task } from '@/types/task'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
+import ImportTaskDialog from './ImportTaskDialog.vue'
+import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution, ImportService } from '@/utils/export'
 
 interface Props {
   project: Project | null
@@ -333,9 +322,33 @@ const showColumnManager = ref(false)
 const showTaskDetail = ref(false)
 const selectedTaskId = ref<string>()
 const selectedTaskProjectId = ref<string>()
+const drawerMode = ref<'view' | 'create'>('view')
 
 // 批量选择相关
 const selectedTaskIds = ref<Set<string>>(new Set())
+
+// 专注模式相关
+const focusMode = ref(false)
+const toggleFocusMode = () => {
+  focusMode.value = !focusMode.value
+}
+
+// 提供专注模式状态给子组件
+provide('focusMode', focusMode)
+provide('toggleFocusMode', toggleFocusMode)
+
+// 导入确认对话框状态
+const importConfirmVisible = ref(false)
+const importing = ref(false)
+const tasksToImport = ref<Array<Partial<Task> & {
+  summary?: string
+  existingInfo?: {
+    title: string
+    status: string
+    priority: string
+  }
+  aiSolution?: string
+}>>([])
 
 // 看板列配置
 const defaultColumns: Omit<Column, 'tasks' | 'id'>[] = [
@@ -674,6 +687,22 @@ const handleTaskDeleted = (taskId: string) => {
   loadTasks() // 重新加载任务列表
 }
 
+// 任务创建完成处理
+const handleTaskCreated = (newTask: Task) => {
+  // 将新任务添加到对应列的顶部
+  const column = columns.value.find(col => col.status === newTask.status)
+  if (column) {
+    column.tasks.unshift(newTask)
+  }
+  
+  // 更新任务列表
+  tasks.value.unshift(newTask)
+  
+  // 切换到查看模式
+  drawerMode.value = 'view'
+  selectedTaskId.value = newTask._id
+}
+
 // 监听项目变化
 watch(() => props.project, (newProject) => {
   if (newProject) {
@@ -693,8 +722,9 @@ const getShortcutTooltip = (key: string, meta = false) => {
 
 // 新建任务处理
 const handleCreateTask = () => {
-  // TODO: 实现新建任务功能
-  ElMessage.info('新建任务功能开发中...')
+  drawerMode.value = 'create'
+  selectedTaskId.value = undefined
+  showTaskDetail.value = true
 }
 
 // 批量操作相关方法
@@ -732,14 +762,176 @@ const toggleSelectAllInColumn = (columnStatus: string, selected: boolean) => {
   })
 }
 
+// 批量导出选中任务
 const handleBatchExport = async () => {
   if (selectedTaskIds.value.size === 0) {
     ElMessage.warning('请先选择要导出的任务')
     return
   }
 
-  // TODO: 实现批量导出功能
-  ElMessage.info(`批量导出 ${selectedTaskIds.value.size} 个任务功能开发中...`)
+  try {
+    // 获取选中的任务
+    const selectedTasks = tasks.value.filter(t => selectedTaskIds.value.has(t._id))
+
+    // 导出为 Markdown
+    const markdown = exportTasksToMarkdown(selectedTasks)
+    const success = await copyToClipboard(markdown)
+
+    if (success) {
+      ElMessage.success(`已导出 ${selectedTasks.length} 个任务到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('Batch export error:', error)
+    ElMessage.error('批量导出失败')
+  }
+}
+
+// 从剪贴板导入任务（支持 JSON 和 Markdown）
+const handleImportTasks = async () => {
+  if (!projectId.value) {
+    ElMessage.warning('缺少项目ID，无法导入任务')
+    return
+  }
+
+  try {
+    const content = await readFromClipboard()
+
+    if (!content) {
+      // 如果无法读取剪贴板，提示用户手动粘贴
+      const input = prompt('请粘贴 JSON 或 Markdown 格式的任务内容：')
+      if (!input) return
+
+      await importTasksHelper(input)
+    } else {
+      await importTasksHelper(content)
+    }
+  } catch (error) {
+    console.error('Import tasks error:', error)
+    ElMessage.error('导入任务失败')
+  }
+}
+
+// 导入任务辅助函数（智能识别 JSON 或 Markdown）
+const importTasksHelper = async (content: string) => {
+  try {
+    // 使用统一的ImportService自动识别并导入
+    const { tasks, format } = ImportService.autoImport(content, projectId.value!)
+    ImportService.validateTasks(tasks)
+
+    // 解析 AI 解决方案
+    const aiSolution = parseAISolution(content)
+
+    // 为每个任务添加 AI 解决方案
+    tasks.forEach((task, index) => {
+      if (aiSolution) {
+        (task as any).aiSolution = aiSolution.content
+        task.summary = aiSolution.summary
+      }
+    })
+
+    // 保存待导入的任务并显示确认对话框
+    tasksToImport.value = tasks
+    importConfirmVisible.value = true
+  } catch (error) {
+    console.error('Parse tasks error:', error)
+    ElMessage.error('解析任务失败')
+  }
+}
+
+// 处理导入确认
+const handleImportConfirm = async (finalTasks: any[]) => {
+  importing.value = true
+  try {
+    // 处理每个任务（导入为评论）
+    const promises = finalTasks.map(async task => {
+      // 如果有 _id，先检查任务是否存在
+      if (task._id) {
+        try {
+          // 尝试获取任务详情，检查是否存在
+          const response = await fetch(`/api/task/detail?id=${task._id}`)
+          const result = await response.json()
+
+          if (result.code === 200) {
+            // 任务存在，更新任务状态和摘要，并将 AI 解决方案作为评论导入
+            const updateData: any = {
+              id: task._id,
+              summary: task.summary || ''
+            }
+
+            // 如果导入的任务有状态变化，更新状态
+            if (task.status && task.status !== result.data.status) {
+              updateData.status = task.status
+            }
+
+            // 更新任务（如果有状态变化或摘要变化）
+            if (updateData.status || updateData.summary) {
+              await updateTask(updateData)
+            }
+
+            // 将 AI 解决方案作为评论导入
+            const commentResponse = await fetch('/api/task/import-as-comment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId: task._id!,
+                content: (task as any).aiSolution || task.content || '',
+                summary: task.summary || '',
+                type: 'ai_completion',
+                mentionedUsers: []
+              })
+            })
+
+            if (!commentResponse.ok) {
+              throw new Error(`Import as comment failed: ${commentResponse.statusText}`)
+            }
+
+            return { type: 'updated' as const, taskId: task._id }
+          }
+        } catch (error: any) {
+          // 任务不存在（404错误），创建新任务
+          if (error?.response?.status === 404 || error?.message?.includes('not found')) {
+            console.log(`Task ${task._id} not found, creating new task`)
+            // 创建新任务的逻辑
+            return { type: 'created' as const, result: task._id }
+          }
+          // 其他错误，继续抛出
+          throw error
+        }
+      } else {
+        // 没有 _id，直接创建新任务
+        // 创建新任务的逻辑
+        return { type: 'created' as const, result: task._id }
+      }
+    })
+
+    const results = await Promise.all(promises)
+
+    // 统计操作数量
+    const createdCount = results.filter((r: any) => r.type === 'created').length
+    const updatedCount = results.filter((r: any) => r.type === 'updated').length
+
+    // 显示结果消息
+    const messages: string[] = []
+    if (createdCount > 0) messages.push(`创建 ${createdCount} 个`)
+    if (updatedCount > 0) messages.push(`更新 ${updatedCount} 个`)
+    ElMessage.success(`成功${messages.join('、')}任务`)
+
+    // 关闭对话框
+    importConfirmVisible.value = false
+    tasksToImport.value = []
+
+    // 刷新任务列表
+    await loadTasks()
+  } catch (error: any) {
+    console.error('Import from markdown error:', error)
+    ElMessage.error(`导入失败：${error?.message || '未知错误'}`)
+  } finally {
+    importing.value = false
+  }
 }
 
 // 快捷键注册
@@ -748,17 +940,45 @@ onMounted(() => {
   registerShortcut({
     key: 'n',
     description: '新建任务',
-    handler: handleCreateTask,
+    handler: () => {
+      if (!showTaskDetail.value) {
+        handleCreateTask()
+      }
+    },
     category: '看板'
   })
 
-  // 注册 Ctrl/Cmd+E 批量导出
+  // 注册 Cmd+I 导入任务
+  registerShortcut({
+    key: 'i',
+    meta: true,
+    description: '导入任务',
+    handler: () => {
+      if (!showTaskDetail.value && projectId.value) {
+        handleImportTasks()
+      }
+    },
+    category: '看板'
+  })
+
+  // 注册 Cmd+E 批量导出
   registerShortcut({
     key: 'e',
-    ctrl: true,
     meta: true,
     description: '批量导出',
-    handler: handleBatchExport,
+    handler: () => {
+      if (!showTaskDetail.value && selectedTaskIds.value.size > 0) {
+        handleBatchExport()
+      }
+    },
+    category: '看板'
+  })
+
+  // 注册 F1 键切换专注模式
+  registerShortcut({
+    key: 'F1',
+    description: '专注模式',
+    handler: toggleFocusMode,
     category: '看板'
   })
 })
@@ -784,5 +1004,24 @@ onMounted(() => {
 
 .sortable-drag {
   opacity: 0.75;
+}
+
+/* 专注模式样式 */
+.focus-mode {
+  filter: blur(5px); /* 模糊背景 */
+  -webkit-filter: blur(5px);
+  -moz-filter: blur(5px);
+  -o-filter: blur(5px);
+  -ms-filter: blur(5px);
+  pointer-events: none; /* 阻止点击事件穿透 */
+}
+
+.no-focus-mode {
+  filter: none;
+  -webkit-filter: none;
+  -moz-filter: none;
+  -o-filter: none;
+  -ms-filter: none;
+  pointer-events: auto; /* 恢复点击事件 */
 }
 </style>

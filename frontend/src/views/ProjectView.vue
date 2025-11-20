@@ -255,8 +255,8 @@ provide('documentId', documentId)
 
 // 处理全局快捷键
 const handleGlobalKeyboardShortcuts = (event: KeyboardEvent) => {
-  // F1 - 仅在文档tab中切换专注模式
-  if (event.key === 'F1' && currentTab.value === 'documents') {
+  // F1 - 在文档tab和看板tab中切换专注模式
+  if (event.key === 'F1' && (currentTab.value === 'documents' || currentTab.value === 'board')) {
     event.preventDefault()
     toggleFocusMode()
   }
