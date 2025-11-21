@@ -49,51 +49,79 @@
 ---
 
 ## 任务列表
+
 共 1 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: 6cbb2cf2-7ec3-4e54-b812-747bb7c57442 -->
-#### 1. 文档 tab-编辑模式优化
+<!-- task-id: a18ae62e-604e-4149-bbbf-b68a82ddd248 -->
+#### 1. 全局搜索(Cmd+K)
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/10 11:00:10
-**更新时间：** 2025/11/10 11:00:32
-
-**任务摘要：** 修复文档编辑模式中"未保存"和状态选择被挤压的问题，优化编辑器头部布局
+**创建时间：** 2025/10/27 18:25:38
+**更新时间：** 2025/11/21 14:00:02
 
 **任务需求：**
 
-编辑模式时, 左侧的"未保存"和状态选择会被挤压, 导致内容不能正常显示, 修复这个问题, 详见"docs/image.png"
+- [ ] 支持快捷键 cmd + K 全局搜索任务
+- [ ] 搜索范围包含任务描述, 任务名称, 任务评论, 项目文档
+- [ ] 匹配到的关键字需要高亮
+- [ ] 需要做内容截断, 如: ...dasasd-keyword-adadas....
+
+---
+
+
+---
+
+## 📝 选中评论
+
+> 共 1 条评论
+
+### 评论 1
+
+**作者:** wanggaojiachen
+**时间:** 2025/11/21 14:01:51
+
+**内容:**
+
+1. 跳转后的链接无法有效打开任务 drawer, url 有变化
+2. 搜索结果的项目 tag, 背景色和字体颜色要有对比度, 现在这样看起来会很丑
+3. 要有一个 checkbox, 用来选择是否包含已归档的项目和任务
 
 ---
 
 **实现方案：**
 
 ### 实现步骤
-1. 分析问题：编辑器头部使用flex布局，左侧内容在空间不足时被挤压
-2. 优化布局：为左侧容器添加flex-shrink-0和min-w-0防止压缩
-3. 添加whitespace-nowrap确保文本不换行
-4. 增加状态选择器宽度从w-24到w-28
-5. 在父容器添加gap-4增加间距
+1. 修复跳转后无法打开任务drawer的问题：优化ProjectBoard的路由监听逻辑，确保URL变化时能正确打开任务详情
+2. 优化项目tag的对比度：实现getProjectTagStyle函数，根据背景色亮度自动选择文字颜色
+3. 添加"包含已归档项目"checkbox：在搜索框中添加选项，支持搜索已归档的项目和任务
 
 ### 修改的文件
-- `/frontend/src/components/project/ProjectDocuments.vue`
+- `/frontend/src/components/common/GlobalSearchModal.vue` - 添加checkbox选项，优化项目tag样式
+- `/frontend/src/components/project/ProjectBoard.vue` - 修复路由监听逻辑，确保任务drawer正确打开
+- `/frontend/src/types/search.ts` - 添加includeArchived参数
+- `/frontend/src/api/search.ts` - 更新API调用支持includeArchived参数
+- `/src/api/search.ts` - 后端API支持includeArchived参数过滤
 
 ### 技术要点
-- 使用flex-shrink-0防止左侧内容被压缩
-- 使用whitespace-nowrap确保"未保存"文本不换行
-- 使用min-w-0防止flex子元素溢出
-- 增加状态选择器宽度，确保选项文字完整显示
-- 在flex容器中添加gap-4增加元素间距
+- 修复任务drawer打开问题：监听route.query.taskId和props.project变化，使用setTimeout确保路由切换完成后再打开drawer
+- 项目tag对比度优化：使用WCAG标准计算颜色亮度，根据亮度自动选择深色(#1f2937)或白色(#ffffff)文字
+- 支持搜索已归档项目：添加includeArchived参数，后端根据参数决定是否过滤已归档项目
+- 使用nextTick和setTimeout确保组件渲染完成后再打开drawer
 
 ### 验证结果
-- "未保存"状态指示器完整显示，不再被挤压
-- 文档状态选择器宽度足够，选项文字完整显示
-- 编辑器头部布局合理，左右两侧内容都能正常显示
-- 在不同屏幕尺寸下布局保持稳定
+- 跳转后URL变化时能正确打开任务drawer
+- 项目tag的背景色和文字颜色有良好对比度，视觉效果更佳
+- checkbox可以控制是否包含已归档的项目和任务
+- 切换checkbox时自动重新搜索
+- 关闭搜索对话框时重置includeArchived状态
+
+**任务摘要：** 修复全局搜索的验收反馈：优化任务drawer打开逻辑、项目tag对比度和添加归档项目搜索选项
+
+---
 
 
-> 📅 导出时间：2025/11/21 10:39:32
+> 📅 导出时间：2025/11/21 14:03:32
 > 🤖 由 Task-Flow 生成

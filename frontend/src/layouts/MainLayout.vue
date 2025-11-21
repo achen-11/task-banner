@@ -18,6 +18,9 @@
 
     <!-- 快捷键说明面板 -->
     <KeyboardShortcutsPanel ref="shortcutsPanelRef" />
+    
+    <!-- 全局搜索面板 -->
+    <GlobalSearchModal ref="globalSearchRef" />
   </div>
 </template>
 
@@ -26,6 +29,7 @@ import { ref, onMounted } from 'vue'
 import Sidebar from '@/components/Sidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import KeyboardShortcutsPanel from '@/components/common/KeyboardShortcutsPanel.vue'
+import GlobalSearchModal from '@/components/common/GlobalSearchModal.vue'
 import { useKeyboard, registerShortcut } from '@/composables/useKeyboard'
 import { useUIStore } from '@/stores/ui'
 
@@ -34,6 +38,8 @@ const uiStore = useUIStore()
 
 // 快捷键面板引用
 const shortcutsPanelRef = ref<InstanceType<typeof KeyboardShortcutsPanel> | null>(null)
+// 全局搜索面板引用
+const globalSearchRef = ref<InstanceType<typeof GlobalSearchModal> | null>(null)
 
 // 切换侧边栏
 const toggleSidebar = () => {
@@ -63,6 +69,17 @@ onMounted(() => {
     category: '帮助',
     handler: () => {
       shortcutsPanelRef.value?.toggle()
+    }
+  })
+
+  // Cmd/Ctrl + K: 全局搜索
+  registerShortcut({
+    key: 'k',
+    meta: true,
+    description: '全局搜索',
+    category: '搜索',
+    handler: () => {
+      globalSearchRef.value?.show()
     }
   })
 })

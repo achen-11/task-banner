@@ -215,8 +215,15 @@ const documentId = computed(() => route.params.documentId as string | undefined)
 // 头部展开/收起状态
 const collapsed = ref(true)
 
-// 当前 Tab
-const currentTab = ref('list')
+// 当前 Tab - 从路由query获取，默认list
+const currentTab = ref((route.query.tab as string) || 'overview')
+
+// 监听路由query变化，更新tab
+watch(() => route.query.tab, (newTab) => {
+  if (newTab && typeof newTab === 'string') {
+    currentTab.value = newTab
+  }
+}, { immediate: true })
 
 // 设置对话框状态
 const showSettingsDialog = ref(false)

@@ -286,7 +286,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, provide } from 'vue'
+import { ref, onMounted, computed, watch, provide, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import draggable from 'vuedraggable'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTaskList, updateTask, updateTaskOrder, deleteTask } from '@/api/task'
@@ -941,6 +942,39 @@ const handleImportConfirm = async (finalTasks: any[]) => {
     importing.value = false
   }
 }
+
+const route = useRoute()
+
+// 监听路由query中的taskId和项目变化
+watch([() => route.query.taskId, () => props.project], async ([taskId, project]) => {
+  // 只有当taskId存在且项目ID匹配时才处理
+  if (taskId && typeof taskId === 'string' && projectId.value && project) {
+    // 如果任务列表为空或任务不存在，先加载任务
+    if (tasks.value.length === 0 || !tasks.value.find(t => t._id === taskId)) {
+      await loadTasks()
+    }
+    
+    // 等待任务加载完成
+    await nextTick()
+    const task = tasks.value.find(t => t._id === taskId)
+    
+    if (task) {
+      // 如果drawer未打开或打开的不是当前任务，则打开
+      if (!showTaskDetail.value || selectedTaskId.value !== taskId) {
+        // 使用nextTick和setTimeout确保路由切换和组件渲染完成
+        await nextTick()
+        setTimeout(() => {
+          handleTaskClick(task)
+        }, 150)
+      }
+    }
+  } else if (!taskId && showTaskDetail.value) {
+    // 当taskId被清除时，关闭drawer
+    showTaskDetail.value = false
+    selectedTaskId.value = undefined
+    selectedTaskProjectId.value = undefined
+  }
+}, { immediate: true })
 
 // 快捷键注册
 onMounted(() => {
