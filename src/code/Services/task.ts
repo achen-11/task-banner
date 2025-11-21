@@ -600,9 +600,11 @@ export function getUserTasks(
   sortField?: string,
   sortDirection?: string
 ): TaskInfo[] {
-  // 1. 获取用户有权限的所有项目ID
+  // 1. 获取用户有权限的所有项目ID，排除已归档的项目
   const userProjects = getUserProjects(userId)
-  const userProjectIds = userProjects.map(p => p._id)
+  const userProjectIds = userProjects
+    .filter(p => p.status !== 'archived') // 过滤掉已归档的项目
+    .map(p => p._id)
 
   // 如果指定了项目ID，进一步过滤
   let targetProjectIds = userProjectIds
