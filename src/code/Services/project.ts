@@ -158,7 +158,7 @@ export function getUserProjects(userId: string): ProjectInfo[] {
  */
 export function updateProject(
   projectId: string,
-  data: { name?: string; description?: string; color?: string }
+  data: { name?: string; description?: string; color?: string; status?: string }
 ): boolean {
   const updatedId = Project.updateById(projectId, data)
   return updatedId !== null && updatedId !== undefined

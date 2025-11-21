@@ -221,7 +221,7 @@ k.api.put("update", (body: any) => {
   }
 
   // 2. 参数验证
-  const { id, name, description, color } = body
+  const { id, name, description, color, status } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid project ID', 400)
@@ -240,11 +240,15 @@ k.api.put("update", (body: any) => {
       return error('You do not have permission to update this project', 403)
     }
 
-    const updated = updateProject(projectId, {
-      name: name?.trim(),
-      description: description,
-      color: color
-    })
+    const updated = updateProject(
+      projectId,
+      {
+        name: name?.trim(),
+        description: description,
+        color: color,
+        status: status
+      }
+    )
 
     if (!updated) {
       return error('Failed to update project', 500)

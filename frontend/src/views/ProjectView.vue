@@ -322,6 +322,8 @@ const statusText = computed(() => {
       return '已完成'
     case 'paused':
       return '已暂停'
+    case 'archived':
+      return '已归档'
     default:
       return '未知'
   }
@@ -337,6 +339,8 @@ const statusClasses = computed(() => {
       return 'bg-blue-100 text-blue-700'
     case 'paused':
       return 'bg-yellow-100 text-yellow-700'
+    case 'archived':
+      return 'bg-gray-100 text-gray-500'
     default:
       return 'bg-gray-100 text-gray-700'
   }

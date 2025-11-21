@@ -76,9 +76,15 @@
         <!-- 分割线 -->
         <div class="h-px bg-gray-200 my-2"></div>
 
-        <!-- 项目标题 -->
+        <!-- 项目标题（作为项目列表入口） -->
         <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 flex items-center justify-between px-2 mb-2">
-          <div>Projects</div>
+          <button
+            type="button"
+            class="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+            @click="goProjects"
+          >
+            <span>Projects</span>
+          </button>
           <button
             @click="showCreateProject = true"
             class="text-gray-500 hover:text-gray-700 transition-colors"
@@ -96,7 +102,7 @@
         </div>
         <div
           v-else
-          v-for="project in projectStore.projects"
+          v-for="project in visibleProjects"
           :key="project._id"
           class="sidebar-menu"
           :class="{ 'bg-zinc-200': isActive(`/projects/${project._id}`) }"
@@ -202,6 +208,14 @@ const unreadCount = ref(0)
 
 // 创建项目对话框
 const showCreateProject = ref(false)
+
+// 只展示未归档项目
+const visibleProjects = computed(() => projectStore.projects.filter(p => p.status !== 'archived'))
+
+// 跳转到项目列表页
+const goProjects = () => {
+  router.push('/projects')
+}
 
 // 用户菜单
 const showUserMenu = ref(false)

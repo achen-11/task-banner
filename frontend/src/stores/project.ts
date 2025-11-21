@@ -26,6 +26,10 @@ export const useProjectStore = defineStore('project', () => {
     projects.value.filter(p => p.status === 'paused')
   )
 
+  const archivedProjects = computed(() =>
+    projects.value.filter(p => p.status === 'archived')
+  )
+
   // 方法
   /**
    * 获取项目列表
@@ -167,6 +171,7 @@ export const useProjectStore = defineStore('project', () => {
     activeProjects,
     completedProjects,
     pausedProjects,
+    archivedProjects,
 
     // 方法
     fetchProjects,

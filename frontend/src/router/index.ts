@@ -29,6 +29,14 @@ const router = createRouter({
           }
         },
         {
+          path: 'projects',
+          name: 'projects',
+          component: () => import('../views/Projects.vue'),
+          meta: {
+            title: 'TaskFlow - 项目列表'
+          }
+        },
+        {
           path: 'messages',
           name: 'messages',
           component: () => import('../views/Messages.vue'),

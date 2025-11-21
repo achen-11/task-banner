@@ -11,7 +11,7 @@ export interface Project {
   description: string
   color: string
   ownerId: string
-  status: 'active' | 'completed' | 'paused'
+  status: 'active' | 'completed' | 'paused' | 'archived'
   icon: string
   order: number
   createdAt: number
@@ -57,6 +57,7 @@ export interface UpdateProjectParams {
   description?: string
   color?: string
   icon?: string
+  status?: 'active' | 'completed' | 'paused' | 'archived'
 }
 
 /**
