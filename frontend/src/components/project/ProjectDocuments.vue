@@ -233,10 +233,10 @@
               <div class="flex-1 p-6 pb-8 border-r border-gray-200">
                 <!-- 编辑器头部 -->
                 <div class="mb-4 pb-4 border-b border-gray-200">
-                  <div class="flex items-center justify-between">
+                  <div class="flex items-center justify-between gap-4">
                     <!-- 左侧：保存状态指示器 -->
-                    <div class="flex items-center space-x-3">
-                      <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-3 flex-shrink-0 min-w-0">
+                      <div class="flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
                         <div v-if="savingStatus === 'saving'" class="flex items-center text-blue-600">
                           <el-icon class="animate-spin mr-1">
                             <Loading />
@@ -256,13 +256,13 @@
                           <span class="text-sm">保存失败</span>
                         </div>
                         <div v-else-if="!isSave" class="flex items-center text-orange-600">
-                          <div class="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
-                          <span class="text-sm">未保存</span>
+                          <div class="w-2 h-2 bg-orange-400 rounded-full mr-2 flex-shrink-0"></div>
+                          <span class="text-sm whitespace-nowrap">未保存</span>
                         </div>
                       </div>
 
                       <!-- 文档状态选择 -->
-                      <el-select v-model="documentStatus" size="small" class="w-24">
+                      <el-select v-model="documentStatus" size="small" class="w-28 flex-shrink-0">
                         <el-option label="草稿" value="draft" />
                         <el-option label="已发布" value="published" />
                         <el-option label="已归档" value="archived" />
@@ -270,7 +270,7 @@
                     </div>
 
                     <!-- 右侧：保存按钮 -->
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-2 flex-shrink-0">
                       <el-button type="primary" size="small" @click="saveDocument" :disabled="isSave"
                         :loading="savingStatus === 'saving'">
                         保存 (Ctrl+S)
