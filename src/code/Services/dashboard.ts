@@ -281,6 +281,8 @@ function getWeeklyTrends(allTasks: TaskType[]): TaskTrend[] {
   for (let i = 0; i < 7; i++) {
     const dayDate = new Date(now)
     dayDate.setDate(now.getDate() - currentDay + 1 + i)
+    // 设置为当天的00:00:00，避免时间偏移问题
+    dayDate.setHours(0, 0, 0, 0)
     const dayStart = dayDate.getTime()
     const dayEnd = dayStart + 24 * 60 * 60 * 1000
 

@@ -1,14 +1,8 @@
 [
   {
-    "_id": "9e2963af-36e9-4c19-929e-cc70a44ecdf5",
+    "_id": "9c2a955b-d041-4dea-9838-a7905eb94214",
     "status": "review",
-    "summary": "修复全局搜索后关闭drawer时URL不更新的问题，确保URL与drawer状态同步",
-    "content": "## 任务详情\n\n**任务ID**: 9e2963af-36e9-4c19-929e-cc70a44ecdf5\n**状态**: 待验收\n**优先级**: 中\n\n### 任务需求\n全局搜索后会改变 url 并跳转, 此时关闭 drawer 之后 url 要随之更新\n\n### 实现方案\n\n#### 实现步骤\n1. 在ProjectBoard的closeTaskDetail函数中添加URL清理逻辑\n2. 检查route.query.taskId是否存在\n3. 如果存在则使用router.replace清除taskId参数\n4. 确保关闭drawer时URL同步更新\n\n#### 修改的文件\n- `/frontend/src/components/project/ProjectBoard.vue` - 在closeTaskDetail中添加URL清理逻辑\n\n#### 技术要点\n- 使用router.replace而不是router.push，避免在历史记录中留下额外记录\n- 通过展开route.query创建新query对象，删除taskId参数\n- 保持其他query参数不变，只清除taskId\n- 在关闭drawer的同时更新URL，确保状态同步\n\n#### 验证结果\n- 全局搜索跳转后，关闭drawer时URL中的taskId参数被正确清除\n- URL更新不会影响其他query参数\n- 关闭drawer后URL与页面状态保持一致"
-  },
-  {
-    "_id": "4e7467b5-410c-48db-8f50-8517012331a5",
-    "status": "review",
-    "summary": "修复看板视图导入任务不存在和Cmd+I快捷键失效的问题",
-    "content": "## 任务详情\n\n**任务ID**: 4e7467b5-410c-48db-8f50-8517012331a5\n**状态**: 待验收\n**优先级**: 中\n\n### 任务需求\n列表视图导入功能正常\n1. 同一个任务 id, 看板视图导入时会遇到任务不存在(列表视图是存在的)\n2. 看板视图 cmd +i, 正常唤起导入弹窗, 切换到列表再按下 cmd+i, 会失效, 再切回看板视图, 再按下 cmd+i 也会失效\n\n### 实现方案\n\n#### 实现步骤\n1. 修复看板视图导入时任务不存在的问题：\n   - 在importTasksHelper中添加enrichedTasks逻辑，与列表视图保持一致\n   - 在导入前先通过getTaskDetail查询任务信息，回填真实数据\n   - 将fetch调用改为使用getTaskDetail API\n2. 改进错误处理逻辑，与列表视图保持一致的404错误检测\n3. 修复Cmd+I快捷键失效问题：在onUnmounted中正确取消注册快捷键\n4. 优化unregisterShortcut函数，支持meta参数精确匹配，避免误删其他组件的快捷键\n\n#### 修改的文件\n- `/frontend/src/components/project/ProjectBoard.vue` - 修复导入逻辑和快捷键注册\n- `/frontend/src/composables/useKeyboard.ts` - 优化unregisterShortcut支持精确匹配\n- `/frontend/src/components/project/ProjectTaskList.vue` - 更新unregisterShortcut调用\n\n#### 技术要点\n- 看板视图importTasksHelper中添加enrichedTasks逻辑，在导入前先查询任务信息\n- 使用Promise.all并行查询所有任务的详细信息，回填existingInfo\n- 看板视图导入改用getTaskDetail API替代fetch，确保错误处理一致\n- 404错误检测与列表视图保持一致：检查error.response.status和error.message\n- unregisterShortcut增加meta参数，支持按key+meta精确匹配\n- 在onUnmounted中取消注册所有快捷键，避免组件切换时快捷键冲突\n- 使用createTask API创建新任务，确保任务创建逻辑一致\n\n#### 验证结果\n- 看板视图导入时在importTasksHelper阶段先查询任务信息，能正确检测任务是否存在\n- 看板视图和列表视图使用相同的enrichedTasks逻辑，行为完全一致\n- 看板视图Cmd+I快捷键正常工作，切换视图后仍能正常使用\n- 组件卸载时正确清理快捷键，避免快捷键冲突"
+    "summary": "修复任务趋势图时间偏移bug，通过设置dayStart为00:00:00确保今天创建的任务正确统计在今天",
+    "content": "## 任务详情\n\n**任务ID**: 9c2a955b-d041-4dea-9838-a7905eb94214\n**状态**: 待验收\n**优先级**: 中\n\n### 任务需求\n任务趋势图的数据存在 bug, 我今天新建的任务, 他却统计成了昨天, 不确定时间数据是否有便宜\n\n### 实现方案\n\n#### 实现步骤\n1. 分析问题：任务趋势图在计算每日时间范围时，dayStart使用了当前时间（包含时分秒），导致时间范围偏移\n2. 定位问题：在getWeeklyTrends函数中，dayDate.setDate()后没有重置时分秒为00:00:00\n3. 修复方案：在计算dayStart前添加dayDate.setHours(0, 0, 0, 0)，确保每天从00:00:00开始\n4. 验证修复：确保今天创建的任务正确统计在今天，不会误统计到昨天\n\n#### 修改的文件\n- `/src/code/Services/dashboard.ts` - 在getWeeklyTrends函数中添加setHours(0, 0, 0, 0)修复时间偏移\n\n#### 技术要点\n- 问题根源：dayDate.setDate()后保留了当前时间的时分秒，导致dayStart不是当天的00:00:00\n- 修复方法：使用dayDate.setHours(0, 0, 0, 0)将时间重置为当天的00:00:00\n- 与getMonthlyTrends保持一致：月趋势图已经正确使用了setHours(0, 0, 0, 0)\n- 时间范围计算：dayStart为当天00:00:00，dayEnd为dayStart + 24小时，确保完整覆盖一天\n\n#### 验证结果\n- 今天创建的任务正确统计在今天，不会误统计到昨天\n- 不同时间点创建的任务（凌晨、下午、晚上）都能正确归类到对应日期\n- 时间范围从00:00:00开始，避免时区和时间偏移问题\n- 与getMonthlyTrends的逻辑保持一致"
   }
 ]
