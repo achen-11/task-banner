@@ -264,7 +264,7 @@
       :is-open="showTaskDetail"
       :mode="drawerMode"
       :task-id="selectedTaskId"
-      :project-id="selectedTaskProjectId"
+      :project-id="projectId"
       :all-tasks="tasks"
       @close="closeTaskDetail"
       @update:task-id="handleTaskUpdate"
@@ -289,7 +289,7 @@
 import { ref, onMounted, computed, watch, provide } from 'vue'
 import draggable from 'vuedraggable'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTaskList, updateTask, updateTaskOrder } from '@/api/task'
+import { getTaskList, updateTask, updateTaskOrder, deleteTask } from '@/api/task'
 import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
 import { Keyboard } from 'lucide-vue-next'
 import type { Project } from '@/types/project'
@@ -667,11 +667,13 @@ const closeTaskDetail = () => {
   showTaskDetail.value = false
   selectedTaskId.value = undefined
   selectedTaskProjectId.value = undefined
+  drawerMode.value = 'view' // 确保重置为查看模式
 }
 
 // 处理任务更新（切换到其他任务）
 const handleTaskUpdate = (taskId: string) => {
   selectedTaskId.value = taskId
+  drawerMode.value = 'view' // 确保切换到查看模式
 }
 
 // 处理任务更新完成
@@ -681,10 +683,16 @@ const handleTaskUpdated = (task: Task) => {
 }
 
 // 处理任务删除
-const handleTaskDeleted = (taskId: string) => {
-  ElMessage.success('任务删除成功')
-  closeTaskDetail()
-  loadTasks() // 重新加载任务列表
+const handleTaskDeleted = async (taskId: string) => {
+  try {
+    await deleteTask(taskId)
+    ElMessage.success('任务删除成功')
+    closeTaskDetail()
+    loadTasks() // 重新加载任务列表
+  } catch (err: any) {
+    console.error('Failed to delete task:', err)
+    ElMessage.error(err?.message || '删除任务失败')
+  }
 }
 
 // 任务创建完成处理
