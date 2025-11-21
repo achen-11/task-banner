@@ -68,8 +68,8 @@
             </svg>
           </el-tooltip>
           <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 ml-2">消息</div>
-          <span v-if="unreadCount > 0 && !isCollapsed" class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-            {{ unreadCount }}
+          <span v-if="unreadCount > 0 && !isCollapsed" class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
           </span>
         </router-link>
 
@@ -176,13 +176,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCurrentUser, logout } from '@/utils/auth'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 import { ElTooltip } from 'element-plus'
+import { getUnreadCount } from '@/api/notification'
 
 defineProps<{
   isCollapsed: boolean
@@ -205,6 +206,17 @@ const userInitials = computed(() => {
 
 // 未读消息数
 const unreadCount = ref(0)
+let unreadCountTimer: number | null = null
+
+// 加载未读消息数量
+const loadUnreadCount = async () => {
+  try {
+    const result = await getUnreadCount()
+    unreadCount.value = result.count
+  } catch (error) {
+    console.error('Failed to load unread count:', error)
+  }
+}
 
 // 创建项目对话框
 const showCreateProject = ref(false)
@@ -276,11 +288,27 @@ const handleLogout = () => {
 onMounted(() => {
   currentUser.value = getCurrentUser()
   loadProjects()
+  loadUnreadCount()
   document.addEventListener('click', handleClickOutside)
+  
+  // 定时刷新未读数量（每30秒）
+  unreadCountTimer = window.setInterval(() => {
+    loadUnreadCount()
+  }, 30000)
+  
+  // 监听路由变化，当进入消息页面时刷新
+  watch(() => route.path, (newPath) => {
+    if (newPath === '/messages') {
+      loadUnreadCount()
+    }
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (unreadCountTimer !== null) {
+    clearInterval(unreadCountTimer)
+  }
 })
 </script>
 

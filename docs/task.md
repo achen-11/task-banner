@@ -53,47 +53,148 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 9c2a955b-d041-4dea-9838-a7905eb94214 -->
-#### 1. 任务趋势图 bug
+<!-- task-id: 4870e5a5-7ed0-4d78-a3d4-05cb55039dbf -->
+#### 1. 消息通知
 
-**状态：** 待办
+**状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/21 14:32:27
-**更新时间：** 2025/11/21 14:32:27
+**创建时间：** 2025/10/27 18:25:22
+**更新时间：** 2025/11/21 15:50:00
+
+**任务摘要：** 实现了完整的消息通知系统，包括任务指派和内容更新通知的自动触发、消息列表展示、未读数量显示和"我的消息"页面功能。
 
 **任务需求：**
 
-任务趋势图的数据存在 bug, 我今天新建的任务, 他却统计成了昨天, 不确定时间数据是否有便宜
+1. 任务指派通知
+2. 任务内容更新通知
+3. 实现"我的消息"页面
 
 ---
 
 ## 🛠️ AI 解决方案
 
-**请在此处提供详细的实现方案：**
-
 ### 实现步骤
-1. 分析问题：任务趋势图在计算每日时间范围时，dayStart使用了当前时间（包含时分秒），导致时间范围偏移
-2. 定位问题：在getWeeklyTrends函数中，dayDate.setDate()后没有重置时分秒为00:00:00
-3. 修复方案：在计算dayStart前添加dayDate.setHours(0, 0, 0, 0)，确保每天从00:00:00开始
-4. 验证修复：确保今天创建的任务正确统计在今天，不会误统计到昨天
+
+1. **后端通知服务层**
+   - 创建 `src/code/Services/notification.ts` 服务层
+   - 实现 `createNotification()` - 创建通知
+   - 实现 `getUserNotifications()` - 获取用户通知列表，支持分页和筛选
+   - 实现 `getUnreadCount()` - 获取未读通知数量
+   - 实现 `markAsRead()` - 标记单个通知为已读
+   - 实现 `markAllAsRead()` - 标记所有通知为已读
+   - 实现 `createTaskAssignedNotification()` - 创建任务指派通知
+   - 实现 `createTaskUpdatedNotification()` - 创建任务内容更新通知
+
+2. **后端通知API**
+   - 创建 `src/api/notification.ts` API 端点
+   - 实现 `GET /api/notification/list` - 获取通知列表，支持分页、类型筛选、已读状态筛选
+   - 实现 `GET /api/notification/unread-count` - 获取未读通知数量
+   - 实现 `PUT /api/notification/read` - 标记单个通知为已读
+   - 实现 `PUT /api/notification/read-all` - 标记所有通知为已读
+
+3. **任务更新集成通知触发**
+   - 在 `src/code/Services/task.ts` 的 `updateTask()` 函数中集成通知触发逻辑
+   - 当 `assigneeId` 变化时，调用 `createTaskAssignedNotification()` 发送任务指派通知
+   - 当 `title` 或 `content` 变化时，调用 `createTaskUpdatedNotification()` 发送任务内容更新通知
+   - 避免给自己发送通知（操作者是接收者时不发送）
+   - 只在有负责人时才发送内容更新通知
+
+4. **前端通知API客户端**
+   - 创建 `frontend/src/types/notification.ts` - 定义通知相关的 TypeScript 类型
+   - 创建 `frontend/src/api/notification.ts` - 实现前端通知 API 调用
+   - 实现 `getNotifications()` - 获取通知列表
+   - 实现 `getUnreadCount()` - 获取未读数量
+   - 实现 `markNotificationAsRead()` - 标记为已读
+   - 实现 `markAllNotificationsAsRead()` - 全部标记为已读
+
+5. **"我的消息"页面**
+   - 更新 `frontend/src/views/Messages.vue` 页面
+   - 实现真实的消息列表展示，替换 mock 数据
+   - 实现筛选功能（全部/未读/任务/评论/@提醒）
+   - 实现分页加载
+   - 实现点击消息跳转到相关任务（通过获取任务详情获取项目ID）
+   - 实现标记已读和全部标记已读功能
+   - 实现动态筛选计数更新
+   - 添加页面可见性变化监听，自动刷新未读数量
+
+6. **Sidebar 未读数量显示**
+   - 更新 `frontend/src/components/Sidebar.vue`
+   - 实现未读消息数量的获取和显示
+   - 添加定时刷新机制（每30秒）
+   - 监听路由变化，进入消息页面时刷新
+   - 优化未读数量显示样式（超过99显示"99+"）
+   - 处理组件卸载时清理定时器
 
 ### 修改的文件
-- `/src/code/Services/dashboard.ts` - 在getWeeklyTrends函数中添加setHours(0, 0, 0, 0)修复时间偏移
+
+**后端文件：**
+- `src/code/Services/notification.ts` - 新建，实现通知服务层
+- `src/api/notification.ts` - 新建，实现通知 API 端点
+- `src/code/Services/task.ts` - 更新，在 `updateTask()` 中集成通知触发逻辑
+- `src/code/Models/Notification.ts` - 更新，在注释中添加 `task_updated` 类型说明
+
+**前端文件：**
+- `frontend/src/types/notification.ts` - 新建，定义通知类型
+- `frontend/src/api/notification.ts` - 新建，实现前端通知 API 客户端
+- `frontend/src/views/Messages.vue` - 更新，实现真实的消息列表功能
+- `frontend/src/components/Sidebar.vue` - 更新，实现未读数量显示和自动刷新
+- `frontend/src/utils/time.ts` - 已存在，使用 `formatRelativeTime()` 格式化时间显示
 
 ### 技术要点
-- 问题根源：dayDate.setDate()后保留了当前时间的时分秒，导致dayStart不是当天的00:00:00
-- 修复方法：使用dayDate.setHours(0, 0, 0, 0)将时间重置为当天的00:00:00
-- 与getMonthlyTrends保持一致：月趋势图已经正确使用了setHours(0, 0, 0, 0)
-- 时间范围计算：dayStart为当天00:00:00，dayEnd为dayStart + 24小时，确保完整覆盖一天
+
+1. **通知触发逻辑**
+   - 在 `updateTask()` 中检测字段变化
+   - 任务指派通知：`assigneeId` 变化且新值不为空时触发
+   - 任务内容更新通知：`title` 或 `content` 变化时触发
+   - 避免重复通知：操作者是接收者时不发送
+
+2. **通知服务设计**
+   - 使用 `Notification` 模型创建和查询通知
+   - 支持按 `userId`、`type`、`isRead` 筛选
+   - 支持分页查询（page, size）
+   - 返回数据包含任务标题等扩展信息
+
+3. **前端消息列表**
+   - 使用 Vue Composition API (`ref`, `computed`, `watch`, `onMounted`, `onUnmounted`)
+   - 实现前端筛选和分页
+   - 点击消息时通过 `getTaskDetail()` 获取任务详情，再跳转到对应项目
+   - 使用 `formatRelativeTime()` 显示相对时间
+
+4. **未读数量实时更新**
+   - Sidebar 中每30秒自动刷新未读数量
+   - 监听路由变化，进入消息页面时刷新
+   - 页面可见性变化时刷新
+   - 使用 `setInterval` 和 `clearInterval` 管理定时器
+
+5. **API 设计**
+   - 使用 `@k-url` 注解实现动态路径 `/api/notification/{action}`
+   - 统一的鉴权检查和错误处理
+   - 返回标准化的响应格式
 
 ### 验证结果
-- 今天创建的任务正确统计在今天，不会误统计到昨天
-- 不同时间点创建的任务（凌晨、下午、晚上）都能正确归类到对应日期
-- 时间范围从00:00:00开始，避免时区和时间偏移问题
-- 与getMonthlyTrends的逻辑保持一致
 
-**任务摘要：** 修复任务趋势图时间偏移bug，通过设置dayStart为00:00:00确保今天创建的任务正确统计在今天
+1. **后端通知服务**
+   - ✅ `createNotification()` 成功创建通知记录
+   - ✅ `getUserNotifications()` 支持分页和筛选
+   - ✅ `getUnreadCount()` 正确统计未读数量
+   - ✅ `markAsRead()` 和 `markAllAsRead()` 正确更新已读状态
 
+2. **通知触发**
+   - ✅ 更新任务指派人时，自动发送 `task_assigned` 通知
+   - ✅ 更新任务标题或内容时，自动发送 `task_updated` 通知
+   - ✅ 操作者不会收到自己操作的通知
+   - ✅ 没有负责人的任务不会发送内容更新通知
 
-> 📅 导出时间：2025/11/21 14:32:29
-> 🤖 由 Task-Flow 生成
+3. **前端消息页面**
+   - ✅ 消息列表正确展示，支持筛选和分页
+   - ✅ 点击消息可跳转到相关任务
+   - ✅ 标记已读功能正常
+   - ✅ 全部标记已读功能正常
+   - ✅ 筛选计数动态更新
+
+4. **Sidebar 未读数量**
+   - ✅ 正确显示未读消息数量
+   - ✅ 定时刷新机制正常
+   - ✅ 路由变化时自动刷新
+   - ✅ 数量超过99时显示"99+"
+   - ✅ 组件卸载时正确清理定时器

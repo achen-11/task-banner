@@ -10,6 +10,10 @@ import { Module, type ModuleType } from 'code/Models/Module'
 import { TaskHistory } from 'code/Models/TaskHistory'
 import { getUserById } from 'code/Services/user'
 import { getUserProjects, getProjectById } from 'code/Services/project'
+import { 
+  createTaskAssignedNotification, 
+  createTaskUpdatedNotification 
+} from 'code/Services/notification'
 
 /**
  * 任务信息接口
@@ -456,6 +460,14 @@ export function updateTask(
     if (data.content !== undefined && data.content !== oldTask.content) {
       fieldMap.push({ field: 'content', oldValue: oldTask.content, newValue: data.content })
     }
+    
+    // 发送任务内容更新通知
+    // 当标题或内容发生变化时，通知任务负责人
+    const hasContentChange = (data.title !== undefined && data.title !== oldTask.title) ||
+                             (data.content !== undefined && data.content !== oldTask.content)
+    if (hasContentChange && userId && oldTask.assigneeId && oldTask.assigneeId.trim() !== '') {
+      createTaskUpdatedNotification(taskId, userId)
+    }
     if (data.status !== undefined && data.status !== oldTask.status) {
       fieldMap.push({ field: 'status', oldValue: oldTask.status, newValue: data.status })
     }
@@ -464,6 +476,12 @@ export function updateTask(
     }
     if (data.assigneeId !== undefined && data.assigneeId !== oldTask.assigneeId) {
       fieldMap.push({ field: 'assigneeId', oldValue: oldTask.assigneeId, newValue: data.assigneeId })
+      
+      // 发送任务指派通知
+      // 只有当新指派的用户ID不为空且与旧值不同时才发送
+      if (data.assigneeId && data.assigneeId.trim() !== '' && userId) {
+        createTaskAssignedNotification(taskId, data.assigneeId, userId)
+      }
     }
     // dueDate 特殊处理：0、undefined、null 都视为空值
     if (data.dueDate !== undefined) {

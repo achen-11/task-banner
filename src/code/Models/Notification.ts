@@ -18,7 +18,7 @@ export const Notification = ksql.define(
     },
     type: {
       type: DataTypes.String,
-      required: true, // task_assigned, task_status_changed, mentioned, commented
+      required: true, // task_assigned, task_updated, task_status_changed, mentioned, commented
       index: true
     },
     title: {
