@@ -129,9 +129,18 @@ export function registerShortcut(shortcut: KeyboardShortcut) {
 
 /**
  * 取消注册快捷键
+ * @param key 快捷键key
+ * @param meta 是否包含meta键（可选，用于精确匹配）
  */
-export function unregisterShortcut(key: string) {
-  const index = shortcuts.findIndex(s => s.key === key)
+export function unregisterShortcut(key: string, meta?: boolean) {
+  const index = shortcuts.findIndex(s => {
+    if (meta !== undefined) {
+      // 如果指定了meta，需要精确匹配
+      return s.key === key && s.meta === meta
+    }
+    // 否则只匹配key
+    return s.key === key
+  })
   if (index > -1) {
     shortcuts.splice(index, 1)
   }

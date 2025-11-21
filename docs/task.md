@@ -49,79 +49,97 @@
 ---
 
 ## 任务列表
-
-共 1 个任务
+共 2 个任务
 
 ### 🟡 中优先级
 
-<!-- task-id: a18ae62e-604e-4149-bbbf-b68a82ddd248 -->
-#### 1. 全局搜索(Cmd+K)
+<!-- task-id: 9e2963af-36e9-4c19-929e-cc70a44ecdf5 -->
+#### 1. drawer 优化
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/10/27 18:25:38
-**更新时间：** 2025/11/21 14:00:02
+**创建时间：** 2025/11/21 14:16:15
+**更新时间：** 2025/11/21 14:16:15
+
+**任务摘要：** 修复全局搜索后关闭drawer时URL不更新的问题，确保URL与drawer状态同步
 
 **任务需求：**
 
-- [ ] 支持快捷键 cmd + K 全局搜索任务
-- [ ] 搜索范围包含任务描述, 任务名称, 任务评论, 项目文档
-- [ ] 匹配到的关键字需要高亮
-- [ ] 需要做内容截断, 如: ...dasasd-keyword-adadas....
-
----
-
-
----
-
-## 📝 选中评论
-
-> 共 1 条评论
-
-### 评论 1
-
-**作者:** wanggaojiachen
-**时间:** 2025/11/21 14:01:51
-
-**内容:**
-
-1. 跳转后的链接无法有效打开任务 drawer, url 有变化
-2. 搜索结果的项目 tag, 背景色和字体颜色要有对比度, 现在这样看起来会很丑
-3. 要有一个 checkbox, 用来选择是否包含已归档的项目和任务
+全局搜索后会改变 url 并跳转, 此时关闭 drawer 之后 url 要随之更新
 
 ---
 
 **实现方案：**
 
 ### 实现步骤
-1. 修复跳转后无法打开任务drawer的问题：优化ProjectBoard的路由监听逻辑，确保URL变化时能正确打开任务详情
-2. 优化项目tag的对比度：实现getProjectTagStyle函数，根据背景色亮度自动选择文字颜色
-3. 添加"包含已归档项目"checkbox：在搜索框中添加选项，支持搜索已归档的项目和任务
+1. 在ProjectBoard的closeTaskDetail函数中添加URL清理逻辑
+2. 检查route.query.taskId是否存在
+3. 如果存在则使用router.replace清除taskId参数
+4. 确保关闭drawer时URL同步更新
 
 ### 修改的文件
-- `/frontend/src/components/common/GlobalSearchModal.vue` - 添加checkbox选项，优化项目tag样式
-- `/frontend/src/components/project/ProjectBoard.vue` - 修复路由监听逻辑，确保任务drawer正确打开
-- `/frontend/src/types/search.ts` - 添加includeArchived参数
-- `/frontend/src/api/search.ts` - 更新API调用支持includeArchived参数
-- `/src/api/search.ts` - 后端API支持includeArchived参数过滤
+- `/frontend/src/components/project/ProjectBoard.vue` - 在closeTaskDetail中添加URL清理逻辑
 
 ### 技术要点
-- 修复任务drawer打开问题：监听route.query.taskId和props.project变化，使用setTimeout确保路由切换完成后再打开drawer
-- 项目tag对比度优化：使用WCAG标准计算颜色亮度，根据亮度自动选择深色(#1f2937)或白色(#ffffff)文字
-- 支持搜索已归档项目：添加includeArchived参数，后端根据参数决定是否过滤已归档项目
-- 使用nextTick和setTimeout确保组件渲染完成后再打开drawer
+- 使用router.replace而不是router.push，避免在历史记录中留下额外记录
+- 通过展开route.query创建新query对象，删除taskId参数
+- 保持其他query参数不变，只清除taskId
+- 在关闭drawer的同时更新URL，确保状态同步
 
 ### 验证结果
-- 跳转后URL变化时能正确打开任务drawer
-- 项目tag的背景色和文字颜色有良好对比度，视觉效果更佳
-- checkbox可以控制是否包含已归档的项目和任务
-- 切换checkbox时自动重新搜索
-- 关闭搜索对话框时重置includeArchived状态
+- 全局搜索跳转后，关闭drawer时URL中的taskId参数被正确清除
+- URL更新不会影响其他query参数
+- 关闭drawer后URL与页面状态保持一致
 
-**任务摘要：** 修复全局搜索的验收反馈：优化任务drawer打开逻辑、项目tag对比度和添加归档项目搜索选项
+<!-- task-id: 4e7467b5-410c-48db-8f50-8517012331a5 -->
+#### 2. 看板视图-导入 bug
+
+**状态：** 待验收
+**优先级：** 中
+**创建时间：** 2025/11/21 14:15:11
+**更新时间：** 2025/11/21 14:15:11
+
+**任务摘要：** 修复看板视图导入任务不存在和Cmd+I快捷键失效的问题
+
+**任务需求：**
+
+列表视图导入功能正常
+1. 同一个任务 id, 看板视图导入时会遇到任务不存在(列表视图是存在的)
+2. 看板视图 cmd +i, 正常唤起导入弹窗, 切换到列表再按下 cmd+i, 会失效, 再切回看板视图, 再按下 cmd+i 也会失效
 
 ---
 
+**实现方案：**
 
-> 📅 导出时间：2025/11/21 14:03:32
+### 实现步骤
+1. 修复看板视图导入时任务不存在的问题：
+   - 在importTasksHelper中添加enrichedTasks逻辑，与列表视图保持一致
+   - 在导入前先通过getTaskDetail查询任务信息，回填真实数据
+   - 将fetch调用改为使用getTaskDetail API
+2. 改进错误处理逻辑，与列表视图保持一致的404错误检测
+3. 修复Cmd+I快捷键失效问题：在onUnmounted中正确取消注册快捷键
+4. 优化unregisterShortcut函数，支持meta参数精确匹配，避免误删其他组件的快捷键
+
+### 修改的文件
+- `/frontend/src/components/project/ProjectBoard.vue` - 修复导入逻辑和快捷键注册
+- `/frontend/src/composables/useKeyboard.ts` - 优化unregisterShortcut支持精确匹配
+- `/frontend/src/components/project/ProjectTaskList.vue` - 更新unregisterShortcut调用
+
+### 技术要点
+- 看板视图importTasksHelper中添加enrichedTasks逻辑，在导入前先查询任务信息
+- 使用Promise.all并行查询所有任务的详细信息，回填existingInfo
+- 看板视图导入改用getTaskDetail API替代fetch，确保错误处理一致
+- 404错误检测与列表视图保持一致：检查error.response.status和error.message
+- unregisterShortcut增加meta参数，支持按key+meta精确匹配
+- 在onUnmounted中取消注册所有快捷键，避免组件切换时快捷键冲突
+- 使用createTask API创建新任务，确保任务创建逻辑一致
+
+### 验证结果
+- 看板视图导入时在importTasksHelper阶段先查询任务信息，能正确检测任务是否存在
+- 看板视图和列表视图使用相同的enrichedTasks逻辑，行为完全一致
+- 看板视图Cmd+I快捷键正常工作，切换视图后仍能正常使用
+- 组件卸载时正确清理快捷键，避免快捷键冲突
+
+
+> 📅 导出时间：2025/11/21 14:16:18
 > 🤖 由 Task-Flow 生成

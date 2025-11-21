@@ -286,11 +286,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, provide, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed, watch, provide, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTaskList, updateTask, updateTaskOrder, deleteTask } from '@/api/task'
+import { getTaskList, getTaskDetail, createTask, updateTask, updateTaskOrder, deleteTask } from '@/api/task'
 import { registerShortcut, unregisterShortcut, formatShortcut } from '@/composables/useKeyboard'
 import { Keyboard } from 'lucide-vue-next'
 import type { Project } from '@/types/project'
@@ -669,6 +669,16 @@ const closeTaskDetail = () => {
   selectedTaskId.value = undefined
   selectedTaskProjectId.value = undefined
   drawerMode.value = 'view' // 确保重置为查看模式
+  
+  // 如果URL中有taskId参数，清除它
+  if (route.query.taskId) {
+    const query = { ...route.query }
+    delete query.taskId
+    router.replace({
+      path: route.path,
+      query
+    })
+  }
 }
 
 // 处理任务更新（切换到其他任务）
@@ -840,8 +850,39 @@ const importTasksHelper = async (content: string) => {
       }
     })
 
+    // 为有 _id 的任务查询并回填真实信息（与列表视图保持一致）
+    const enrichedTasks = await Promise.all(tasks.map(async (task) => {
+      if (task._id) {
+        try {
+          // 尝试获取现有任务信息
+          const existingTask = await getTaskDetail(task._id)
+          return {
+            ...task,
+            // 保留现有任务的信息，但用导入的数据覆盖某些字段
+            title: task.title || existingTask.title,
+            status: task.status || existingTask.status,
+            priority: task.priority || existingTask.priority,
+            assigneeId: task.assigneeId || existingTask.assigneeId,
+            tagIds: task.tagIds || existingTask.tagIds,
+            moduleIds: task.moduleIds || existingTask.moduleIds,
+            // 显示现有任务的一些信息用于确认
+            existingInfo: {
+              title: existingTask.title,
+              status: existingTask.status,
+              priority: existingTask.priority
+            }
+          }
+        } catch (error) {
+          // 任务不存在，保持原样
+          console.warn(`Task ${task._id} not found, treating as new task`)
+          return task
+        }
+      }
+      return task
+    }))
+
     // 保存待导入的任务并显示确认对话框
-    tasksToImport.value = tasks
+    tasksToImport.value = enrichedTasks
     importConfirmVisible.value = true
   } catch (error) {
     console.error('Parse tasks error:', error)
@@ -859,61 +900,79 @@ const handleImportConfirm = async (finalTasks: any[]) => {
       if (task._id) {
         try {
           // 尝试获取任务详情，检查是否存在
-          const response = await fetch(`/api/task/detail?id=${task._id}`)
-          const result = await response.json()
+          const existingTask = await getTaskDetail(task._id)
 
-          if (result.code === 200) {
-            // 任务存在，更新任务状态和摘要，并将 AI 解决方案作为评论导入
-            const updateData: any = {
-              id: task._id,
-              summary: task.summary || ''
-            }
-
-            // 如果导入的任务有状态变化，更新状态
-            if (task.status && task.status !== result.data.status) {
-              updateData.status = task.status
-            }
-
-            // 更新任务（如果有状态变化或摘要变化）
-            if (updateData.status || updateData.summary) {
-              await updateTask(updateData)
-            }
-
-            // 将 AI 解决方案作为评论导入
-            const commentResponse = await fetch('/api/task/import-as-comment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                taskId: task._id!,
-                content: (task as any).aiSolution || task.content || '',
-                summary: task.summary || '',
-                type: 'ai_completion',
-                mentionedUsers: []
-              })
-            })
-
-            if (!commentResponse.ok) {
-              throw new Error(`Import as comment failed: ${commentResponse.statusText}`)
-            }
-
-            return { type: 'updated' as const, taskId: task._id }
+          // 任务存在，更新任务状态和摘要，并将 AI 解决方案作为评论导入
+          const updateData: any = {
+            id: task._id,
+            summary: task.summary || ''
           }
+
+          // 如果导入的任务有状态变化，更新状态
+          if (task.status && task.status !== existingTask.status) {
+            updateData.status = task.status
+          }
+
+          // 更新任务（如果有状态变化或摘要变化）
+          if (updateData.status || updateData.summary) {
+            await updateTask(updateData)
+          }
+
+          // 将 AI 解决方案作为评论导入
+          const commentResponse = await fetch('/api/task/import-as-comment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              taskId: task._id!,
+              content: (task as any).aiSolution || task.content || '',
+              summary: task.summary || '',
+              type: 'ai_completion',
+              mentionedUsers: []
+            })
+          })
+
+          if (!commentResponse.ok) {
+            throw new Error(`Import as comment failed: ${commentResponse.statusText}`)
+          }
+
+          return { type: 'updated' as const, taskId: task._id }
         } catch (error: any) {
           // 任务不存在（404错误），创建新任务
+          // 与列表视图保持一致的错误检测逻辑
           if (error?.response?.status === 404 || error?.message?.includes('not found')) {
             console.log(`Task ${task._id} not found, creating new task`)
-            // 创建新任务的逻辑
-            return { type: 'created' as const, result: task._id }
+            const result = await createTask({
+              projectId: projectId.value!,
+              title: task.title || '未命名任务',
+              content: task.content || '',
+              status: task.status || 'todo',
+              priority: task.priority || 'medium',
+              assigneeId: task.assigneeId,
+              tagIds: task.tagIds || [],
+              moduleIds: task.moduleIds || [],
+              summary: task.summary || ''
+            })
+            return { type: 'created' as const, result }
           }
           // 其他错误，继续抛出
           throw error
         }
       } else {
         // 没有 _id，直接创建新任务
-        // 创建新任务的逻辑
-        return { type: 'created' as const, result: task._id }
+        const result = await createTask({
+          projectId: projectId.value!,
+          title: task.title || '未命名任务',
+          content: task.content || '',
+          status: task.status || 'todo',
+          priority: task.priority || 'medium',
+          assigneeId: task.assigneeId,
+          tagIds: task.tagIds || [],
+          moduleIds: task.moduleIds || [],
+          summary: task.summary || ''
+        })
+        return { type: 'created' as const, result }
       }
     })
 
@@ -944,6 +1003,7 @@ const handleImportConfirm = async (finalTasks: any[]) => {
 }
 
 const route = useRoute()
+const router = useRouter()
 
 // 监听路由query中的taskId和项目变化
 watch([() => route.query.taskId, () => props.project], async ([taskId, project]) => {
@@ -1024,12 +1084,21 @@ onMounted(() => {
     category: '看板'
   })
 })
+
+// 组件卸载时取消注册快捷键
+onUnmounted(() => {
+  unregisterShortcut('n')
+  unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
+  unregisterShortcut('e', true) // 指定meta=true，精确匹配Cmd+E
+  unregisterShortcut('F1')
+})
 </script>
 
 <style scoped>
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

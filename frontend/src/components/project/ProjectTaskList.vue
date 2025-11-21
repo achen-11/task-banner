@@ -737,8 +737,8 @@ onUnmounted(() => {
 
   // 移除组件级快捷键
   unregisterShortcut('n')
-  unregisterShortcut('i')
-  unregisterShortcut('e')
+  unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
+  unregisterShortcut('e', true) // 指定meta=true，精确匹配Cmd+E
   unregisterShortcut('escape')
 })
 
