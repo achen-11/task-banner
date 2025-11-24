@@ -80,14 +80,14 @@
         <div v-if="!isCollapsed" class="text-sm font-medium text-gray-900 flex items-center justify-between px-2 mb-2">
           <button
             type="button"
-            class="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+            class="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors tour-projects-button"
             @click="goProjects"
           >
             <span>Projects</span>
           </button>
           <button
             @click="showCreateProject = true"
-            class="text-gray-500 hover:text-gray-700 transition-colors"
+            class="text-gray-500 hover:text-gray-700 transition-colors tour-create-project-button"
             title="创建项目"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,6 +160,15 @@
         >
           <div class="p-1">
             <button
+              @click="handleRestartTour"
+              class="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              重新开始引导
+            </button>
+            <button
               @click="handleLogout"
               class="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
             >
@@ -181,6 +190,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getCurrentUser, logout } from '@/utils/auth'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
+import { useTourStore } from '@/stores/tour'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 import { ElTooltip } from 'element-plus'
 import { getUnreadCount } from '@/api/notification'
@@ -193,6 +203,7 @@ const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const tourStore = useTourStore()
 
 // 当前用户
 const currentUser = ref<any>(null)
@@ -275,6 +286,19 @@ const handleProjectClick = (project: any) => {
 const handleProjectCreated = () => {
   // 项目已经通过 store 自动添加到列表中
   console.log('Project created successfully')
+}
+
+// 重新开始引导
+const handleRestartTour = () => {
+  showUserMenu.value = false
+  tourStore.resetTour()
+  // 触发引导开始
+  setTimeout(() => {
+    tourStore.startTour()
+    // 通知 MainLayout 启动引导
+    const event = new CustomEvent('start-tour')
+    window.dispatchEvent(event)
+  }, 100)
 }
 
 // 退出登录

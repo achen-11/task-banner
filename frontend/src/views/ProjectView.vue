@@ -169,6 +169,7 @@ import { ElIcon } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
+import { useTour } from '@/composables/useTour'
 import type { Project } from '@/types/project'
 import {
   Settings,
@@ -200,6 +201,7 @@ const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const { checkAndStartProjectTour, markProjectTourCompleted } = useTour()
 
 // 项目信息
 const project = computed<Project | null>(() => projectStore.currentProject)
@@ -213,7 +215,7 @@ const projectId = computed(() => {
 const documentId = computed(() => route.params.documentId as string | undefined)
 
 // 头部展开/收起状态
-const collapsed = ref(true)
+const collapsed = ref(false)
 
 // 当前 Tab - 从路由query获取，默认list
 const currentTab = ref((route.query.tab as string) || 'overview')
@@ -391,6 +393,8 @@ const loadProject = async () => {
 
   try {
     await projectStore.fetchProjectDetail(id)
+    // 项目加载完成后，检查是否需要启动引导
+    await checkAndStartProjectTour(id)
   } catch (error) {
     console.error('Failed to load project:', error)
   }

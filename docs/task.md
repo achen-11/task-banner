@@ -49,7 +49,7 @@
 ---
 
 ## 任务列表
-共 1 个任务
+共 2 个任务
 
 ### 🟡 中优先级
 
@@ -71,130 +71,142 @@
 
 ---
 
+<!-- task-id: 32ded61b-7735-4562-b8e3-c0fc6c852712 -->
+#### 2. 漫游式引导
+
+**状态：** 待验收
+**优先级：** 中
+**创建时间：** 2025/10/30 11:08:35
+**更新时间：** 2025/11/21 16:40:00
+
+**任务摘要：** 实现了基于 Element Plus Tour 组件的漫游式引导功能，帮助新用户快速了解任务管理系统的核心功能和操作流程。
+
+**任务需求：**
+
+指导站点的新用户熟悉系统功能
+
+---
+
 ## 🛠️ AI 解决方案
 
 ### 实现步骤
 
-1. **后端通知服务层**
-   - 创建 `src/code/Services/notification.ts` 服务层
-   - 实现 `createNotification()` - 创建通知
-   - 实现 `getUserNotifications()` - 获取用户通知列表，支持分页和筛选
-   - 实现 `getUnreadCount()` - 获取未读通知数量
-   - 实现 `markAsRead()` - 标记单个通知为已读
-   - 实现 `markAllAsRead()` - 标记所有通知为已读
-   - 实现 `createTaskAssignedNotification()` - 创建任务指派通知
-   - 实现 `createTaskUpdatedNotification()` - 创建任务内容更新通知
+1. **引导状态管理**
+   - 创建 `frontend/src/stores/tour.ts` Pinia store
+   - 实现 `hasCompletedTour` - 是否已完成引导
+   - 实现 `isTourActive` - 是否正在引导中
+   - 实现 `currentStep` - 当前引导步骤
+   - 使用 localStorage 持久化完成状态（`tour_completed`）
+   - 实现 `startTour()`, `stopTour()`, `markTourCompleted()`, `resetTour()` 方法
 
-2. **后端通知API**
-   - 创建 `src/api/notification.ts` API 端点
-   - 实现 `GET /api/notification/list` - 获取通知列表，支持分页、类型筛选、已读状态筛选
-   - 实现 `GET /api/notification/unread-count` - 获取未读通知数量
-   - 实现 `PUT /api/notification/read` - 标记单个通知为已读
-   - 实现 `PUT /api/notification/read-all` - 标记所有通知为已读
+2. **引导 Composable**
+   - 创建 `frontend/src/composables/useTour.ts`
+   - 封装 Element Plus Tour 组件的使用
+   - 定义引导步骤配置（5个核心步骤）：
+     - 首页入口介绍
+     - 我的任务功能
+     - 消息通知功能
+     - 项目管理入口
+     - 创建项目按钮
+   - 实现 `startTour()` - 开始引导，确保侧边栏展开
+   - 实现 `stopTour()` - 停止引导
+   - 实现 `checkAndStartTour()` - 检查并自动开始引导（首次访问）
+   - 实现 `triggerTour()` - 手动触发引导
 
-3. **任务更新集成通知触发**
-   - 在 `src/code/Services/task.ts` 的 `updateTask()` 函数中集成通知触发逻辑
-   - 当 `assigneeId` 变化时，调用 `createTaskAssignedNotification()` 发送任务指派通知
-   - 当 `title` 或 `content` 变化时，调用 `createTaskUpdatedNotification()` 发送任务内容更新通知
-   - 避免给自己发送通知（操作者是接收者时不发送）
-   - 只在有负责人时才发送内容更新通知
+3. **MainLayout 集成**
+   - 在 `frontend/src/layouts/MainLayout.vue` 中集成 `el-tour` 组件
+   - 配置 Tour 属性：`v-model`, `steps`, `current`, `show-close`, `show-arrow`
+   - 实现事件处理：`@finish`, `@close`, `@change`
+   - 监听 `tourStore.isTourActive` 状态变化，同步 Tour 显示
+   - 在 `onMounted` 中调用 `checkAndStartTour()` 检查首次访问
+   - 监听 `start-tour` 自定义事件，支持手动重新开始引导
 
-4. **前端通知API客户端**
-   - 创建 `frontend/src/types/notification.ts` - 定义通知相关的 TypeScript 类型
-   - 创建 `frontend/src/api/notification.ts` - 实现前端通知 API 调用
-   - 实现 `getNotifications()` - 获取通知列表
-   - 实现 `getUnreadCount()` - 获取未读数量
-   - 实现 `markNotificationAsRead()` - 标记为已读
-   - 实现 `markAllNotificationsAsRead()` - 全部标记为已读
-
-5. **"我的消息"页面**
-   - 更新 `frontend/src/views/Messages.vue` 页面
-   - 实现真实的消息列表展示，替换 mock 数据
-   - 实现筛选功能（全部/未读/任务/评论/@提醒）
-   - 实现分页加载
-   - 实现点击消息跳转到相关任务（通过获取任务详情获取项目ID）
-   - 实现标记已读和全部标记已读功能
-   - 实现动态筛选计数更新
-   - 添加页面可见性变化监听，自动刷新未读数量
-
-6. **Sidebar 未读数量显示**
-   - 更新 `frontend/src/components/Sidebar.vue`
-   - 实现未读消息数量的获取和显示
-   - 添加定时刷新机制（每30秒）
-   - 监听路由变化，进入消息页面时刷新
-   - 优化未读数量显示样式（超过99显示"99+"）
-   - 处理组件卸载时清理定时器
+4. **Sidebar 用户菜单**
+   - 在 `frontend/src/components/Sidebar.vue` 用户下拉菜单中添加"重新开始引导"选项
+   - 实现 `handleRestartTour()` 方法
+   - 调用 `tourStore.resetTour()` 重置引导状态
+   - 触发 `start-tour` 自定义事件通知 MainLayout 启动引导
+   - 为 Projects 按钮和创建项目按钮添加 `tour-projects-button` 和 `tour-create-project-button` class，便于 Tour 定位
 
 ### 修改的文件
 
-**后端文件：**
-- `src/code/Services/notification.ts` - 新建，实现通知服务层
-- `src/api/notification.ts` - 新建，实现通知 API 端点
-- `src/code/Services/task.ts` - 更新，在 `updateTask()` 中集成通知触发逻辑
-- `src/code/Models/Notification.ts` - 更新，在注释中添加 `task_updated` 类型说明
-
 **前端文件：**
-- `frontend/src/types/notification.ts` - 新建，定义通知类型
-- `frontend/src/api/notification.ts` - 新建，实现前端通知 API 客户端
-- `frontend/src/views/Messages.vue` - 更新，实现真实的消息列表功能
-- `frontend/src/components/Sidebar.vue` - 更新，实现未读数量显示和自动刷新
-- `frontend/src/utils/time.ts` - 已存在，使用 `formatRelativeTime()` 格式化时间显示
+- `frontend/src/stores/tour.ts` - 新建，引导状态管理 store
+- `frontend/src/composables/useTour.ts` - 新建，引导功能 composable
+- `frontend/src/layouts/MainLayout.vue` - 更新，集成 Element Plus Tour 组件
+- `frontend/src/components/Sidebar.vue` - 更新，添加重新开始引导选项和 Tour 定位 class
 
 ### 技术要点
 
-1. **通知触发逻辑**
-   - 在 `updateTask()` 中检测字段变化
-   - 任务指派通知：`assigneeId` 变化且新值不为空时触发
-   - 任务内容更新通知：`title` 或 `content` 变化时触发
-   - 避免重复通知：操作者是接收者时不发送
+1. **Element Plus Tour 组件**
+   - 使用 Element Plus 内置的 `el-tour` 和 `el-tour-step` 组件
+   - 通过 `steps` 配置引导步骤，每个步骤包含 `target`, `title`, `description`, `placement`
+   - `target` 支持字符串选择器、HTMLElement 或函数返回元素
+   - 使用 `v-model` 控制 Tour 显示/隐藏
+   - 使用 `current` 控制当前步骤索引
 
-2. **通知服务设计**
-   - 使用 `Notification` 模型创建和查询通知
-   - 支持按 `userId`、`type`、`isRead` 筛选
-   - 支持分页查询（page, size）
-   - 返回数据包含任务标题等扩展信息
+2. **引导步骤设计**
+   - 5个核心步骤，聚焦侧边栏主要功能
+   - 步骤顺序：首页 → 我的任务 → 消息 → 项目管理 → 创建项目
+   - 所有步骤 `placement` 设置为 `right` 或 `bottom`，适配侧边栏布局
+   - 使用 CSS class 选择器精确定位目标元素
 
-3. **前端消息列表**
-   - 使用 Vue Composition API (`ref`, `computed`, `watch`, `onMounted`, `onUnmounted`)
-   - 实现前端筛选和分页
-   - 点击消息时通过 `getTaskDetail()` 获取任务详情，再跳转到对应项目
-   - 使用 `formatRelativeTime()` 显示相对时间
+3. **首次访问检测**
+   - 使用 localStorage 存储 `tour_completed` 标记
+   - `checkAndStartTour()` 在页面加载后延迟 1.5 秒检查
+   - 如果未完成引导，自动调用 `startTour()`
+   - 引导完成后设置 localStorage 标记，避免重复触发
 
-4. **未读数量实时更新**
-   - Sidebar 中每30秒自动刷新未读数量
-   - 监听路由变化，进入消息页面时刷新
-   - 页面可见性变化时刷新
-   - 使用 `setInterval` 和 `clearInterval` 管理定时器
+4. **侧边栏状态管理**
+   - 启动引导前检查侧边栏是否收起
+   - 如果收起，先调用 `uiStore.setSidebarCollapsed(false)` 展开
+   - 等待 300ms 确保动画完成后再开始引导
+   - 确保引导步骤的目标元素可见
 
-5. **API 设计**
-   - 使用 `@k-url` 注解实现动态路径 `/api/notification/{action}`
-   - 统一的鉴权检查和错误处理
-   - 返回标准化的响应格式
+5. **手动重新开始引导**
+   - 在用户菜单中添加"重新开始引导"选项
+   - 点击后调用 `tourStore.resetTour()` 清除 localStorage 标记
+   - 通过自定义事件 `start-tour` 通知 MainLayout
+   - MainLayout 监听事件，调用 `triggerTour()` 启动引导
+
+6. **状态同步**
+   - 使用 `watch` 监听 `tourStore.isTourActive` 同步到 `tourVisible`
+   - 监听 `tourVisible` 变化，关闭时同步停止 store 状态
+   - `handleTourChange` 更新 `tourCurrent` 和 store 的 `currentStep`
+   - `handleTourFinish` 和 `handleTourClose` 正确更新状态
 
 ### 验证结果
 
-1. **后端通知服务**
-   - ✅ `createNotification()` 成功创建通知记录
-   - ✅ `getUserNotifications()` 支持分页和筛选
-   - ✅ `getUnreadCount()` 正确统计未读数量
-   - ✅ `markAsRead()` 和 `markAllAsRead()` 正确更新已读状态
+1. **引导状态管理**
+   - ✅ `tourStore` 正确管理引导状态
+   - ✅ localStorage 持久化完成状态
+   - ✅ `resetTour()` 正确清除状态
+   - ✅ `startTour()` 和 `stopTour()` 正确更新状态
 
-2. **通知触发**
-   - ✅ 更新任务指派人时，自动发送 `task_assigned` 通知
-   - ✅ 更新任务标题或内容时，自动发送 `task_updated` 通知
-   - ✅ 操作者不会收到自己操作的通知
-   - ✅ 没有负责人的任务不会发送内容更新通知
+2. **首次访问自动触发**
+   - ✅ 首次访问（无 localStorage 标记）时自动开始引导
+   - ✅ 引导完成后设置标记，不再自动触发
+   - ✅ 延迟 1.5 秒确保页面完全加载
 
-3. **前端消息页面**
-   - ✅ 消息列表正确展示，支持筛选和分页
-   - ✅ 点击消息可跳转到相关任务
-   - ✅ 标记已读功能正常
-   - ✅ 全部标记已读功能正常
-   - ✅ 筛选计数动态更新
+3. **引导步骤显示**
+   - ✅ 5个引导步骤正确显示
+   - ✅ 目标元素正确高亮
+   - ✅ 步骤标题和描述正确显示
+   - ✅ 支持上一步/下一步导航
+   - ✅ 显示关闭按钮和进度指示
 
-4. **Sidebar 未读数量**
-   - ✅ 正确显示未读消息数量
-   - ✅ 定时刷新机制正常
-   - ✅ 路由变化时自动刷新
-   - ✅ 数量超过99时显示"99+"
-   - ✅ 组件卸载时正确清理定时器
+4. **侧边栏展开**
+   - ✅ 引导开始前自动展开侧边栏
+   - ✅ 等待动画完成后再显示引导
+   - ✅ 所有目标元素可见
+
+5. **手动重新开始**
+   - ✅ 用户菜单中显示"重新开始引导"选项
+   - ✅ 点击后正确重置状态
+   - ✅ 通过自定义事件触发引导
+   - ✅ 引导正常启动和显示
+
+6. **引导完成和关闭**
+   - ✅ 点击完成按钮正确标记为已完成
+   - ✅ 点击关闭按钮正确停止引导
+   - ✅ 状态正确同步到 store 和 localStorage
