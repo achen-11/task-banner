@@ -360,15 +360,15 @@ const defaultColumns: Omit<Column, 'tasks' | 'id'>[] = [
     isDefault: true
   },
   {
-    status: 'review',
-    title: '待验收',
-    badgeClass: 'bg-purple-100 text-purple-700',
-    isDefault: true
-  },
-  {
     status: 'in_progress',
     title: '进行中',
     badgeClass: 'bg-yellow-100 text-yellow-700',
+    isDefault: true
+  },
+  {
+    status: 'review',
+    title: '待验收',
+    badgeClass: 'bg-purple-100 text-purple-700',
     isDefault: true
   },
   {
