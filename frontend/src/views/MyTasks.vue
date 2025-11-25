@@ -19,10 +19,10 @@
       <TaskBoardView v-else-if="currentView === 'board'" :tasks="tasks" :loading="loading" @refresh="refresh" />
 
       <!-- 其他视图占位 -->
-      <div v-else class="flex items-center justify-center h-96 bg-white rounded-lg shadow-sm border border-gray-200">
+      <div v-else class="flex items-center justify-center h-96 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="text-center">
-          <p class="text-gray-500">该视图正在开发中</p>
-          <p class="text-sm text-gray-400 mt-1">敬请期待</p>
+          <p class="text-gray-500 dark:text-gray-400">该视图正在开发中</p>
+          <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">敬请期待</p>
         </div>
       </div>
     </div>

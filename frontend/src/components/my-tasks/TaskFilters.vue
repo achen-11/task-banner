@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
     <div class="flex flex-wrap gap-4">
       <!-- 项目筛选 -->
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-sm font-medium text-gray-700 mb-1">项目</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">项目</label>
         <el-select
           v-model="localFilters.projectIds"
           multiple
@@ -32,7 +32,7 @@
 
       <!-- 状态筛选 -->
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">状态</label>
         <el-select
           v-model="localFilters.status"
           placeholder="全部状态"
@@ -50,7 +50,7 @@
 
       <!-- 优先级筛选 -->
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-sm font-medium text-gray-700 mb-1">优先级</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">优先级</label>
         <el-select
           v-model="localFilters.priority"
           placeholder="全部优先级"
@@ -67,7 +67,7 @@
       
       <!-- 搜索 -->
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-sm font-medium text-gray-700 mb-1">搜索</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">搜索</label>
         <el-input
           v-model="localFilters.search"
           placeholder="搜索任务标题"

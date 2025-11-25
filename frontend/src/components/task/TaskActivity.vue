@@ -1,8 +1,8 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- 标题和过滤器（固定在顶部） -->
-    <div class="flex-shrink-0 flex items-center justify-between pb-3 border-b border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900">
+    <div class="flex-shrink-0 flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {{ props.commentSelectionMode ? `选择评论 (${props.selectedCommentIds?.length || 0})` : '活动历史' }}
       </h3>
       <div class="flex items-center gap-2">
@@ -11,8 +11,8 @@
           :key="filter.value"
           class="px-3 py-1 text-xs font-medium rounded-lg transition-colors"
           :class="currentFilter === filter.value
-            ? 'bg-blue-100 text-blue-700'
-            : 'text-gray-600 hover:bg-gray-100'"
+            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
           @click="currentFilter = filter.value"
         >
           {{ filter.label }}
@@ -30,7 +30,7 @@
         <!-- 时间线连接线 -->
         <div
           v-if="activity !== filteredActivities[filteredActivities.length - 1]"
-          class="absolute left-4 top-10 bottom-0 w-px bg-gray-200"
+          class="absolute left-4 top-10 bottom-0 w-px bg-gray-200 dark:bg-gray-700"
         ></div>
 
         <!-- 活动项 -->
@@ -44,10 +44,10 @@
           <div class="flex-1 min-w-0">
             <!-- 评论类型 -->
             <div v-if="activity.type === 'comment'"
-                 class="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow relative"
+                 class="bg-white dark:bg-gray-800 border rounded-lg p-4 hover:shadow-sm transition-shadow relative"
                  :class="props.commentSelectionMode
-                   ? 'border-blue-300 cursor-pointer hover:border-blue-400'
-                   : 'border-gray-200'"
+                   ? 'border-blue-300 dark:border-blue-600 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500'
+                   : 'border-gray-200 dark:border-gray-700'"
                  @click="props.commentSelectionMode ? toggleCommentSelection(activity.id) : null">
               <!-- 选择模式复选框 -->
               <div v-if="props.commentSelectionMode"
@@ -56,32 +56,32 @@
                        :checked="props.selectedCommentIds?.includes(activity.id)"
                        @change="toggleCommentSelection(activity.id)"
                        @click.stop
-                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                       class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700">
               </div>
 
               <div class="flex items-start justify-between mb-2"
                    :class="{ 'ml-8': props.commentSelectionMode }">
                 <div class="flex items-center justify-between w-full">
                   <div class="flex items-center gap-2">
-                    <span class="font-medium text-sm text-gray-900">{{ getUserDisplayName(activity.user) }}</span>
+                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ getUserDisplayName(activity.user) }}</span>
                     <!-- AI 标签 -->
                     <span v-if="activity.commentType === 'ai_completion'"
-                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300">
                       AI
                     </span>
-                    <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(activity.timestamp) }}</span>
                   </div>
                   <!-- 编辑删除按钮组 -->
                   <div v-if="!props.commentSelectionMode && canEditComment(activity)" class="flex items-center gap-1">
                     <button @click="startEditComment(activity)"
-                            class="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                            class="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1"
                             title="编辑评论">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                     <button @click="deleteComment(activity.id)"
-                            class="text-gray-400 hover:text-red-600 transition-colors p-1"
+                            class="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1"
                             title="删除评论">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -91,7 +91,7 @@
                 </div>
               </div>
               <!-- 评论内容 - 支持摘要和截断 -->
-              <div class="text-sm text-gray-700">
+              <div class="text-sm text-gray-700 dark:text-gray-300">
                 <template v-if="activity.summary">
                   <!-- 显示摘要 -->
                   <div class="mb-2">
@@ -100,7 +100,7 @@
                   <!-- 有summary时显示查看详情按钮 -->
                   <button
                     v-if="!props.commentSelectionMode"
-                    class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1"
                     @click.stop="showCommentDetailModal(activity)"
                   >
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@
                     </div>
                     <button
                       v-if="!props.commentSelectionMode"
-                      class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                      class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1"
                       @click.stop="showCommentDetailModal(activity)"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,8 +143,8 @@
                     <button @click="handleToggleReaction(activity.id, emoji)"
                             class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors"
                             :class="isUserReaction(activity.id, emoji)
-                              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'">
+                              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/70'
+                              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'">
                       {{ emoji }} <span>{{ reaction.count }}</span>
                     </button>
                   </template>
@@ -153,18 +153,18 @@
                 <!-- 表情选择器 -->
                 <div class="relative">
                   <button @click="toggleReactionPicker(activity.id)"
-                          class="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                          class="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                     添加反应
                   </button>
 
                   <!-- 表情选择面板 -->
                   <div v-if="showReactionPicker === activity.id"
-                       class="absolute bottom-full left-0 mb-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-64 min-w-64">
+                       class="absolute bottom-full left-0 mb-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-64 min-w-64">
                     <div class="grid grid-cols-5 gap-2">
                       <button v-for="emoji in commonEmojis"
                               :key="emoji"
                               @click="addReaction(activity.id, emoji)"
-                              class="p-3 hover:bg-gray-100 rounded transition-colors text-lg flex items-center justify-center min-h-[2rem] min-w-[2rem]">
+                              class="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors text-lg flex items-center justify-center min-h-[2rem] min-w-[2rem]">
                         {{ emoji }}
                       </button>
                     </div>
@@ -177,18 +177,18 @@
             <div v-else-if="activity.type === 'field_change'" class="py-2">
               <!-- 用户名和时间（上面） -->
               <div class="flex items-center gap-2 mb-1">
-                <span class="font-medium text-sm text-gray-900">{{ getUserDisplayName(activity.user) }}</span>
-                <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
+                <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ getUserDisplayName(activity.user) }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(activity.timestamp) }}</span>
               </div>
 
               <!-- 内容（下面） -->
-              <div class="text-sm text-gray-600">
+              <div class="text-sm text-gray-600 dark:text-gray-300">
                 <template v-if="activity.summary">
                   <!-- 显示摘要 -->
                   <div>
                     <div class="mb-1">{{ activity.summary }}</div>
                     <button
-                      class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                      class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1"
                       @click="showDetailModal(activity)"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,20 +203,20 @@
                   <template v-if="activity.grouped && activity.changes && activity.changes.length > 1">
                     <div class="mb-1">{{ activity.content }}</div>
                     <!-- 分组的多个字段变更 -->
-                    <div class="mt-2 space-y-1 pl-3 border-l-2 border-gray-200">
+                    <div class="mt-2 space-y-1 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
                       <div
                         v-for="(change, idx) in activity.changes"
                         :key="idx"
-                        class="text-xs text-gray-600"
+                        class="text-xs text-gray-600 dark:text-gray-400"
                       >
                         <!-- 对每个变更也应用截断逻辑 -->
                         {{ shouldTruncateContent(change) ? truncateContent(change) : change }}
                       </div>
                     </div>
                     <!-- 如果有超长内容，提供查看详情按钮 -->
-                    <button
+                      <button
                       v-if="activity.changes.some(c => shouldTruncateContent(c))"
-                      class="mt-2 text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                      class="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1"
                       @click="showDetailModal(activity)"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +230,7 @@
                     <div v-if="shouldTruncateContent(activity.content)">
                       <div class="mb-1">{{ truncateContent(activity.content) }}</div>
                       <button
-                        class="text-xs text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                        class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1"
                         @click="showDetailModal(activity)"
                       >
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,12 +247,12 @@
 
             <!-- 系统事件类型 -->
             <div v-else-if="activity.type === 'system'" class="py-2">
-              <div class="flex items-center gap-2 text-sm text-gray-600">
+              <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{{ activity.content }}</span>
-                <span class="text-xs text-gray-500">{{ formatRelativeTime(activity.timestamp) }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(activity.timestamp) }}</span>
               </div>
             </div>
           </div>
@@ -261,21 +261,21 @@
 
       <!-- 空状态 -->
       <div v-if="filteredActivities.length === 0" class="py-12 text-center">
-        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
-        <p class="text-gray-500 text-sm">暂无活动记录</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">暂无活动记录</p>
       </div>
     </div>
 
     <!-- 评论输入框（固定在底部） -->
-    <div v-if="!props.commentSelectionMode" class="flex-shrink-0 border-t border-gray-200 pt-3">
+    <div v-if="!props.commentSelectionMode" class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 pt-3">
       <!-- 编辑模式指示器 -->
-      <div v-if="editingCommentId" class="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+      <div v-if="editingCommentId" class="mb-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-blue-700">正在编辑评论</span>
+          <span class="text-sm text-blue-700 dark:text-blue-300">正在编辑评论</span>
           <button @click="cancelEdit"
-                  class="text-xs text-blue-600 hover:text-blue-700 hover:underline">
+                  class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
             取消编辑
           </button>
         </div>
@@ -291,8 +291,8 @@
         <button
           class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2"
           :class="editingCommentId
-            ? 'bg-green-600 hover:bg-green-700'
-            : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed'"
+            ? 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600'
+            : 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed'"
           :disabled="!newComment || newComment.trim() === ''"
           @click="addComment"
         >

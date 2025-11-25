@@ -471,6 +471,19 @@ defineExpose({
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.dark .markdown-editor-wrapper:not(.read-only) {
+  border-color: #4b5563;
+}
+
+.dark .markdown-editor-wrapper:not(.read-only):hover {
+  border-color: #6b7280;
+}
+
+.dark .markdown-editor-wrapper:not(.read-only):focus-within {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
 .markdown-editor-wrapper.read-only {
   border: none;
   background-color: transparent;
@@ -483,6 +496,11 @@ defineExpose({
   padding: 8px 12px;
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .toolbar {
+  background-color: #374151;
+  border-bottom-color: #4b5563;
 }
 
 .toolbar-left {
@@ -517,11 +535,28 @@ defineExpose({
   background-color: #d1d5db;
 }
 
+.dark .toolbar-btn {
+  color: #d1d5db;
+}
+
+.dark .toolbar-btn:hover {
+  background-color: #4b5563;
+  color: #f3f4f6;
+}
+
+.dark .toolbar-btn:active {
+  background-color: #6b7280;
+}
+
 .divider {
   width: 1px;
   height: 20px;
   background-color: #d1d5db;
   margin: 0 4px;
+}
+
+.dark .divider {
+  background-color: #4b5563;
 }
 
 /* Textarea 样式 */
@@ -535,9 +570,20 @@ defineExpose({
   font-size: 14px;
   line-height: 1.6;
   color: #333;
+  background-color: transparent;
 }
 
 .markdown-textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* 暗黑模式下的 textarea 样式 */
+.dark .markdown-textarea {
+  color: #f3f4f6;
+  background-color: transparent;
+}
+
+.dark .markdown-textarea::placeholder {
   color: #9ca3af;
 }
 
@@ -548,6 +594,10 @@ defineExpose({
   font-size: 14px;
   line-height: 1.6;
   color: #333;
+}
+
+.dark .markdown-preview {
+  color: #f3f4f6;
 }
 
 /* 预览模式独立滚动 */

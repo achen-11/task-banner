@@ -5,15 +5,15 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       @click.self="handleClose"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {{ isEdit ? '编辑标签' : '新建标签' }}
           </h2>
           <button
             @click="handleClose"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
+            class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -25,7 +25,7 @@
         <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
           <!-- 标签名称 -->
           <div>
-            <label for="tag-name" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="tag-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               标签名称 <span class="text-red-500">*</span>
             </label>
             <input
@@ -34,14 +34,14 @@
               type="text"
               required
               placeholder="请输入标签名称"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               :disabled="loading"
             />
           </div>
 
           <!-- 标签颜色 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               标签颜色
             </label>
             <div class="flex gap-2 flex-wrap">
@@ -51,7 +51,7 @@
                 type="button"
                 @click="formData.color = color"
                 class="w-8 h-8 rounded-md border-2 transition-all"
-                :class="formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'"
+                :class="formData.color === color ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-transparent hover:scale-105'"
                 :style="{ backgroundColor: color }"
                 :disabled="loading"
               ></button>
@@ -64,19 +64,19 @@
               <input
                 v-model="formData.showInQuickBar"
                 type="checkbox"
-                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-700"
                 :disabled="loading"
               />
-              <span class="text-sm font-medium text-gray-700">显示在快速访问栏</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">显示在快速访问栏</span>
             </label>
-            <p class="text-xs text-gray-500 mt-1 ml-6">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
               勾选后，此标签将显示在任务详情页的标签栏中，方便快速选择
             </p>
           </div>
 
           <!-- AI 提示词 -->
           <div>
-            <label for="tag-prompt" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="tag-prompt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               AI 提示词（可选）
             </label>
             <textarea
@@ -84,10 +84,10 @@
               v-model="formData.prompt"
               rows="4"
               placeholder="例如：这是讨论型任务，你不要操作代码，先将你的想法输出到 md 文件和我讨论"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               :disabled="loading"
             ></textarea>
-            <p class="text-xs text-gray-500 mt-1 flex items-start gap-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-start gap-1">
               <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -96,8 +96,8 @@
           </div>
 
           <!-- Error Message -->
-          <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p class="text-sm text-red-600">{{ error }}</p>
+          <div v-if="error" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">
+            <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
           </div>
 
           <!-- Footer -->
@@ -105,7 +105,7 @@
             <button
               type="button"
               @click="handleClose"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               :disabled="loading"
             >
               取消

@@ -5,12 +5,12 @@
     @click="handleBackdropClick"
   >
     <div
-      class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4"
       @click.stop
     >
       <!-- 对话框头部 -->
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {{ isEditing ? '编辑模块' : '新建模块' }}
         </h3>
       </div>
@@ -20,7 +20,7 @@
         <div class="px-6 py-4 space-y-4">
           <!-- 模块名称 -->
           <div>
-            <label for="moduleName" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="moduleName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               模块名称 <span class="text-red-500">*</span>
             </label>
             <input
@@ -28,14 +28,14 @@
               v-model="formData.name"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
               placeholder="请输入模块名称"
             />
           </div>
 
           <!-- 模块颜色 -->
           <div>
-            <label for="moduleColor" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="moduleColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               模块颜色
             </label>
             <div class="space-y-3">
@@ -48,8 +48,8 @@
                   @click="formData.color = presetColor"
                   class="w-8 h-8 rounded border-2 transition-all"
                   :class="formData.color === presetColor
-                    ? 'border-blue-500 shadow-md scale-110'
-                    : 'border-gray-300 hover:border-gray-400'"
+                    ? 'border-blue-500 dark:border-blue-400 shadow-md scale-110'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'"
                   :style="{ backgroundColor: presetColor }"
                   :title="presetColor"
                 ></button>
@@ -61,12 +61,12 @@
                   id="moduleColor"
                   v-model="formData.color"
                   type="color"
-                  class="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+                  class="h-10 w-20 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700"
                 />
                 <input
                   v-model="formData.color"
                   type="text"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                   placeholder="#6B7280"
                 />
               </div>
@@ -75,13 +75,13 @@
 
           <!-- 父模块（暂时隐藏，后续版本支持） -->
           <div class="hidden">
-            <label for="parentModule" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="parentModule" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               父模块
             </label>
             <select
               id="parentModule"
               v-model="formData.parentId"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
             >
               <option value="">顶级模块</option>
               <!-- 这里可以添加其他模块作为选项 -->
@@ -90,11 +90,11 @@
         </div>
 
         <!-- 对话框底部 -->
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
           <button
             type="button"
             @click="handleCancel"
-            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             取消
           </button>

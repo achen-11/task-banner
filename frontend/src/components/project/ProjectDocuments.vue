@@ -1,10 +1,10 @@
 <template>
-  <div class="h-full bg-white rounded-lg shadow-sm">
+  <div class="h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm">
     <!-- 顶部工具栏 -->
-    <div class="flex items-center justify-between p-4 border-b border-gray-200" :class="{ 'hidden': focusMode }">
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700" :class="{ 'hidden': focusMode }">
       <div class="flex items-center space-x-3">
-        <h2 class="text-lg font-semibold text-gray-900">项目文档</h2>
-        <span class="text-sm text-gray-500">({{ documents.length }} 个文档)</span>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">项目文档</h2>
+        <span class="text-sm text-gray-500 dark:text-gray-400">({{ documents.length }} 个文档)</span>
       </div>
 
       <div class="flex items-center space-x-2">
@@ -47,7 +47,7 @@
     </div>
 
     <!-- 专注模式悬浮按钮 -->
-    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
+    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3 border border-gray-200 dark:border-gray-700">
       <el-tooltip>
         <template #content>
           <div class="flex items-center gap-1.5">
@@ -67,10 +67,10 @@
     <div class="flex overflow-hidden" :class="focusMode ? 'h-full' : 'h-[calc(100%-73px)]'">
       <!-- 左侧文档目录 - 同级布局 -->
       <transition name="slide-left">
-        <div v-if="showLeftSidebar" class="w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
+        <div v-if="showLeftSidebar" class="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col flex-shrink-0">
           <!-- 目录头部 -->
-          <div class="p-4 py-2 border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
-            <h3 class="text-sm font-medium text-gray-700">文档列表</h3>
+          <div class="p-4 py-2 border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">文档列表</h3>
             <el-tooltip>
               <template #content>
                 <div class="flex items-center gap-1.5">
@@ -79,7 +79,7 @@
                 </div>
               </template>
               <el-button type="text" size="small" @click="toggleLeftSidebar"
-                class="!text-gray-500 hover:!text-gray-700">
+                class="!text-gray-500 dark:!text-gray-400 hover:!text-gray-700 dark:hover:!text-gray-300">
                 <el-icon class="ml-1">
                   <ArrowLeft />
                 </el-icon>收起
@@ -88,7 +88,7 @@
           </div>
 
           <!-- 搜索和过滤区域 -->
-          <div class="p-4 border-b border-gray-200 flex-shrink-0">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <el-input v-model="searchKeyword" placeholder="搜索文档..." class="mb-3" @input="handleSearch">
               <template #prefix>
                 <el-icon>
@@ -113,35 +113,35 @@
               </div>
 
               <div v-else-if="filteredDocuments.length === 0" class="text-center py-8">
-                <el-icon class="mx-auto h-12 w-12 text-gray-400">
+                <el-icon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500">
                   <FolderOpened />
                 </el-icon>
-                <p class="mt-2 text-sm text-gray-500">暂无文档</p>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">暂无文档</p>
               </div>
 
               <div v-else class="space-y-2">
                 <!-- 文档列表 - 简单列表，无分组 -->
                 <div v-for="document in filteredDocuments" :key="document._id" @click="selectDocument(document)" :class="[
-                  'p-3 cursor-pointer transition-colors border border-gray-200 rounded-lg',
-                  'hover:bg-blue-50 hover:border-blue-200',
+                  'p-3 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700 rounded-lg',
+                  'hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-600',
                   selectedDocument?._id === document._id
-                    ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-l-blue-500 dark:border-l-blue-400'
                     : 'border-l-4 border-l-transparent'
                 ]">
                   <div class="flex items-start justify-between">
                     <div class="flex-1 min-w-0">
-                      <h4 class="text-sm font-medium text-gray-900 truncate">{{ document.title }}</h4>
+                      <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ document.title }}</h4>
                       <div class="flex items-center mt-1 space-x-2">
                         <span :class="[
                           'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                          document.status === 'published' ? 'bg-green-100 text-green-800' :
-                            document.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                          document.status === 'published' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' :
+                            document.status === 'draft' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                         ]">
                           {{ getStatusText(document.status) }}
                         </span>
                       </div>
-                      <p class="text-xs text-gray-500 mt-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ formatDate(document.updatedAt) }}
                       </p>
                     </div>
@@ -174,16 +174,16 @@
       <!-- 展开左侧目录按钮 - 收起时显示 -->
       <div v-if="!showLeftSidebar" class="w-8 flex-shrink-0 flex items-start justify-center pt-4">
         <div @click="toggleLeftSidebar"
-          class="bg-white border border-gray-200 rounded-r-lg p-1 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
-          <ChevronRight class="w-4 h-4 text-gray-600" />
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-r-lg p-1 flex items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          <ChevronRight class="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </div>
       </div>
 
       <!-- 右侧文档内容 - 同级布局 -->
       <div class="flex-1 flex flex-col min-w-0">
-        <div v-if="!selectedDocument" class="flex items-center justify-center h-full text-gray-400">
+        <div v-if="!selectedDocument" class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
           <div class="text-center">
-            <el-icon class="mx-auto h-12 w-12 text-gray-400 mb-2">
+            <el-icon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-2">
               <Document />
             </el-icon>
             <p class="text-sm">选择一个文档查看内容</p>
@@ -192,15 +192,15 @@
 
         <div v-else class="h-full flex flex-col">
           <!-- 简化的文档头部 - 固定不滚动 -->
-          <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200 bg-white">
+          <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-3">
-                <h2 class="text-lg font-semibold text-gray-900">{{ selectedDocument.title }}</h2>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ selectedDocument.title }}</h2>
                 <span :class="{
                   'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium': true,
-                  'bg-gray-100 text-gray-700': selectedDocument.status === 'draft',
-                  'bg-green-100 text-green-700': selectedDocument.status === 'published',
-                  'bg-gray-400 text-gray-700': selectedDocument.status === 'archived'
+                  'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': selectedDocument.status === 'draft',
+                  'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300': selectedDocument.status === 'published',
+                  'bg-gray-400 dark:bg-gray-600 text-gray-700 dark:text-gray-300': selectedDocument.status === 'archived'
                 }">
                   {{ getStatusText(selectedDocument.status) }}
                 </span>
@@ -230,9 +230,9 @@
             <!-- 编辑模式 - 编辑和预览双模式 -->
             <div v-if="isEditMode" class="flex-1 flex">
               <!-- 左侧编辑器区域 -->
-              <div class="flex-1 p-6 pb-8 border-r border-gray-200">
+              <div class="flex-1 p-6 pb-8 border-r border-gray-200 dark:border-gray-700">
                 <!-- 编辑器头部 -->
-                <div class="mb-4 pb-4 border-b border-gray-200">
+                <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                   <div class="flex items-center justify-between gap-4">
                     <!-- 左侧：保存状态指示器 -->
                     <div class="flex items-center gap-3 flex-shrink-0 min-w-0">
@@ -293,13 +293,13 @@
               </div>
 
               <!-- 右侧预览区域 -->
-              <div ref="previewContainer" class="flex-1 p-6 pb-8 overflow-y-auto bg-white" @scroll="handlePreviewScroll">
-                <div class="mb-4 pb-4 border-b border-gray-200">
-                  <h3 class="text-lg font-semibold text-gray-800">预览</h3>
+              <div ref="previewContainer" class="flex-1 p-6 pb-8 overflow-y-auto bg-white dark:bg-gray-800" @scroll="handlePreviewScroll">
+                <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">预览</h3>
                 </div>
 
                 <!-- 预览标题 -->
-                <h1 v-if="editingTitle" class="text-2xl font-bold text-gray-900 mb-4">
+                <h1 v-if="editingTitle" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                   {{ editingTitle }}
                 </h1>
 
@@ -307,7 +307,7 @@
                 <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body mb-8">
                   <div v-html="markdownPreviewContent"></div>
                 </div>
-                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed mb-8">{{
+                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-8">{{
                   editingContent }}
                 </pre>
               </div>
@@ -320,7 +320,7 @@
                 <div v-if="selectedDocument.type === 'markdown'" class="prose prose-sm max-w-none markdown-body mb-8">
                   <div v-html="markdownContent"></div>
                 </div>
-                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed mb-8">{{
+                <pre v-else class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-8">{{
                   selectedDocument.content }}
                 </pre>
               </div>
@@ -330,10 +330,10 @@
                 <!-- 目录面板 - 可收起 -->
                 <transition name="slide-right">
                   <div v-if="showToc"
-                    class="absolute right-0 top-0 h-full w-64 border-l border-gray-200 bg-white shadow-lg z-10 flex flex-col">
+                    class="absolute right-0 top-0 h-full w-64 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-10 flex flex-col">
                     <!-- 目录头部 -->
-                    <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-                      <h3 class="text-sm font-medium text-gray-700">目录</h3>
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900">
+                      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">目录</h3>
                       <el-tooltip>
                         <template #content>
                           <div class="flex items-center gap-1.5">
@@ -342,7 +342,7 @@
                           </div>
                         </template>
                         <el-button type="text" size="small" @click="toggleToc"
-                          class="!text-gray-500 hover:!text-gray-700">
+                          class="!text-gray-500 dark:!text-gray-400 hover:!text-gray-700 dark:hover:!text-gray-300">
                           <el-icon>
                             <ArrowRight />
                           </el-icon>
@@ -354,10 +354,10 @@
                     <div class="flex-1 overflow-y-auto p-4">
                       <div class="space-y-1">
                         <a v-for="item in tableOfContents" :key="item.id" :href="`#${item.id}`"
-                          @click.prevent="scrollToHeading(item.id)" :class="[
+                          @click.prevent="scrollToHeading(item.id)"                           :class="[
                             'block text-sm py-1 px-2 rounded transition-colors',
-                            'hover:bg-blue-50 hover:text-blue-600',
-                            'text-gray-600'
+                            'hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400',
+                            'text-gray-600 dark:text-gray-400'
                           ]" :style="{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }">
                           {{ item.text }}
                         </a>
@@ -376,7 +376,7 @@
                       </div>
                     </template>
                     <div @click="toggleToc"
-                      class="bg-white border rounded-full border-gray-200 p-[2px] flex justify-center items-center cursor-pointer hover:bg-gray-50">
+                      class="bg-white dark:bg-gray-800 border rounded-full border-gray-200 dark:border-gray-700 p-[2px] flex justify-center items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                       <ChevronLeft class="w-4 h-4" />
                     </div>
                   </el-tooltip>
@@ -395,7 +395,7 @@
     <div class="fixed bottom-4 right-4 z-20">
       <el-popover placement="top" :width="200" trigger="hover" title="快捷键说明">
         <template #reference>
-          <el-button type="default" size="small" circle class="shadow-md bg-white border border-gray-200" title="快捷键说明">
+          <el-button type="default" size="small" circle class="shadow-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" title="快捷键说明">
             <el-icon>
               <Document />
             </el-icon>
@@ -403,28 +403,28 @@
         </template>
         <div class="space-y-1 text-xs">
           <div class="flex justify-between">
-            <span class="text-gray-600">专注模式</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F1' })
+            <span class="text-gray-600 dark:text-gray-400">专注模式</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F1' })
               }}</kbd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">左侧目录</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F2' })
+            <span class="text-gray-600 dark:text-gray-400">左侧目录</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F2' })
               }}</kbd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">右侧目录</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F3' })
+            <span class="text-gray-600 dark:text-gray-400">右侧目录</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F3' })
               }}</kbd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">编辑模式</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F4' })
+            <span class="text-gray-600 dark:text-gray-400">编辑模式</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F4' })
               }}</kbd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">刷新列表</span>
-            <kbd class="px-1 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded">{{ formatShortcut({ key: 'F5' })
+            <span class="text-gray-600 dark:text-gray-400">刷新列表</span>
+            <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F5' })
               }}</kbd>
           </div>
           <div class="flex justify-between">

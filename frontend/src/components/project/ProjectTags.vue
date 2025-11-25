@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">项目标签</h2>
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">项目标签</h2>
       <el-tooltip content="新建标签 (N)" placement="bottom">
         <el-button
           @click="handleCreate"
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="p-8 text-center text-gray-400">
+    <div v-if="loading" class="p-8 text-center text-gray-400 dark:text-gray-500">
       <svg class="w-8 h-8 animate-spin mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
       </svg>
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="tags.length === 0" class="p-8 text-center text-gray-400">
+    <div v-else-if="tags.length === 0" class="p-8 text-center text-gray-400 dark:text-gray-500">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
       </svg>
@@ -42,7 +42,7 @@
         <div
           v-for="tag in tags"
           :key="tag._id"
-          class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+          class="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
         >
           <!-- 颜色标识 -->
           <div
@@ -53,15 +53,15 @@
           <!-- 标签信息 -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="font-medium text-gray-900">{{ tag.name }}</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{ tag.name }}</span>
               <span
                 v-if="tag.showInQuickBar"
-                class="px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded"
+                class="px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/50 rounded"
               >
                 快速访问
               </span>
             </div>
-            <p v-if="tag.prompt" class="text-sm text-gray-500 mt-1 truncate">
+            <p v-if="tag.prompt" class="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
               {{ tag.prompt }}
             </p>
           </div>
@@ -70,13 +70,13 @@
           <div class="flex items-center gap-2 flex-shrink-0">
             <button
               @click="handleEdit(tag)"
-              class="px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
             >
               编辑
             </button>
             <button
               @click="handleDelete(tag)"
-              class="px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
             >
               删除
             </button>

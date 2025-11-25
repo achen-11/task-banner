@@ -36,8 +36,22 @@
   --section-gap: 160px;
 }
 
+/* 暗黑模式支持（通过 class 控制） */
+.dark {
+  --color-background: var(--vt-c-black);
+  --color-background-soft: var(--vt-c-black-soft);
+  --color-background-mute: var(--vt-c-black-mute);
+
+  --color-border: var(--vt-c-divider-dark-2);
+  --color-border-hover: var(--vt-c-divider-dark-1);
+
+  --color-heading: var(--vt-c-text-dark-1);
+  --color-text: var(--vt-c-text-dark-2);
+}
+
+/* 保留系统偏好作为后备方案 */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --color-background: var(--vt-c-black);
     --color-background-soft: var(--vt-c-black-soft);
     --color-background-mute: var(--vt-c-black-mute);
@@ -83,4 +97,197 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Element Plus 暗黑模式样式覆盖 - 使用更高优先级的选择器 */
+.dark .el-input__wrapper,
+.dark .el-input .el-input__wrapper,
+.dark .el-select .el-input__wrapper,
+.dark .el-select .el-input .el-input__wrapper,
+.dark .el-select__wrapper,
+.dark .el-select__wrapper.el-select__wrapper,
+.dark .el-select__wrapper.is-hovering,
+.dark .el-select__wrapper.is-focus,
+.dark .el-select__wrapper .el-input__wrapper,
+.dark .el-select .el-input.is-focus .el-input__wrapper,
+.dark .el-select:hover .el-input__wrapper,
+.dark .el-select.is-focus .el-input__wrapper,
+.dark .el-select:hover .el-select__wrapper,
+.dark .el-select.is-focus .el-select__wrapper {
+  background-color: #374151 !important;
+  box-shadow: 0 0 0 1px #4b5563 inset !important;
+}
+
+/* 针对 el-select__wrapper 的直接背景色覆盖 */
+.dark .el-select__wrapper {
+  background-color: #374151 !important;
+}
+
+.dark .el-select__wrapper.is-hovering {
+  background-color: #374151 !important;
+  box-shadow: 0 0 0 1px #4b5563 inset !important;
+}
+
+.dark .el-select__wrapper.is-focus {
+  background-color: #374151 !important;
+}
+
+/* 确保悬停状态下的文字颜色 */
+.dark .el-select__wrapper.is-hovering .el-select__selected-item,
+.dark .el-select__wrapper.is-hovering .el-select__placeholder,
+.dark .el-select__wrapper.is-hovering .el-input__inner {
+  color: #f3f4f6 !important;
+}
+
+/* 确保 el-select__wrapper 内的所有文本元素都有正确的颜色 */
+.dark .el-select__wrapper .el-select__selected-item,
+.dark .el-select__wrapper .el-select__placeholder,
+.dark .el-select__wrapper .el-input__inner,
+.dark .el-select__wrapper.is-hovering .el-select__selected-item,
+.dark .el-select__wrapper.is-hovering .el-select__placeholder,
+.dark .el-select__wrapper.is-hovering .el-input__inner {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-input__inner,
+.dark .el-input .el-input__inner,
+.dark .el-select .el-input__inner,
+.dark .el-select .el-input .el-input__inner,
+.dark .el-select__wrapper .el-input__inner,
+.dark .el-select .el-input.is-focus .el-input__inner,
+.dark .el-select__wrapper .el-select__selected-item,
+.dark .el-select__wrapper .el-select__placeholder {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-input__inner::placeholder,
+.dark .el-select .el-input__inner::placeholder,
+.dark .el-select__wrapper .el-select__placeholder {
+  color: #9ca3af !important;
+}
+
+.dark .el-select-dropdown {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.dark .el-select-dropdown__item {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-select-dropdown__item:hover {
+  background-color: #374151 !important;
+}
+
+.dark .el-select-dropdown__item.selected {
+  color: #60a5fa !important;
+  background-color: #1e3a8a !important;
+}
+
+.dark .el-date-editor .el-input__wrapper {
+  background-color: #374151 !important;
+  box-shadow: 0 0 0 1px #4b5563 inset !important;
+}
+
+.dark .el-date-editor .el-input__inner {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-picker__popper {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.dark .el-date-picker__header-label {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-picker-panel__content {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-date-table td.available:hover {
+  color: #60a5fa !important;
+}
+
+.dark .el-date-table td.current:not(.disabled) {
+  color: #60a5fa !important;
+}
+
+.dark .el-textarea__inner {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .el-textarea__inner::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Element Plus CSS 变量覆盖 - 确保暗黑模式下所有组件正确显示 */
+.dark {
+  --el-bg-color: #1f2937 !important;
+  --el-bg-color-page: #111827 !important;
+  --el-text-color-primary: #f3f4f6 !important;
+  --el-text-color-regular: #d1d5db !important;
+  --el-text-color-secondary: #9ca3af !important;
+  --el-text-color-placeholder: #6b7280 !important;
+  --el-border-color: #4b5563 !important;
+  --el-border-color-light: #374151 !important;
+  --el-border-color-lighter: #374151 !important;
+  --el-border-color-extra-light: #374151 !important;
+  --el-fill-color: #374151 !important;
+  --el-fill-color-light: #4b5563 !important;
+  --el-fill-color-lighter: #4b5563 !important;
+  --el-fill-color-extra-light: #4b5563 !important;
+  --el-fill-color-blank: #1f2937 !important;
+  --el-fill-color-dark: #4b5563 !important;
+  --el-fill-color-darker: #4b5563 !important;
+}
+
+/* 额外的 el-select 样式覆盖 */
+.dark .el-select__selection {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-select__selection .el-select__selected-item {
+  color: #f3f4f6 !important;
+}
+
+.dark .el-select__selection .el-select__placeholder {
+  color: #9ca3af !important;
+}
+
+/* Element Plus Tag 暗黑模式样式覆盖 */
+.dark .el-tag {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .el-tag.el-tag--light {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .el-tag.el-tag--info {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .el-tag.el-tag--default {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .el-tag .el-tag__close {
+  color: #9ca3af !important;
+}
+
+.dark .el-tag .el-tag__close:hover {
+  color: #f3f4f6 !important;
+  background-color: #4b5563 !important;
 }

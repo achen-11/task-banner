@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100">
-    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">项目成员 ({{ members.length }})</h2>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">项目成员 ({{ members.length }})</h2>
       <el-tooltip content="添加成员 (N)" placement="bottom">
         <el-button
           @click="showAddMemberDialog = true"
@@ -19,11 +19,11 @@
     </div>
 
     <div v-if="loading" class="p-8 text-center">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="text-gray-500 mt-2">加载中...</p>
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+      <p class="text-gray-500 dark:text-gray-400 mt-2">加载中...</p>
     </div>
 
-    <div v-else-if="members.length === 0" class="p-8 text-center text-gray-400">
+    <div v-else-if="members.length === 0" class="p-8 text-center text-gray-400 dark:text-gray-500">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
@@ -31,19 +31,19 @@
       <p class="text-sm mt-1">点击上方"添加成员"按钮邀请成员</p>
     </div>
 
-    <div v-else class="divide-y divide-gray-100">
+    <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
       <div
         v-for="member in members"
         :key="member._id"
-        class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
       >
         <div class="flex items-center gap-3 flex-1">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
             {{ getMemberInitial(member) }}
           </div>
           <div class="flex-1">
-            <p class="font-medium text-gray-900">{{ getMemberName(member) }}</p>
-            <p class="text-sm text-gray-500">
+            <p class="font-medium text-gray-900 dark:text-gray-100">{{ getMemberName(member) }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {{ member.email || '未设置邮箱' }}
               <span class="mx-2">•</span>
               加入于 {{ formatDate(member.joinedAt) }}
@@ -59,7 +59,7 @@
           </span>
           <button
             v-if="(isAdmin) || member._id === String(currentUser?._id)"
-            class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            class="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
             title="编辑成员"
             @click="openEditDialog(member)"
           >
@@ -69,7 +69,7 @@
           </button>
           <button
             v-if="isAdmin && member.role !== 'owner'"
-            class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            class="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
             title="移除成员"
             @click="confirmRemoveMember(member)"
           >
@@ -85,7 +85,7 @@
     <el-dialog v-model="showAddMemberDialog" title="添加成员" width="500px">
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">选择用户</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择用户</label>
           <el-select
             v-model="selectedUserId"
             filterable
@@ -101,7 +101,7 @@
           </el-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">角色</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">角色</label>
           <el-select v-model="selectedRole" placeholder="选择角色" class="w-full">
             <el-option label="管理员" value="admin" />
             <el-option label="成员" value="member" />
@@ -120,23 +120,23 @@
     <el-dialog v-model="showEditDialog" title="编辑成员信息" width="500px">
       <div v-if="editingMember" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">显示名称</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">显示名称</label>
           <el-input
             v-model="editingMember.displayName"
             placeholder="请输入显示名称"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">用户名</label>
           <el-input
             v-model="editingMember.username"
             disabled
             placeholder="用户名不可修改"
           />
-          <p class="text-xs text-gray-500 mt-1">用户名不可修改</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">用户名不可修改</p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">邮箱</label>
           <el-input
             v-model="editingMember.email"
             type="email"
@@ -221,11 +221,11 @@ const getRoleText = (role: string) => {
 // 获取角色徽章样式
 const getRoleBadgeClass = (role: string) => {
   const classMap: Record<string, string> = {
-    owner: 'bg-purple-100 text-purple-700',
-    admin: 'bg-blue-100 text-blue-700',
-    member: 'bg-gray-100 text-gray-700'
+    owner: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
+    admin: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+    member: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
   }
-  return classMap[role] || 'bg-gray-100 text-gray-700'
+  return classMap[role] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
 }
 
 // 格式化日期

@@ -1,25 +1,25 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- 任务信息区域（固定在上方） -->
-    <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200">
+    <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <!-- 折叠按钮和保存状态 -->
       <div class="flex items-center justify-between">
         <!-- 保存状态和保存按钮（仅查看模式） -->
         <div v-if="mode === 'view'" class="flex items-center gap-2">
           <div class="text-xs">
-            <span v-if="isSaving" class="text-orange-500 flex items-center gap-1">
+            <span v-if="isSaving" class="text-orange-500 dark:text-orange-400 flex items-center gap-1">
               <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
               保存中...
             </span>
-            <span v-else-if="hasUnsavedChanges" class="text-gray-400 flex items-center gap-1">
+            <span v-else-if="hasUnsavedChanges" class="text-gray-400 dark:text-gray-500 flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               未保存
             </span>
-            <span v-else-if="lastSavedAt" class="text-green-500 flex items-center gap-1">
+            <span v-else-if="lastSavedAt" class="text-green-500 dark:text-green-400 flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
@@ -30,7 +30,7 @@
           <button
             v-if="hasUnsavedChanges && !isSaving"
             @click="handleSave"
-            class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+            class="px-2 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-1"
             title="保存更改 (Cmd+S)"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,7 +43,7 @@
 
         <!-- 折叠按钮 -->
         <button
-          class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+          class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 transition-colors"
           @click="isFieldsCollapsed = !isFieldsCollapsed"
         >
           <span>{{ isFieldsCollapsed ? '展开详情' : '收起详情' }}</span>
@@ -171,7 +171,7 @@
             class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full transition-all"
             :class="isTagSelected(tag._id)
               ? 'text-white border-none'
-              : 'text-gray-700 bg-white border border-gray-300 hover:border-gray-400'"
+              : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'"
             :style="isTagSelected(tag._id) ? { backgroundColor: tag.color || '#3B82F6' } : {}"
           >
             <span
@@ -239,8 +239,8 @@
     <div class="flex-1 overflow-y-auto mt-4">
       <!-- 描述标签和编辑/预览切换 -->
       <div class="flex items-center justify-between mb-2">
-        <label class="text-xs font-medium text-gray-500">描述</label>
-        <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+        <label class="text-xs font-medium text-gray-500 dark:text-gray-400">描述</label>
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
           <button
             @click="setEditorMode(false)"
             :class="{ 'active': !isPreviewMode }"
@@ -271,17 +271,17 @@
         @update:model-value="handleContentChange"
         @save="handleSave"
       />
-      <div class="mt-2 text-xs text-gray-400">
+      <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
         支持 Markdown 语法：**加粗** *斜体* - [ ] 任务列表等
       </div>
 
       <!-- 附件区域 -->
       <div class="mt-6">
         <div class="flex items-center justify-between mb-3">
-          <label class="text-xs font-medium text-gray-500">附件</label>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400">附件</label>
           <button
             v-if="!showUploadArea"
-            class="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+            class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
             @click="showUploadArea = true"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +303,7 @@
             @error="handleAttachmentError"
           />
           <button
-            class="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            class="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             @click="showUploadArea = false"
           >
             收起
@@ -754,5 +754,20 @@ const handleAttachmentDelete = (attachmentId: string) => {
   background-color: #ffffff;
   color: #3b82f6;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .mode-toggle-btn {
+  color: #9ca3af;
+}
+
+.dark .mode-toggle-btn:hover {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.dark .mode-toggle-btn.active {
+  background-color: #374151;
+  color: #60a5fa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 </style>

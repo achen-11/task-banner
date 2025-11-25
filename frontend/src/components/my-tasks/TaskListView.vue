@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
     <!-- 表头 -->
-    <div class="border-b border-gray-200">
-      <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50">
+    <div class="border-b border-gray-200 dark:border-gray-700">
+      <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
         <!-- 全选复选框 -->
         <div class="col-span-1 flex items-center">
           <el-checkbox
@@ -14,41 +14,41 @@
 
         <!-- 任务标题 -->
         <div class="col-span-5 flex items-center">
-          <span class="text-xs font-medium text-gray-500">任务标题</span>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">任务标题</span>
         </div>
 
         <!-- 项目 -->
         <div class="col-span-2 flex items-center">
-          <span class="text-xs font-medium text-gray-500">项目</span>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">项目</span>
         </div>
 
         <!-- 优先级 -->
         <div class="col-span-1 flex items-center">
-          <span class="text-xs font-medium text-gray-500">优先级</span>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">优先级</span>
         </div>
 
         <!-- 状态 -->
         <div class="col-span-1 flex items-center">
-          <span class="text-xs font-medium text-gray-500">状态</span>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">状态</span>
         </div>
 
         <!-- 截止日期 -->
         <div class="col-span-2 flex items-center">
-          <span class="text-xs font-medium text-gray-500">截止日期</span>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">截止日期</span>
         </div>
       </div>
     </div>
 
     <!-- 任务列表 -->
-    <div class="divide-y divide-gray-100">
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
       <!-- 加载状态 -->
       <div v-if="loading && tasks.length === 0" class="py-12 text-center">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="text-gray-500 mt-2">加载中...</p>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">加载中...</p>
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="tasks.length === 0" class="py-12 text-center text-gray-400">
+      <div v-else-if="tasks.length === 0" class="py-12 text-center text-gray-400 dark:text-gray-500">
         <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
@@ -61,8 +61,8 @@
         <div
           v-for="task in tasks"
           :key="task._id"
-          class="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-          :class="{ 'bg-blue-50': selectedTaskIds.includes(task._id) }"
+          class="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
+          :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedTaskIds.includes(task._id) }"
           @click="handleTaskClick(task)"
         >
           <!-- 选择框 -->
@@ -76,8 +76,8 @@
           <!-- 任务标题 -->
           <div class="col-span-5 flex items-center">
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-gray-900 truncate">{{ task.title }}</p>
-              <p v-if="task.summary" class="text-sm text-gray-500 truncate">{{ task.summary }}</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ task.title }}</p>
+              <p v-if="task.summary" class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ task.summary }}</p>
             </div>
             <!-- 标签 -->
             <div v-if="(task as any).tags && (task as any).tags.length > 0" class="flex gap-1 ml-2">
@@ -91,7 +91,7 @@
               </span>
               <span
                 v-if="(task as any).tags.length > 2"
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
+                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
               >
                 +{{ (task as any).tags.length - 2 }}
               </span>
@@ -105,9 +105,9 @@
                 class="w-3 h-3 rounded-full"
                 :style="{ backgroundColor: task.project.color }"
               ></div>
-              <span class="text-sm text-gray-600 truncate">{{ task.project.name }}</span>
+              <span class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ task.project.name }}</span>
             </div>
-            <span v-else class="text-sm text-gray-400">-</span>
+            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
           </div>
 
           <!-- 优先级 -->
@@ -139,7 +139,7 @@
             >
               {{ formatDate(task.dueDate) }}
             </span>
-            <span v-else class="text-sm text-gray-400">-</span>
+            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
           </div>
         </div>
       </div>

@@ -1,43 +1,43 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
     <!-- 头部欢迎区域 -->
     <div class="px-8 py-12">
       <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-8">
           <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               欢迎回来！ 👋
             </h1>
-            <p class="text-lg text-gray-600">
+            <p class="text-lg text-gray-600 dark:text-gray-400">
               {{ getGreeting() }}，让我们继续今天的工作吧
             </p>
           </div>
           <div class="text-right">
-            <div class="text-2xl font-semibold text-gray-900">{{ currentDate }}</div>
-            <div class="text-sm text-gray-500">{{ currentTime }}</div>
+            <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ currentDate }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">{{ currentTime }}</div>
           </div>
         </div>
 
         <!-- 核心统计卡片 -->
         <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div v-for="i in 4" :key="i" class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 animate-pulse">
-            <div class="h-4 bg-gray-200 rounded w-20 mb-4"></div>
-            <div class="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-            <div class="h-4 bg-gray-200 rounded w-24"></div>
+          <div v-for="i in 4" :key="i" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 animate-pulse">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-4"></div>
+            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-2"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
           </div>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <div class="p-3 bg-blue-100 rounded-xl">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <span class="text-sm font-medium text-gray-500">总任务</span>
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">总任务</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.totalTasks }}</div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ stats.totalTasks }}</div>
             <div class="flex items-center text-sm">
               <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -46,44 +46,44 @@
             </div>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <div class="p-3 bg-yellow-100 rounded-xl">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <span class="text-sm font-medium text-gray-500">进行中</span>
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">进行中</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.inProgressTasks }}</div>
-            <div class="text-sm text-gray-500">需要您的关注</div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ stats.inProgressTasks }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">需要您的关注</div>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <div class="p-3 bg-green-100 rounded-xl">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-3 bg-green-100 dark:bg-green-900/50 rounded-xl">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <span class="text-sm font-medium text-gray-500">已完成</span>
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">已完成</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.completedTasks }}</div>
-            <div class="text-sm text-gray-500">本周完成 {{ stats.weeklyCompleted }} 个</div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ stats.completedTasks }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">本周完成 {{ stats.weeklyCompleted }} 个</div>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <div class="p-3 bg-purple-100 rounded-xl">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-xl">
+                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
-              <span class="text-sm font-medium text-gray-500">完成率</span>
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">完成率</span>
             </div>
-            <div class="text-3xl font-bold text-gray-900 mb-1">{{ completionRate }}%</div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${completionRate}%` }"></div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ completionRate }}%</div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div class="bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-500 dark:to-purple-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${completionRate}%` }"></div>
             </div>
           </div>
         </div>
@@ -91,19 +91,19 @@
         <!-- 图表和项目区域 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           <!-- 任务趋势图表 -->
-          <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+          <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 任务趋势
               </h2>
               <div class="flex gap-2">
-                <button @click="updateChartPeriod('week')" :class="['px-3 py-1 text-sm rounded-lg transition-colors', chartPeriod === 'week' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700']">
+                <button @click="updateChartPeriod('week')" :class="['px-3 py-1 text-sm rounded-lg transition-colors', chartPeriod === 'week' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300']">
                   本周
                 </button>
-                <button @click="updateChartPeriod('month')" :class="['px-3 py-1 text-sm rounded-lg transition-colors', chartPeriod === 'month' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700']">
+                <button @click="updateChartPeriod('month')" :class="['px-3 py-1 text-sm rounded-lg transition-colors', chartPeriod === 'month' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300']">
                   本月
                 </button>
               </div>
@@ -112,40 +112,40 @@
           </div>
 
           <!-- 快捷操作面板 -->
-          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-            <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               快捷操作
             </h2>
             <div class="grid grid-cols-2 gap-4">
-              <router-link to="/projects" class="group p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-all duration-300 block">
-                <svg class="w-8 h-8 text-green-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <router-link to="/projects" class="group p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/50 hover:from-green-100 hover:to-green-200 dark:hover:from-green-900/50 dark:hover:to-green-900/70 rounded-xl transition-all duration-300 block">
+                <svg class="w-8 h-8 text-green-600 dark:text-green-400 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
-                <div class="text-sm font-medium text-green-900">创建项目</div>
+                <div class="text-sm font-medium text-green-900 dark:text-green-100">创建项目</div>
               </router-link>
 
-              <button @click="$router.push('/projects?showCreateTask=true')" class="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-all duration-300">
-                <svg class="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button @click="$router.push('/projects?showCreateTask=true')" class="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/50 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/50 dark:hover:to-blue-900/70 rounded-xl transition-all duration-300">
+                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <div class="text-sm font-medium text-blue-900">快速任务</div>
+                <div class="text-sm font-medium text-blue-900 dark:text-blue-100">快速任务</div>
               </button>
 
-              <router-link to="/tasks" class="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl transition-all duration-300 block">
-                <svg class="w-8 h-8 text-purple-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <router-link to="/tasks" class="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-900/50 hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900/50 dark:hover:to-purple-900/70 rounded-xl transition-all duration-300 block">
+                <svg class="w-8 h-8 text-purple-600 dark:text-purple-400 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <div class="text-sm font-medium text-purple-900">搜索任务</div>
+                <div class="text-sm font-medium text-purple-900 dark:text-purple-100">搜索任务</div>
               </router-link>
 
-              <router-link to="/reports" class="group p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl transition-all duration-300 block">
-                <svg class="w-8 h-8 text-orange-600 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <router-link to="/reports" class="group p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/50 hover:from-orange-100 hover:to-orange-200 dark:hover:from-orange-900/50 dark:hover:to-orange-900/70 rounded-xl transition-all duration-300 block">
+                <svg class="w-8 h-8 text-orange-600 dark:text-orange-400 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <div class="text-sm font-medium text-orange-900">数据报表</div>
+                <div class="text-sm font-medium text-orange-900 dark:text-orange-100">数据报表</div>
               </router-link>
             </div>
           </div>
@@ -154,28 +154,28 @@
         <!-- 项目展示区域 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- 最近访问的项目 -->
-          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 最近项目
               </h2>
-              <router-link to="/projects" class="text-sm text-blue-600 hover:text-blue-700">
+              <router-link to="/projects" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
                 查看全部 →
               </router-link>
             </div>
             <div v-if="loading" class="space-y-3">
-              <div v-for="i in 4" :key="i" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl animate-pulse">
+              <div v-for="i in 4" :key="i" class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl animate-pulse">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                  <div class="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-xl"></div>
                   <div>
-                    <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                    <div class="h-3 bg-gray-200 rounded w-16"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-600 rounded w-24 mb-2"></div>
+                    <div class="h-3 bg-gray-200 dark:bg-gray-600 rounded w-16"></div>
                   </div>
                 </div>
-                <div class="w-20 h-4 bg-gray-200 rounded"></div>
+                <div class="w-20 h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
               </div>
             </div>
             <div v-else class="space-y-3">
@@ -183,28 +183,28 @@
                 v-for="project in dashboardData?.recentProjects"
                 :key="project._id"
                 :to="`/projects/${project._id}`"
-                class="group flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
+                class="group flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all duration-200"
               >
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold shadow-sm" :style="{ backgroundColor: project.color }">
                     {{ project.name.charAt(0) }}
                   </div>
                   <div>
-                    <h3 class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{{ project.name }}</h3>
-                    <p class="text-sm text-gray-500">{{ project.taskCount }} 个任务</p>
+                    <h3 class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ project.name }}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ project.taskCount }} 个任务</p>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="text-right">
-                    <div class="text-sm font-medium text-gray-900">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {{ project.taskCount > 0 ? Math.round((project.completedTaskCount / project.taskCount) * 100) : 0 }}%
                     </div>
-                    <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div class="h-full bg-green-500 rounded-full transition-all duration-300"
+                    <div class="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div class="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
                            :style="{ width: `${project.taskCount > 0 ? (project.completedTaskCount / project.taskCount) * 100 : 0}%` }"></div>
                     </div>
                   </div>
-                  <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -213,40 +213,40 @@
           </div>
 
           <!-- 今日待办 -->
-          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 今日待办
               </h2>
-              <span class="text-sm text-gray-500">{{ dashboardData?.todayTasks?.length || 0 }} 项任务</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ dashboardData?.todayTasks?.length || 0 }} 项任务</span>
             </div>
             <div v-if="loading" class="space-y-3">
-              <div v-for="i in 4" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg animate-pulse">
-                <div class="w-2 h-2 bg-gray-200 rounded-full"></div>
+              <div v-for="i in 4" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg animate-pulse">
+                <div class="w-2 h-2 bg-gray-200 dark:bg-gray-600 rounded-full"></div>
                 <div class="flex-1">
-                  <div class="h-4 bg-gray-200 rounded w-48 mb-2"></div>
-                  <div class="h-3 bg-gray-200 rounded w-24"></div>
+                  <div class="h-4 bg-gray-200 dark:bg-gray-600 rounded w-48 mb-2"></div>
+                  <div class="h-3 bg-gray-200 dark:bg-gray-600 rounded w-24"></div>
                 </div>
-                <div class="px-2 py-1 h-4 bg-gray-200 rounded"></div>
+                <div class="px-2 py-1 h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
               </div>
             </div>
             <div v-else class="space-y-3">
               <div
                 v-for="task in dashboardData?.todayTasks"
                 :key="task._id"
-                class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 @click="$router.push(`/projects/${task.projectId}`)"
               >
                 <div class="w-2 h-2 rounded-full" :class="getPriorityClass(task.priority)"></div>
                 <div class="flex-1">
-                  <h4 class="font-medium text-gray-900 text-sm">{{ task.title }}</h4>
+                  <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm">{{ task.title }}</h4>
                   <div class="flex items-center gap-2 mt-1">
-                    <span class="text-xs text-gray-500">{{ task.projectName }}</span>
-                    <span class="text-xs text-gray-400">•</span>
-                    <span class="text-xs text-gray-500">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500">•</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
                       {{ task.dueDate ? formatTime(task.dueDate) : '无截止时间' }}
                     </span>
                   </div>
@@ -255,8 +255,8 @@
                   {{ getStatusText(task.status) }}
                 </div>
               </div>
-              <div v-if="!dashboardData?.todayTasks?.length" class="text-center py-8 text-gray-500">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-if="!dashboardData?.todayTasks?.length" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 <p>今天没有待办任务</p>
@@ -336,10 +336,10 @@ const getPriorityClass = (priority: string) => {
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case 'in_progress': return 'bg-blue-100 text-blue-700'
-    case 'todo': return 'bg-gray-100 text-gray-700'
-    case 'completed': return 'bg-green-100 text-green-700'
-    default: return 'bg-gray-100 text-gray-700'
+    case 'in_progress': return 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+    case 'todo': return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+    case 'completed': return 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+    default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
   }
 }
 

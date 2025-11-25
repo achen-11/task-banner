@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 h-full flex flex-col bg-gray-50">
+  <div class="p-6 h-full flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- 顶部栏 -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">项目列表</h1>
-        <p class="text-sm text-gray-500 mt-1">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">项目列表</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
           管理你的所有项目，支持归档与恢复。归档后的项目不会出现在左侧菜单栏。
         </p>
       </div>
@@ -40,7 +40,7 @@
 
     <!-- 内容区域 -->
     <div class="flex-1">
-      <div v-if="loading" class="flex items-center justify-center h-64 text-gray-400">
+      <div v-if="loading" class="flex items-center justify-center h-64 text-gray-400 dark:text-gray-500">
         <div class="text-center">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <p class="mt-2">加载项目中...</p>
@@ -48,7 +48,7 @@
       </div>
 
       <div v-else>
-        <div v-if="filteredProjects.length === 0" class="h-64 flex flex-col items-center justify-center text-gray-400">
+        <div v-if="filteredProjects.length === 0" class="h-64 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
           <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
@@ -59,7 +59,7 @@
           </svg>
           <p class="text-sm">
             暂无{{ statusFilter === 'all' ? '' : statusTextMap[statusFilter] }}项目，
-            可以点击右上角<span class="mx-1 text-blue-600">新建项目</span>开始。
+            可以点击右上角<span class="mx-1 text-blue-600 dark:text-blue-400">新建项目</span>开始。
           </p>
         </div>
 
@@ -70,7 +70,7 @@
           <div
             v-for="project in filteredProjects"
             :key="project._id"
-            class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 flex flex-col"
           >
             <div class="p-4 flex-1 flex flex-col">
               <div class="flex items-start justify-between mb-3">
@@ -82,10 +82,10 @@
                     {{ (project.icon || project.name?.charAt(0) || 'P').toUpperCase() }}
                   </div>
                   <div>
-                    <h2 class="text-base font-semibold text-gray-900 leading-snug">
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug">
                       {{ project.name }}
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                       {{ project.description || '暂无项目描述' }}
                     </p>
                   </div>
@@ -99,7 +99,7 @@
               </div>
 
               <!-- 统计信息 -->
-              <div class="grid grid-cols-3 gap-3 mt-2 text-xs text-gray-500">
+              <div class="grid grid-cols-3 gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <div class="flex items-center gap-1">
                   <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -126,7 +126,7 @@
             </div>
 
             <!-- 操作按钮 -->
-            <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50 rounded-b-xl">
+            <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 rounded-b-xl">
               <div class="flex items-center gap-2">
                 <el-button
                   type="primary"
@@ -145,7 +145,7 @@
               </div>
               <div class="flex items-center gap-2">
                 <el-dropdown trigger="click">
-                  <span class="el-dropdown-link text-xs text-gray-500 cursor-pointer flex items-center gap-1">
+                  <span class="el-dropdown-link text-xs text-gray-500 dark:text-gray-400 cursor-pointer flex items-center gap-1">
                     更多
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />

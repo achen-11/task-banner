@@ -5,13 +5,13 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       @click.self="handleClose"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">创建新项目</h2>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">创建新项目</h2>
           <button
             @click="handleClose"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
+            class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -23,7 +23,7 @@
         <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
           <!-- 项目名称 -->
           <div>
-            <label for="project-name" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="project-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               项目名称 <span class="text-red-500">*</span>
             </label>
             <input
@@ -32,14 +32,14 @@
               type="text"
               required
               placeholder="请输入项目名称"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               :disabled="loading"
             />
           </div>
 
           <!-- 项目描述 -->
           <div>
-            <label for="project-description" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="project-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               项目描述
             </label>
             <textarea
@@ -47,14 +47,14 @@
               v-model="formData.description"
               rows="3"
               placeholder="请输入项目描述（可选）"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               :disabled="loading"
             ></textarea>
           </div>
 
           <!-- 项目颜色 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               项目颜色
             </label>
             <div class="flex gap-2 flex-wrap">
@@ -64,7 +64,7 @@
                 type="button"
                 @click="formData.color = color"
                 class="w-8 h-8 rounded-md border-2 transition-all"
-                :class="formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'"
+                :class="formData.color === color ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-transparent hover:scale-105'"
                 :style="{ backgroundColor: color }"
                 :disabled="loading"
               ></button>
@@ -72,8 +72,8 @@
           </div>
 
           <!-- Error Message -->
-          <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p class="text-sm text-red-600">{{ error }}</p>
+          <div v-if="error" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">
+            <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
           </div>
 
           <!-- Footer -->
@@ -81,7 +81,7 @@
             <button
               type="button"
               @click="handleClose"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               :disabled="loading"
             >
               取消

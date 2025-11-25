@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
     <!-- 头部：标题和新建按钮 -->
-    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">项目模块</h2>
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">项目模块</h2>
       <el-tooltip content="新建模块 (N)" placement="bottom">
         <el-button
           @click="showCreateDialog = true"
@@ -27,7 +27,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="modules.length === 0" class="text-center py-8 text-gray-400">
+      <div v-else-if="modules.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
         <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
         </svg>
@@ -40,7 +40,7 @@
         <div
           v-for="module in sortedModules"
           :key="module._id"
-          class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
         >
           <div class="flex items-center gap-3">
             <!-- 模块颜色标识 -->
@@ -51,8 +51,8 @@
 
             <!-- 模块名称 -->
             <div>
-              <h3 class="font-medium text-gray-900">{{ module.name }}</h3>
-              <p class="text-sm text-gray-500">
+              <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ module.name }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
                 创建于 {{ formatDate(module.createdAt) }}
               </p>
             </div>
@@ -62,7 +62,7 @@
           <div class="flex items-center gap-2">
             <button
               @click="handleEdit(module)"
-              class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              class="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
               title="编辑"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +71,7 @@
             </button>
             <button
               @click="handleDelete(module)"
-              class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              class="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
               title="删除"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

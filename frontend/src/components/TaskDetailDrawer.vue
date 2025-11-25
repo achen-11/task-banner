@@ -7,7 +7,7 @@
       <!-- 抽屉容器 - 右侧滑出 -->
       <div
         :style="{ width: drawerWidth + 'px' }"
-        class="absolute top-0 right-0 h-full bg-white shadow-2xl pointer-events-auto flex transition-transform duration-300 ease-out"
+        class="absolute top-0 right-0 h-full bg-white dark:bg-gray-800 shadow-2xl pointer-events-auto flex transition-transform duration-300 ease-out"
         :class="{ 'translate-x-full': !isOpen }"
       >
         <!-- 左侧拖拽调整手柄 -->
@@ -23,12 +23,12 @@
         <!-- 抽屉内容区域 -->
         <div class="flex-1 flex flex-col overflow-hidden">
           <!-- 顶部工具栏 -->
-          <div class="border-b border-gray-200 flex items-center justify-between px-6 py-3 flex-shrink-0">
+          <div class="border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 py-3 flex-shrink-0">
             <div class="flex items-center gap-3 flex-1 min-w-0">
               <!-- 任务导航（仅查看模式） -->
-              <div v-if="mode !== 'create'" class="flex items-center gap-2 text-sm text-gray-500 flex-shrink-0">
+              <div v-if="mode !== 'create'" class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
                 <button
-                  class="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   @click="goToPrevTask"
                   title="上一个任务 (↑)"
                 >
@@ -37,7 +37,7 @@
                   </svg>
                 </button>
                 <button
-                  class="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   @click="goToNextTask"
                   title="下一个任务 (↓)"
                 >
@@ -49,15 +49,15 @@
               </div>
 
               <!-- 任务 ID（仅查看模式） -->
-              <div v-if="currentTask && mode !== 'create'" class="text-sm font-mono text-gray-500 flex-shrink-0">
+              <div v-if="currentTask && mode !== 'create'" class="text-sm font-mono text-gray-500 dark:text-gray-400 flex-shrink-0">
                 #{{ currentTask.displayId }}
               </div>
 
               <!-- 创建模式标识 -->
-              <div v-if="mode === 'create'" class="text-sm text-gray-500 flex-shrink-0 flex items-center gap-2">
-                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">新建任务</span>
-                <span v-if="!isSaved" class="text-xs text-orange-500">● 未保存</span>
-                <span v-else class="text-xs text-green-500">● 已保存</span>
+              <div v-if="mode === 'create'" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center gap-2">
+                <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">新建任务</span>
+                <span v-if="!isSaved" class="text-xs text-orange-500 dark:text-orange-400">● 未保存</span>
+                <span v-else class="text-xs text-green-500 dark:text-green-400">● 已保存</span>
               </div>
 
               <!-- 任务标题 -->
@@ -67,7 +67,7 @@
                   ref="titleInputRef"
                   :value="currentTask.title"
                   type="text"
-                  class="w-full text-base font-semibold text-gray-900 border-0 border-b-2 border-transparent hover:border-gray-200 px-0 py-1 transition-colors bg-transparent focus:outline-none focus:border-blue-500"
+                  class="w-full text-base font-semibold text-gray-900 dark:text-gray-100 border-0 border-b-2 border-transparent hover:border-gray-200 dark:hover:border-gray-600 px-0 py-1 transition-colors bg-transparent focus:outline-none focus:border-blue-500 dark:focus:border-blue-400"
                   placeholder="任务标题..."
                   @input="handleTitleInput"
                   @compositionstart="handleTitleCompositionStart"
@@ -103,8 +103,8 @@
                 <button
                   class="px-3 py-1.5 text-sm transition-colors flex items-center gap-1"
                   :class="isCommentSelectionMode
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'"
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
                   :title="isCommentSelectionMode ? '导出选中的评论 (Cmd+E)' : '导出任务 (Cmd+E)'"
                   @click="isCommentSelectionMode ? exportSelectedCommentsToClipboard() : toggleCommentSelectionMode()"
                 >
@@ -117,7 +117,7 @@
                 <!-- 取消选择按钮（仅在选择模式下显示） -->
                 <button
                   v-if="isCommentSelectionMode"
-                  class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
+                  class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors flex items-center gap-1"
                   title="取消选择 (Esc)"
                   @click="toggleCommentSelectionMode"
                 >
@@ -130,7 +130,7 @@
                 
                 <!-- 删除按钮 -->
                 <button
-                  class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
+                  class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors flex items-center gap-1"
                   title="删除任务"
                   @click="handleTaskDelete"
                 >
@@ -143,7 +143,7 @@
 
               <!-- 关闭按钮 -->
               <button
-                class="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500"
+                class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors text-gray-500 dark:text-gray-400"
                 @click="closeDrawer"
                 title="关闭 (Esc)"
               >
@@ -178,7 +178,7 @@
                     :selected-comment-ids="selectedCommentIds"
                     @comment-selection-change="handleCommentSelectionChange"
                   />
-                  <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400">
+                  <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
                     <div class="text-center">
                       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

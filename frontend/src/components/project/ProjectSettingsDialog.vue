@@ -9,11 +9,11 @@
     <div class="space-y-6">
       <!-- 基本信息 -->
       <div>
-        <h3 class="text-lg font-medium text-gray-900 mb-4">基本信息</h3>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">基本信息</h3>
         <div class="space-y-4">
           <!-- 项目名称 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">项目名称</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">项目名称</label>
             <el-input
               v-model="formData.name"
               placeholder="请输入项目名称"
@@ -24,7 +24,7 @@
 
           <!-- 项目描述 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">项目描述</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">项目描述</label>
             <el-input
               v-model="formData.description"
               type="textarea"
@@ -37,23 +37,23 @@
 
           <!-- 项目颜色 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">项目颜色</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">项目颜色</label>
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded-lg border-2 border-gray-300"
+                class="w-10 h-10 rounded-lg border-2 border-gray-300 dark:border-gray-600"
                 :style="{ backgroundColor: formData.color }"
               ></div>
               <el-color-picker v-model="formData.color" />
-              <span class="text-sm text-gray-500">选择项目的主题色</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">选择项目的主题色</span>
             </div>
           </div>
 
           <!-- 项目图标 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">项目图标</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">项目图标</label>
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center text-white text-lg font-semibold"
+                class="w-10 h-10 rounded-lg border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-white text-lg font-semibold"
                 :style="{ backgroundColor: formData.color }"
               >
                 {{ formData.icon || projectInitial }}
@@ -64,20 +64,20 @@
                 maxlength="2"
                 style="width: 200px"
               />
-              <span class="text-sm text-gray-500">1-2个字符的图标</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">1-2个字符的图标</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 危险操作 -->
-      <div class="pt-6 border-t border-gray-200">
-        <h3 class="text-lg font-medium text-red-600 mb-4">危险操作</h3>
-        <div class="bg-red-50 rounded-lg p-4">
+      <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-medium text-red-600 dark:text-red-400 mb-4">危险操作</h3>
+        <div class="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 border border-red-200 dark:border-red-800">
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="text-sm font-medium text-red-800">删除项目</h4>
-              <p class="text-sm text-red-600 mt-1">删除后将无法恢复，所有任务和数据将被永久删除</p>
+              <h4 class="text-sm font-medium text-red-800 dark:text-red-300">删除项目</h4>
+              <p class="text-sm text-red-600 dark:text-red-400 mt-1">删除后将无法恢复，所有任务和数据将被永久删除</p>
             </div>
             <el-button
               type="danger"
@@ -113,8 +113,8 @@
     :append-to-body="true"
   >
     <div class="space-y-4">
-      <div class="bg-red-50 rounded-lg p-4">
-        <div class="flex items-center gap-3 text-red-800">
+      <div class="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 border border-red-200 dark:border-red-800">
+        <div class="flex items-center gap-3 text-red-800 dark:text-red-300">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
@@ -126,7 +126,7 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           请输入项目名称 "<strong>{{ project?.name }}</strong>" 确认删除
         </label>
         <el-input

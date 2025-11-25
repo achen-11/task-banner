@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full flex flex-col bg-gray-50">
+  <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- 项目头部 - 专注模式时完全隐藏 -->
-    <div class="bg-white border-b border-gray-200" v-show="!focusMode">
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" v-show="!focusMode">
       <!-- 展开状态的头部 -->
       <div v-if="!collapsed" class="px-6 py-4">
         <!-- 项目标题和操作 -->
@@ -15,14 +15,14 @@
               {{ projectInitial }}
             </div>
             <div>
-              <h1 class="text-2xl font-bold text-gray-900">{{ project?.name || '加载中...' }}</h1>
-              <p class="text-sm text-gray-500 mt-1">{{ project?.description }}</p>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ project?.name || '加载中...' }}</h1>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ project?.description }}</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
             <button
               @click="showSettingsDialog = true"
-              class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <Settings class="w-4 h-4 inline-block mr-1" />
               项目设置
@@ -38,7 +38,7 @@
             </el-button>
             <button
               @click="collapsed = true"
-              class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="收起"
             >
               <ChevronUp class="w-5 h-5" />
@@ -50,7 +50,7 @@
         <div class="flex items-center gap-6 text-sm">
           <!-- 状态 -->
           <div class="flex items-center gap-2">
-            <span class="text-gray-500">状态:</span>
+            <span class="text-gray-500 dark:text-gray-400">状态:</span>
             <span
               class="px-2 py-1 rounded text-xs font-medium"
               :class="statusClasses"
@@ -60,28 +60,28 @@
           </div>
 
           <!-- 创建时间 -->
-          <div class="flex items-center gap-2 text-gray-600">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <Calendar class="w-4 h-4" />
             <span>创建: {{ formatDate(project?.createdAt) }}</span>
           </div>
 
           <!-- 更新时间 -->
-          <div class="flex items-center gap-2 text-gray-600">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <RefreshCw class="w-4 h-4" />
             <span>更新: {{ formatDate(project?.updatedAt) }}</span>
           </div>
 
           <!-- 成员数 -->
-          <div class="flex items-center gap-2 text-gray-600">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <Users class="w-4 h-4" />
             <span>成员: {{ memberCount }}</span>
           </div>
 
           <!-- 任务完成度 -->
-          <div class="flex items-center gap-2 text-gray-600">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <CheckSquare class="w-4 h-4" />
             <span>任务: {{ taskCompletionText }}</span>
-            <div class="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div class="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
                 class="h-full bg-green-500 transition-all duration-300"
                 :style="{ width: `${taskCompletionRate}%` }"
@@ -102,10 +102,10 @@
             {{ projectInitial }}
           </div>
           <div>
-            <h1 class="text-lg font-semibold text-gray-900">{{ project?.name || '加载中...' }}</h1>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ project?.name || '加载中...' }}</h1>
           </div>
           <!-- 简化的统计信息 -->
-          <div class="flex items-center gap-4 ml-6 text-sm text-gray-600">
+          <div class="flex items-center gap-4 ml-6 text-sm text-gray-600 dark:text-gray-400">
             <span
               class="px-2 py-1 rounded text-xs font-medium"
               :class="statusClasses"
@@ -118,7 +118,7 @@
         </div>
         <button
           @click="collapsed = false"
-          class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           title="展开"
         >
           <ChevronDown class="w-5 h-5" />
@@ -126,15 +126,15 @@
       </div>
 
       <!-- Tab 栏 -->
-      <nav class="flex px-6 space-x-8 bg-white">
+      <nav class="flex px-6 space-x-8 bg-white dark:bg-gray-800">
         <button
           v-for="tab in tabs"
           :key="tab.value"
           @click="currentTab = tab.value"
           class="py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center gap-2"
           :class="currentTab === tab.value
-            ? 'border-blue-500 text-blue-600'
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'"
         >
           <component :is="tab.icon" class="w-4 h-4" />
           {{ tab.label }}
@@ -349,9 +349,9 @@ const statusClasses = computed(() => {
     case 'paused':
       return 'bg-yellow-100 text-yellow-700'
     case 'archived':
-      return 'bg-gray-100 text-gray-500'
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
     default:
-      return 'bg-gray-100 text-gray-700'
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
   }
 })
 

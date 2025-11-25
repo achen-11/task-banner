@@ -1,7 +1,7 @@
 <template>
   <div class="p-8">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">消息</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">消息</h1>
       <el-button 
         v-if="unreadCount > 0" 
         type="default" 
@@ -20,28 +20,28 @@
         :key="filter.value"
         @click="currentFilter = filter.value"
         class="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200"
-        :class="currentFilter === filter.value ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+        :class="currentFilter === filter.value ? 'bg-blue-500 dark:bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
       >
         {{ filter.label }}
         <span v-if="filter.count > 0" class="ml-2 px-2 py-0.5 rounded-full text-xs"
-          :class="currentFilter === filter.value ? 'bg-white/20' : 'bg-gray-200'">
+          :class="currentFilter === filter.value ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'">
           {{ filter.count }}
         </span>
       </button>
     </div>
 
     <!-- 加载状态 -->
-    <div v-if="loading" class="bg-white rounded-md shadow-md p-8 text-center text-gray-500">
+    <div v-if="loading" class="bg-white dark:bg-gray-800 rounded-md shadow-md p-8 text-center text-gray-500 dark:text-gray-400">
       加载中...
     </div>
 
     <!-- 消息列表 -->
-    <div v-else class="bg-white rounded-md shadow-md divide-y divide-gray-100">
+    <div v-else class="bg-white dark:bg-gray-800 rounded-md shadow-md divide-y divide-gray-100 dark:divide-gray-700">
       <div
         v-for="message in filteredMessages"
         :key="message._id"
-        class="p-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-        :class="{ 'bg-blue-50': !message.isRead }"
+        class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
+        :class="{ 'bg-blue-50 dark:bg-blue-900/30': !message.isRead }"
         @click="handleNotificationClick(message)"
       >
         <div class="flex items-start">
@@ -50,11 +50,11 @@
             <div
               class="w-10 h-10 rounded-full flex items-center justify-center"
               :class="{
-                'bg-blue-100': message.type === 'task_assigned',
-                'bg-green-100': message.type === 'task_status_changed',
-                'bg-yellow-100': message.type === 'task_updated',
-                'bg-purple-100': message.type === 'commented',
-                'bg-pink-100': message.type === 'mentioned'
+                'bg-blue-100 dark:bg-blue-900/50': message.type === 'task_assigned',
+                'bg-green-100 dark:bg-green-900/50': message.type === 'task_status_changed',
+                'bg-yellow-100 dark:bg-yellow-900/50': message.type === 'task_updated',
+                'bg-purple-100 dark:bg-purple-900/50': message.type === 'commented',
+                'bg-pink-100 dark:bg-pink-900/50': message.type === 'mentioned'
               }"
             >
               <svg
@@ -98,10 +98,10 @@
 
           <!-- 内容 -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900 mb-1">
+            <p class="text-sm text-gray-900 dark:text-gray-100 mb-1">
               {{ message.content }}
             </p>
-            <p class="text-xs text-gray-500">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
           </div>
 
           <!-- 未读标记 -->
@@ -112,7 +112,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="filteredMessages.length === 0 && !loading" class="p-8 text-center text-gray-500">
+      <div v-if="filteredMessages.length === 0 && !loading" class="p-8 text-center text-gray-500 dark:text-gray-400">
         暂无消息
       </div>
     </div>

@@ -10,11 +10,11 @@
    - 补充实现细节（修改文件、技术要点等）
    - 如有修改文件，在技术要点中注明
 5. **发送完成通知**：⚠️ **重要！必须执行！**
-   - 使用命令：`bash /Users/achen/Priv/task-banner/.claude-notify.sh "标题" "描述"`
+   - 使用命令：`bash .claude-notify.sh "标题" "描述"`
    - 标题：简短的任务完成说明（如：✅ XXX 功能完成）
-   - 描述：一句话总结完成的内容banner
+   - 描述：一句话总结完成的内容
 6. **生成文件**：⚠️ **重要！必须使用 Write 工具生成文件**
-   - 使用 Write 工具生成 `/Users/achen/Priv/task-/docs/task.json` 文件
+   - 使用 Write 工具生成 `docs/task.json` 文件
      - 格式：单个任务用对象，多个任务用数组
      - 示例（单任务）：
        ```json
@@ -26,7 +26,7 @@
        }
        ```
      - 示例（多任务）：使用 JSON 数组 `[{...}, {...}]`
-   - 使用 Write 工具生成 `/Users/achen/Priv/task-banner/docs/task.md` 文件
+   - 使用 Write 工具生成 `docs/task.md` 文件
      - 格式：完整的 Markdown 文档（包含 AI 协作指引 + 任务列表）
      - 必须保留所有 `<!-- task-id: xxx -->` 注释
    - 注意：content 字段需要使用 \n 表示换行，使用 \" 转义引号
@@ -53,55 +53,81 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: b2dbd627-b559-4087-8176-69114eed5653 -->
-#### 1. 合并商品列表&分类列表
+<!-- task-id: 7aa5a730-d8fc-4c61-98de-401a2cba4861 -->
+#### 1. 暗黑模式适配
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/24 09:57:30
-**更新时间：** 2025/12/24
+**创建时间：** 2025/11/25 09:43:38
+**更新时间：** 2025/11/25 09:43:38
+
+**任务摘要：** 实现了完整的暗黑模式功能，支持手动切换主题，自动保存用户偏好，并适配了所有主要组件的暗黑样式。
 
 **任务需求：**
 
-合并商品列表页和分类列表页
-1. 左侧做分类树, 右侧为商品列表
-
-**任务摘要：** 完成了商品列表和分类列表的合并页面，实现左侧分类树和右侧商品列表的统一管理界面
+支持切换成暗黑模式
 
 ---
 
 ## 🛠️ AI 解决方案
 
+**任务摘要：** 实现了完整的暗黑模式功能，支持手动切换主题，自动保存用户偏好，并适配了所有主要组件的暗黑样式。
+
 ### 实现步骤
-1. ✅ 创建合并页面 `src/views/products-categories/index.vue`
-2. ✅ 实现左侧分类树功能（搜索、右键菜单、点击筛选）
-3. ✅ 实现右侧商品列表功能（筛选、面包屑、右键菜单、双击）
-4. ✅ 添加可拖拽调整宽度功能，支持本地记忆
-5. ✅ 更新路由配置，将商品管理指向合并页面
-6. ✅ 更新左侧菜单配置，移除子菜单项
+
+1. **UI Store 状态管理**
+   - 在 `frontend/src/stores/ui.ts` 中添加 `isDarkMode` 状态
+   - 从 localStorage 读取用户偏好，如果没有则使用系统偏好
+   - 实现 `toggleDarkMode()` 和 `setDarkMode()` 方法
+   - 实现 `applyDarkMode()` 方法，在 HTML 根元素上添加/移除 `dark` class
+   - 使用 `watch` 监听状态变化，自动应用暗黑模式
+
+2. **Tailwind CSS 配置**
+   - 在 `frontend/tailwind.config.js` 中启用 `darkMode: 'class'` 策略
+   - 支持通过 `dark:` 前缀使用暗黑模式样式
+
+3. **组件样式适配**
+   - 更新 `Sidebar.vue`：添加暗黑模式背景色、文字颜色、边框颜色
+   - 更新 `AppHeader.vue`：添加暗黑模式背景色、文字颜色、输入框样式
+   - 更新 `MainLayout.vue`：添加暗黑模式背景色
+   - 更新所有图标和文字颜色以适配暗黑模式
+
+4. **主题切换功能**
+   - 在 `Sidebar.vue` 的用户下拉菜单中添加"暗黑模式/浅色模式"切换按钮
+   - 按钮显示当前模式图标（太阳/月亮）
+   - 点击后切换主题并保存到 localStorage
+
+5. **CSS 变量更新**
+   - 更新 `frontend/src/assets/base.css`，支持通过 `.dark` class 控制暗黑模式
+   - 保留系统偏好作为后备方案
 
 ### 修改的文件
-- `src/views/products-categories/index.vue` - 新建合并页面
-- `src/router/index.ts` - 更新路由配置
-- `src/layouts/components/SideMenu.vue` - 更新菜单配置
+
+- `frontend/src/stores/ui.ts` - 添加暗黑模式状态管理
+- `frontend/tailwind.config.js` - 启用暗黑模式 class 策略
+- `frontend/src/components/Sidebar.vue` - 添加暗黑模式样式和切换按钮
+- `frontend/src/components/AppHeader.vue` - 添加暗黑模式样式
+- `frontend/src/layouts/MainLayout.vue` - 添加暗黑模式背景色
+- `frontend/src/assets/base.css` - 更新 CSS 变量支持暗黑模式
 
 ### 技术要点
-- Vue 3 Composition API + TypeScript
-- Element Plus 组件（Tree、Table、Breadcrumb、Tooltip）
-- Tailwind CSS 响应式布局
-- 拖拽功能实现（mousedown/mousemove/mouseup）
-- localStorage 本地存储宽度偏好
-- 自定义右键菜单组件
-- 递归算法实现分类路径查找和搜索过滤
+
+- **状态管理**：使用 Pinia store 管理暗黑模式状态，支持持久化到 localStorage
+- **Tailwind CSS 暗黑模式**：使用 `darkMode: 'class'` 策略，通过 `dark:` 前缀应用暗黑样式
+- **Element Plus 兼容**：Element Plus 2.x 自动支持暗黑模式，只需在 HTML 根元素添加 `dark` class
+- **系统偏好检测**：首次访问时自动检测系统偏好，提供更好的用户体验
+- **状态同步**：使用 Vue 的 `watch` 自动同步状态变化到 DOM
 
 ### 验证结果
-- ✅ 分类树正常显示和操作（搜索、右键、点击筛选）
-- ✅ 商品列表正常筛选和展示（搜索、状态、排序）
-- ✅ 拖拽调整宽度功能正常，支持本地记忆
-- ✅ 右键菜单功能正常（分类和商品分别有独立菜单）
-- ✅ 面包屑导航正常显示和跳转
-- ✅ 双击商品行正常跳转详情页
-- ✅ 路由和菜单配置正确，商品管理直接打开合并页面
 
-> 📅 导出时间：2025/11/24 09:57:38
+- ✅ 暗黑模式状态正确保存到 localStorage
+- ✅ 切换按钮正确显示当前模式图标
+- ✅ 所有组件样式正确适配暗黑模式
+- ✅ Element Plus 组件自动应用暗黑样式
+- ✅ 刷新页面后保持用户选择的主题
+- ✅ 首次访问时正确检测系统偏好
+- ✅ 无语法错误和 linter 警告
+
+
+> 📅 导出时间：2025/11/25 09:43:40
 > 🤖 由 Task-Flow 生成

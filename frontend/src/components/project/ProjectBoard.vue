@@ -4,8 +4,8 @@
     <div class="px-4 mb-4" :class="{ 'hidden': focusMode }">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center">
-          <h2 class="text-lg font-semibold text-gray-900">看板视图</h2>
-          <div class="text-sm text-gray-500 ml-3">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">看板视图</h2>
+          <div class="text-sm text-gray-500 dark:text-gray-400 ml-3">
             <span v-if="loading">加载中...</span>
             <span v-else>{{ tasks.length }} 个任务</span>
           </div>
@@ -21,8 +21,8 @@
                   <span>{{ getShortcutTooltip('e', true) }}</span>
                 </div>
               </template>
-              <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                @click="handleBatchExport">
+            <button class="px-3 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+              @click="handleBatchExport">
                 <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -30,7 +30,7 @@
                 批量导出
               </button>
             </el-tooltip>
-            <button class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            <button class="px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
               @click="clearSelection">
               取消选择
             </button>
@@ -108,7 +108,7 @@
     </div>
 
     <!-- 专注模式悬浮按钮 -->
-    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white rounded-full shadow-lg p-3 border border-gray-200">
+    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3 border border-gray-200 dark:border-gray-700">
       <el-tooltip>
         <template #content>
           <div class="flex items-center gap-1.5">
@@ -132,7 +132,7 @@
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <div class="text-center">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="text-gray-500 mt-2">加载中...</p>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">加载中...</p>
         </div>
       </div>
 
@@ -142,21 +142,21 @@
         v-for="column in columns"
         :key="column.status"
         :data-status="column.status"
-        class="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col min-w-0"
+        class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col min-w-0"
       >
         <!-- 列头 -->
-        <div class="p-4 border-b border-gray-100">
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <!-- 全选框 -->
               <input
                 type="checkbox"
-                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer bg-white dark:bg-gray-700"
                 :checked="isAllTasksInColumnSelected(column.status)"
                 :indeterminate="isSomeTasksInColumnSelected(column.status)"
                 @change="toggleSelectAllInColumn(column.status, ($event.target as HTMLInputElement).checked)"
               />
-              <h3 class="font-semibold text-gray-900">{{ column.title }}</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ column.title }}</h3>
             </div>
             <span
               class="px-2 py-1 text-xs rounded-full font-medium"
@@ -189,11 +189,11 @@
           >
             <template #item="{ element: task }">
               <div
-                class="bg-gray-50 border rounded-lg p-3 mb-3 hover:shadow-md transition-shadow duration-200 relative"
+                class="bg-gray-50 dark:bg-gray-700/50 border rounded-lg p-3 mb-3 hover:shadow-md transition-shadow duration-200 relative"
                 :class="{
                   'cursor-pointer': !selectedTaskIds.has(task._id),
-                  'ring-2 ring-blue-500 border-blue-500': selectedTaskIds.has(task._id),
-                  'border-gray-200': !selectedTaskIds.has(task._id)
+                  'ring-2 ring-blue-500 dark:ring-blue-400 border-blue-500 dark:border-blue-400': selectedTaskIds.has(task._id),
+                  'border-gray-200 dark:border-gray-600': !selectedTaskIds.has(task._id)
                 }"
                 @click="handleTaskClick(task)"
               >
@@ -201,7 +201,7 @@
                   <!-- 选择框 -->
                   <input
                     type="checkbox"
-                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer bg-white shadow-sm mt-0.5 flex-shrink-0"
+                    class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer bg-white dark:bg-gray-700 shadow-sm mt-0.5 flex-shrink-0"
                     :checked="selectedTaskIds.has(task._id)"
                     @change="handleTaskSelect(task._id, ($event.target as HTMLInputElement).checked)"
                     @click.stop
@@ -209,10 +209,10 @@
                   <!-- 任务内容 -->
                   <div class="flex-1 min-w-0">
                     <!-- 任务标题 -->
-                    <h4 class="font-medium text-gray-900 text-sm mb-2 line-clamp-2">{{ task.title }}</h4>
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm mb-2 line-clamp-2">{{ task.title }}</h4>
 
                     <!-- 任务描述 -->
-                    <p v-if="task.summary" class="text-xs text-gray-500 mb-3 line-clamp-2">{{ task.summary }}</p>
+                    <p v-if="task.summary" class="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{{ task.summary }}</p>
 
                     <!-- 任务标签 -->
                     <div v-if="(task as any).tags && (task as any).tags.length > 0" class="flex flex-wrap gap-1 mb-3">
@@ -226,7 +226,7 @@
                       </span>
                       <span
                         v-if="(task as any).tags.length > 2"
-                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
                       >
                         +{{ (task as any).tags.length - 2 }}
                       </span>

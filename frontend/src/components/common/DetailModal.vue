@@ -11,34 +11,34 @@
   >
     <div v-if="selectedActivity" class="flex flex-col h-full">
       <!-- 用户信息和摘要 -->
-      <div class="pb-4 border-b">
+      <div class="pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
             {{ getUserDisplayName(selectedActivity.user).charAt(0).toUpperCase() }}
           </div>
           <div>
-            <div class="font-medium text-gray-900">{{ getUserDisplayName(selectedActivity.user) }}</div>
-            <div class="text-xs text-gray-500">{{ formatRelativeTime(selectedActivity.timestamp) }}</div>
+            <div class="font-medium text-gray-900 dark:text-gray-100">{{ getUserDisplayName(selectedActivity.user) }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(selectedActivity.timestamp) }}</div>
           </div>
         </div>
 
-        <div v-if="selectedActivity.summary" class="bg-blue-50 rounded-lg p-3">
-          <div class="text-xs font-medium text-blue-700 mb-1">任务摘要</div>
-          <div class="text-sm text-gray-900">{{ selectedActivity.summary }}</div>
+        <div v-if="selectedActivity.summary" class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+          <div class="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">任务摘要</div>
+          <div class="text-sm text-gray-900 dark:text-gray-100">{{ selectedActivity.summary }}</div>
         </div>
       </div>
 
       <!-- 合并的多个变更：Tab 栏切换 -->
       <template v-if="selectedActivity.grouped && selectedActivity.fieldChanges && selectedActivity.fieldChanges.length > 1">
-        <div class="flex gap-2 py-3 overflow-x-auto border-b">
+        <div class="flex gap-2 py-3 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
           <button
             v-for="(change, idx) in selectedActivity.fieldChanges"
             :key="idx"
             @click="currentFieldChangeIndex = idx"
             class="px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors"
             :class="currentFieldChangeIndex === idx
-              ? 'bg-blue-100 text-blue-700 border border-blue-300'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
           >
             {{ formatFieldName(change.field) }}
           </button>
@@ -49,11 +49,11 @@
           <div v-if="currentFieldChange" class="grid grid-cols-2 gap-4 h-full">
             <!-- 旧值 -->
             <div class="flex flex-col">
-              <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span class="text-red-600">−</span>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <span class="text-red-600 dark:text-red-400">−</span>
                 旧值
               </div>
-              <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
+              <div class="flex-1 bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800 overflow-y-auto" style="max-height: 450px;">
                 <!-- content 字段使用 Markdown 渲染 -->
                 <MarkdownEditor
                   v-if="currentFieldChange.field === 'content'"
@@ -61,7 +61,7 @@
                   :read-only="true"
                 />
                 <!-- 其他字段使用纯文本显示 -->
-                <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div v-else class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
                   {{ formatFieldValue(currentFieldChange.field, currentFieldChange.oldValue) }}
                 </div>
               </div>
@@ -69,11 +69,11 @@
 
             <!-- 新值 -->
             <div class="flex flex-col">
-              <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span class="text-green-600">+</span>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <span class="text-green-600 dark:text-green-400">+</span>
                 新值
               </div>
-              <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
+              <div class="flex-1 bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800 overflow-y-auto" style="max-height: 450px;">
                 <!-- content 字段使用 Markdown 渲染 -->
                 <MarkdownEditor
                   v-if="currentFieldChange.field === 'content'"
@@ -81,7 +81,7 @@
                   :read-only="true"
                 />
                 <!-- 其他字段使用纯文本显示 -->
-                <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div v-else class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
                   {{ formatFieldValue(currentFieldChange.field, currentFieldChange.newValue) }}
                 </div>
               </div>
@@ -92,8 +92,8 @@
 
       <!-- 单个字段变更：左右分栏 -->
       <template v-else>
-        <div class="py-3 border-b">
-          <div class="text-sm font-medium text-gray-700">
+        <div class="py-3 border-b border-gray-200 dark:border-gray-700">
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
             字段：{{ formatFieldName(selectedActivity.field) }}
           </div>
         </div>
@@ -102,11 +102,11 @@
           <div class="grid grid-cols-2 gap-4 h-full">
             <!-- 旧值 -->
             <div class="flex flex-col">
-              <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span class="text-red-600">−</span>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <span class="text-red-600 dark:text-red-400">−</span>
                 旧值
               </div>
-              <div class="flex-1 bg-red-50 rounded-lg p-4 border border-red-200 overflow-y-auto" style="max-height: 450px;">
+              <div class="flex-1 bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800 overflow-y-auto" style="max-height: 450px;">
                 <!-- content 字段使用 Markdown 渲染 -->
                 <MarkdownEditor
                   v-if="selectedActivity.field === 'content'"
@@ -114,7 +114,7 @@
                   :read-only="true"
                 />
                 <!-- 其他字段使用纯文本显示 -->
-                <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div v-else class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
                   {{ formatFieldValue(selectedActivity.field, selectedActivity.oldValue) }}
                 </div>
               </div>
@@ -122,11 +122,11 @@
 
             <!-- 新值 -->
             <div class="flex flex-col">
-              <div class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span class="text-green-600">+</span>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <span class="text-green-600 dark:text-green-400">+</span>
                 新值
               </div>
-              <div class="flex-1 bg-green-50 rounded-lg p-4 border border-green-200 overflow-y-auto" style="max-height: 450px;">
+              <div class="flex-1 bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800 overflow-y-auto" style="max-height: 450px;">
                 <!-- content 字段使用 Markdown 渲染 -->
                 <MarkdownEditor
                   v-if="selectedActivity.field === 'content'"
@@ -134,7 +134,7 @@
                   :read-only="true"
                 />
                 <!-- 其他字段使用纯文本显示 -->
-                <div v-else class="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div v-else class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
                   {{ formatFieldValue(selectedActivity.field, selectedActivity.newValue) }}
                 </div>
               </div>
@@ -160,20 +160,20 @@
   >
     <div v-if="selectedComment" class="space-y-4">
       <!-- 用户信息 -->
-      <div class="flex items-center gap-3 pb-4 border-b border-gray-200">
+      <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
           {{ getUserDisplayName(selectedComment.user).charAt(0).toUpperCase() }}
         </div>
         <div>
-          <div class="font-medium text-gray-900">{{ getUserDisplayName(selectedComment.user) }}</div>
-          <div class="text-xs text-gray-500">{{ formatRelativeTime(selectedComment.timestamp) }}</div>
+          <div class="font-medium text-gray-900 dark:text-gray-100">{{ getUserDisplayName(selectedComment.user) }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(selectedComment.timestamp) }}</div>
         </div>
       </div>
 
       <!-- 摘要（如果有） -->
-      <div v-if="selectedComment.summary" class="bg-blue-50 rounded-lg p-3">
-        <div class="text-xs font-medium text-blue-700 mb-1">评论摘要</div>
-        <div class="text-sm text-gray-900">{{ selectedComment.summary }}</div>
+      <div v-if="selectedComment.summary" class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+        <div class="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">评论摘要</div>
+        <div class="text-sm text-gray-900 dark:text-gray-100">{{ selectedComment.summary }}</div>
       </div>
 
       <!-- 评论完整内容 -->

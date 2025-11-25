@@ -7,15 +7,15 @@
 
     <div class="flex items-center gap-2">
       <!-- 视图切换 -->
-      <div class="bg-gray-100 rounded-lg p-1 flex">
+      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex">
         <button
           v-for="view in views"
           :key="view.value"
           @click="switchView(view.value as 'list' | 'board' | 'calendar' | 'timeline')"
           class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 flex items-center gap-2"
           :class="currentView === view.value
-            ? 'bg-white text-blue-600 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'"
+            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
         >
           <component :is="view.icon" class="w-4 h-4" />
           {{ view.label }}

@@ -1,13 +1,13 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100 h-full overflow-auto">
-    <div class="p-3 border-b border-gray-100 flex items-center justify-between">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 h-full overflow-auto">
+    <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
           <span v-if="isLoading">加载中...</span>
-          <span v-else-if="error" class="text-red-500">{{ error }}</span>
+          <span v-else-if="error" class="text-red-500 dark:text-red-400">{{ error }}</span>
           <span v-else>
             {{ tasks.length }} / {{ total }} 个任务
-            <span v-if="hasMore" class="text-gray-400 ml-1">(向下滚动加载更多)</span>
+            <span v-if="hasMore" class="text-gray-400 dark:text-gray-500 ml-1">(向下滚动加载更多)</span>
           </span>
         </div>
         <div v-if="selectedTaskIds.size > 0" class="flex items-center gap-2">
@@ -19,7 +19,7 @@
                 <span>{{ getShortcutTooltip('e', true) }}</span>
               </div>
             </template>
-            <button class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            <button class="px-3 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
               @click="handleBatchExport">
               <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -28,7 +28,7 @@
               批量导出
             </button>
           </el-tooltip>
-          <button class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
+          <button class="px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
             @click="clearSelection">
             取消选择
           </button>
@@ -56,23 +56,23 @@
       </el-tooltip>
     </div>
 
-    <div v-if="isLoading" class="p-8 text-center text-gray-400">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+    <div v-if="isLoading" class="p-8 text-center text-gray-400 dark:text-gray-500">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
       <p>加载任务中...</p>
     </div>
 
-    <div v-else-if="error" class="p-8 text-center text-red-500">
+    <div v-else-if="error" class="p-8 text-center text-red-500 dark:text-red-400">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p>{{ error }}</p>
-      <button class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700" @click="loadTasks()">
+      <button class="mt-4 px-4 py-2 text-sm text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600" @click="loadTasks()">
         重试
       </button>
     </div>
 
-    <div v-else-if="tasks.length === 0" class="p-8 text-center text-gray-400">
+    <div v-else-if="tasks.length === 0" class="p-8 text-center text-gray-400 dark:text-gray-500">
       <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -84,13 +84,13 @@
     <div v-else>
       <!-- 表头 -->
       <div
-        class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+        class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         <div class="flex items-center justify-center">
           <input type="checkbox"
             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
             :checked="isAllSelected" :indeterminate="isSomeSelected" @change="toggleSelectAll" />
         </div>
-        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 transition-colors"
+        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
           @click="toggleSort('displayId')">
           <span>ID</span>
           <svg v-if="sortField === 'displayId'" class="w-3 h-3" :class="{ 'rotate-180': sortDirection === 'desc' }"
@@ -141,10 +141,10 @@
       </div>
 
       <!-- 表格内容 -->
-      <div class="divide-y divide-gray-100 overflow-auto">
+      <div class="divide-y divide-gray-100 dark:divide-gray-700 overflow-auto">
         <div v-for="task in tasks" :key="task._id"
-          class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 transition-colors items-center"
-          :class="{ 'bg-blue-50': selectedTaskIds.has(task._id) }">
+          class="grid grid-cols-[40px_80px_1fr_120px_100px_120px_80px] gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors items-center"
+          :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedTaskIds.has(task._id) }">
           <!-- Checkbox -->
           <div class="flex items-center justify-center" @click.stop>
             <input type="checkbox"
@@ -153,26 +153,26 @@
           </div>
 
           <!-- ID -->
-          <div class="text-sm font-mono text-gray-500 cursor-pointer" @click="openTaskDetail(task._id)">
+          <div class="text-sm font-mono text-gray-500 dark:text-gray-400 cursor-pointer" @click="openTaskDetail(task._id)">
             #{{ task.displayId }}
           </div>
 
           <!-- 标题 -->
           <div class="min-w-0 cursor-pointer" @click="openTaskDetail(task._id)">
-            <div class="font-medium text-gray-900 truncate">{{ task.title }}</div>
+            <div class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ task.title }}</div>
             <div v-if="task.tagIds && task.tagIds.length > 0" class="flex items-center gap-1 mt-1">
               <span v-for="tagId in task.tagIds.slice(0, 2)" :key="tagId"
                 class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
                 {{ tagId }}
               </span>
-              <span v-if="task.tagIds.length > 2" class="text-xs text-gray-400">
+              <span v-if="task.tagIds.length > 2" class="text-xs text-gray-400 dark:text-gray-500">
                 +{{ task.tagIds.length - 2 }}
               </span>
             </div>
           </div>
 
           <!-- 指派人 -->
-          <div class="text-sm text-gray-600 cursor-pointer" @click="openTaskDetail(task._id)">
+          <div class="text-sm text-gray-600 dark:text-gray-400 cursor-pointer" @click="openTaskDetail(task._id)">
             <div v-if="task.assignee || task.assigneeId" class="flex items-center gap-2">
               <el-tooltip
                 :content="task.assignee?.displayName || task.assignee?.username || task.assignee?.email || task.assigneeId"
@@ -185,7 +185,7 @@
 
               </el-tooltip>
             </div>
-            <span v-else class="text-gray-400">未指派</span>
+            <span v-else class="text-gray-400 dark:text-gray-500">未指派</span>
           </div>
 
           <!-- 优先级 -->
@@ -197,7 +197,7 @@
           </div>
 
           <!-- 最后更新 -->
-          <div class="text-sm text-gray-500 cursor-pointer" @click="openTaskDetail(task._id)">
+          <div class="text-sm text-gray-500 dark:text-gray-400 cursor-pointer" @click="openTaskDetail(task._id)">
             {{ formatDate(task.updatedAt) }}
           </div>
 
@@ -215,21 +215,21 @@
       </div>
 
       <!-- 加载更多指示器 -->
-      <div ref="loadMoreTrigger" v-if="hasMore && !isLoading" class="p-4 text-center border-t border-gray-100">
-        <div v-if="isLoadingMore" class="flex items-center justify-center gap-2 text-sm text-gray-500">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+      <div ref="loadMoreTrigger" v-if="hasMore && !isLoading" class="p-4 text-center border-t border-gray-100 dark:border-gray-700">
+        <div v-if="isLoadingMore" class="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 dark:border-blue-400"></div>
           <span>加载更多任务...</span>
         </div>
         <button v-else
-          class="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+          class="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
           @click="loadMoreTasks">
           加载更多 (剩余 {{ total - tasks.length }} 个)
         </button>
       </div>
 
       <!-- 全部加载完成提示 -->
-      <div v-if="!hasMore && tasks.length > 0 && !isLoading" class="p-4 text-center border-t border-gray-100">
-        <span class="text-sm text-gray-400">已加载全部任务</span>
+      <div v-if="!hasMore && tasks.length > 0 && !isLoading" class="p-4 text-center border-t border-gray-100 dark:border-gray-700">
+        <span class="text-sm text-gray-400 dark:text-gray-500">已加载全部任务</span>
       </div>
     </div>
 
