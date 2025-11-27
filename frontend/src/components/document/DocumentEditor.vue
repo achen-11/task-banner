@@ -190,6 +190,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Refresh } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import { createDocument, updateDocument } from '@/api/document'
 
 interface Document {
   _id: string
@@ -368,40 +369,30 @@ const handleSave = async () => {
   autoSaveStatus.value = '保存中...'
 
   try {
-    const url = isEditing.value ? '/api/document/update' : '/api/document/create'
-    const payload: any = {
-      ...form.value,
-      projectId: props.projectId
-    }
-
+    let result
     if (isEditing.value) {
-      payload.id = props.document!._id
-      payload.changeLog = isEditing.value ? '更新文档内容' : '创建新文档'
-    }
-
-    const response = await fetch(url, {
-      method: isEditing.value ? 'PUT' : 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success(isEditing.value ? '文档保存成功' : '文档创建成功')
-      autoSaveStatus.value = '保存成功'
-      emit('saved')
-
-      // 延迟关闭
-      setTimeout(() => {
-        handleClose()
-      }, 1000)
+      result = await updateDocument({
+        id: props.document!._id,
+        title: form.value.title,
+        content: form.value.content,
+        status: form.value.status,
+        changeLog: '更新文档内容'
+      })
     } else {
-      ElMessage.error(result.message || '保存失败')
-      autoSaveStatus.value = '保存失败'
+      result = await createDocument({
+        ...form.value,
+        projectId: props.projectId
+      })
     }
+
+    ElMessage.success(isEditing.value ? '文档保存成功' : '文档创建成功')
+      autoSaveStatus.value = '保存成功'
+    emit('saved')
+
+    // 延迟关闭
+    setTimeout(() => {
+      handleClose()
+    }, 1000)
   } catch (error) {
     console.error('保存文档失败:', error)
     ElMessage.error('保存失败')

@@ -153,21 +153,10 @@ import {
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import DocumentVersionsDialog from './DocumentVersionsDialog.vue'
+import { getDocumentDetail, exportDocument, type DocumentDetail } from '@/api/document'
 
-interface Document {
-  _id: string
-  title: string
-  content: string
-  projectId: string
-  type: string
-  status: 'draft' | 'published' | 'archived'
-  tags: string[]
-  version?: number
-  createdBy: string
-  updatedBy: string
-  createdAt: number
-  updatedAt: number
-}
+// 使用 API 中导出的类型
+type Document = DocumentDetail
 
 interface Props {
   visible: boolean
@@ -237,20 +226,13 @@ const fetchDocument = async () => {
 
   loading.value = true
   try {
-    const response = await fetch(`/api/document/detail?id=${props.documentId}`)
-    const result = await response.json()
-
-    if (result.code === 200) {
-      document.value = result.data
-      if (document.value?.type === 'markdown') {
-        generateTOC()
-      }
-    } else {
-      ElMessage.error(result.message || '获取文档失败')
+    document.value = await getDocumentDetail(props.documentId)
+    if (document.value?.type === 'markdown') {
+      generateTOC()
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取文档失败:', error)
-    ElMessage.error('获取文档失败')
+    ElMessage.error(error.message || '获取文档失败')
   } finally {
     loading.value = false
   }
@@ -350,8 +332,7 @@ const handleExport = async () => {
   if (!document.value) return
 
   try {
-    const response = await fetch(`/api/document/export?id=${document.value!._id}`)
-    const blob = await response.blob()
+    const blob = await exportDocument(document.value!._id)
     const url = window.URL.createObjectURL(blob)
     const a = window.document.createElement('a')
     a.href = url

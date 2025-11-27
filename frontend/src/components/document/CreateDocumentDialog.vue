@@ -112,6 +112,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElForm } from 'element-plus'
 import { marked } from 'marked'
+import { createDocument } from '@/api/document'
 
 interface Props {
   visible: boolean
@@ -230,26 +231,14 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     loading.value = true
 
-    const response = await fetch('/api/document/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...form.value,
-        projectId: props.projectId
-      })
+    const result = await createDocument({
+      ...form.value,
+      projectId: props.projectId
     })
 
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success('文档创建成功')
-      emit('created')
-      handleClose()
-    } else {
-      ElMessage.error(result.message || '创建文档失败')
-    }
+    ElMessage.success('文档创建成功')
+    emit('created')
+    handleClose()
   } catch (error) {
     console.error('创建文档失败:', error)
     ElMessage.error('创建文档失败')

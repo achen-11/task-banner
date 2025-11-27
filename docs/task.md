@@ -53,81 +53,52 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: 7aa5a730-d8fc-4c61-98de-401a2cba4861 -->
-#### 1. 暗黑模式适配
+<!-- task-id: ac4ffe34-34be-4e95-bdff-5d6667e0dffe -->
+#### 1. 文档编辑 bug
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/25 09:43:38
-**更新时间：** 2025/11/25 09:43:38
+**创建时间：** 2025/11/27 11:09:56
+**更新时间：** 2025/11/27 11:09:56
 
-**任务摘要：** 实现了完整的暗黑模式功能，支持手动切换主题，自动保存用户偏好，并适配了所有主要组件的暗黑样式。
+**任务摘要：** 修复了文档编辑模式下输入字母"N"时意外触发新建文档的快捷键冲突问题
 
 **任务需求：**
 
-支持切换成暗黑模式
+ 在文档编辑模式时, 正常输入和拼写"N", 依然会触发新建文档, 这是不对的, 修复这个 bug
 
 ---
 
 ## 🛠️ AI 解决方案
 
-**任务摘要：** 实现了完整的暗黑模式功能，支持手动切换主题，自动保存用户偏好，并适配了所有主要组件的暗黑样式。
+**请在此处提供详细的实现方案：**
 
 ### 实现步骤
-
-1. **UI Store 状态管理**
-   - 在 `frontend/src/stores/ui.ts` 中添加 `isDarkMode` 状态
-   - 从 localStorage 读取用户偏好，如果没有则使用系统偏好
-   - 实现 `toggleDarkMode()` 和 `setDarkMode()` 方法
-   - 实现 `applyDarkMode()` 方法，在 HTML 根元素上添加/移除 `dark` class
-   - 使用 `watch` 监听状态变化，自动应用暗黑模式
-
-2. **Tailwind CSS 配置**
-   - 在 `frontend/tailwind.config.js` 中启用 `darkMode: 'class'` 策略
-   - 支持通过 `dark:` 前缀使用暗黑模式样式
-
-3. **组件样式适配**
-   - 更新 `Sidebar.vue`：添加暗黑模式背景色、文字颜色、边框颜色
-   - 更新 `AppHeader.vue`：添加暗黑模式背景色、文字颜色、输入框样式
-   - 更新 `MainLayout.vue`：添加暗黑模式背景色
-   - 更新所有图标和文字颜色以适配暗黑模式
-
-4. **主题切换功能**
-   - 在 `Sidebar.vue` 的用户下拉菜单中添加"暗黑模式/浅色模式"切换按钮
-   - 按钮显示当前模式图标（太阳/月亮）
-   - 点击后切换主题并保存到 localStorage
-
-5. **CSS 变量更新**
-   - 更新 `frontend/src/assets/base.css`，支持通过 `.dark` class 控制暗黑模式
-   - 保留系统偏好作为后备方案
+1. **分析任务需求**：在 `ProjectDocuments.vue` 中，新建文档的快捷键是单独按 'N' 键，但没有检查用户是否在编辑模式下或在可编辑元素中输入
+2. **设计技术方案**：在触发新建文档快捷键之前，检查：
+   - 是否处于编辑模式（`isEditMode.value`）
+   - 焦点是否在可编辑元素上（input、textarea、contenteditable）
+3. **具体实现步骤**：
+   - 在 `handleKeyboardShortcuts` 函数中，添加对可编辑元素的检测
+   - 通过 `event.target` 判断焦点是否在 input、textarea 或 contenteditable 元素上
+   - 如果处于编辑模式或在可编辑元素中，则跳过新建文档快捷键的处理
+4. **验证和测试**：
+   - 在编辑模式下输入字母"N"，不应触发新建文档
+   - 在非编辑模式下按"N"键，应正常触发新建文档
 
 ### 修改的文件
-
-- `frontend/src/stores/ui.ts` - 添加暗黑模式状态管理
-- `frontend/tailwind.config.js` - 启用暗黑模式 class 策略
-- `frontend/src/components/Sidebar.vue` - 添加暗黑模式样式和切换按钮
-- `frontend/src/components/AppHeader.vue` - 添加暗黑模式样式
-- `frontend/src/layouts/MainLayout.vue` - 添加暗黑模式背景色
-- `frontend/src/assets/base.css` - 更新 CSS 变量支持暗黑模式
+- `frontend/src/components/project/ProjectDocuments.vue`
 
 ### 技术要点
-
-- **状态管理**：使用 Pinia store 管理暗黑模式状态，支持持久化到 localStorage
-- **Tailwind CSS 暗黑模式**：使用 `darkMode: 'class'` 策略，通过 `dark:` 前缀应用暗黑样式
-- **Element Plus 兼容**：Element Plus 2.x 自动支持暗黑模式，只需在 HTML 根元素添加 `dark` class
-- **系统偏好检测**：首次访问时自动检测系统偏好，提供更好的用户体验
-- **状态同步**：使用 Vue 的 `watch` 自动同步状态变化到 DOM
+- 键盘事件处理：通过 `event.target` 检测焦点元素类型
+- 可编辑元素检测：检查 `tagName`、`isContentEditable` 和 `closest()` 方法
+- 快捷键冲突避免：在编辑状态下禁用全局快捷键，避免干扰用户输入
 
 ### 验证结果
-
-- ✅ 暗黑模式状态正确保存到 localStorage
-- ✅ 切换按钮正确显示当前模式图标
-- ✅ 所有组件样式正确适配暗黑模式
-- ✅ Element Plus 组件自动应用暗黑样式
-- ✅ 刷新页面后保持用户选择的主题
-- ✅ 首次访问时正确检测系统偏好
-- ✅ 无语法错误和 linter 警告
+- ✅ 在编辑模式下输入字母"N"，不再触发新建文档
+- ✅ 在非编辑模式下按"N"键，正常触发新建文档对话框
+- ✅ 在标题输入框和内容编辑器中输入"N"，都不会触发新建文档
 
 
-> 📅 导出时间：2025/11/25 09:43:40
+> 📅 导出时间：2025/11/27 11:10:57
 > 🤖 由 Task-Flow 生成

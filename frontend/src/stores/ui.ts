@@ -6,14 +6,15 @@ export const useUIStore = defineStore('ui', () => {
   const sidebarCollapsed = ref(false)
 
   // 暗黑模式状态（从 localStorage 读取，默认为 false）
-  const isDarkMode = ref<boolean>(() => {
+  const getInitialDarkMode = (): boolean => {
     const saved = localStorage.getItem('darkMode')
     if (saved !== null) {
       return saved === 'true'
     }
     // 如果没有保存的偏好，使用系统偏好
     return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+  }
+  const isDarkMode = ref<boolean>(getInitialDarkMode())
 
   // 切换侧边栏状态
   const toggleSidebar = () => {

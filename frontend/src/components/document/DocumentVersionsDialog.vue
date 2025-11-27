@@ -198,8 +198,12 @@ import {
   Loading, Clock, View, RefreshLeft, ScaleToOriginal
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import { getDocumentVersions, getDocumentVersion, updateDocument, type DocumentVersion as DocumentVersionType } from '@/api/document'
 
-interface DocumentVersion {
+// 使用 API 中导出的类型
+type DocumentVersion = DocumentVersionType
+
+interface DocumentVersionLocal {
   documentId: string
   version: number
   title: string
@@ -254,17 +258,10 @@ const fetchVersions = async () => {
 
   loading.value = true
   try {
-    const response = await fetch(`/api/document/versions?documentId=${props.documentId}`)
-    const result = await response.json()
-
-    if (result.code === 200) {
-      versions.value = result.data
-      // 获取当前版本号
-      if (versions.value.length > 0) {
-        currentVersion.value = Math.max(...versions.value.map(v => v.version))
-      }
-    } else {
-      ElMessage.error(result.message || '获取版本历史失败')
+    versions.value = await getDocumentVersions(props.documentId)
+    // 获取当前版本号
+    if (versions.value.length > 0) {
+      currentVersion.value = Math.max(...versions.value.map(v => v.version))
     }
   } catch (error) {
     console.error('获取版本历史失败:', error)
@@ -277,15 +274,8 @@ const fetchVersions = async () => {
 // 查看版本
 const viewVersion = async (version: DocumentVersion) => {
   try {
-    const response = await fetch(`/api/document/version?documentId=${version.documentId}&version=${version.version}`)
-    const result = await response.json()
-
-    if (result.code === 200) {
-      viewData.value = result.data
-      showViewDialog.value = true
-    } else {
-      ElMessage.error(result.message || '获取版本详情失败')
-    }
+    viewData.value = await getDocumentVersion(version.documentId, version.version)
+    showViewDialog.value = true
   } catch (error) {
     console.error('获取版本详情失败:', error)
     ElMessage.error('获取版本详情失败')
@@ -305,28 +295,16 @@ const restoreVersion = async (version: DocumentVersion) => {
       }
     )
 
-    const response = await fetch('/api/document/update', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id: version.documentId,
-        title: version.title,
-        content: version.content,
-        changeLog: `从版本 ${version.version} 恢复`
-      })
+    await updateDocument({
+      id: version.documentId,
+      title: version.title,
+      content: version.content,
+      changeLog: `从版本 ${version.version} 恢复`
     })
 
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success('版本恢复成功')
-      emit('restore', version)
-      handleClose()
-    } else {
-      ElMessage.error(result.message || '版本恢复失败')
-    }
+    ElMessage.success('版本恢复成功')
+    emit('restore', version)
+    handleClose()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('版本恢复失败:', error)
@@ -339,13 +317,7 @@ const restoreVersion = async (version: DocumentVersion) => {
 const compareVersion = async (version: DocumentVersion) => {
   try {
     // 获取历史版本内容
-    const historyResponse = await fetch(`/api/document/version?documentId=${version.documentId}&version=${version.version}`)
-    const historyResult = await historyResponse.json()
-
-    if (historyResult.code !== 200) {
-      ElMessage.error('获取历史版本失败')
-      return
-    }
+    const historyVersion = await getDocumentVersion(version.documentId, version.version)
 
     // 获取当前版本内容（假设当前版本是最新的）
     const currentVersionData = versions.value.find(v => v.version === currentVersion.value)
@@ -354,31 +326,25 @@ const compareVersion = async (version: DocumentVersion) => {
       return
     }
 
-    const currentResponse = await fetch(`/api/document/version?documentId=${version.documentId}&version=${currentVersion.value}`)
-    const currentResult = await currentResponse.json()
-
-    if (currentResult.code !== 200) {
-      ElMessage.error('获取当前版本失败')
-      return
-    }
+    const currentVersionData2 = await getDocumentVersion(version.documentId, currentVersion.value)
 
     // 计算差异
     const diff = calculateDiff(
-      currentResult.data.content,
-      historyResult.data.content
+      currentVersionData2.content,
+      historyVersion.content
     )
 
     compareData.value = {
       current: {
         version: currentVersion.value,
-        createdAt: currentResult.data.createdAt
+        createdAt: currentVersionData2.createdAt
       },
       history: {
         version: version.version,
-        createdAt: version.createdAt
+        createdAt: historyVersion.createdAt
       },
-      currentHtml: marked(currentResult.data.content),
-      historyHtml: marked(historyResult.data.content),
+      currentHtml: marked(currentVersionData2.content),
+      historyHtml: marked(historyVersion.content),
       diff
     }
 

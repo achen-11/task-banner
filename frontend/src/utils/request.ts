@@ -12,7 +12,8 @@ const request: AxiosInstance = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true // 确保发送 cookie
 })
 
 // 请求拦截器

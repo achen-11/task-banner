@@ -451,21 +451,10 @@ import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, A
 import { ChevronRight, ChevronLeft, Keyboard } from 'lucide-vue-next'
 import { marked } from 'marked'
 import CreateDocumentDialog from '../document/CreateDocumentDialog.vue'
+import { getDocumentList, updateDocument, deleteDocument as deleteDocumentAPI, type Document as DocumentType } from '@/api/document'
 
-// 类型定义
-interface Document {
-  _id: string
-  title: string
-  content: string
-  projectId: string
-  type: string
-  status: 'draft' | 'published' | 'archived'
-  tags: string[]
-  createdBy: string
-  updatedBy: string
-  createdAt: number
-  updatedAt: number
-}
+// 使用 API 中导出的类型
+type Document = DocumentType
 
 // Props
 interface Props {
@@ -691,31 +680,28 @@ const tableOfContents = computed(() => {
 const fetchDocuments = async () => {
   loading.value = true
   try {
-    // 这里调用实际的 API
-    const response = await fetch(`/api/document/list?projectId=${props.projectId}&page=1&size=100`)
-    const result = await response.json()
-
-    if (result.code === 200) {
-      documents.value = result.data.items
-      // 如果URL中有文档ID，优先选择对应的文档
-      if (documentId?.value) {
-        const targetDocument = documents.value.find(doc => doc._id === documentId.value)
-        if (targetDocument) {
-          selectedDocument.value = targetDocument
-        } else if (documents.value.length > 0 && !selectedDocument.value) {
-          // 如果找不到对应文档，且没有选中任何文档，默认选中第一个
-          selectedDocument.value = documents.value[0] || null
-        }
+    const result = await getDocumentList(props.projectId, {
+      page: 1,
+      size: 100
+    })
+    
+    documents.value = result.items
+    // 如果URL中有文档ID，优先选择对应的文档
+    if (documentId?.value) {
+      const targetDocument = documents.value.find(doc => doc._id === documentId.value)
+      if (targetDocument) {
+        selectedDocument.value = targetDocument
       } else if (documents.value.length > 0 && !selectedDocument.value) {
-        // 如果没有URL文档ID，且没有选中任何文档，默认选中第一个
+        // 如果找不到对应文档，且没有选中任何文档，默认选中第一个
         selectedDocument.value = documents.value[0] || null
       }
-    } else {
-      ElMessage.error(result.message || '获取文档列表失败')
+    } else if (documents.value.length > 0 && !selectedDocument.value) {
+      // 如果没有URL文档ID，且没有选中任何文档，默认选中第一个
+      selectedDocument.value = documents.value[0] || null
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取文档列表失败:', error)
-    ElMessage.error('获取文档列表失败')
+    ElMessage.error(error.message || '获取文档列表失败')
   } finally {
     loading.value = false
   }
@@ -847,57 +833,44 @@ const saveDocument = async () => {
   savingStatus.value = 'saving'
 
   try {
-    const response = await fetch('/api/document/update', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id: selectedDocument.value._id,
-        title: editingTitle.value || selectedDocument.value.title,
-        content: editingContent.value,
-        status: documentStatus.value,
-        changeLog: '编辑文档内容和状态'
-      })
+    const result = await updateDocument({
+      id: selectedDocument.value._id,
+      title: editingTitle.value || selectedDocument.value.title,
+      content: editingContent.value,
+      status: documentStatus.value,
+      changeLog: '编辑文档内容和状态'
     })
 
-    const result = await response.json()
+    savingStatus.value = 'saved'
+    ElMessage.success('文档保存成功')
 
-    if (result.code === 200) {
-      savingStatus.value = 'saved'
-      ElMessage.success('文档保存成功')
-
-      // 更新文档列表中的内容
-      const docId = selectedDocument.value?._id
-      if (docId) {
-        const docIndex = documents.value.findIndex(d => d._id === docId)
-        if (docIndex > -1) {
-          documents.value[docIndex]!.content = editingContent.value
-          documents.value[docIndex]!.title = editingTitle.value || documents.value[docIndex]!.title
-          documents.value[docIndex]!.status = documentStatus.value
-          documents.value[docIndex]!.updatedAt = Date.now()
-        }
+    // 更新文档列表中的内容
+    const docId = selectedDocument.value?._id
+    if (docId) {
+      const docIndex = documents.value.findIndex(d => d._id === docId)
+      if (docIndex > -1) {
+        documents.value[docIndex]!.content = editingContent.value
+        documents.value[docIndex]!.title = editingTitle.value || documents.value[docIndex]!.title
+        documents.value[docIndex]!.status = documentStatus.value
+        documents.value[docIndex]!.updatedAt = Date.now()
       }
-      if (selectedDocument.value) {
-        selectedDocument.value.content = editingContent.value
-        selectedDocument.value.title = editingTitle.value || selectedDocument.value.title
-        selectedDocument.value.status = documentStatus.value
-        selectedDocument.value.updatedAt = Date.now()
-      }
-
-      // 重置编辑状态
-      originalContent.value = editingContent.value
-      originalTitle.value = editingTitle.value || selectedDocument.value.title
-      isSave.value = true
-
-      // 2秒后重置保存状态
-      setTimeout(() => {
-        savingStatus.value = 'idle'
-      }, 2000)
-    } else {
-      savingStatus.value = 'error'
-      ElMessage.error(result.message || '保存失败')
     }
+    if (selectedDocument.value) {
+      selectedDocument.value.content = editingContent.value
+      selectedDocument.value.title = editingTitle.value || selectedDocument.value.title
+      selectedDocument.value.status = documentStatus.value
+      selectedDocument.value.updatedAt = Date.now()
+    }
+
+    // 重置编辑状态
+    originalContent.value = editingContent.value
+    originalTitle.value = editingTitle.value || selectedDocument.value.title
+    isSave.value = true
+
+    // 2秒后重置保存状态
+    setTimeout(() => {
+      savingStatus.value = 'idle'
+    }, 2000)
   } catch (error) {
     savingStatus.value = 'error'
     console.error('保存文档失败:', error)
@@ -918,29 +891,17 @@ const deleteDocument = async (document: Document) => {
     )
 
     // 调用删除 API
-    const response = await fetch('/api/document/delete', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ id: document._id })
-    })
+    await deleteDocumentAPI(document._id)
+    
+    ElMessage.success('文档删除成功')
 
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success('文档删除成功')
-
-      // 如果删除的是当前选中的文档，需要重新选择
-      if (selectedDocument.value?._id === document._id) {
-        const remainingDocs = documents.value.filter(doc => doc._id !== document._id)
-        selectedDocument.value = remainingDocs.length > 0 ? (remainingDocs[0] || null) : null
-      }
-
-      await fetchDocuments()
-    } else {
-      ElMessage.error(result.message || '删除文档失败')
+    // 如果删除的是当前选中的文档，需要重新选择
+    if (selectedDocument.value?._id === document._id) {
+      const remainingDocs = documents.value.filter(doc => doc._id !== document._id)
+      selectedDocument.value = remainingDocs.length > 0 ? (remainingDocs[0] || null) : null
     }
+
+    await fetchDocuments()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除文档失败:', error)
@@ -1115,7 +1076,18 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
   }
 
   // N - 新建文档（不使用修饰符，避免浏览器快捷键冲突）
+  // 检查是否在可编辑元素中（input、textarea、contenteditable）
+  const target = event.target as HTMLElement
+  const isInEditableElement = target.tagName === 'INPUT' || 
+                               target.tagName === 'TEXTAREA' || 
+                               target.isContentEditable ||
+                               target.closest('input, textarea, [contenteditable="true"]')
+  
   if (event.key === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    // 如果处于编辑模式或在可编辑元素中，不触发新建文档
+    if (isEditMode.value || isInEditableElement) {
+      return
+    }
     event.preventDefault()
     showCreateDialog.value = true
   }
