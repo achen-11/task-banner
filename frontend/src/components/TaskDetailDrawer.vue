@@ -163,7 +163,7 @@
               <!-- 左列：基础信息（独立滚动） -->
               <div class="overflow-y-auto pr-3 -mr-3">
                 <div class="pr-3">
-                  <TaskBasicInfo :task="currentTask" :mode="mode" :project-id="projectId" @update="handleTaskUpdate" />
+                  <TaskBasicInfo ref="taskBasicInfoRef" :task="currentTask" :mode="mode" :project-id="projectId" @update="handleTaskUpdate" />
                 </div>
               </div>
 
@@ -252,6 +252,7 @@ const emit = defineEmits<{
 // 标题输入框引用
 const titleInputRef = ref<HTMLInputElement>()
 const taskActivityRef = ref<InstanceType<typeof TaskActivity>>()
+const taskBasicInfoRef = ref<InstanceType<typeof TaskBasicInfo>>()
 
 
 // 创建模式下的新任务数据
@@ -819,6 +820,11 @@ const handleSaveTask = async (continueCreate = false) => {
       })
 
       isSaved.value = true
+
+      // 关联待处理的附件
+      if (taskBasicInfoRef.value && 'associatePendingAttachments' in taskBasicInfoRef.value) {
+        await taskBasicInfoRef.value.associatePendingAttachments(task._id)
+      }
 
       if (continueCreate) {
         // cmd+shift+s：保存并继续新建

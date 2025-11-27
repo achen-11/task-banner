@@ -6,7 +6,8 @@ import {
   createAttachment,
   getAttachmentById,
   getAttachmentsByRelation,
-  deleteAttachment
+  deleteAttachment,
+  updateAttachmentsRelatedId
 } from 'code/Services/attachment'
 import { getTaskById } from 'code/Services/task'
 import { checkProjectPermission } from 'code/Services/project'
@@ -78,8 +79,8 @@ k.api.post("upload", () => {
       return error('You do not have permission to upload files to this project', 403)
     }
 
-    // 如果是任务附件，验证任务是否存在
-    if (relatedType === 'task') {
+    // 如果是任务附件，验证任务是否存在（允许临时 ID 'temp'）
+    if (relatedType === 'task' && relatedId !== 'temp') {
       const task = getTaskById(relatedId)
       if (!task) {
         return error('Task not found', 404)
@@ -139,6 +140,34 @@ k.api.post("upload", () => {
   } catch (err) {
     k.logger.error('UploadAttachmentError', err instanceof Error ? err.message : String(err))
     return error('Failed to upload attachments', 500, err)
+  }
+})
+
+// PUT /api/attachment/updateRelatedId
+k.api.put("updateRelatedId", (body: any) => {
+  if (!k.account.isLogin) {
+    return error('Unauthorized', 401)
+  }
+
+  const oldRelatedId = body?.oldRelatedId
+  const newRelatedId = body?.newRelatedId
+  const relatedType = body?.relatedType
+
+  if (!oldRelatedId || !newRelatedId || !relatedType) {
+    return error('Missing required parameters: oldRelatedId, newRelatedId, relatedType', 400)
+  }
+
+  if (relatedType !== 'task' && relatedType !== 'comment') {
+    return error('Invalid relatedType, must be "task" or "comment"', 400)
+  }
+
+  try {
+    
+    const count = updateAttachmentsRelatedId(oldRelatedId, newRelatedId, relatedType)
+    return success({ count }, `Successfully updated ${count} attachment(s)`)
+  } catch (err) {
+    k.logger.error('UpdateAttachmentRelatedIdError', err instanceof Error ? err.message : String(err))
+    return error('Failed to update attachment relatedId', 500, err)
   }
 })
 

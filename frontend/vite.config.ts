@@ -79,6 +79,13 @@ export default defineConfig({
         secure: false,
         // 不重写路径，保持 /api 前缀
         // rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 代理所有 /__kb/kfile 开头的请求到远程服务器
+      '/__kb/kfile': {
+        target: 'https://ai_task_manage.redev.cn',
+        changeOrigin: true,
+        secure: false,
+        // 不重写路径，保持 /__kb/kfile 前缀
       }
     }
   },

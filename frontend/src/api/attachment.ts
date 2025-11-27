@@ -75,8 +75,27 @@ export function deleteAttachment(id: string): Promise<void> {
   })
 }
 
+/**
+ * 更新附件的关联 ID（用于任务创建后关联临时附件）
+ * @param oldRelatedId 旧的关联对象 ID（如 'temp'）
+ * @param newRelatedId 新的关联对象 ID（任务 ID）
+ * @param relatedType 关联类型
+ */
+export function updateAttachmentRelatedId(
+  oldRelatedId: string,
+  newRelatedId: string,
+  relatedType: 'task' | 'comment'
+): Promise<{ count: number }> {
+  return request.put('/api/attachment/updateRelatedId', {
+    oldRelatedId,
+    newRelatedId,
+    relatedType
+  })
+}
+
 export default {
   uploadAttachments,
   getAttachmentList,
-  deleteAttachment
+  deleteAttachment,
+  updateAttachmentRelatedId
 }

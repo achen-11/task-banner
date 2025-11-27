@@ -270,6 +270,7 @@
         min-height="300px"
         @update:model-value="handleContentChange"
         @save="handleSave"
+        @paste-file="handlePasteFile"
       />
       <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
         支持 Markdown 语法：**加粗** *斜体* - [ ] 任务列表等
@@ -294,14 +295,19 @@
         <!-- 附件上传（可折叠） -->
         <div v-if="showUploadArea" class="mb-4">
           <AttachmentUpload
-            v-if="localTask._id && localTask.projectId"
+            ref="attachmentUploadRef"
+            v-if="props.projectId || localTask.projectId"
             :related-type="'task'"
-            :related-id="localTask._id"
-            :project-id="localTask.projectId"
+            :related-id="localTask._id || 'temp'"
+            :project-id="props.projectId || localTask.projectId"
+            :disabled="isSaving"
             @upload="handleAttachmentUpload"
             @uploaded="handleAttachmentUploaded"
             @error="handleAttachmentError"
           />
+          <div v-if="!localTask._id" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            💡 提示：附件将在任务创建后自动关联
+          </div>
           <button
             class="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             @click="showUploadArea = false"
@@ -330,7 +336,7 @@ import MarkdownEditor from '../common/MarkdownEditor.vue'
 import AttachmentUpload from '../attachment/AttachmentUpload.vue'
 import AttachmentList from '../attachment/AttachmentList.vue'
 import TagSelector from '../tag/TagSelector.vue'
-import { getAttachmentList } from '@/api/attachment'
+import { getAttachmentList, updateAttachmentRelatedId } from '@/api/attachment'
 import { getProjectMembers } from '@/api/project'
 import { getProjectTags } from '@/api/tag'
 import { getModuleList } from '@/api/module'
@@ -474,6 +480,9 @@ const showUploadArea = ref(false)
 // Markdown 编辑器引用和状态
 const markdownEditorRef = ref<InstanceType<typeof MarkdownEditor>>()
 const isPreviewMode = ref(false)
+
+// 附件上传组件引用
+const attachmentUploadRef = ref<InstanceType<typeof AttachmentUpload>>()
 
 // 设置编辑器模式
 const setEditorMode = (preview: boolean) => {
@@ -624,6 +633,11 @@ watch(() => props.task, async (newTask) => {
 // 监听 projectId 变化，加载项目成员和标签
 watch(() => props.projectId, async (newProjectId) => {
   if (newProjectId) {
+    // 更新 localTask 的 projectId（用于附件上传等）
+    if (!localTask.value.projectId) {
+      localTask.value.projectId = newProjectId
+    }
+    
     await Promise.all([
       loadProjectMembers(),
       loadProjectModules(),
@@ -706,12 +720,83 @@ const handleAttachmentUpload = (files: File[]) => {
 }
 
 // 附件上传完成处理
-const handleAttachmentUploaded = (attachments: Attachment[]) => {
-  const currentAttachments = localTask.value.attachments || []
-  const newAttachments = [...currentAttachments, ...attachments]
-  localTask.value.attachments = newAttachments
+const handleAttachmentUploaded = async (attachments: Attachment[]) => {
+  if (localTask.value._id && localTask.value._id !== 'temp') {
+    // 任务已存在，直接添加到附件列表
+    const currentAttachments = localTask.value.attachments || []
+    const newAttachments = [...currentAttachments, ...attachments]
+    localTask.value.attachments = newAttachments
+
+    // 查看模式：标记为未保存，等待手动保存
+    if (props.mode === 'view') {
+      hasUnsavedChanges.value = true
+    }
+  } else {
+    // 新建任务模式：使用临时 ID 'temp' 上传的附件，暂存显示
+    if (!localTask.value.attachments) {
+      localTask.value.attachments = []
+    }
+    localTask.value.attachments.push(...attachments)
+    
+    ElMessage.success(`已添加 ${attachments.length} 个附件，将在任务创建后自动关联`)
+  }
+  
   // 上传完成后自动收起上传区域
   showUploadArea.value = false
+}
+
+// 暴露方法供父组件调用：任务创建后关联附件
+const associatePendingAttachments = async (taskId: string) => {
+  // 更新所有使用临时 ID 'temp' 的附件
+  try {
+    const result = await updateAttachmentRelatedId('temp', taskId, 'task')
+    if (result.count > 0) {
+      // 重新加载附件列表
+      const attachments = await getAttachmentList('task', taskId)
+      localTask.value.attachments = attachments
+      ElMessage.success(`已关联 ${result.count} 个附件`)
+    }
+  } catch (error) {
+    console.error('关联附件失败:', error)
+    ElMessage.error('关联附件失败，请手动重新上传')
+  }
+}
+
+// 暴露方法
+defineExpose({
+  associatePendingAttachments
+})
+
+// 处理粘贴文件
+const handlePasteFile = async (files: File[]) => {
+  // 使用 props.projectId 或 localTask.projectId
+  const projectId = props.projectId || localTask.value.projectId
+  if (!projectId) {
+    ElMessage.warning('请先选择项目')
+    return
+  }
+
+  if (files.length === 0) return
+
+  // 确保 localTask 有 projectId（用于附件上传组件）
+  if (!localTask.value.projectId && projectId) {
+    localTask.value.projectId = projectId
+  }
+
+  // 显示上传区域
+  if (!showUploadArea.value) {
+    showUploadArea.value = true
+  }
+
+  // 等待 DOM 更新后触发上传
+  await nextTick()
+  
+  // 通过 ref 调用附件上传组件的上传方法
+  if (attachmentUploadRef.value && 'uploadFiles' in attachmentUploadRef.value) {
+    attachmentUploadRef.value.uploadFiles(files)
+  } else {
+    ElMessage.warning('附件上传功能暂不可用，请稍后重试')
+  }
 }
 
 // 附件上传错误处理

@@ -123,6 +123,50 @@ export function deleteAttachment(attachmentId: string): boolean {
 }
 
 /**
+ * 更新附件的关联 ID（用于任务创建后关联临时附件）
+ * @param attachmentId - 附件 ID
+ * @param newRelatedId - 新的关联对象 ID
+ * @returns 是否成功
+ */
+export function updateAttachmentRelatedId(attachmentId: string, newRelatedId: string): boolean {
+  const attachment = Attachment.findById(attachmentId) as AttachmentType | null
+  if (!attachment) {
+    return false
+  }
+
+  return Attachment.updateById(attachmentId, {
+    relatedId: newRelatedId
+  })
+}
+
+/**
+ * 批量更新附件的关联 ID（用于任务创建后关联临时附件）
+ * @param oldRelatedId - 旧的关联对象 ID（如 'temp'）
+ * @param newRelatedId - 新的关联对象 ID（任务 ID）
+ * @param relatedType - 关联类型
+ * @returns 更新的附件数量
+ */
+export function updateAttachmentsRelatedId(
+  oldRelatedId: string,
+  newRelatedId: string,
+  relatedType: 'task' | 'comment'
+): number {
+  const attachments = Attachment.findAll({
+    relatedType,
+    relatedId: oldRelatedId
+  }) as AttachmentType[]
+
+  let count = 0
+  attachments.forEach(att => {
+    if (Attachment.updateById(att._id, { relatedId: newRelatedId })) {
+      count++
+    }
+  })
+
+  return count
+}
+
+/**
  * 批量删除关联对象的所有附件
  * @param relatedType - 关联类型
  * @param relatedId - 关联对象 ID

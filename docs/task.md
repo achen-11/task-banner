@@ -53,19 +53,20 @@
 
 ### 🟡 中优先级
 
-<!-- task-id: ac4ffe34-34be-4e95-bdff-5d6667e0dffe -->
-#### 1. 文档编辑 bug
+<!-- task-id: adbfa940-9e3e-4d14-ae0a-1165c3740092 -->
+#### 1. 新建任务-无法附件上传
 
 **状态：** 待验收
 **优先级：** 中
-**创建时间：** 2025/11/27 11:09:56
-**更新时间：** 2025/11/27 11:09:56
+**创建时间：** 2025/11/25 10:03:45
+**更新时间：** 2025/11/27 11:13:21
 
-**任务摘要：** 修复了文档编辑模式下输入字母"N"时意外触发新建文档的快捷键冲突问题
+**任务摘要：** 修复了新建任务时无法上传附件的问题，并支持在描述输入框中粘贴文件自动上传
 
 **任务需求：**
 
- 在文档编辑模式时, 正常输入和拼写"N", 依然会触发新建文档, 这是不对的, 修复这个 bug
+1. 新建任务时无法上传附件
+2. 新建/编辑任务时, 在描述输入框内, 要支持如果粘贴内容是文件, 要自动识别, 将它作为附件自动上传并添加到附件区域
 
 ---
 
@@ -74,31 +75,58 @@
 **请在此处提供详细的实现方案：**
 
 ### 实现步骤
-1. **分析任务需求**：在 `ProjectDocuments.vue` 中，新建文档的快捷键是单独按 'N' 键，但没有检查用户是否在编辑模式下或在可编辑元素中输入
-2. **设计技术方案**：在触发新建文档快捷键之前，检查：
-   - 是否处于编辑模式（`isEditMode.value`）
-   - 焦点是否在可编辑元素上（input、textarea、contenteditable）
+
+1. **分析任务需求**：
+   - 新建任务时没有 `_id`，导致附件上传组件被条件渲染隐藏
+   - 需要在描述输入框中支持粘贴文件并自动上传
+
+2. **设计技术方案**：
+   - 修改附件上传组件，允许使用临时 ID 'temp' 上传附件
+   - 修改后端 API，允许 `relatedId` 为 'temp' 时跳过任务验证
+   - 添加更新附件关联 ID 的 API，用于任务创建后关联临时附件
+   - 在 MarkdownEditor 中添加粘贴文件检测，触发父组件事件
+   - 在任务创建成功后，自动关联临时上传的附件
+
 3. **具体实现步骤**：
-   - 在 `handleKeyboardShortcuts` 函数中，添加对可编辑元素的检测
-   - 通过 `event.target` 判断焦点是否在 input、textarea 或 contenteditable 元素上
-   - 如果处于编辑模式或在可编辑元素中，则跳过新建文档快捷键的处理
+   - 修改 `TaskBasicInfo.vue`：允许新建任务时上传附件（使用临时 ID 'temp'）
+   - 修改 `AttachmentUpload.vue`：暴露 `uploadFiles` 方法供外部调用
+   - 修改 `MarkdownEditor.vue`：添加粘贴文件检测和处理
+   - 修改后端 `src/api/attachment.ts`：允许临时 ID 'temp' 跳过任务验证
+   - 添加后端 API `updateRelatedId`：批量更新附件的关联 ID
+   - 修改 `TaskDetailDrawer.vue`：任务创建成功后自动关联附件
+
 4. **验证和测试**：
-   - 在编辑模式下输入字母"N"，不应触发新建文档
-   - 在非编辑模式下按"N"键，应正常触发新建文档
+   - 新建任务时可以上传附件
+   - 在描述输入框中粘贴文件可以自动上传
+   - 任务创建后附件自动关联到新任务
 
 ### 修改的文件
-- `frontend/src/components/project/ProjectDocuments.vue`
+
+- `frontend/src/components/task/TaskBasicInfo.vue` - 修改附件上传逻辑，支持新建任务时上传
+- `frontend/src/components/attachment/AttachmentUpload.vue` - 暴露上传方法供外部调用
+- `frontend/src/components/common/MarkdownEditor.vue` - 添加粘贴文件检测和处理
+- `frontend/src/components/TaskDetailDrawer.vue` - 任务创建后自动关联附件
+- `frontend/src/api/attachment.ts` - 添加更新附件关联 ID 的 API
+- `src/api/attachment.ts` - 允许临时 ID 'temp'，添加更新关联 ID 的 API
+- `src/code/Services/attachment.ts` - 添加批量更新附件关联 ID 的服务函数
 
 ### 技术要点
-- 键盘事件处理：通过 `event.target` 检测焦点元素类型
-- 可编辑元素检测：检查 `tagName`、`isContentEditable` 和 `closest()` 方法
-- 快捷键冲突避免：在编辑状态下禁用全局快捷键，避免干扰用户输入
+
+- **临时附件上传**：使用临时 ID 'temp' 允许在任务创建前上传附件
+- **粘贴文件检测**：在 MarkdownEditor 的 textarea 中监听 paste 事件，检测文件类型
+- **附件关联更新**：任务创建后，批量更新临时附件的 `relatedId` 为实际任务 ID
+- **组件通信**：通过 ref 和 defineExpose 实现父子组件方法调用
 
 ### 验证结果
-- ✅ 在编辑模式下输入字母"N"，不再触发新建文档
-- ✅ 在非编辑模式下按"N"键，正常触发新建文档对话框
-- ✅ 在标题输入框和内容编辑器中输入"N"，都不会触发新建文档
+
+- ✅ 新建任务时可以上传附件（使用临时 ID）
+- ✅ 在描述输入框中粘贴文件可以自动识别并上传
+- ✅ 任务创建后附件自动关联到新任务
+- ✅ 编辑已存在任务时附件上传功能正常
+- ✅ 无 linter 错误
+
+**任务摘要：** 修复了新建任务时无法上传附件的问题，并支持在描述输入框中粘贴文件自动上传
 
 
-> 📅 导出时间：2025/11/27 11:10:57
+> 📅 导出时间：2025/11/27 11:50:46
 > 🤖 由 Task-Flow 生成

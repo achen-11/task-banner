@@ -90,6 +90,7 @@
         class="markdown-textarea"
         @input="handleInput"
         @keydown="handleKeydown"
+        @paste="handlePaste"
       />
 
       <!-- 预览区（编辑模式下的预览） -->
@@ -151,6 +152,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'save'): void
   (e: 'submit'): void
+  (e: 'paste-file', files: File[]): void
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement>()
@@ -187,6 +189,33 @@ watch(() => props.modelValue, (newValue) => {
 // 处理输入变化
 const handleInput = () => {
   emit('update:modelValue', localContent.value)
+}
+
+// 处理粘贴事件
+const handlePaste = (e: ClipboardEvent) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+
+  const files: File[] = []
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (item && item.kind === 'file') {
+      const file = item.getAsFile()
+      if (file) {
+        files.push(file)
+      }
+    }
+  }
+
+  // 如果检测到文件，触发粘贴文件事件，并阻止默认粘贴行为
+  if (files.length > 0) {
+    e.preventDefault()
+    emit('paste-file', files)
+    return
+  }
+
+  // 如果没有文件，允许正常的文本粘贴
 }
 
 // 处理键盘快捷键

@@ -252,4 +252,12 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('paste', handlePaste)
 })
+
+// 暴露方法供父组件调用
+defineExpose({
+  // 外部触发文件上传
+  uploadFiles: (files: File[]) => {
+    processFiles(files)
+  }
+})
 </script>
