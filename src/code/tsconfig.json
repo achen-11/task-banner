@@ -18,7 +18,8 @@
   },
   "include": [
     "**/*.ts",
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    "../../kooboo.d.ts"
   ],
   "exclude": [
     "node_modules"

@@ -12,6 +12,9 @@ import type {
   CommentCreatedData,
   CommentUpdatedData,
   CommentDeletedData,
+  DocumentCreatedData,
+  DocumentUpdatedData,
+  DocumentDeletedData,
   NotificationData
 } from '@/types/websocket'
 
@@ -22,6 +25,9 @@ export interface WebSocketCallbacks {
   onCommentCreated?: (data: CommentCreatedData, message: WebSocketMessage) => void
   onCommentUpdated?: (data: CommentUpdatedData, message: WebSocketMessage) => void
   onCommentDeleted?: (data: CommentDeletedData, message: WebSocketMessage) => void
+  onDocumentCreated?: (data: DocumentCreatedData, message: WebSocketMessage) => void
+  onDocumentUpdated?: (data: DocumentUpdatedData, message: WebSocketMessage) => void
+  onDocumentDeleted?: (data: DocumentDeletedData, message: WebSocketMessage) => void
   onNotification?: (data: NotificationData, message: WebSocketMessage) => void
   onError?: (error: Event | Error) => void
   onConnect?: () => void
@@ -159,6 +165,18 @@ export function useWebSocket(callbacks: WebSocketCallbacks = {}) {
 
       case 'comment_deleted':
         callbacks.onCommentDeleted?.(message.data as CommentDeletedData, message)
+        break
+
+      case 'document_created':
+        callbacks.onDocumentCreated?.(message.data as DocumentCreatedData, message)
+        break
+
+      case 'document_updated':
+        callbacks.onDocumentUpdated?.(message.data as DocumentUpdatedData, message)
+        break
+
+      case 'document_deleted':
+        callbacks.onDocumentDeleted?.(message.data as DocumentDeletedData, message)
         break
 
       case 'notification':

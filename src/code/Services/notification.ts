@@ -272,3 +272,66 @@ export function createTaskUpdatedNotification(
 
   return true
 }
+
+/**
+ * 创建 MCP 操作通知
+ * @param userId - 接收通知的用户 ID
+ * @param action - 操作类型（task_created, task_updated, document_created 等）
+ * @param resourceTitle - 资源标题（任务标题或文档标题）
+ * @param resourceId - 资源 ID（任务 ID 或文档 ID）
+ * @param projectId - 项目 ID
+ * @returns 通知 ID
+ */
+export function createMCPOperationNotification(
+  userId: string,
+  action: 'task_created' | 'task_updated' | 'task_deleted' | 'document_created' | 'document_updated' | 'document_deleted',
+  resourceTitle: string,
+  resourceId: string,
+  projectId?: string
+): string {
+  const actionMap: Record<string, { title: string; content: string; type: NotificationTypeEnum }> = {
+    task_created: {
+      title: 'AI 创建了新任务',
+      content: `AI 通过 MCP 创建了任务「${resourceTitle}」`,
+      type: 'task_assigned'
+    },
+    task_updated: {
+      title: 'AI 更新了任务',
+      content: `AI 通过 MCP 更新了任务「${resourceTitle}」`,
+      type: 'task_updated'
+    },
+    task_deleted: {
+      title: 'AI 删除了任务',
+      content: `AI 通过 MCP 删除了任务「${resourceTitle}」`,
+      type: 'task_status_changed'
+    },
+    document_created: {
+      title: 'AI 创建了新文档',
+      content: `AI 通过 MCP 创建了文档「${resourceTitle}」`,
+      type: 'commented'
+    },
+    document_updated: {
+      title: 'AI 更新了文档',
+      content: `AI 通过 MCP 更新了文档「${resourceTitle}」`,
+      type: 'commented'
+    },
+    document_deleted: {
+      title: 'AI 删除了文档',
+      content: `AI 通过 MCP 删除了文档「${resourceTitle}」`,
+      type: 'commented'
+    }
+  }
+
+  const actionInfo = actionMap[action]
+  if (!actionInfo) {
+    throw new Error(`Unknown action: ${action}`)
+  }
+
+  return createNotification({
+    userId,
+    type: actionInfo.type,
+    title: actionInfo.title,
+    content: actionInfo.content,
+    relatedTaskId: action.startsWith('task_') ? resourceId : undefined
+  })
+}

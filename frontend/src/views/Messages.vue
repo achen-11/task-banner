@@ -132,8 +132,12 @@ import {
 import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
 import { formatRelativeTime } from '@/utils/time'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 const router = useRouter()
+
+// 页面标题管理
+const { setUnreadCount, decrementUnread } = usePageTitle()
 
 // 加载状态
 const loading = ref(false)
@@ -192,6 +196,8 @@ const updateFilterCounts = () => {
     { value: 'mention', label: '@提醒', count: mention }
   ]
   unreadCount.value = unread
+  // 同步更新页面标题
+  setUnreadCount(unread)
 }
 
 // 处理通知点击
@@ -202,6 +208,8 @@ const handleNotificationClick = async (message: Notification) => {
       await markNotificationAsRead(message._id)
       message.isRead = true
       updateFilterCounts()
+      // 减少未读数量，更新页面标题
+      decrementUnread()
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
     }
@@ -239,6 +247,8 @@ const handleMarkAllAsRead = async () => {
       m.isRead = true
     })
     updateFilterCounts()
+    // 重置未读数量，恢复页面标题
+    setUnreadCount(0)
     ElMessage.success(`已标记 ${result.count} 条消息为已读`)
   } catch (error) {
     console.error('Failed to mark all as read:', error)

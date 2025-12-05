@@ -4,6 +4,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useWebSocket, type WebSocketCallbacks } from '@/composables/useWebSocket'
+import { usePageTitle } from '@/composables/usePageTitle'
 import type {
   TaskCreatedData,
   TaskUpdatedData,
@@ -11,6 +12,9 @@ import type {
   CommentCreatedData,
   CommentUpdatedData,
   CommentDeletedData,
+  DocumentCreatedData,
+  DocumentUpdatedData,
+  DocumentDeletedData,
   NotificationData,
   WebSocketMessage
 } from '@/types/websocket'
@@ -19,6 +23,9 @@ import { ElMessage, ElNotification } from 'element-plus'
 export const useWebSocketStore = defineStore('websocket', () => {
   const isConnected = ref(false)
   const lastMessage = ref<WebSocketMessage | null>(null)
+  
+  // 页面标题管理
+  const { incrementUnread, decrementUnread, resetTitle, setUnreadCount } = usePageTitle()
 
   // WebSocket 回调
   const callbacks: WebSocketCallbacks = {
@@ -37,15 +44,18 @@ export const useWebSocketStore = defineStore('websocket', () => {
     },
 
     onTaskCreated: (data: TaskCreatedData, message: WebSocketMessage) => {
-      console.log('[WebSocket Store] Task created:', data)
+      console.log('[WebSocket Store] Task created:', data, message)
       lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
 
       // 触发自定义事件，让组件监听
       window.dispatchEvent(new CustomEvent('websocket:task-created', {
-        detail: { data, message }
+        detail: { data, message: { ...message, projectId } }
       }))
 
-      // 显示通知（可选）
+      // 显示通知（总是显示，不受项目过滤影响）
       ElNotification({
         title: '新任务',
         message: `任务 "${data.task.title}" 已创建`,
@@ -55,15 +65,18 @@ export const useWebSocketStore = defineStore('websocket', () => {
     },
 
     onTaskUpdated: (data: TaskUpdatedData, message: WebSocketMessage) => {
-      console.log('[WebSocket Store] Task updated:', data)
+      console.log('[WebSocket Store] Task updated:', data, message)
       lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
 
       // 触发自定义事件
       window.dispatchEvent(new CustomEvent('websocket:task-updated', {
-        detail: { data, message }
+        detail: { data, message: { ...message, projectId } }
       }))
 
-      // 显示通知（可选）
+      // 显示通知（总是显示）
       if (data.changes) {
         const changeKeys = Object.keys(data.changes)
         if (changeKeys.length > 0) {
@@ -74,19 +87,29 @@ export const useWebSocketStore = defineStore('websocket', () => {
             duration: 3000
           })
         }
+      } else {
+        ElNotification({
+          title: '任务已更新',
+          message: `任务 "${data.task.title}" 已更新`,
+          type: 'success',
+          duration: 3000
+        })
       }
     },
 
     onTaskDeleted: (data: TaskDeletedData, message: WebSocketMessage) => {
-      console.log('[WebSocket Store] Task deleted:', data)
+      console.log('[WebSocket Store] Task deleted:', data, message)
       lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
 
       // 触发自定义事件
       window.dispatchEvent(new CustomEvent('websocket:task-deleted', {
-        detail: { data, message }
+        detail: { data, message: { ...message, projectId } }
       }))
 
-      // 显示通知
+      // 显示通知（总是显示）
       ElNotification({
         title: '任务已删除',
         message: '任务已被删除',
@@ -135,6 +158,81 @@ export const useWebSocketStore = defineStore('websocket', () => {
       }))
     },
 
+    onDocumentCreated: (data: DocumentCreatedData, message: WebSocketMessage) => {
+      console.log('[WebSocket Store] Document created:', data, message)
+      lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
+
+      // 触发自定义事件，让组件监听
+      window.dispatchEvent(new CustomEvent('websocket:document-created', {
+        detail: { data, message: { ...message, projectId } }
+      }))
+
+      // 显示通知（总是显示）
+      ElNotification({
+        title: '新文档',
+        message: `文档 "${data.document.title}" 已创建`,
+        type: 'info',
+        duration: 3000
+      })
+    },
+
+    onDocumentUpdated: (data: DocumentUpdatedData, message: WebSocketMessage) => {
+      console.log('[WebSocket Store] Document updated:', data, message)
+      lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
+
+      // 触发自定义事件
+      window.dispatchEvent(new CustomEvent('websocket:document-updated', {
+        detail: { data, message: { ...message, projectId } }
+      }))
+
+      // 显示通知（总是显示）
+      if (data.changes) {
+        const changeKeys = Object.keys(data.changes)
+        if (changeKeys.length > 0) {
+          ElNotification({
+            title: '文档已更新',
+            message: `文档 "${data.document.title}" 的 ${changeKeys.join(', ')} 已更新`,
+            type: 'success',
+            duration: 3000
+          })
+        }
+      } else {
+        ElNotification({
+          title: '文档已更新',
+          message: `文档 "${data.document.title}" 已更新`,
+          type: 'success',
+          duration: 3000
+        })
+      }
+    },
+
+    onDocumentDeleted: (data: DocumentDeletedData, message: WebSocketMessage) => {
+      console.log('[WebSocket Store] Document deleted:', data, message)
+      lastMessage.value = message
+
+      // 从 data 中提取 projectId（兼容 message.projectId）
+      const projectId = (data as any).projectId || message.projectId
+
+      // 触发自定义事件
+      window.dispatchEvent(new CustomEvent('websocket:document-deleted', {
+        detail: { data, message: { ...message, projectId } }
+      }))
+
+      // 显示通知（总是显示）
+      ElNotification({
+        title: '文档已删除',
+        message: '文档已被删除',
+        type: 'warning',
+        duration: 3000
+      })
+    },
+
     onNotification: (data: NotificationData, message: WebSocketMessage) => {
       console.log('[WebSocket Store] Notification:', data)
       lastMessage.value = message
@@ -151,6 +249,11 @@ export const useWebSocketStore = defineStore('websocket', () => {
         type: 'info',
         duration: 5000
       })
+
+      // 如果通知未读，增加未读数量并更新页面标题
+      if (!data.notification.read) {
+        incrementUnread()
+      }
     }
   }
 

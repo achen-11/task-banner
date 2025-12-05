@@ -63,11 +63,16 @@ import { useUIStore } from '@/stores/ui'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tour'
 import { useWebSocketStore } from '@/stores/websocket'
+import { usePageTitle } from '@/composables/usePageTitle'
+import { getUnreadCount } from '@/api/notification'
 
 // UI状态管理
 const uiStore = useUIStore()
 const tourStore = useTourStore()
 const wsStore = useWebSocketStore()
+
+// 页面标题管理
+const { setUnreadCount } = usePageTitle()
 
 // 快捷键面板引用
 const shortcutsPanelRef = ref<InstanceType<typeof KeyboardShortcutsPanel> | null>(null)
@@ -208,7 +213,20 @@ onMounted(() => {
 
   // 初始化 WebSocket 连接
   wsStore.initialize()
+
+  // 初始化未读数量并设置页面标题
+  loadUnreadCount()
 })
+
+// 加载未读数量
+const loadUnreadCount = async () => {
+  try {
+    const result = await getUnreadCount()
+    setUnreadCount(result.count)
+  } catch (error) {
+    console.error('Failed to load unread count:', error)
+  }
+}
 
 onUnmounted(() => {
   window.removeEventListener('start-tour', handleStartTourEvent)

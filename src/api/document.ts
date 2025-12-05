@@ -14,6 +14,9 @@ import {
   checkDocumentPermission
 } from 'code/Services/document'
 import { checkProjectPermission } from 'code/Services/project'
+import { pushDocumentCreated, pushDocumentUpdated, pushDocumentDeleted, pushNotification } from 'code/Services/websocket'
+import { createMCPOperationNotification } from 'code/Services/notification'
+import { Notification } from 'code/Models/Notification'
 
 interface DocumentListQuery {
   projectId: string
@@ -142,6 +145,39 @@ k.api.post("create", (body: any) => {
     )
 
     const document = getDocumentById(documentId)
+    
+    // 推送 WebSocket 消息
+    try {
+      pushDocumentCreated(document!, projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push document created message: ${wsErr}`)
+    }
+
+    // 检测是否是 MCP 调用
+    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
+    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+    
+    if (isMCPCall) {
+      // MCP 调用：创建真实通知并推送
+      try {
+        const notificationId = createMCPOperationNotification(
+          currentUser._id,
+          'document_created',
+          document!.title,
+          document!._id,
+          projectId
+        )
+        
+        const notification = Notification.findById(notificationId)
+        if (notification) {
+          pushNotification(currentUser._id, notification, projectId)
+        }
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
+      }
+    }
+    
     return success(document, 'Document created successfully')
 
   } catch (err) {
@@ -168,6 +204,12 @@ k.api.put("update", (body: any) => {
   }
 
   try {
+    // 获取当前文档以获取 projectId
+    const currentDoc = getDocumentById(id)
+    if (!currentDoc) {
+      return error('Document not found', 404)
+    }
+
     const res = updateDocument(
       id,
       {
@@ -186,6 +228,46 @@ k.api.put("update", (body: any) => {
     }
 
     const document = getDocumentById(id)
+    
+    // 推送 WebSocket 消息
+    try {
+      const changes: Record<string, any> = {}
+      if (title !== undefined) changes.title = title
+      if (content !== undefined) changes.content = content
+      if (status !== undefined) changes.status = status
+      if (tags !== undefined) changes.tags = tags
+      if (order !== undefined) changes.order = order
+      
+      pushDocumentUpdated(document!, currentDoc.projectId, changes)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push document updated message: ${wsErr}`)
+    }
+
+    // 检测是否是 MCP 调用
+    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
+    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+    
+    if (isMCPCall) {
+      // MCP 调用：创建真实通知并推送
+      try {
+        const notificationId = createMCPOperationNotification(
+          currentUser._id,
+          'document_updated',
+          document!.title,
+          document!._id,
+          currentDoc.projectId
+        )
+        
+        const notification = Notification.findById(notificationId)
+        if (notification) {
+          pushNotification(currentUser._id, notification, currentDoc.projectId)
+        }
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
+      }
+    }
+    
     return success(document, 'Document updated successfully')
 
   } catch (err) {
@@ -212,10 +294,48 @@ k.api.delete("delete", (body: any) => {
   }
 
   try {
+    // 获取当前文档以获取 projectId
+    const currentDoc = getDocumentById(id)
+    if (!currentDoc) {
+      return error('Document not found', 404)
+    }
+
     const res = deleteDocument(id)
 
     if (!res) {
       return error('Failed to delete document', 500)
+    }
+
+    // 推送 WebSocket 消息
+    try {
+      pushDocumentDeleted(id, currentDoc.projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push document deleted message: ${wsErr}`)
+    }
+
+    // 检测是否是 MCP 调用
+    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
+    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+    
+    if (isMCPCall) {
+      // MCP 调用：创建真实通知并推送
+      try {
+        const notificationId = createMCPOperationNotification(
+          currentUser._id,
+          'document_deleted',
+          currentDoc.title,
+          id,
+          currentDoc.projectId
+        )
+        
+        const notification = Notification.findById(notificationId)
+        if (notification) {
+          pushNotification(currentUser._id, notification, currentDoc.projectId)
+        }
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
+      }
     }
 
     return success(null, 'Document deleted successfully')
@@ -258,7 +378,6 @@ k.api.get("version", (documentId: string, version: string) => {
   }
 
   const currentUser = getUserInfo(k.account.user.current.userName)
-  const query = k.request.queryString
   const versionNumber = parseInt(version)
 
   if (!documentId || documentId.trim() === '') {

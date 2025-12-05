@@ -9,6 +9,9 @@ export type WebSocketMessageType =
   | 'comment_created'
   | 'comment_updated'
   | 'comment_deleted'
+  | 'document_created'
+  | 'document_updated'
+  | 'document_deleted'
   | 'notification'
   | 'ping'
   | 'pong'
@@ -88,4 +91,33 @@ export interface NotificationData {
     content?: string
     read: boolean
   }
+}
+
+export interface DocumentCreatedData {
+  document: {
+    _id: string
+    title: string
+    type: string
+    status: string
+    version: number
+    tags: string[]
+    createdBy: string
+  }
+}
+
+export interface DocumentUpdatedData {
+  document: {
+    _id: string
+    title: string
+    type: string
+    status: string
+    version: number
+    tags: string[]
+    updatedBy: string
+  }
+  changes?: Record<string, any>
+}
+
+export interface DocumentDeletedData {
+  documentId: string
 }
