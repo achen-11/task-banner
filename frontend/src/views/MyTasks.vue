@@ -145,6 +145,34 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 
+// WebSocket 消息处理
+const handleWebSocketTaskCreated = (event: CustomEvent) => {
+  const { message } = event.detail
+  // 刷新任务列表（因为新任务可能符合当前筛选条件）
+  userTasksStore.refresh()
+}
+
+const handleWebSocketTaskUpdated = (event: CustomEvent) => {
+  const { message } = event.detail
+  // 刷新任务列表以获取最新数据
+  userTasksStore.refresh()
+}
+
+const handleWebSocketTaskDeleted = (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 从列表中移除任务
+  const taskId = data.taskId
+  const taskIndex = userTasksStore.tasks.findIndex(t => t._id === taskId)
+  if (taskIndex !== -1) {
+    userTasksStore.tasks.splice(taskIndex, 1)
+  }
+  
+  // 如果删除的是当前打开的任务，关闭详情
+  if (selectedTaskId.value === taskId) {
+    closeTaskDetail()
+  }
+}
+
 // 生命周期
 onMounted(async () => {
   // 添加键盘事件监听
@@ -156,10 +184,20 @@ onMounted(async () => {
   // 加载任务数据
   userTasksStore.fetchTasks(true)
   userTasksStore.fetchStats()
+
+  // 监听 WebSocket 消息
+  window.addEventListener('websocket:task-created', handleWebSocketTaskCreated as EventListener)
+  window.addEventListener('websocket:task-updated', handleWebSocketTaskUpdated as EventListener)
+  window.addEventListener('websocket:task-deleted', handleWebSocketTaskDeleted as EventListener)
 })
 
 onUnmounted(() => {
   // 移除键盘事件监听
   document.removeEventListener('keydown', handleKeyDown)
+
+  // 移除 WebSocket 消息监听
+  window.removeEventListener('websocket:task-created', handleWebSocketTaskCreated as EventListener)
+  window.removeEventListener('websocket:task-updated', handleWebSocketTaskUpdated as EventListener)
+  window.removeEventListener('websocket:task-deleted', handleWebSocketTaskDeleted as EventListener)
 })
 </script>

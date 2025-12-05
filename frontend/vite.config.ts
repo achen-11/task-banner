@@ -72,11 +72,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 代理所有 /api 开头的请求
+      // 代理所有 /api 开头的请求（包括 WebSocket）
       '/api': {
         target: 'https://ai_task_manage.redev.cn',
         changeOrigin: true,
         secure: false,
+        ws: true, // 启用 WebSocket 代理
         // 不重写路径，保持 /api 前缀
         // rewrite: (path) => path.replace(/^\/api/, '')
       },

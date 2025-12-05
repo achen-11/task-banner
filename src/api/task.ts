@@ -15,6 +15,8 @@ import { checkProjectPermission } from 'code/Services/project'
 import { getTaskActivities } from 'code/Services/taskHistory'
 import { TaskComment } from 'code/Models/TaskComment'
 import { CommentReaction } from 'code/Models/CommentReaction'
+import { pushTaskCreated, pushTaskUpdated, pushTaskDeleted } from 'code/Services/websocket'
+import { pushCommentCreated, pushCommentUpdated, pushCommentDeleted } from 'code/Services/websocket'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
@@ -176,6 +178,15 @@ k.api.post("create", (body: any) => {
 
     // 获取创建的任务详情
     const task = getTaskDetailById(taskId)
+    
+    // 推送 WebSocket 消息
+    try {
+      pushTaskCreated(task, projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push task created message: ${wsErr}`)
+    }
+    
     return success(task, 'Task created successfully')
 
   } catch (err) {
@@ -240,6 +251,22 @@ k.api.put("update", (body: any) => {
 
     // 获取更新后的任务详情
     const updatedTask = getTaskDetailById(taskId)
+    
+    // 推送 WebSocket 消息
+    try {
+      const changes: Record<string, any> = {}
+      if (title !== undefined) changes.title = title
+      if (status !== undefined) changes.status = status
+      if (priority !== undefined) changes.priority = priority
+      if (assigneeId !== undefined) changes.assigneeId = assigneeId
+      if (progress !== undefined) changes.progress = progress
+      
+      pushTaskUpdated(updatedTask, task.projectId, changes)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push task updated message: ${wsErr}`)
+    }
+    
     return success(updatedTask, 'Task updated successfully')
 
   } catch (err) {
@@ -285,10 +312,21 @@ k.api.delete("delete", (body: any) => {
       return error('You do not have permission to delete this task', 403)
     }
 
+    // 保存 projectId 用于推送消息
+    const projectId = task.projectId
+
     const deleted = deleteTask(taskId)
 
     if (!deleted) {
       return error('Failed to delete task', 500)
+    }
+
+    // 推送 WebSocket 消息
+    try {
+      pushTaskDeleted(taskId, projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push task deleted message: ${wsErr}`)
     }
 
     return success(null, 'Task deleted successfully')
@@ -436,6 +474,22 @@ k.api.post("comment", (body: any) => {
       metadata: metadata || {}
     })
     const comment = TaskComment.findById(commentId)!
+
+    // 推送 WebSocket 消息
+    try {
+      pushCommentCreated({
+        _id: comment._id,
+        id: comment._id,
+        type: comment.type,
+        userId: comment.userId,
+        content: comment.content,
+        summary: comment.summary,
+        mentionedUsers: comment.mentionedUsers
+      }, taskId, task.projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push comment created message: ${wsErr}`)
+    }
 
     return success({
       id: comment._id,
@@ -702,6 +756,19 @@ k.api.put("comment", (body: any) => {
 
     const updatedComment = TaskComment.findById(updatedId) as any
 
+    // 推送 WebSocket 消息
+    try {
+      pushCommentUpdated({
+        _id: updatedComment._id,
+        id: updatedComment._id,
+        content: updatedComment.content,
+        summary: updatedComment.summary
+      }, task.taskId, task.projectId)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push comment updated message: ${wsErr}`)
+    }
+
     return success({
       id: updatedComment._id,
       type: updatedComment.type,
@@ -762,11 +829,23 @@ k.api.delete("comment", () => {
       return error('权限不足：无法删除该评论', 403)
     }
 
+    // 保存信息用于推送消息
+    const taskIdForPush = comment.taskId
+    const projectIdForPush = task.projectId
+
     // 删除评论
     const deletedId = TaskComment.deleteById(commentId)
 
     if (!deletedId) {
       return error('删除评论失败', 500)
+    }
+
+    // 推送 WebSocket 消息
+    try {
+      pushCommentDeleted(commentId, taskIdForPush, projectIdForPush)
+    } catch (wsErr) {
+      // WebSocket 推送失败不影响主流程
+      k.logger.warning('WebSocket', `Failed to push comment deleted message: ${wsErr}`)
     }
 
     return success({ deletedId }, '评论删除成功')

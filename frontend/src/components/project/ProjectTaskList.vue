@@ -648,9 +648,82 @@ const handleImportConfirm = async (finalTasks: any[]) => {
   }
 }
 
+// WebSocket 消息处理
+const handleWebSocketTaskCreated = async (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前项目的消息
+  if (message.projectId === props.projectId) {
+    // 重新获取任务详情并添加到列表
+    try {
+      const taskDetail = await getTaskDetail(data.task._id)
+      // 检查任务是否已在列表中
+      const existingIndex = tasks.value.findIndex(t => t._id === taskDetail._id)
+      if (existingIndex === -1) {
+        // 添加到列表顶部
+        tasks.value.unshift(taskDetail as Task)
+        total.value++
+      }
+    } catch (error) {
+      console.error('Failed to fetch task detail:', error)
+      // 如果获取失败，重新加载列表
+      loadTasks()
+    }
+  }
+}
+
+const handleWebSocketTaskUpdated = async (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前项目的消息
+  if (message.projectId === props.projectId) {
+    const taskId = data.task._id
+    const index = tasks.value.findIndex(t => t._id === taskId)
+    
+    if (index !== -1) {
+      // 重新获取任务详情并更新
+      try {
+        const taskDetail = await getTaskDetail(taskId)
+        tasks.value[index] = taskDetail as Task
+      } catch (error) {
+        console.error('Failed to fetch task detail:', error)
+        // 如果获取失败，重新加载列表
+        loadTasks()
+      }
+    } else {
+      // 如果任务不在列表中，重新加载列表
+      loadTasks()
+    }
+  }
+}
+
+const handleWebSocketTaskDeleted = (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前项目的消息
+  if (message.projectId === props.projectId) {
+    const taskId = data.taskId
+    // 从列表中移除
+    tasks.value = tasks.value.filter(t => t._id !== taskId)
+    total.value = Math.max(0, total.value - 1)
+    
+    // 如果删除的是当前打开的任务，关闭抽屉
+    if (selectedTaskId.value === taskId) {
+      closeDrawer()
+    }
+  }
+}
+
+// 创建包装函数以适配 EventListener 类型
+const handleCreatedWrapper = (event: Event) => handleWebSocketTaskCreated(event as CustomEvent)
+const handleUpdatedWrapper = (event: Event) => handleWebSocketTaskUpdated(event as CustomEvent)
+const handleDeletedWrapper = (event: Event) => handleWebSocketTaskDeleted(event as CustomEvent)
+
 // 组件挂载时加载任务和注册快捷键
 onMounted(() => {
   loadTasks()
+
+  // 监听 WebSocket 消息
+  window.addEventListener('websocket:task-created', handleCreatedWrapper)
+  window.addEventListener('websocket:task-updated', handleUpdatedWrapper)
+  window.addEventListener('websocket:task-deleted', handleDeletedWrapper)
 
   // 设置无限滚动观察器
   observer = new IntersectionObserver(
@@ -740,6 +813,11 @@ onUnmounted(() => {
   unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
   unregisterShortcut('e', true) // 指定meta=true，精确匹配Cmd+E
   unregisterShortcut('escape')
+
+  // 移除 WebSocket 消息监听
+  window.removeEventListener('websocket:task-created', handleCreatedWrapper)
+  window.removeEventListener('websocket:task-updated', handleUpdatedWrapper)
+  window.removeEventListener('websocket:task-deleted', handleDeletedWrapper)
 })
 
 // 抽屉状态

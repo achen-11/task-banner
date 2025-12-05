@@ -332,21 +332,23 @@ export function useTour() {
     // 暂时关闭引导功能，保留代码以便后续优化
     return
     
-    console.log('[Tour] 检查引导状态:', { 
-      hasCompletedTour: tourStore.hasCompletedTour,
-      localStorage: localStorage.getItem('tour_completed')
-    })
-    
-    if (!tourStore.hasCompletedTour) {
-      console.log('[Tour] 首次访问，准备启动引导...')
-      // 首次访问，延迟一下让页面完全加载
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('[Tour] 开始启动引导...')
-      await startTour()
-      console.log('[Tour] 引导启动完成，isTourActive:', tourStore.isTourActive)
-    } else {
-      console.log('[Tour] 引导已完成，跳过自动启动')
-    }
+    /* eslint-disable */
+    // console.log('[Tour] 检查引导状态:', { 
+    //   hasCompletedTour: tourStore.hasCompletedTour,
+    //   localStorage: localStorage.getItem('tour_completed')
+    // })
+    // 
+    // if (!tourStore.hasCompletedTour) {
+    //   console.log('[Tour] 首次访问，准备启动引导...')
+    //   // 首次访问，延迟一下让页面完全加载
+    //   await new Promise(resolve => setTimeout(resolve, 2000))
+    //   console.log('[Tour] 开始启动引导...')
+    //   await startTour()
+    //   console.log('[Tour] 引导启动完成，isTourActive:', tourStore.isTourActive)
+    // } else {
+    //   console.log('[Tour] 引导已完成，跳过自动启动')
+    // }
+    /* eslint-enable */
   }
   
   // 暴露启动引导的方法，供外部调用

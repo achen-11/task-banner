@@ -2,7 +2,7 @@
  * HTTP 请求工具 - 适配本地开发和 Kooboo 生产环境
  */
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
-import { isLogin, logout } from './auth'
+import { isLogin, logout, getCookie } from './auth'
 
 const isDevelopment = import.meta.env.DEV
 
@@ -20,8 +20,8 @@ const request: AxiosInstance = axios.create({
 request.interceptors.request.use(
   (config) => {
     if (isDevelopment) {
-      // 开发模式：从 localStorage 获取 token
-      const token = localStorage.getItem('dev_token')
+      // 开发模式：从 cookie 获取 jwt_token
+      const token = getCookie('jwt_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }

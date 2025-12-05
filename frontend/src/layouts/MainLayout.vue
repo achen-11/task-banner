@@ -62,10 +62,12 @@ import { useKeyboard, registerShortcut } from '@/composables/useKeyboard'
 import { useUIStore } from '@/stores/ui'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tour'
+import { useWebSocketStore } from '@/stores/websocket'
 
 // UI状态管理
 const uiStore = useUIStore()
 const tourStore = useTourStore()
+const wsStore = useWebSocketStore()
 
 // 快捷键面板引用
 const shortcutsPanelRef = ref<InstanceType<typeof KeyboardShortcutsPanel> | null>(null)
@@ -203,9 +205,14 @@ onMounted(() => {
   
   // 监听重新开始引导事件
   window.addEventListener('start-tour', handleStartTourEvent)
+
+  // 初始化 WebSocket 连接
+  wsStore.initialize()
 })
 
 onUnmounted(() => {
   window.removeEventListener('start-tour', handleStartTourEvent)
+  // 清理 WebSocket 连接
+  wsStore.cleanup()
 })
 </script>

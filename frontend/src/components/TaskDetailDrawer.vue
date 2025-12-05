@@ -887,12 +887,50 @@ const handleTaskDelete = async () => {
   }
 }
 
+// WebSocket 消息处理 - 评论相关
+const handleWebSocketCommentCreated = (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前任务的评论
+  if (message.taskId === props.taskId && taskActivityRef.value) {
+    // 重新加载活动历史
+    taskActivityRef.value.loadActivities()
+  }
+}
+
+const handleWebSocketCommentUpdated = (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前任务的评论
+  if (message.taskId === props.taskId && taskActivityRef.value) {
+    // 重新加载活动历史
+    taskActivityRef.value.loadActivities()
+  }
+}
+
+const handleWebSocketCommentDeleted = (event: CustomEvent) => {
+  const { data, message } = event.detail
+  // 只处理当前任务的评论
+  if (message.taskId === props.taskId && taskActivityRef.value) {
+    // 重新加载活动历史
+    taskActivityRef.value.loadActivities()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  
+  // 监听 WebSocket 评论消息
+  window.addEventListener('websocket:comment-created', handleWebSocketCommentCreated as EventListener)
+  window.addEventListener('websocket:comment-updated', handleWebSocketCommentUpdated as EventListener)
+  window.addEventListener('websocket:comment-deleted', handleWebSocketCommentDeleted as EventListener)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  
+  // 移除 WebSocket 消息监听
+  window.removeEventListener('websocket:comment-created', handleWebSocketCommentCreated as EventListener)
+  window.removeEventListener('websocket:comment-updated', handleWebSocketCommentUpdated as EventListener)
+  window.removeEventListener('websocket:comment-deleted', handleWebSocketCommentDeleted as EventListener)
 })
 
 // 监听抽屉打开状态
