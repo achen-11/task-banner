@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "kb-task": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "/Users/achen/Priv/task-banner/kb-task-mcp/dist/index.js"
+            ],
+            "env": {
+                "KB_TASK_API_URL": "https://ai_task_manage.redev.cn",
+                "KB_TASK_API_TOKEN": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImEyMzRkYTZhLTgzZGEtNjkyNC1lZjE1LTNkMWY5NGFhODRmMyIsImtpbmQiOiJwYXNzd29yZCIsIm9yZyI6ImJjYWNmN2UzLTUwNWUtM2E5OS0zMGY4LTdmZDhlMDQxMjA5NCIsImV4cCI6MTc2NjYyNDc4NH0.wogzeyG4TwdwFtsRSxnEXF7hI22pMifHC1daMMpuHOI",
+                "KB_TASK_DEFAULT_PROJECT_ID": "2ef57386-e741-4c5e-8ce3-e07200ff746d"
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "kb-task": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/kb-task-mcp/dist/index.js"],
+      "env": {
+        "KB_TASK_API_URL": "https://ai_task_manage.redev.cn",
+        "KB_TASK_API_TOKEN": "${env:KB_TASK_API_TOKEN}",
+        "KB_TASK_DEFAULT_PROJECT_ID": "${env:KB_TASK_DEFAULT_PROJECT_ID}"
+      }
+    }
+  }
+}

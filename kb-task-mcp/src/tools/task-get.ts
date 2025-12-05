@@ -1,4 +1,12 @@
+import { z } from 'zod';
 import { KbTaskApiClient } from '../api/client.js';
+
+interface Tool {
+  name: string;
+  description: string;
+  inputSchema: z.ZodObject<any>;
+  execute: (params: any, apiClient: KbTaskApiClient) => Promise<any>;
+}
 
 function getStatusLabel(status: string): string {
   const map: Record<string, string> = {
@@ -13,66 +21,49 @@ function getStatusLabel(status: string): string {
 function getPriorityLabel(priority: string): string {
   const map: Record<string, string> = {
     'high': '🔴 高',
+    'urgent': '🔴 紧急',
     'medium': '🟡 中',
     'low': '🟢 低'
   };
   return map[priority] || priority;
 }
 
-export const taskGetTool = {
+export const taskGetTool: Tool = {
   name: 'kb_task_get',
-  description: '获取指定任务的详细信息，包括完整描述、标签、模块、历史记录等。当你需要了解任务的详细内容时使用此工具。支持使用任务的 displayId（如 "123"）或完整的 _id。如果使用 displayId，需要提供 projectId。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      taskId: {
-        type: 'string',
-        description: '任务 ID（可以是 displayId 如 "123" 或完整的 _id）'
-      },
-      projectId: {
-        type: 'string',
-        description: '项目 ID（当使用 displayId 时需要提供）'
-      }
-    },
-    required: ['taskId']
-  },
+  description: '获取指定任务的详细信息，包括完整描述、标签、模块、指派人、创建人等。支持使用任务 ID（_id）或显示 ID（displayId）。',
+  inputSchema: z.object({
+    taskId: z.string().describe('任务 ID（_id）或显示 ID（displayId，如 "1001"）')
+  }),
 
   async execute(params: any, apiClient: KbTaskApiClient) {
-    let task;
+    const result = await apiClient.getTask(params.taskId);
 
-    // 判断是 displayId 还是完整的 _id
-    if (params.taskId.length < 20 && !params.taskId.includes('-')) {
-      // 很可能是 displayId，需要 projectId
-      if (!params.projectId) {
-        // 尝试获取第一个项目作为默认项目
-        const projects = await apiClient.listProjects();
-        if (projects.items.length === 0) {
-          throw new Error('No projects found. Please provide projectId when using displayId.');
-        }
-        const projectId = projects.items[0]._id;
-        task = await apiClient.getTaskByDisplayId(params.taskId, projectId);
-      } else {
-        task = await apiClient.getTaskByDisplayId(params.taskId, params.projectId);
-      }
-    } else {
-      // 完整的 _id，直接获取
-      task = await apiClient.getTask(params.taskId);
+    // 检查 API 响应格式
+    if (result.code !== 200) {
+      throw new Error(result.message || 'Failed to get task');
     }
 
-    // 格式化为 Markdown（类似现有的导出格式）
+    const task = result.data;
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    // 格式化为 Markdown
     const markdown = `
 # 任务详情：${task.title}
 
-**任务 ID**: #${task.displayId}
+**任务 ID**: #${task.displayId} (${task._id})
 **状态**: ${getStatusLabel(task.status)}
 **优先级**: ${getPriorityLabel(task.priority)}
-**进度**: ${task.progress}%
+**进度**: ${task.progress || 0}%
 **创建时间**: ${new Date(task.createdAt).toLocaleString('zh-CN')}
 **更新时间**: ${new Date(task.updatedAt).toLocaleString('zh-CN')}
-${task.assignee ? `**指派人**: ${task.assignee.name}` : '**指派人**: 未分配'}
-${task.creator ? `**创建者**: ${task.creator.name}` : ''}
-${task.tags?.length ? `**标签**: ${task.tags.map(t => t.name).join(', ')}` : ''}
-${task.modules?.length ? `**模块**: ${task.modules.map(m => m.name).join(', ')}` : ''}
+${task.assignee ? `**指派人**: ${task.assignee.displayName || task.assignee.username || '未知'}` : '**指派人**: 未分配'}
+${task.creator ? `**创建人**: ${task.creator.displayName || task.creator.username || '未知'}` : ''}
+${task.dueDate ? `**截止日期**: ${new Date(task.dueDate).toLocaleString('zh-CN')}` : ''}
+${task.tags?.length ? `**标签**: ${task.tags.map((t: any) => t.name).join(', ')}` : ''}
+${task.modules?.length ? `**模块**: ${task.modules.map((m: any) => m.name).join(', ')}` : ''}
 ${task.summary ? `\n**任务摘要**: ${task.summary}\n` : ''}
 
 ## 任务描述
@@ -81,18 +72,19 @@ ${task.content || '(无描述)'}
 
 ---
 
-### 元数据（用于更新任务时使用）
+### 元数据（用于更新任务）
+
 \`\`\`json
 {
   "_id": "${task._id}",
   "displayId": ${task.displayId},
   "projectId": "${task.projectId}",
   "status": "${task.status}",
-  "priority": "${task.priority}"
+  "priority": "${task.priority}",
+  "tagIds": ${JSON.stringify(task.tagIds || [])},
+  "moduleIds": ${JSON.stringify(task.moduleIds || [])}
 }
 \`\`\`
-
-**提示**: 完成任务后，请使用 kb_task_update 工具更新任务状态、添加摘要等。
     `.trim();
 
     return {

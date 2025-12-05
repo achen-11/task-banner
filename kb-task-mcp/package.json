@@ -1,24 +1,36 @@
 {
   "name": "kb-task-mcp",
   "version": "1.0.0",
-  "description": "MCP Server for kb-task integration with Claude Code",
+  "description": "MCP Server for kb-task task management system",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "kb-task-mcp": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "node test-schema.mjs",
+    "test:tools": "npm run build && node test-tools.mjs",
+    "check": "node check-mcp.mjs"
   },
-  "keywords": ["mcp", "claude", "task-management"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "task-management"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "axios": "^1.7.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "axios": "^1.7.7",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
   }
 }
