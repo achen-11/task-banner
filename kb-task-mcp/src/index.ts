@@ -10,6 +10,11 @@ import { taskGetTool } from './tools/task-get.js';
 import { taskCreateTool } from './tools/task-create.js';
 import { taskUpdateTool } from './tools/task-update.js';
 import { taskCommentTool } from './tools/task-comment.js';
+import { documentListTool } from './tools/document-list.js';
+import { documentGetTool } from './tools/document-get.js';
+import { documentCreateTool } from './tools/document-create.js';
+import { documentUpdateTool } from './tools/document-update.js';
+import { documentDeleteTool } from './tools/document-delete.js';
 
 // 辅助函数：将 Zod schema 转换为符合 MCP 协议的 JSON Schema
 function zodToMcpSchema(zodSchema: any): any {
@@ -190,7 +195,12 @@ const tools = [
   taskGetTool,
   taskCreateTool,
   taskUpdateTool,
-  taskCommentTool
+  taskCommentTool,
+  documentListTool,
+  documentGetTool,
+  documentCreateTool,
+  documentUpdateTool,
+  documentDeleteTool
 ];
 
 // 实现 tools/list 方法：返回可用工具列表

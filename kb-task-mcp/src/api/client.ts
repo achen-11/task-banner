@@ -199,4 +199,72 @@ export class KbTaskApiClient {
     });
     return response.data;
   }
+
+  /**
+   * 获取文档列表
+   */
+  async listDocuments(params: {
+    projectId: string;
+    page?: number;
+    size?: number;
+    status?: string;
+    type?: string;
+    keyword?: string;
+  }) {
+    const response = await this.client.get('/api/document/list', { params });
+    return response.data;
+  }
+
+  /**
+   * 获取文档详情
+   */
+  async getDocument(documentId: string) {
+    const response = await this.client.get('/api/document/detail', {
+      params: { id: documentId }
+    });
+    return response.data;
+  }
+
+  /**
+   * 创建文档
+   */
+  async createDocument(data: {
+    projectId: string;
+    title: string;
+    content?: string;
+    type?: string;
+    tags?: string[];
+    status?: string;
+  }) {
+    const response = await this.client.post('/api/document/create', data);
+    return response.data;
+  }
+
+  /**
+   * 更新文档
+   */
+  async updateDocument(documentId: string, updates: {
+    title?: string;
+    content?: string;
+    status?: string;
+    tags?: string[];
+    order?: number;
+    changeLog?: string;
+  }) {
+    const response = await this.client.put('/api/document/update', {
+      id: documentId,
+      ...updates
+    });
+    return response.data;
+  }
+
+  /**
+   * 删除文档
+   */
+  async deleteDocument(documentId: string) {
+    const response = await this.client.delete('/api/document/delete', {
+      data: { id: documentId }
+    });
+    return response.data;
+  }
 }
