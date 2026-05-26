@@ -32,6 +32,9 @@ MCP 工具使用 `{ ok, data | error }`，与 HTTP API 的 `{ code, message, dat
 | `create_task` | 创建任务（含 WebSocket + MCP 通知） |
 | `update_task` | 更新任务（含 WebSocket + MCP 通知） |
 | `add_comment` | 为任务添加评论（含 WebSocket 推送） |
+| `list_comments` | 获取任务评论列表（分页、类型筛选） |
+| `list_attachments` | 获取任务/评论附件列表 |
+| `delete_task` | 删除任务（管理员或创建者） |
 
 ## 领域字段
 
@@ -66,4 +69,5 @@ pnpm dev                        # kb sync 自动监听
 - 任务以 Task Banner 为准；Agent 用 `k_list_tasks` / `k_get_task` 拉取
 - 开工 → `in_progress` + `k_add_comment`；完工 → 验证后 `completed`
 - 代码实现遵循 `kooboo-cli-coding` skill + 本仓库 `.kooboo-ai` spec
-- 附件/评论历史暂无 MCP，见 SOP 第 9 节 HTTP 替代方案
+- 附件/评论/删除任务已提供 MCP：`list_comments`、`list_attachments`、`delete_task`
+- 活动流仍用 `GET /api/task/activities?taskId=`

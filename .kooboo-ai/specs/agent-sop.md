@@ -188,7 +188,7 @@ flowchart TD
 
 ### 5.3 图片与附件
 
-- **图片放附件**时：Agent 需通过 HTTP `GET /api/attachment/list?relatedType=task&relatedId={task_id}` 读取（MCP `k_get_task` **不含**附件）。
+- **图片放附件**时：Agent 用 `k_list_attachments`（`related_type=task`, `related_id={task_id}`）读取（MCP `k_get_task` **不含**附件）。
 - **图片嵌在 Markdown 描述**中：Agent 可直接读 `content`。
 - 若任务依赖看图，请在描述里写一句：「见附件 xxx」或直接用 Markdown 图片语法。
 
@@ -266,18 +266,14 @@ pnpm build:push
 | 一次 push 整个仓库无必要 | 窄范围 `kb push` |
 | 任务描述含糊仍硬做 | `k_add_comment` 问清阻塞，或置 `review` |
 
-## 9. MCP 能力缺口（已知）
+## 9. MCP 能力（已补全）
 
-以下能力**尚未**暴露 MCP，Agent 需用 HTTP API 或让人补工具：
-
-| 需求 | 当前替代 |
+| 需求 | MCP 工具 |
 | --- | --- |
-| 任务附件 / 图片 | `GET /api/attachment/list?relatedType=task&relatedId=` |
-| 评论历史 | `GET /api/task/comments?taskId=` |
-| 活动流 | `GET /api/task/activities?taskId=` |
-| 删除任务 | 暂无 MCP；测试任务可 `completed` 归档 |
-
-后续可增 MCP：`list_comments`、`list_attachments`、`delete_task`。
+| 评论历史 | `k_list_comments` |
+| 任务附件 / 图片 | `k_list_attachments` |
+| 删除任务 | `k_delete_task` |
+| 活动流 | 仍用 `GET /api/task/activities?taskId=`（可按需再增 MCP） |
 
 ## 10. 会话快捷指令（给人）
 
