@@ -16,7 +16,8 @@
 | --- | --- |
 | `PROJECT_ROOT` | `/Users/achen/Priv/Yardi/AI-App/forum` |
 | `TASK_BANNER_MCP_URL` | `https://ai_task_v2.redev.cn/_mcp` |
-| `TASK_BANNER_PROJECT_ID` | `35fc5a7403a74ccc83bd15823746ca25` |
+| `TASK_BANNER_PROJECT_ID` | `7b89b5878b4c4091a6c099643dddf6d2`（forum 示例） |
+| `TASK_BANNER_SELF_PROJECT_ID` | `648660cbda2e4a2f9c7ace035edfe8aa`（task-banner 自用，灾后重建 ID） |
 | `TASK_BANNER_PROJECT_NAME` | `forum` |
 | `REF_TASK_BANNER_REPO` | `/Users/achen/Priv/task-banner` |
 
@@ -221,7 +222,7 @@ Agent 完成后输出：
 在 forum 仓库新建 Cursor 会话后，**只发这一句**即可（Agent 自行读文件）：
 
 ```text
-请阅读并执行本仓库 .kooboo-ai/templates/bootstrap-new-project-cursor.md（若尚未复制到本仓库，则先读 task-banner 仓库同路径文件）。目标 project_id=35fc5a7403a74ccc83bd15823746ca25，PROJECT_ROOT 为当前仓库绝对路径。完成后按文件内验收清单汇报。
+请阅读并执行本仓库 .kooboo-ai/templates/bootstrap-new-project-cursor.md（若尚未复制到本仓库，则先读 task-banner 仓库同路径文件）。目标 project_id=7b89b5878b4c4091a6c099643dddf6d2，PROJECT_ROOT 为当前仓库绝对路径。完成后按文件内验收清单汇报。
 ```
 
 若 forum 尚未有该文件，先从 task-banner 复制：
