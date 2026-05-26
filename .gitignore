@@ -159,3 +159,4 @@ tests
 !.cursor/skills/**
 !.cursor/mcp.json.example
 .cursor/mcp.json
+.DS_Store
