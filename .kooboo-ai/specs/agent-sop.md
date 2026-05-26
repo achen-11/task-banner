@@ -234,6 +234,8 @@ kb push src/js/index.js    # 稳定文件名，manifest 内列出的 chunk 按�
 
 # 或一键 build + push
 pnpm build:push
+
+# Agent HTTP 回写（MCP 不可用时）：评论 type=ai_completion + 更新 aiNotify=true 也会写入消息通知
 ```
 
 ### 6.3 验证清单（交付前）
