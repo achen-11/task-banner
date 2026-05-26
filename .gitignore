@@ -154,4 +154,8 @@ src/layout
 .claude-notify.sh
 .vscode
 tests
-.cursor
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
+!.cursor/mcp.json.example
+.cursor/mcp.json

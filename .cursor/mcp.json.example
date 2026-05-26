@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "TaskBanner": {
+      "url": "https://ai_task_v2.redev.cn/_mcp",
+      "headers": {
+        "Authorization": "Bearer <your-jwt-token>"
+      }
+    }
+  }
+}
