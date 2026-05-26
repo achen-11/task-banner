@@ -192,6 +192,17 @@ flowchart TD
 - **图片嵌在 Markdown 描述**中：Agent 可直接读 `content`。
 - 若任务依赖看图，请在描述里写一句：「见附件 xxx」或直接用 Markdown 图片语法。
 
+### 5.4 任务导入/导出（人工 vs Agent）
+
+| 场景 | 路径 |
+| --- | --- |
+| **Agent 协作** | MCP 为主：`k_create_task` / `k_update_task` / `k_add_comment` 等 |
+| **人工备份/迁移** | UI 剪贴板导入导出（`frontend/src/utils/export.ts`） |
+| **项目内批量** | 项目看板/列表、任务详情抽屉 |
+| **我的任务** | 顶部导出 → 剪贴板 Markdown |
+
+Agent **无需**使用剪贴板 round-trip；上述 UI 能力保留给人工操作。
+
 ## 6. 执行阶段（执行者 subagent + kooboo-cli-coding）
 
 **编排者不执行本节**；委派后由 **task-banner-executor** 完成。

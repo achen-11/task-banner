@@ -59,11 +59,12 @@ return error('Internal server error', 500, err)
 API 层统一检查：
 
 ```typescript
-if (!k.account.isLogin) {
+import { getCurrentAuthUser } from 'code/Services/auth'
+
+const currentUser = getCurrentAuthUser()
+if (!currentUser) {
   return error('Unauthorized', 401)
 }
-const username = k.account.user.current.userName
-const currentUser = getUserInfo(username)
 ```
 
 项目级权限通过 `checkProjectPermission(projectId, userId, role)` 校验。
@@ -82,19 +83,46 @@ import { Task } from 'code/Models/Task'
 
 | 文件 | 路由前缀 | 职责 |
 | --- | --- | --- |
-| `task.ts` | `/api/task/{action}` | 任务 CRUD、评论、排序 |
+| `auth.ts` | `/api/auth/{action}` | 登录、注册、资料、改密 |
+| `task.ts` | `/api/task/{action}` | 任务 CRUD、评论、排序、导入评论 |
 | `project.ts` | `/api/project/{action}` | 项目与成员 |
 | `module.ts` | `/api/module/{action}` | 项目模块 |
 | `tag.ts` | `/api/tag/{action}` | 标签 |
 | `document.ts` | `/api/document/{action}` | 文档与版本 |
-| `attachment.ts` | `/api/attachment/{action}` | 附件 |
+| `attachment.ts` | `/api/attachment/{action}` | 附件上传与关联 |
 | `notification.ts` | `/api/notification/{action}` | 通知 |
 | `dashboard.ts` | `/api/dashboard/{action}` | 统计 |
 | `search.ts` | `/api/search/{action}` | 全局搜索 |
-| `user.ts` | `/api/user/{action}` | 用户信息 |
+| `user.ts` | `/api/user/{action}` | 用户信息与跨项目任务 |
 | `websocket.ts` | `/api/websocket/connect` | WebSocket 连接 |
-| `api_upload.ts` | `/api/upload/{action}` | 文件上传 |
-| `__logout.ts` | `/__logout` | 退出登录 |
+| `__logout.ts` | `/__logout__` | 退出登录 |
+| `kbAuthCallBack.ts` | `/__kbAuthCallback` | Kooboo OAuth 回调 |
+
+### auth 端点
+
+| 方法 | Action | 说明 |
+| --- | --- | --- |
+| POST | `login` | 账号密码登录 |
+| POST | `register` | 注册 |
+| POST | `kooboo-login` | Kooboo 登录 |
+| POST | `logout` | 退出 |
+| GET | `me` | 当前用户 |
+| PUT | `profile` | 更新资料 |
+| POST | `change-password` | 修改密码 |
+
+### 开发/调试 API
+
+| 文件 | 路由 | 说明 |
+| --- | --- | --- |
+| `test.ts` | `GET /api/test/websocket` | 手动触发 WebSocket 广播（开发用，非生产） |
+
+## 已废弃
+
+| 原文件 | 原路由 | 替代 |
+| --- | --- | --- |
+| ~~`api_upload.ts`~~ | `/api/upload/{action}` | `attachment.ts` → `/api/attachment/upload` 等 |
+
+本地已删除 `api_upload.ts`；若远端仍存在旧脚本，可手动清理。
 
 ## 数据模型
 

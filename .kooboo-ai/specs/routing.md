@@ -23,6 +23,7 @@ Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router 
 | `/projects/:id` | `ProjectView.vue` | 项目详情（任务、文档、设置） |
 | `/projects/:projectId/documents/:documentId` | `ProjectView.vue` | 文档详情 |
 | `/messages` | `Messages.vue` | 消息通知 |
+| `/account` | `Account.vue` | 账号设置（资料、改密） |
 | `/login` | `Login.vue` | 登录 / 注册（无需鉴权） |
 
 除 `/login` 外，其余路由挂载在 `MainLayout` 下，`meta.requiresAuth: true`。
@@ -32,12 +33,13 @@ Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router 
 统一前缀 `/api/`，按资源分文件：
 
 ```text
+/api/auth/{action}
 /api/task/{action}
 /api/project/{action}
 /api/document/{action}
+/api/attachment/{action}
 /api/notification/{action}
 /api/websocket/connect
-/api/upload/{action}
 ...
 ```
 
@@ -57,8 +59,10 @@ Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router 
 POST /api/auth/login
 POST /api/auth/register
 POST /api/auth/kooboo-login
-GET  /api/auth/me
 POST /api/auth/logout
+POST /api/auth/change-password
+GET  /api/auth/me
+PUT  /api/auth/profile
 ```
 
 ## 静态资源

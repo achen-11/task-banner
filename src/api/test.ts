@@ -1,4 +1,7 @@
 // @k-url /api/test/{action}
+//
+// 开发/调试专用：手动触发 WebSocket 广播，非生产功能。
+// 见 .kooboo-ai/specs/backend.md § 开发调试 API
 
 import { success, error } from 'code/Utils/response'
 import { getCurrentAuthUser } from 'code/Services/auth'
