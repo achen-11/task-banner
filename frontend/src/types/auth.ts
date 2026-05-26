@@ -26,3 +26,13 @@ export interface RegisterRequest {
   password: string
   displayName?: string
 }
+
+export interface UpdateProfileRequest {
+  displayName?: string
+  email?: string
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string
+  newPassword: string
+}

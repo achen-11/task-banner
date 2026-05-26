@@ -78,6 +78,9 @@ const breadcrumbs = computed(() => {
   } else if (route.path === '/messages') {
     crumbs.push({ name: '首页', path: '/' })
     crumbs.push({ name: '消息', path: '/messages' })
+  } else if (route.path === '/account') {
+    crumbs.push({ name: '首页', path: '/' })
+    crumbs.push({ name: '账号设置', path: '/account' })
   } else if (route.path.startsWith('/projects/')) {
     crumbs.push({ name: '首页', path: '/' })
     crumbs.push({ name: '项目', path: route.path })

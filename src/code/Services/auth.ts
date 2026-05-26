@@ -234,6 +234,70 @@ export function logout(): void {
 }
 
 /**
+ * 更新当前用户资料
+ */
+export function updateProfile(body: {
+  displayName?: string
+  email?: string
+}) {
+  const currentUser = getCurrentUser()
+  if (!currentUser) throw new Error('登录已过期')
+
+  const updateData: Record<string, string> = {}
+
+  if (body.displayName !== undefined) {
+    const displayName = body.displayName.trim()
+    if (!displayName) throw new Error('显示名称不能为空')
+    updateData.displayName = displayName
+  }
+
+  if (body.email !== undefined) {
+    const email = body.email.trim().toLowerCase()
+    if (!isEmail(email)) throw new Error('请输入正确的邮箱地址')
+    const existing = User.findOne({ email } as any) as any
+    if (existing?._id && existing._id !== currentUser._id) {
+      throw new Error('邮箱已被使用')
+    }
+    updateData.email = email
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new Error('没有可更新的字段')
+  }
+
+  User.updateById(currentUser._id, updateData as any)
+  return getCurrentUser()
+}
+
+/**
+ * 修改当前用户密码
+ */
+export function changePassword(body: {
+  oldPassword?: string
+  newPassword?: string
+}) {
+  const currentUser = getCurrentUser()
+  if (!currentUser) throw new Error('登录已过期')
+
+  const oldPassword = body.oldPassword?.trim()
+  const newPassword = body.newPassword?.trim()
+
+  if (!oldPassword) throw new Error('请输入原密码')
+  if (!newPassword) throw new Error('请输入新密码')
+  if (newPassword.length < 6) throw new Error('新密码长度至少 6 位')
+  if (newPassword.length > 20) throw new Error('新密码长度不能超过 20 位')
+
+  const user = User.findById(currentUser._id) as any
+  if (!user?._id) throw new Error('用户不存在')
+  if (!user.password) throw new Error('当前账号不支持修改密码')
+
+  const oldMd5 = k.security.md5(oldPassword)
+  if (user.password !== oldMd5) throw new Error('原密码错误')
+
+  User.updateById(currentUser._id, { password: k.security.md5(newPassword) } as any)
+}
+
+/**
  * 从 JWT 获取当前用户（不含 Kooboo fallback）
  */
 export function getCurrentUser() {

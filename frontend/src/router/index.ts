@@ -54,6 +54,14 @@ const router = createRouter({
           }
         },
         {
+          path: 'account',
+          name: 'account',
+          component: () => import('../views/Account.vue'),
+          meta: {
+            title: 'Task Banner - 账号设置'
+          }
+        },
+        {
           path: 'projects/:id',
           name: 'project',
           component: () => import('../views/ProjectView.vue'),

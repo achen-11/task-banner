@@ -5,7 +5,9 @@ import {
   logout,
   register,
   getCurrentUser,
-  koobooLogin
+  koobooLogin,
+  updateProfile,
+  changePassword
 } from 'code/Services/auth'
 import { success, error } from 'code/Utils/response'
 
@@ -76,5 +78,29 @@ k.api.get('me', () => {
     return success(user)
   } catch (e: any) {
     return error(e?.message || '获取用户信息失败', 400)
+  }
+})
+
+k.api.put('profile', (body: {
+  displayName?: string
+  email?: string
+}) => {
+  try {
+    const user = updateProfile(body)
+    return success(user, '资料更新成功')
+  } catch (e: any) {
+    return error(e?.message || '更新资料失败', 400)
+  }
+})
+
+k.api.post('change-password', (body: {
+  oldPassword?: string
+  newPassword?: string
+}) => {
+  try {
+    changePassword(body)
+    return success(null, '密码修改成功')
+  } catch (e: any) {
+    return error(e?.message || '修改密码失败', 400)
   }
 })

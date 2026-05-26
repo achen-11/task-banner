@@ -1,5 +1,12 @@
 import request from '@/utils/request'
-import type { LoginRequest, LoginResponse, RegisterRequest, UserInfo } from '@/types/auth'
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  UserInfo,
+  UpdateProfileRequest,
+  ChangePasswordRequest
+} from '@/types/auth'
 
 const API_BASE = '/api/auth'
 
@@ -17,5 +24,11 @@ export const authApi = {
     request.get(`${API_BASE}/me`) as Promise<UserInfo>,
 
   koobooLogin: () =>
-    request.post(`${API_BASE}/kooboo-login`, {}) as Promise<LoginResponse>
+    request.post(`${API_BASE}/kooboo-login`, {}) as Promise<LoginResponse>,
+
+  updateProfile: (data: UpdateProfileRequest) =>
+    request.put(`${API_BASE}/profile`, data) as Promise<UserInfo>,
+
+  changePassword: (data: ChangePasswordRequest) =>
+    request.post(`${API_BASE}/change-password`, data) as Promise<null>
 }
