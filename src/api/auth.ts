@@ -84,6 +84,9 @@ k.api.get('me', () => {
 k.api.put('profile', (body: {
   displayName?: string
   email?: string
+  preferences?: {
+    myTasksDefaultStatuses?: string[]
+  }
 }) => {
   try {
     const user = updateProfile(body)

@@ -6,6 +6,11 @@ export interface UserInfo {
   avatar: string
   isAdmin: boolean
   koobooId?: string
+  preferences?: UserPreferences
+}
+
+export interface UserPreferences {
+  myTasksDefaultStatuses?: Array<'todo' | 'in_progress' | 'review' | 'completed'>
 }
 
 export interface LoginRequest {
@@ -30,6 +35,7 @@ export interface RegisterRequest {
 export interface UpdateProfileRequest {
   displayName?: string
   email?: string
+  preferences?: UserPreferences
 }
 
 export interface ChangePasswordRequest {

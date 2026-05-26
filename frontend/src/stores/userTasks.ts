@@ -2,6 +2,8 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getUserTasks, getUserTasksStats, type UserTaskFilters, type UserTasksStats, type TaskListResponse } from '@/api/user'
 import type { Task } from '@/types/task'
+import type { UserPreferences } from '@/types/auth'
+import { DEFAULT_MY_TASKS_STATUSES, getMyTasksDefaultStatuses } from '@/constants/userPreferences'
 
 export const useUserTasksStore = defineStore('userTasks', () => {
   // 状态
@@ -9,7 +11,7 @@ export const useUserTasksStore = defineStore('userTasks', () => {
   const loading = ref(false)
   const stats = ref<UserTasksStats>()
   const currentView = ref<'list' | 'board'>('list')
-  const filters = ref<UserTaskFilters>({ status: ['todo', 'review'] }) // 默认显示待验收和待办任务
+  const filters = ref<UserTaskFilters>({ status: [...DEFAULT_MY_TASKS_STATUSES] })
   const selectedTaskIds = ref<string[]>([])
   const pagination = ref({
     page: 1,
@@ -113,6 +115,17 @@ export const useUserTasksStore = defineStore('userTasks', () => {
     }
   }
 
+  // 应用用户偏好中的默认状态筛选
+  const applyDefaultStatusFilter = (preferences?: UserPreferences | null) => {
+    filters.value = {
+      ...filters.value,
+      status: getMyTasksDefaultStatuses(preferences)
+    }
+  }
+
+  const getDefaultStatusFilter = (preferences?: UserPreferences | null) =>
+    getMyTasksDefaultStatuses(preferences)
+
   // 更新筛选条件
   const updateFilters = (newFilters: Partial<UserTaskFilters>) => {
     filters.value = { ...filters.value, ...newFilters }
@@ -189,6 +202,8 @@ export const useUserTasksStore = defineStore('userTasks', () => {
     // 方法
     fetchTasks,
     fetchStats,
+    applyDefaultStatusFilter,
+    getDefaultStatusFilter,
     updateFilters,
     switchView,
     selectTask,

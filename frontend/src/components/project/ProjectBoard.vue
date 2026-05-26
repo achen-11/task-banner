@@ -302,7 +302,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch, provide, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, inject, nextTick, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -362,15 +362,18 @@ const drawerMode = ref<'view' | 'create'>('view')
 // 批量选择相关
 const selectedTaskIds = ref<Set<string>>(new Set())
 
-// 专注模式相关
-const focusMode = ref(false)
-const toggleFocusMode = () => {
-  focusMode.value = !focusMode.value
-}
+// 专注模式：项目内看板与 ProjectView / ProjectDocuments 共用同一状态
+const parentFocusMode = inject<Ref<boolean> | null>('focusMode', null)
+const parentToggleFocusMode = inject<(() => void) | null>('toggleFocusMode', null)
 
-// 提供专注模式状态给子组件
-provide('focusMode', focusMode)
-provide('toggleFocusMode', toggleFocusMode)
+const focusMode = computed(() => {
+  if (props.scope !== 'project') return false
+  return parentFocusMode?.value ?? false
+})
+
+const toggleFocusMode = () => {
+  parentToggleFocusMode?.()
+}
 
 // 导入确认对话框状态
 const importConfirmVisible = ref(false)
@@ -1140,14 +1143,6 @@ onMounted(() => {
     },
     category: '看板'
   })
-
-  // 注册 F1 键切换专注模式
-  registerShortcut({
-    key: 'F1',
-    description: '专注模式',
-    handler: toggleFocusMode,
-    category: '看板'
-  })
 })
 
 // 组件卸载时取消注册快捷键
@@ -1157,7 +1152,6 @@ onUnmounted(() => {
   unregisterShortcut('n')
   unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
   unregisterShortcut('e', true) // 指定meta=true，精确匹配Cmd+E
-  unregisterShortcut('F1')
 })
 
 defineExpose({

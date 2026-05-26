@@ -38,6 +38,10 @@ export const User = ksql.define(
       type: DataTypes.String,
       default: '',
       index: true
+    },
+    preferences: {
+      type: DataTypes.Object,
+      default: {}
     }
   },
   {

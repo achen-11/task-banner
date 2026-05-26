@@ -125,11 +125,11 @@ export function getProjectDetailById(projectId: string): ProjectDetailInfo | nul
 }
 
 /**
- * 获取用户的项目列表
+ * 获取用户的项目列表（含任务/成员统计）
  * @param userId - 用户 ID
  * @returns 项目列表
  */
-export function getUserProjects(userId: string): ProjectInfo[] {
+export function getUserProjects(userId: string): ProjectDetailInfo[] {
   // 1. 查询用户参与的所有项目成员记录
   const memberRecords = ProjectMember.findAll({
     userId: userId
@@ -142,12 +142,23 @@ export function getUserProjects(userId: string): ProjectInfo[] {
   // 2. 获取所有项目 ID
   const projectIds = memberRecords.map(m => m.projectId)
 
-  // 3. 批量查询项目
+  // 3. 批量查询项目并附带统计
   const projects = projectIds
     .map(id => Project.findById(id) as ProjectType | null)
     .filter(p => p !== null) as ProjectType[]
 
-  return projects.map(formatProjectInfo)
+  return projects.map(project => {
+    const projectInfo = formatProjectInfo(project)
+    const allTasks = Task.findAll({ projectId: project._id }) as TaskType[]
+    const members = ProjectMember.findAll({ projectId: project._id }) as ProjectMemberType[]
+
+    return {
+      ...projectInfo,
+      taskCount: allTasks.length,
+      completedTaskCount: allTasks.filter(task => task.status === 'completed').length,
+      memberCount: members.length
+    }
+  })
 }
 
 /**

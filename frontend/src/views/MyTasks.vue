@@ -55,6 +55,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useProjectStore } from '@/stores/project'
 import { useUserTasksStore } from '@/stores/userTasks'
+import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import { exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 
@@ -71,6 +72,7 @@ import type { Task } from '@/types/task'
 // Store
 const projectStore = useProjectStore()
 const userTasksStore = useUserTasksStore()
+const authStore = useAuthStore()
 
 // 响应式数据
 const showQuickCreateModal = ref(false)
@@ -209,6 +211,12 @@ onMounted(async () => {
 
   // 加载项目列表
   await projectStore.fetchProjects()
+
+  // 按用户偏好初始化默认状态筛选
+  if (!authStore.user) {
+    await authStore.checkAuth()
+  }
+  userTasksStore.applyDefaultStatusFilter(authStore.user?.preferences)
 
   // 加载任务数据
   userTasksStore.fetchTasks(true)

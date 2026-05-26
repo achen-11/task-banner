@@ -96,8 +96,10 @@
 import { ref, watch, computed } from 'vue'
 import { useProjectStore } from '@/stores/project'
 import { useUserTasksStore } from '@/stores/userTasks'
+import { useAuthStore } from '@/stores/auth'
 import type { UserTaskFilters } from '@/api/user'
 import { ElMessage } from 'element-plus'
+import { DEFAULT_MY_TASKS_STATUSES } from '@/constants/userPreferences'
 
 interface Props {
   modelValue?: UserTaskFilters
@@ -113,11 +115,16 @@ const emit = defineEmits<Emits>()
 
 const projectStore = useProjectStore()
 const userTasksStore = useUserTasksStore()
+const authStore = useAuthStore()
 
-// 本地筛选条件 - 默认显示待验收和待办任务
+const defaultStatuses = computed(() =>
+  userTasksStore.getDefaultStatusFilter(authStore.user?.preferences)
+)
+
+// 本地筛选条件
 const localFilters = ref<UserTaskFilters>({
   projectIds: [],
-  status: ['todo', 'review'], // 默认显示待验收和待办（通过API处理）
+  status: [...DEFAULT_MY_TASKS_STATUSES],
   priority: undefined,
   search: ''
 })
@@ -128,10 +135,9 @@ const projects = computed(() => projectStore.projects || [])
 // 监听外部变化
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
-    // 合并外部值和本地默认值，确保status有默认值
     localFilters.value = {
       projectIds: [],
-      status: ['todo', 'review'], // 默认值
+      status: [...defaultStatuses.value],
       priority: undefined,
       search: '',
       ...newValue
@@ -149,7 +155,7 @@ const handleFiltersChange = () => {
 const handleResetFilters = () => {
   localFilters.value = {
     projectIds: [],
-    status: ['todo', 'review'], // 重置为默认显示待验收和待办
+    status: [...defaultStatuses.value],
     priority: undefined,
     search: ''
   }

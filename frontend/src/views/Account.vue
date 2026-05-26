@@ -56,6 +56,35 @@
         </form>
       </section>
 
+      <!-- 个人偏好 -->
+      <section class="bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-100 dark:border-gray-700 mb-6">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">个人偏好</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">自定义「我的任务」页打开时的默认状态筛选</p>
+        </div>
+        <form class="p-6 space-y-5" @submit.prevent="handleSavePreferences">
+          <div class="space-y-3">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">我的任务默认显示状态</label>
+            <el-checkbox-group v-model="preferenceStatuses" class="flex flex-wrap gap-4">
+              <el-checkbox
+                v-for="option in TASK_STATUS_OPTIONS"
+                :key="option.value"
+                :label="option.value"
+              >
+                {{ option.label }}
+              </el-checkbox>
+            </el-checkbox-group>
+            <p class="text-xs text-gray-500 dark:text-gray-400">至少选择一项；点击「重置筛选」也会回到此处配置的默认状态。</p>
+          </div>
+
+          <div class="flex justify-end">
+            <el-button type="primary" native-type="submit" :loading="savingPreferences">
+              保存偏好
+            </el-button>
+          </div>
+        </form>
+      </section>
+
       <!-- 修改密码 -->
       <section class="bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-100 dark:border-gray-700">
         <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
@@ -111,11 +140,19 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
+import { useUserTasksStore } from '@/stores/userTasks'
 import type { UserInfo } from '@/types/auth'
+import {
+  TASK_STATUS_OPTIONS,
+  getMyTasksDefaultStatuses,
+  type TaskStatusValue
+} from '@/constants/userPreferences'
 
 const authStore = useAuthStore()
+const userTasksStore = useUserTasksStore()
 const loading = ref(true)
 const savingProfile = ref(false)
+const savingPreferences = ref(false)
 const changingPassword = ref(false)
 
 const profile = reactive({
@@ -131,6 +168,8 @@ const passwordForm = reactive({
   confirmPassword: ''
 })
 
+const preferenceStatuses = ref<TaskStatusValue[]>([...getMyTasksDefaultStatuses()])
+
 const userInitials = computed(() => {
   const name = profile.displayName || profile.username
   return name ? name.substring(0, 1).toUpperCase() : '?'
@@ -141,6 +180,7 @@ function applyUser(user: UserInfo) {
   profile.displayName = user.displayName
   profile.email = user.email
   profile.koobooId = user.koobooId || ''
+  preferenceStatuses.value = [...getMyTasksDefaultStatuses(user.preferences)]
 }
 
 async function loadProfile() {
@@ -170,6 +210,30 @@ async function handleSaveProfile() {
     ElMessage.error(e instanceof Error ? e.message : '更新资料失败')
   } finally {
     savingProfile.value = false
+  }
+}
+
+async function handleSavePreferences() {
+  if (preferenceStatuses.value.length === 0) {
+    ElMessage.error('请至少选择一个默认任务状态')
+    return
+  }
+
+  savingPreferences.value = true
+  try {
+    const user = await authApi.updateProfile({
+      preferences: {
+        myTasksDefaultStatuses: [...preferenceStatuses.value]
+      }
+    })
+    applyUser(user)
+    authStore.user = user
+    userTasksStore.applyDefaultStatusFilter(user.preferences)
+    ElMessage.success('偏好设置已保存')
+  } catch (e: unknown) {
+    ElMessage.error(e instanceof Error ? e.message : '保存偏好失败')
+  } finally {
+    savingPreferences.value = false
   }
 }
 

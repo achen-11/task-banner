@@ -4,6 +4,11 @@
  */
 import { User } from 'code/Models/User'
 import { getUserById, getUserInfo, type UserInfo } from 'code/Services/user'
+import {
+  getMyTasksDefaultStatuses,
+  normalizeUserPreferences,
+  type UserPreferences
+} from 'code/Utils/userPreferences'
 
 export const COOKIE_TOKEN_KEY = 'task_banner_auth_token'
 const COOKIE_MAX_AGE_DAY_REMEMBER = 30
@@ -239,11 +244,12 @@ export function logout(): void {
 export function updateProfile(body: {
   displayName?: string
   email?: string
+  preferences?: UserPreferences
 }) {
   const currentUser = getCurrentUser()
   if (!currentUser) throw new Error('登录已过期')
 
-  const updateData: Record<string, string> = {}
+  const updateData: Record<string, unknown> = {}
 
   if (body.displayName !== undefined) {
     const displayName = body.displayName.trim()
@@ -259,6 +265,24 @@ export function updateProfile(body: {
       throw new Error('邮箱已被使用')
     }
     updateData.email = email
+  }
+
+  if (body.preferences !== undefined) {
+    const user = User.findById(currentUser._id) as any
+    const currentPrefs = normalizeUserPreferences(user?.preferences)
+    const nextPrefs: UserPreferences = { ...currentPrefs }
+
+    if (body.preferences.myTasksDefaultStatuses !== undefined) {
+      const statuses = body.preferences.myTasksDefaultStatuses
+      if (!Array.isArray(statuses) || statuses.length === 0) {
+        throw new Error('请至少选择一个默认任务状态')
+      }
+      nextPrefs.myTasksDefaultStatuses = getMyTasksDefaultStatuses({
+        myTasksDefaultStatuses: statuses
+      })
+    }
+
+    updateData.preferences = nextPrefs
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -314,7 +338,8 @@ export function getCurrentUser() {
     displayName: user.displayName || user.username,
     avatar: user.avatar || '',
     isAdmin: user.isAdmin || false,
-    koobooId: user.koobooId || ''
+    koobooId: user.koobooId || '',
+    preferences: normalizeUserPreferences(user.preferences)
   }
 }
 
