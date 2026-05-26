@@ -1,0 +1,23 @@
+# MCP Tool Preflight 规则
+
+rules:
+  - id: mcp-tool-requires-meta
+    severity: BLOCKER
+    message: "MCP Tool 必须 export const meta 字面量对象"
+    appliesTo: McpTool
+    matchType: absent
+    pattern: 'export\s+const\s+meta\s*=\s*\{'
+
+  - id: mcp-tool-meta-name-field
+    severity: BLOCKER
+    message: "meta 对象必须包含 name 字段"
+    appliesTo: McpTool
+    matchType: absent
+    pattern: 'name:\s*"'
+
+  - id: mcp-tool-meta-input-schema
+    severity: BLOCKER
+    message: "meta 对象必须包含 inputSchema 字段"
+    appliesTo: McpTool
+    matchType: absent
+    pattern: 'inputSchema:\s*\{'

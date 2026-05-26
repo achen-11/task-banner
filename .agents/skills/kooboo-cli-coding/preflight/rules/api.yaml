@@ -1,0 +1,15 @@
+# API / CodeBlock Preflight 规则
+
+rules:
+  - id: api-requires-k-url
+    severity: BLOCKER
+    message: "API 文件顶部需要 // @k-url ... 注释"
+    appliesTo: Api
+    matchType: absent
+    pattern: '//\s*@k-url\s+'
+
+  - id: api-use-k-api
+    severity: WARN
+    message: "API handler 应使用 k.api.get/post 注册，而非 router 风格"
+    appliesTo: Api
+    pattern: 'k\.api\.(get|post|put|delete)'

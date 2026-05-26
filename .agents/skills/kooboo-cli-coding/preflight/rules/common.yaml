@@ -1,0 +1,13 @@
+# 通用 Preflight 规则
+# severity: BLOCKER | WARN
+
+rules:
+  - id: no-k-req-services
+    severity: BLOCKER
+    message: "禁止臆造 k.req.services / k.request.services；Service 应通过 import from code/ 调用"
+    pattern: 'k\.(req|request)\.services'
+
+  - id: no-express-ctx
+    severity: BLOCKER
+    message: "不要使用 Express/Koa 风格的 ctx/req/res 作为 Kooboo API handler 参数"
+    pattern: '\b(ctx|req|res)\s*[,:\)]'

@@ -1,0 +1,9 @@
+# 项目特例规则
+
+以下规则**覆盖** `kooboo-cli-coding` skill 的默认约定。与 CLI 编译规则冲突的 override 无效。
+
+## 示例
+
+<!-- - 响应格式统一使用 { code, data, message } -->
+<!-- - API 路径前缀固定为 /api/v2/ -->
+<!-- - 禁止在本项目使用 UnoCSS，改用 Tailwind -->

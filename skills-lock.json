@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "kooboo-cli-coding": {
+      "source": "/Users/achen/Priv/Yardi/kooboo-cli-coding",
+      "sourceType": "local",
+      "computedHash": "e790dcce4afd4de098da644e24e0b7bd324bb8e1dab60257c5bef8dd6566d1eb"
+    }
+  }
+}

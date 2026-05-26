@@ -35,15 +35,14 @@ function addKoobooUrlPlugin(): Plugin {
       // 1. 检查登录状态
       if (!k.account.isLogin) {
         k.response.redirect('/_Admin/login?permission=u&returnurl=/')
-        return
+      } else {
+        // 2. 获取当前登录用户
+        const username = k.account.user.current.userName
+        const userInfo = getUserInfo(username)
+  
+        // 3. 注入用户信息到客户端
+        k.utils.clientJS.setVariable('__USER_INFO__', userInfo)
       }
-
-      // 2. 获取当前登录用户
-      const username = k.account.user.current.userName
-      const userInfo = getUserInfo(username)
-
-      // 3. 注入用户信息到客户端
-      k.utils.clientJS.setVariable('__USER_INFO__', userInfo)
     </script>`
 
           html = html.replace('</title>', '</title>' + serverScript)

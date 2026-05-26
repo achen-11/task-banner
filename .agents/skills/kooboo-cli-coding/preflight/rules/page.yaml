@@ -1,0 +1,15 @@
+# Page / Layout / View Preflight 规则
+
+rules:
+  - id: page-requires-k-url
+    severity: BLOCKER
+    message: "Page 文件顶部需要 <!-- @k-url ... --> 注释"
+    appliesTo: Page
+    matchType: absent
+    pattern: '<!--\s*@k-url\s+'
+
+  - id: view-id-use-slash
+    severity: WARN
+    message: "本地 view id 建议使用斜杠路径，如 app/common/header"
+    appliesTo: [Page, Layout, View]
+    pattern: '<view\s+id="[^"]*\.[^"]*"'
