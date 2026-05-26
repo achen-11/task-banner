@@ -784,13 +784,6 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
 const handleSaveTask = async (continueCreate = false) => {
   if (isSaving.value) return
 
-  // 强制失焦当前聚焦的元素，确保所有输入都已提交（修复 cmd+s 时内容缺失的问题）
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur()
-    // 等待失焦事件处理完成
-    await nextTick()
-  }
-
   // 创建模式下
   if (props.mode === 'create') {
     if (!newTaskData.value.title || newTaskData.value.title.trim() === '') {
@@ -805,6 +798,12 @@ const handleSaveTask = async (continueCreate = false) => {
     }
 
     isSaving.value = true
+
+    // 强制失焦当前聚焦的元素，确保所有输入都已提交（修复 cmd+s 时内容缺失的问题）
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+      await nextTick()
+    }
 
     try {
       const task = await createTaskAPI({

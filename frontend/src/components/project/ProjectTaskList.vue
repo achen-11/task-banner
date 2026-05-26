@@ -846,10 +846,12 @@ const handleCreateTask = () => {
 
 // 任务创建完成处理
 const handleTaskCreated = (newTask: Task) => {
-  // 将新任务添加到列表顶部
-  tasks.value.unshift(newTask)
+  const existingIndex = tasks.value.findIndex(t => t._id === newTask._id)
+  if (existingIndex === -1) {
+    tasks.value.unshift(newTask)
+    total.value++
+  }
 
-  // 切换到查看模式
   drawerMode.value = 'view'
   selectedTaskId.value = newTask._id
 }

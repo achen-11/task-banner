@@ -761,19 +761,72 @@ const handleTaskDeleted = async (taskId: string) => {
 
 // 任务创建完成处理
 const handleTaskCreated = (newTask: Task) => {
-  // 将新任务添加到对应列的顶部
-  const column = columns.value.find(col => col.status === newTask.status)
-  if (column) {
-    column.tasks.unshift(newTask)
-  }
-  
-  // 更新任务列表
-  tasks.value.unshift(newTask)
-  
-  // 切换到查看模式
+  upsertTaskInBoard(newTask)
   drawerMode.value = 'view'
   selectedTaskId.value = newTask._id
 }
+
+const upsertTaskInBoard = (task: Task) => {
+  const index = tasks.value.findIndex(t => t._id === task._id)
+  if (index === -1) {
+    tasks.value.unshift(task)
+  } else {
+    tasks.value[index] = task
+  }
+  distributeTasksToColumns()
+}
+
+const handleWebSocketTaskCreated = async (event: CustomEvent) => {
+  if (props.scope !== 'project') return
+  const { data, message } = event.detail
+  if (message.projectId !== projectId.value) return
+
+  if (tasks.value.some(t => t._id === data.task._id)) return
+
+  try {
+    const taskDetail = await getTaskDetail(data.task._id)
+    upsertTaskInBoard(taskDetail as Task)
+  } catch (error) {
+    console.error('Failed to fetch task detail:', error)
+    loadTasks()
+  }
+}
+
+const handleWebSocketTaskUpdated = async (event: CustomEvent) => {
+  if (props.scope !== 'project') return
+  const { data, message } = event.detail
+  if (message.projectId !== projectId.value) return
+
+  const taskId = data.task._id
+  const index = tasks.value.findIndex(t => t._id === taskId)
+  if (index === -1) return
+
+  try {
+    const taskDetail = await getTaskDetail(taskId)
+    tasks.value[index] = taskDetail as Task
+    distributeTasksToColumns()
+  } catch (error) {
+    console.error('Failed to fetch updated task:', error)
+  }
+}
+
+const handleWebSocketTaskDeleted = (event: CustomEvent) => {
+  if (props.scope !== 'project') return
+  const { data, message } = event.detail
+  if (message.projectId !== projectId.value) return
+
+  const taskId = data.taskId
+  tasks.value = tasks.value.filter(t => t._id !== taskId)
+  distributeTasksToColumns()
+
+  if (selectedTaskId.value === taskId) {
+    closeTaskDetail()
+  }
+}
+
+const handleCreatedWrapper = (event: Event) => handleWebSocketTaskCreated(event as CustomEvent)
+const handleUpdatedWrapper = (event: Event) => handleWebSocketTaskUpdated(event as CustomEvent)
+const handleDeletedWrapper = (event: Event) => handleWebSocketTaskDeleted(event as CustomEvent)
 
 watch(() => props.externalTasks, () => {
   syncExternalTasks()
@@ -1106,6 +1159,10 @@ watch([() => route.query.taskId, () => props.project], async ([taskId, project])
 onMounted(() => {
   if (props.scope !== 'project') return
 
+  window.addEventListener('websocket:task-created', handleCreatedWrapper)
+  window.addEventListener('websocket:task-updated', handleUpdatedWrapper)
+  window.addEventListener('websocket:task-deleted', handleDeletedWrapper)
+
   // 注册 N 键新建任务
   registerShortcut({
     key: 'n',
@@ -1148,6 +1205,10 @@ onMounted(() => {
 // 组件卸载时取消注册快捷键
 onUnmounted(() => {
   if (props.scope !== 'project') return
+
+  window.removeEventListener('websocket:task-created', handleCreatedWrapper)
+  window.removeEventListener('websocket:task-updated', handleUpdatedWrapper)
+  window.removeEventListener('websocket:task-deleted', handleDeletedWrapper)
 
   unregisterShortcut('n')
   unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
