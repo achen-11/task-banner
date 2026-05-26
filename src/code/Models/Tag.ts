@@ -10,11 +10,6 @@ export const Tag = ksql.define(
     projectId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'projects',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     name: {

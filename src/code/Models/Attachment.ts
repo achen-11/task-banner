@@ -54,21 +54,11 @@ export const Attachment = ksql.define(
     uploaderId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     projectId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'projects',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     }
   },

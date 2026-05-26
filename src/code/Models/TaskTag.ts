@@ -9,21 +9,11 @@ export const TaskTag = ksql.define(
     taskId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'tasks',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     tagId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'tags',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     }
   },

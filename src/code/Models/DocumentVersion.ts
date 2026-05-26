@@ -10,11 +10,6 @@ export const DocumentVersion = ksql.define(
     documentId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'documents',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     version: {
@@ -33,11 +28,6 @@ export const DocumentVersion = ksql.define(
     createdBy: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     changeLog: {

@@ -9,11 +9,6 @@ export const Notification = ksql.define(
     userId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     type: {

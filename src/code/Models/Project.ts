@@ -22,11 +22,6 @@ export const Project = ksql.define(
     ownerId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     status: {

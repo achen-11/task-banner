@@ -9,21 +9,11 @@ export const CommentReaction = ksql.define(
     commentId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'task_comments',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     userId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     emoji: {

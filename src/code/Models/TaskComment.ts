@@ -9,21 +9,11 @@ export const TaskComment = ksql.define(
     taskId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'tasks',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     userId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     content: {

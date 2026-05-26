@@ -18,11 +18,6 @@ export const Document = ksql.define(
     projectId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'projects',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     type: {
@@ -37,11 +32,6 @@ export const Document = ksql.define(
     createdBy: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     updatedBy: {

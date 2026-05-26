@@ -16,11 +16,6 @@ export const Task = ksql.define(
     projectId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'projects',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     title: {
@@ -49,11 +44,6 @@ export const Task = ksql.define(
     creatorId: {
       type: DataTypes.String,
       required: true,
-      ref: {
-        tableName: 'users',
-        fieldName: '_id',
-        onDelete: 'CASCADE'
-      },
       index: true
     },
     dueDate: {
