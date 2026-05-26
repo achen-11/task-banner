@@ -319,26 +319,25 @@ export function getCurrentUser() {
 }
 
 /**
- * API 鉴权：优先 JWT，兼容 Kooboo 会话
+ * API 鉴权：优先 JWT（账号密码 / 本地登录），无有效 JWT 时回退 Kooboo 会话（如 MCP Bearer）
  */
 export function getCurrentAuthUser(): UserInfo | null {
-  // MCP 调用走 Kooboo Bearer，优先用 k.account 会话
+  try {
+    const payload = getTokenPayload()
+    if (payload) {
+      const user = getUserById(payload.userId)
+      if (user) return user
+    }
+  } catch {
+    // 继续尝试 Kooboo 会话
+  }
+
   try {
     if (k.account.isLogin) {
       const current = k.account.user.current
       if (current && current.userName) {
         return getUserInfo(current.userName)
       }
-    }
-  } catch {
-    // 继续尝试 JWT
-  }
-
-  try {
-    const payload = getTokenPayload()
-    if (payload) {
-      const user = getUserById(payload.userId)
-      if (user) return user
     }
   } catch {
     // ignore
