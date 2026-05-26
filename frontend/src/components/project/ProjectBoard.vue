@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col">
-    <!-- 看板头部 -->
-    <div class="px-4 mb-4" :class="{ 'hidden': focusMode }">
+    <!-- 看板头部（项目内模式） -->
+    <div v-if="scope === 'project'" class="px-4 mb-4" :class="{ 'hidden': focusMode }">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">看板视图</h2>
@@ -107,8 +107,8 @@
       </div>
     </div>
 
-    <!-- 专注模式悬浮按钮 -->
-    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3 border border-gray-200 dark:border-gray-700">
+    <!-- 专注模式悬浮按钮（项目内模式） -->
+    <div v-if="scope === 'project' && focusMode" class="fixed top-16 right-4 z-50 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3 border border-gray-200 dark:border-gray-700">
       <el-tooltip>
         <template #content>
           <div class="flex items-center gap-1.5">
@@ -127,7 +127,10 @@
     </div>
 
     <!-- 看板内容 -->
-    <div class="flex-1 flex gap-4 overflow-hidden" :class="focusMode ? 'h-full' : 'h-[calc(100%-73px)]'">
+    <div
+      class="flex-1 flex gap-4 overflow-hidden"
+      :class="scope === 'global' ? 'min-h-[400px]' : (focusMode ? 'h-full' : 'h-[calc(100%-73px)]')"
+    >
       <!-- 加载状态 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <div class="text-center">
@@ -208,6 +211,17 @@
                   />
                   <!-- 任务内容 -->
                   <div class="flex-1 min-w-0">
+                    <!-- 跨项目模式：显示所属项目 -->
+                    <div
+                      v-if="scope === 'global' && task.project"
+                      class="flex items-center gap-1.5 mb-1.5 min-w-0"
+                    >
+                      <span
+                        class="w-2 h-2 rounded-full flex-shrink-0"
+                        :style="{ backgroundColor: task.project.color || '#6366f1' }"
+                      />
+                      <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ task.project.name }}</span>
+                    </div>
                     <!-- 任务标题 -->
                     <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm mb-2 line-clamp-2">{{ task.title }}</h4>
 
@@ -259,8 +273,9 @@
     </template>
     </div>
 
-    <!-- 任务详情抽屉 -->
+    <!-- 任务详情抽屉（项目内模式） -->
     <TaskDetailDrawer
+      v-if="scope === 'project'"
       :is-open="showTaskDetail"
       :mode="drawerMode"
       :task-id="selectedTaskId"
@@ -273,8 +288,9 @@
       @task-created="handleTaskCreated"
     />
 
-    <!-- 导入确认对话框 -->
+    <!-- 导入确认对话框（项目内模式） -->
     <ImportTaskDialog
+      v-if="scope === 'project'"
       :visible="importConfirmVisible"
       :tasks="tasksToImport"
       :loading="importing"
@@ -300,8 +316,17 @@ import ImportTaskDialog from './ImportTaskDialog.vue'
 import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution, ImportService } from '@/utils/export'
 
 interface Props {
-  project: Project | null
+  project?: Project | null
+  /** project：单项目看板；global：我的任务等跨项目场景 */
+  scope?: 'project' | 'global'
+  externalTasks?: Task[]
+  externalLoading?: boolean
 }
+
+const emit = defineEmits<{
+  'task-click': [task: Task]
+  refresh: []
+}>()
 
 interface Column {
   id: string
@@ -312,11 +337,20 @@ interface Column {
   isDefault?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+  scope: 'project',
+  externalTasks: () => [],
+  externalLoading: false
+})
 
 // 响应式数据
-const loading = ref(true)
+const internalLoading = ref(true)
 const tasks = ref<Task[]>([])
+
+const loading = computed(() =>
+  props.scope === 'global' ? props.externalLoading : internalLoading.value
+)
 const showColumnManager = ref(false)
 
 // 任务详情抽屉相关
@@ -410,11 +444,19 @@ const badgeClassOptions = [
 const projectId = computed(() => props.project?._id)
 
 // 方法
+const reloadTasks = async () => {
+  if (props.scope === 'global') {
+    emit('refresh')
+    return
+  }
+  await loadTasks()
+}
+
 const loadTasks = async () => {
-  if (!projectId.value) return
+  if (props.scope === 'global' || !projectId.value) return
 
   try {
-    loading.value = true
+    internalLoading.value = true
     const response = await getTaskList({
       projectId: projectId.value,
       page: 1,
@@ -427,8 +469,14 @@ const loadTasks = async () => {
     console.error('Failed to load tasks:', error)
     ElMessage.error('加载任务失败')
   } finally {
-    loading.value = false
+    internalLoading.value = false
   }
+}
+
+const syncExternalTasks = () => {
+  if (props.scope !== 'global') return
+  tasks.value = props.externalTasks ?? []
+  distributeTasksToColumns()
 }
 
 const distributeTasksToColumns = () => {
@@ -483,6 +531,10 @@ const getAssigneeInitial = (assignee: any) => {
 }
 
 const handleTaskClick = (task: Task) => {
+  if (props.scope === 'global') {
+    emit('task-click', task)
+    return
+  }
   selectedTaskId.value = task._id
   selectedTaskProjectId.value = task.projectId
   showTaskDetail.value = true
@@ -526,13 +578,11 @@ const handleDragEnd = async (event: any) => {
 
       ElMessage.success('任务状态更新成功')
 
-      // 重新加载任务以确保状态同步
-      await loadTasks()
+      await reloadTasks()
     } catch (error) {
       console.error('Failed to update task status:', error)
       ElMessage.error('更新任务状态失败')
-      // 重新加载任务以回滚状态
-      await loadTasks()
+      await reloadTasks()
     }
   }
   // 如果是同一列内的拖拽（顺序变更）
@@ -722,9 +772,21 @@ const handleTaskCreated = (newTask: Task) => {
   selectedTaskId.value = newTask._id
 }
 
+watch(() => props.externalTasks, () => {
+  syncExternalTasks()
+}, { deep: true, immediate: true })
+
+watch(() => props.scope, (scope) => {
+  if (scope === 'global') {
+    syncExternalTasks()
+  } else if (props.project) {
+    loadTasks()
+  }
+})
+
 // 监听项目变化
 watch(() => props.project, (newProject) => {
-  if (newProject) {
+  if (props.scope === 'project' && newProject) {
     loadTasks()
   }
 }, { immediate: true })
@@ -1005,8 +1067,9 @@ const handleImportConfirm = async (finalTasks: any[]) => {
 const route = useRoute()
 const router = useRouter()
 
-// 监听路由query中的taskId和项目变化
+// 监听路由query中的taskId和项目变化（仅项目内看板）
 watch([() => route.query.taskId, () => props.project], async ([taskId, project]) => {
+  if (props.scope !== 'project') return
   // 只有当taskId存在且项目ID匹配时才处理
   if (taskId && typeof taskId === 'string' && projectId.value && project) {
     // 如果任务列表为空或任务不存在，先加载任务
@@ -1036,8 +1099,10 @@ watch([() => route.query.taskId, () => props.project], async ([taskId, project])
   }
 }, { immediate: true })
 
-// 快捷键注册
+// 快捷键注册（仅项目内看板）
 onMounted(() => {
+  if (props.scope !== 'project') return
+
   // 注册 N 键新建任务
   registerShortcut({
     key: 'n',
@@ -1087,10 +1152,16 @@ onMounted(() => {
 
 // 组件卸载时取消注册快捷键
 onUnmounted(() => {
+  if (props.scope !== 'project') return
+
   unregisterShortcut('n')
   unregisterShortcut('i', true) // 指定meta=true，精确匹配Cmd+I
   unregisterShortcut('e', true) // 指定meta=true，精确匹配Cmd+E
   unregisterShortcut('F1')
+})
+
+defineExpose({
+  openCreateTask: handleCreateTask
 })
 </script>
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 p-6">
     <!-- 视图切换和标题 -->
     <ViewSwitcher :selected-tasks-count="selectedTasksCount" :loading="loading" @export="handleExport" />
 
@@ -15,8 +15,15 @@
       <TaskListView v-if="currentView === 'list'" :tasks="tasks" :loading="loading" :selected-task-ids="selectedTaskIds"
         :selected-tasks-count="selectedTasksCount" @select-task="selectTask" @refresh="refresh" @load-more="loadMore" @task-click="handleTaskClick" />
 
-      <!-- 看板视图 -->
-      <TaskBoardView v-else-if="currentView === 'board'" :tasks="tasks" :loading="loading" @refresh="refresh" />
+      <!-- 看板视图：复用项目看板组件 -->
+      <ProjectBoard
+        v-else-if="currentView === 'board'"
+        scope="global"
+        :external-tasks="tasks"
+        :external-loading="loading"
+        @task-click="handleTaskClick"
+        @refresh="refresh"
+      />
 
       <!-- 其他视图占位 -->
       <div v-else class="flex items-center justify-center h-96 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -55,7 +62,7 @@ import ViewSwitcher from '@/components/my-tasks/ViewSwitcher.vue'
 import TaskStatsCards from '@/components/my-tasks/TaskStatsCards.vue'
 import TaskFilters from '@/components/my-tasks/TaskFilters.vue'
 import TaskListView from '@/components/my-tasks/TaskListView.vue'
-import TaskBoardView from '@/components/my-tasks/TaskBoardView.vue'
+import ProjectBoard from '@/components/project/ProjectBoard.vue'
 import QuickTaskModal from '@/components/my-tasks/QuickTaskModal.vue'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import type { Task } from '@/types/task'

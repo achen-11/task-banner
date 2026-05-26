@@ -124,7 +124,7 @@
           <div class="col-span-1 flex items-center">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-              :class="getStatusClass(task.status)"
+              :class="getStatusBadgeClass(task.status)"
             >
               {{ getStatusText(task.status) }}
             </span>
@@ -166,6 +166,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Task } from '@/types/task'
+import { getStatusBadgeClass, getStatusText } from '@/utils/taskStatus'
 
 interface Props {
   tasks: Task[]
@@ -209,28 +210,6 @@ const getPriorityText = (priority: string) => {
     low: '低'
   }
   return textMap[priority] || priority
-}
-
-// 获取状态样式
-const getStatusClass = (status: string) => {
-  const classMap: Record<string, string> = {
-    todo: 'bg-blue-100 text-blue-700',
-    待验收: 'bg-yellow-100 text-yellow-700',
-    completed: 'bg-green-100 text-green-700',
-    review: 'bg-purple-100 text-purple-700'
-  }
-  return classMap[status] || 'bg-gray-100 text-gray-700'
-}
-
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const textMap: Record<string, string> = {
-    todo: '待办',
-    in_progress: '进行中',
-    completed: '已完成',
-    review: '待验收'
-  }
-  return textMap[status] || status
 }
 
 // 获取截止日期样式

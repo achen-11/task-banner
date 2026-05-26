@@ -30,6 +30,7 @@
             <el-button
               type="primary"
               :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
+              @click="handleHeaderCreateTask"
             >
               <el-icon class="mr-1">
                 <Plus />
@@ -146,7 +147,7 @@
     <div class="overflow-auto p-6" :class="focusMode ? 'h-full' : 'flex-1'">
       <ProjectOverview v-if="currentTab === 'overview'" :project="project" />
       <ProjectTaskList v-else-if="currentTab === 'list'" :project-id="projectId" />
-      <ProjectBoard v-else-if="currentTab === 'board'" :project="project" />
+      <ProjectBoard v-else-if="currentTab === 'board'" ref="projectBoardRef" :project="project" />
       <ProjectModules v-else-if="currentTab === 'modules'" :project-id="projectId" />
       <ProjectDocuments v-else-if="currentTab === 'documents'" :project-id="projectId" />
       <ProjectTags v-else-if="currentTab === 'tags'" :project-id="projectId" />
@@ -164,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, inject, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, inject, provide, nextTick } from 'vue'
 import { ElIcon } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
@@ -219,6 +220,14 @@ const collapsed = ref(false)
 
 // 当前 Tab - 从路由query获取，默认list
 const currentTab = ref((route.query.tab as string) || 'overview')
+const projectBoardRef = ref<InstanceType<typeof ProjectBoard> | null>(null)
+
+const handleHeaderCreateTask = () => {
+  currentTab.value = 'board'
+  nextTick(() => {
+    projectBoardRef.value?.openCreateTask?.()
+  })
+}
 
 // 监听路由query变化，更新tab
 watch(() => route.query.tab, (newTab) => {
