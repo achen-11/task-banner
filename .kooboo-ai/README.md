@@ -7,11 +7,12 @@ Task Banner 是一个基于 Kooboo CLI 的任务管理应用，面向已登录�
 ## 读取顺序
 
 1. 本文件
-2. `specs/frontend.md` — 前端路线与 build 约定
-3. `specs/backend.md` — API、Service、Model 约定
-4. `specs/mcp.md` — MCP Tools 约定与工具列表
-5. `specs/routing.md` — URL 与路由映射
-6. `rules/overrides.md` — 覆盖 skill 默认的项目特例
+2. `specs/agent-sop.md` — **Agent 协作 SOP**（MCP 拉任务 → 实现 → 回写）
+3. `specs/frontend.md` — 前端路线与 build 约定
+4. `specs/backend.md` — API、Service、Model 约定
+5. `specs/mcp.md` — MCP Tools 约定与工具列表
+6. `specs/routing.md` — URL 与路由映射
+7. `rules/overrides.md` — 覆盖 skill 默认的项目特例
 
 ## 前端路线
 
@@ -57,3 +58,12 @@ kb push src/page/index.html
 - **附件** — 任务 / 文档附件上传
 - **通知** — 站内消息 + WebSocket 实时推送
 - **仪表盘** — 统计概览
+
+## Agent 协作（编排者 + 执行者）
+
+| 角色 | Skill |
+| --- | --- |
+| 拉任务、回写 MCP、委派 | `.cursor/skills/task-banner-orchestrator/` |
+| 写代码、验证 | `.cursor/skills/task-banner-executor/`（subagent） |
+
+SOP：`.kooboo-ai/specs/agent-sop.md` · 任务模板：`.kooboo-ai/templates/task-for-agent.md`

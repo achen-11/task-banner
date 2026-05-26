@@ -54,3 +54,16 @@ kb push mcp-tools/              # 推送全部
 kb push mcp-tools/list_tasks.ts # 推送单个
 pnpm dev                        # kb sync 自动监听
 ```
+
+## Agent 协作
+
+人与 Agent 通过 Task Banner 管理任务、通过 MCP 执行任务的完整流程见：
+
+**`.kooboo-ai/specs/agent-sop.md`**
+
+要点：
+
+- 任务以 Task Banner 为准；Agent 用 `k_list_tasks` / `k_get_task` 拉取
+- 开工 → `in_progress` + `k_add_comment`；完工 → 验证后 `completed`
+- 代码实现遵循 `kooboo-cli-coding` skill + 本仓库 `.kooboo-ai` spec
+- 附件/评论历史暂无 MCP，见 SOP 第 9 节 HTTP 替代方案
