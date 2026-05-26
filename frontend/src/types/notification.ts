@@ -23,6 +23,7 @@ export interface Notification {
   content: string
   relatedTaskId?: string
   relatedCommentId?: string
+  source?: 'human' | 'ai'
   isRead: boolean
   createdAt: number
   // 前端扩展字段

@@ -33,6 +33,10 @@ export const Notification = ksql.define(
       type: DataTypes.String,
       default: ''
     },
+    source: {
+      type: DataTypes.String,
+      default: 'human' // human | ai
+    },
     isRead: {
       type: DataTypes.Boolean,
       default: false

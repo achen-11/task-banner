@@ -14,7 +14,7 @@
     </div>
 
     <!-- 消息筛选 -->
-    <div class="mb-6 flex gap-2">
+    <div class="mb-6 flex flex-wrap gap-2">
       <button
         v-for="filter in filters"
         :key="filter.value"
@@ -98,9 +98,19 @@
 
           <!-- 内容 -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900 dark:text-gray-100 mb-1">
-              {{ message.content }}
-            </p>
+            <div class="flex items-center gap-2 mb-1">
+              <span
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                :class="isAiNotification(message)
+                  ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
+              >
+                {{ isAiNotification(message) ? 'AI' : '人类' }}
+              </span>
+              <p class="text-sm text-gray-900 dark:text-gray-100 truncate">
+                {{ message.content }}
+              </p>
+            </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
           </div>
 
@@ -132,6 +142,7 @@ import {
 import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
 import { formatRelativeTime } from '@/utils/time'
+import { isAiNotification, isHumanNotification } from '@/utils/notification'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 const router = useRouter()
@@ -147,6 +158,8 @@ const markingAllAsRead = ref(false)
 const filters = ref([
   { value: 'all', label: '全部', count: 0 },
   { value: 'unread', label: '未读', count: 0 },
+  { value: 'ai', label: 'AI', count: 0 },
+  { value: 'human', label: '人类', count: 0 },
   { value: 'task', label: '任务', count: 0 },
   { value: 'comment', label: '评论', count: 0 },
   { value: 'mention', label: '@提醒', count: 0 }
@@ -165,6 +178,10 @@ const filteredMessages = computed(() => {
 
   if (currentFilter.value === 'unread') {
     result = result.filter(m => !m.isRead)
+  } else if (currentFilter.value === 'ai') {
+    result = result.filter(m => isAiNotification(m))
+  } else if (currentFilter.value === 'human') {
+    result = result.filter(m => isHumanNotification(m))
   } else if (currentFilter.value === 'task') {
     result = result.filter(m => m.type.includes('task_'))
   } else if (currentFilter.value === 'comment') {
@@ -184,6 +201,8 @@ const formatTime = (timestamp: number) => {
 // 更新筛选器计数
 const updateFilterCounts = () => {
   const unread = messages.value.filter(m => !m.isRead).length
+  const ai = messages.value.filter(m => isAiNotification(m)).length
+  const human = messages.value.filter(m => isHumanNotification(m)).length
   const task = messages.value.filter(m => m.type.includes('task_')).length
   const comment = messages.value.filter(m => m.type === 'commented').length
   const mention = messages.value.filter(m => m.type === 'mentioned').length
@@ -191,6 +210,8 @@ const updateFilterCounts = () => {
   filters.value = [
     { value: 'all', label: '全部', count: messages.value.length },
     { value: 'unread', label: '未读', count: unread },
+    { value: 'ai', label: 'AI', count: ai },
+    { value: 'human', label: '人类', count: human },
     { value: 'task', label: '任务', count: task },
     { value: 'comment', label: '评论', count: comment },
     { value: 'mention', label: '@提醒', count: mention }

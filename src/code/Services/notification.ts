@@ -28,8 +28,25 @@ export interface NotificationInfo {
   content: string
   relatedTaskId?: string
   relatedCommentId?: string
+  source: 'human' | 'ai'
   isRead: boolean
   createdAt: number
+}
+
+export function inferNotificationSource(notification: {
+  source?: string
+  title?: string
+  content?: string
+}): 'human' | 'ai' {
+  if (notification.source === 'ai' || notification.source === 'human') {
+    return notification.source
+  }
+  const title = notification.title || ''
+  const content = notification.content || ''
+  if (content.includes('AI 通过 MCP') || title.startsWith('AI ')) {
+    return 'ai'
+  }
+  return 'human'
 }
 
 /**
@@ -44,6 +61,7 @@ export function createNotification(data: {
   content: string
   relatedTaskId?: string
   relatedCommentId?: string
+  source?: 'human' | 'ai'
 }): string {
   // 不给自己发通知
   // 这个检查应该在调用方进行，但这里也做一次防御性检查
@@ -55,6 +73,7 @@ export function createNotification(data: {
     content: data.content,
     relatedTaskId: data.relatedTaskId || '',
     relatedCommentId: data.relatedCommentId || '',
+    source: data.source || 'human',
     isRead: false,
     createdAt: Date.now()
   })
@@ -112,6 +131,7 @@ export function getUserNotifications(
     content: notification.content,
     relatedTaskId: notification.relatedTaskId || undefined,
     relatedCommentId: notification.relatedCommentId || undefined,
+    source: inferNotificationSource(notification),
     isRead: notification.isRead,
     createdAt: notification.createdAt
   }))
@@ -222,7 +242,8 @@ export function createTaskAssignedNotification(
     type: 'task_assigned',
     title: '任务已分配给你',
     content: `${operatorName} 将任务「${task.title}」分配给了你`,
-    relatedTaskId: taskId
+    relatedTaskId: taskId,
+    source: 'human'
   })
 
   return true
@@ -268,7 +289,8 @@ export function createTaskUpdatedNotification(
     type: 'task_updated',
     title: '任务内容已更新',
     content: `${operatorName} 更新了任务「${task.title}」的内容`,
-    relatedTaskId: taskId
+    relatedTaskId: taskId,
+    source: 'human'
   })
 
   return true
@@ -374,6 +396,7 @@ export function createMCPOperationNotification(
     type: actionInfo.type,
     title: actionInfo.title,
     content: actionInfo.content,
-    relatedTaskId: action.startsWith('task_') ? resourceId : undefined
+    relatedTaskId: action.startsWith('task_') ? resourceId : undefined,
+    source: 'ai'
   })
 }
