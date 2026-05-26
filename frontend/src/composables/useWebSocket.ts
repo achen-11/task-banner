@@ -44,23 +44,24 @@ export function useWebSocket(callbacks: WebSocketCallbacks = {}) {
   const reconnectTimer = ref<number | null>(null)
 
   /**
+   * 解析 WebSocket 基址（支持 VITE_API_BASE_URL 为 / 或完整 URL）
+   */
+  function resolveWebSocketOrigin(): string {
+    const configured = import.meta.env.VITE_API_BASE_URL
+    if (configured && /^https?:\/\//.test(configured)) {
+      return configured.replace(/\/$/, '')
+    }
+    return window.location.origin
+  }
+
+  /**
    * 获取 WebSocket URL
    */
   function getWebSocketUrl(): string {
-    const isDevelopment = import.meta.env.DEV
-    
-    if (isDevelopment) {
-      // 开发模式：使用当前域名和端口（Vite 代理会处理）
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      return `${protocol}//${window.location.host}/api/websocket/connect`
-    } else {
-      // 生产模式：使用配置的 API 地址
-      const baseURL = import.meta.env.VITE_API_BASE_URL || window.location.origin
-      // 将 http:// 或 https:// 转换为 ws:// 或 wss://
-      const wsProtocol = baseURL.startsWith('https') ? 'wss' : 'ws'
-      const wsBase = baseURL.replace(/^https?:\/\//, '')
-      return `${wsProtocol}://${wsBase}/api/websocket/connect`
-    }
+    const origin = resolveWebSocketOrigin()
+    const wsProtocol = origin.startsWith('https') ? 'wss' : 'ws'
+    const wsHost = origin.replace(/^https?:\/\//, '')
+    return `${wsProtocol}://${wsHost}/api/websocket/connect`
   }
 
   /**
