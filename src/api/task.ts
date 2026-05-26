@@ -18,6 +18,7 @@ import { TaskComment } from 'code/Models/TaskComment'
 import { CommentReaction } from 'code/Models/CommentReaction'
 import { pushTaskCreated, pushTaskUpdated, pushTaskDeleted } from 'code/Services/websocket'
 import { pushCommentCreated, pushCommentUpdated, pushCommentDeleted } from 'code/Services/websocket'
+import { isAiCommentType, pushAiOperationNotification } from 'code/Services/notification'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
@@ -187,7 +188,7 @@ k.api.post("create", (body: any) => {
 // PUT /api/task/update
 k.api.put("update", (body: any) => {
   // 2. 参数验证
-  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, tagIds, summary } = body
+  const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, tagIds, summary, aiNotify } = body
 
   if (!id || typeof id !== 'string' || id.trim() === '') {
     return error('Invalid task ID', 400)
@@ -250,6 +251,20 @@ k.api.put("update", (body: any) => {
     } catch (wsErr) {
       // WebSocket 推送失败不影响主流程
       k.logger.warning('WebSocket', `Failed to push task updated message: ${wsErr}`)
+    }
+
+    if (aiNotify === true && updatedTask) {
+      try {
+        pushAiOperationNotification(
+          currentUser._id,
+          'task_updated',
+          updatedTask.title,
+          taskId,
+          task.projectId
+        )
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create AI task update notification: ${notifErr}`)
+      }
     }
     
     return success(updatedTask, 'Task updated successfully')
@@ -458,6 +473,21 @@ k.api.post("comment", (body: any) => {
     } catch (wsErr) {
       // WebSocket 推送失败不影响主流程
       k.logger.warning('WebSocket', `Failed to push comment created message: ${wsErr}`)
+    }
+
+    const commentMeta = metadata || {}
+    if (isAiCommentType(type) || commentMeta.source === 'mcp' || commentMeta.source === 'ai') {
+      try {
+        pushAiOperationNotification(
+          currentUser._id,
+          'task_commented',
+          task.title,
+          taskId,
+          task.projectId
+        )
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create AI comment notification: ${notifErr}`)
+      }
     }
 
     return success({

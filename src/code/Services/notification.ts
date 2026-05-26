@@ -5,6 +5,7 @@
 import { Notification, type NotificationType } from 'code/Models/Notification'
 import { Task, type TaskType } from 'code/Models/Task'
 import { getUserById, type UserInfo } from 'code/Services/user'
+import { pushNotification } from 'code/Services/websocket'
 
 /**
  * 通知类型
@@ -273,6 +274,42 @@ export function createTaskUpdatedNotification(
   return true
 }
 
+export type AiOperationAction =
+  | 'task_created'
+  | 'task_updated'
+  | 'task_deleted'
+  | 'task_commented'
+  | 'document_created'
+  | 'document_updated'
+  | 'document_deleted'
+
+export function isAiCommentType(type?: string): boolean {
+  return type === 'ai_completion' || type === 'ai_revision' || type === 'system'
+}
+
+/**
+ * 创建 AI/MCP 操作通知并 WebSocket 推送
+ */
+export function pushAiOperationNotification(
+  userId: string,
+  action: AiOperationAction,
+  resourceTitle: string,
+  resourceId: string,
+  projectId?: string
+): void {
+  const notificationId = createMCPOperationNotification(
+    userId,
+    action,
+    resourceTitle,
+    resourceId,
+    projectId
+  )
+  const notification = Notification.findById(notificationId)
+  if (notification) {
+    pushNotification(userId, notification, projectId)
+  }
+}
+
 /**
  * 创建 MCP 操作通知
  * @param userId - 接收通知的用户 ID
@@ -284,7 +321,7 @@ export function createTaskUpdatedNotification(
  */
 export function createMCPOperationNotification(
   userId: string,
-  action: 'task_created' | 'task_updated' | 'task_deleted' | 'document_created' | 'document_updated' | 'document_deleted',
+  action: AiOperationAction,
   resourceTitle: string,
   resourceId: string,
   projectId?: string
@@ -299,6 +336,11 @@ export function createMCPOperationNotification(
       title: 'AI 更新了任务',
       content: `AI 通过 MCP 更新了任务「${resourceTitle}」`,
       type: 'task_updated'
+    },
+    task_commented: {
+      title: 'AI 提交了任务交付',
+      content: `AI 通过 MCP 评论了任务「${resourceTitle}」`,
+      type: 'commented'
     },
     task_deleted: {
       title: 'AI 删除了任务',
