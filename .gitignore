@@ -154,3 +154,4 @@ src/layout
 .claude-notify.sh
 .vscode
 tests
+.cursor

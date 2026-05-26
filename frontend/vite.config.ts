@@ -66,7 +66,15 @@ export default defineConfig({
     proxy: {
       // 代理所有 /api 开头的请求（包括 WebSocket）
       '/api': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // 启用 WebSocket 代理
+        // 不重写路径，保持 /api 前缀
+        // rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/_api/v2': {
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
         ws: true, // 启用 WebSocket 代理
@@ -75,27 +83,27 @@ export default defineConfig({
       },
       // 代理所有 /__kb/kfile 开头的请求到远程服务器
       '/__kb/kfile': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
       },
       '/__logout__': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
       },
       '/__kbAuthCallback': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
       },
       '/__kbAuthResult': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
       },
       '/_Admin': {
-        target: 'https://ai_task_manage.localkooboo.com',
+        target: 'https://ai_task_v2.redev.cn',
         changeOrigin: true,
         secure: false,
       }

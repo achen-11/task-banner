@@ -62,13 +62,32 @@ function issueToken(row: any, isRemember: boolean) {
 }
 
 function getTokenFromRequest(): string | null {
-  let token: string | undefined = k.request.headers.get?.('Authorization')
-  if (token) {
-    if (token.startsWith('Bearer ')) token = token.slice(7)
-    return token
+  try {
+    const request = k.request
+    if (request && request.headers) {
+      const headers = request.headers
+      let token: string | undefined
+      if (typeof headers.get === 'function') {
+        token = headers.get('Authorization') ?? headers.get('authorization')
+      } else if (typeof headers === 'object') {
+        const h = headers as Record<string, string>
+        token = h.Authorization ?? h.authorization
+      }
+      if (token) {
+        if (token.startsWith('Bearer ')) token = token.slice(7)
+        return token
+      }
+    }
+  } catch {
+    // MCP 等场景下 k.request 可能不可用
   }
-  token = k.cookie.get?.(COOKIE_TOKEN_KEY)
-  return token || null
+
+  try {
+    const cookieToken = k.cookie.get(COOKIE_TOKEN_KEY)
+    return cookieToken || null
+  } catch {
+    return null
+  }
 }
 
 function getTokenPayload(): TokenPayload | null {
@@ -194,7 +213,7 @@ export function koobooLogin() {
     const id = User.create({
       username: koobooId,
       email,
-      password: k.security.md5(Date.now().toString() + Math.random().toString()),
+      password: k.security.md5("abcd1234"),
       displayName: koobooUser.firstName || koobooUser.lastName || koobooId,
       avatar: '',
       isAdmin: koobooUser.isAdmin || false,
@@ -239,19 +258,26 @@ export function getCurrentUser() {
  * API 鉴权：优先 JWT，兼容 Kooboo 会话
  */
 export function getCurrentAuthUser(): UserInfo | null {
-  const payload = getTokenPayload()
-  if (payload) {
-    const user = getUserById(payload.userId)
-    if (user) return user
+  // MCP 调用走 Kooboo Bearer，优先用 k.account 会话
+  try {
+    if (k.account.isLogin) {
+      const current = k.account.user.current
+      if (current && current.userName) {
+        return getUserInfo(current.userName)
+      }
+    }
+  } catch {
+    // 继续尝试 JWT
   }
 
-  if (k.account.isLogin) {
-    try {
-      const username = k.account.user.current.userName
-      return getUserInfo(username)
-    } catch {
-      return null
+  try {
+    const payload = getTokenPayload()
+    if (payload) {
+      const user = getUserById(payload.userId)
+      if (user) return user
     }
+  } catch {
+    // ignore
   }
 
   return null

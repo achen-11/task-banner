@@ -9,8 +9,9 @@ Task Banner 是一个基于 Kooboo CLI 的任务管理应用，面向已登录�
 1. 本文件
 2. `specs/frontend.md` — 前端路线与 build 约定
 3. `specs/backend.md` — API、Service、Model 约定
-4. `specs/routing.md` — URL 与路由映射
-5. `rules/overrides.md` — 覆盖 skill 默认的项目特例
+4. `specs/mcp.md` — MCP Tools 约定与工具列表
+5. `specs/routing.md` — URL 与路由映射
+6. `rules/overrides.md` — 覆盖 skill 默认的项目特例
 
 ## 前端路线
 
