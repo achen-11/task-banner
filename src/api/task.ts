@@ -16,10 +16,8 @@ import { checkProjectPermission } from 'code/Services/project'
 import { getTaskActivities } from 'code/Services/taskHistory'
 import { TaskComment } from 'code/Models/TaskComment'
 import { CommentReaction } from 'code/Models/CommentReaction'
-import { Notification } from 'code/Models/Notification'
-import { pushTaskCreated, pushTaskUpdated, pushTaskDeleted, pushNotification } from 'code/Services/websocket'
+import { pushTaskCreated, pushTaskUpdated, pushTaskDeleted } from 'code/Services/websocket'
 import { pushCommentCreated, pushCommentUpdated, pushCommentDeleted } from 'code/Services/websocket'
-import { createMCPOperationNotification } from 'code/Services/notification'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
@@ -177,32 +175,6 @@ k.api.post("create", (body: any) => {
       // WebSocket 推送失败不影响主流程
       k.logger.warning('WebSocket', `Failed to push task created message: ${wsErr}`)
     }
-
-    // 检测是否是 MCP 调用（通过 Authorization Bearer token）
-    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
-    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-    
-    if (isMCPCall && task) {
-      // MCP 调用：创建真实通知并推送
-      try {
-        const notificationId = createMCPOperationNotification(
-          currentUser._id,
-          'task_created',
-          task.title,
-          task._id,
-          projectId
-        )
-        
-        // 获取创建的通知
-        const notification = Notification.findById(notificationId)
-        if (notification) {
-          // 通过 WebSocket 推送通知
-          pushNotification(currentUser._id, notification, projectId)
-        }
-      } catch (notifErr) {
-        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
-      }
-    }
     
     return success(task, 'Task created successfully')
 
@@ -279,30 +251,6 @@ k.api.put("update", (body: any) => {
       // WebSocket 推送失败不影响主流程
       k.logger.warning('WebSocket', `Failed to push task updated message: ${wsErr}`)
     }
-
-    // 检测是否是 MCP 调用
-    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
-    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-    
-    if (isMCPCall && updatedTask) {
-      // MCP 调用：创建真实通知并推送
-      try {
-        const notificationId = createMCPOperationNotification(
-          currentUser._id,
-          'task_updated',
-          updatedTask.title,
-          updatedTask._id,
-          task.projectId
-        )
-        
-        const notification = Notification.findById(notificationId)
-        if (notification) {
-          pushNotification(currentUser._id, notification, task.projectId)
-        }
-      } catch (notifErr) {
-        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
-      }
-    }
     
     return success(updatedTask, 'Task updated successfully')
 
@@ -360,30 +308,6 @@ k.api.delete("delete", (body: any) => {
     } catch (wsErr) {
       // WebSocket 推送失败不影响主流程
       k.logger.warning('WebSocket', `Failed to push task deleted message: ${wsErr}`)
-    }
-
-    // 检测是否是 MCP 调用
-    const authHeader = k.request.headers.get('Authorization') || k.request.headers.get('authorization')
-    const isMCPCall = authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-    
-    if (isMCPCall) {
-      // MCP 调用：创建真实通知并推送
-      try {
-        const notificationId = createMCPOperationNotification(
-          currentUser._id,
-          'task_deleted',
-          task.title,
-          taskId,
-          projectId
-        )
-        
-        const notification = Notification.findById(notificationId)
-        if (notification) {
-          pushNotification(currentUser._id, notification, projectId)
-        }
-      } catch (notifErr) {
-        k.logger.warning('Notification', `Failed to create MCP notification: ${notifErr}`)
-      }
     }
 
     return success(null, 'Task deleted successfully')
