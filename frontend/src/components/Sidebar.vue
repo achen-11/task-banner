@@ -54,7 +54,7 @@
 
         <router-link
           to="/messages"
-          class="sidebar-menu"
+          class="sidebar-menu relative"
           :class="{ 'bg-zinc-200 dark:bg-gray-800': isActive('/messages') }"
         >
           <el-tooltip
@@ -71,6 +71,10 @@
           <span v-if="unreadCount > 0 && !isCollapsed" class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
             {{ unreadCount > 99 ? '99+' : unreadCount }}
           </span>
+          <span
+            v-if="unreadCount > 0 && isCollapsed"
+            class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+          />
         </router-link>
 
         <!-- 分割线 -->
@@ -217,6 +221,7 @@ import { useTourStore } from '@/stores/tour'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 import { ElTooltip } from 'element-plus'
 import { getUnreadCount } from '@/api/notification'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 defineProps<{
   isCollapsed: boolean
@@ -238,18 +243,21 @@ const userInitials = computed(() => {
   return name.substring(0, 1).toUpperCase()
 })
 
-// 未读消息数
-const unreadCount = ref(0)
-let unreadCountTimer: number | null = null
+// 未读消息数（与 WebSocket / 消息页共享）
+const { unreadCount, setUnreadCount } = usePageTitle()
 
 // 加载未读消息数量
 const loadUnreadCount = async () => {
   try {
     const result = await getUnreadCount()
-    unreadCount.value = result.count
+    setUnreadCount(result.count)
   } catch (error) {
     console.error('Failed to load unread count:', error)
   }
+}
+
+const handleNotificationEvent = () => {
+  loadUnreadCount()
 }
 
 // 创建项目对话框
@@ -351,15 +359,11 @@ onMounted(() => {
   loadProjects()
   loadUnreadCount()
   document.addEventListener('click', handleClickOutside)
-  
-  // 定时刷新未读数量（每30秒）
-  unreadCountTimer = window.setInterval(() => {
-    loadUnreadCount()
-  }, 30000)
-  
-  // 监听路由变化，当进入消息页面时刷新
-  watch(() => route.path, (newPath) => {
-    if (newPath === '/messages') {
+  window.addEventListener('websocket:notification', handleNotificationEvent)
+
+  // 监听路由变化，离开消息页时刷新（已读状态可能变化）
+  watch(() => route.path, (newPath, oldPath) => {
+    if (oldPath === '/messages' || newPath === '/messages') {
       loadUnreadCount()
     }
   })
@@ -367,9 +371,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  if (unreadCountTimer !== null) {
-    clearInterval(unreadCountTimer)
-  }
+  window.removeEventListener('websocket:notification', handleNotificationEvent)
 })
 </script>
 
