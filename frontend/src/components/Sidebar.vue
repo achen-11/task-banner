@@ -156,7 +156,8 @@
         <!-- 用户下拉菜单 -->
         <div
           v-if="showUserMenu"
-          class="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          class="absolute bottom-full mb-1 z-50 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          :class="isCollapsed ? 'left-0 w-48' : 'left-0 right-0'"
         >
           <div class="p-1">
             <button
