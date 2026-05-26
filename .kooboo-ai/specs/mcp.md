@@ -31,6 +31,7 @@ MCP 工具使用 `{ ok, data | error }`，与 HTTP API 的 `{ code, message, dat
 | `get_task` | 单条任务详情 |
 | `create_task` | 创建任务（含 WebSocket + MCP 通知） |
 | `update_task` | 更新任务（含 WebSocket + MCP 通知） |
+| `add_comment` | 为任务添加评论（含 WebSocket 推送） |
 
 ## 领域字段
 
