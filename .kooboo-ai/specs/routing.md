@@ -66,6 +66,7 @@ POST /api/auth/logout
 | 路径 | 来源 |
 | --- | --- |
 | `/logo.svg` | `src/logo.svg` |
-| `/index-{hash}.js` | `src/js/`（Vite build） |
-| `/index-{hash}.css` | `src/css/`（Vite build） |
+| `/index.js` | `src/js/`（Vite build，稳定文件名） |
+| `/index.css` | `src/css/`（Vite build，稳定文件名） |
+| `/*.js` chunk | `src/js/`（如 `Home.js`、`Login.js` 等） |
 | `/__kb/kfile/...` | Kooboo 文件服务（附件等） |

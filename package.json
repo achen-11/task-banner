@@ -10,6 +10,8 @@
   },
   "scripts": {
     "dev": "kb sync",
-    "test": "vitest"
+    "test": "vitest",
+    "build": "bash build.sh",
+    "build:push": "bash build.sh --push"
   }
 }

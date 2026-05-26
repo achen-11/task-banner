@@ -213,8 +213,8 @@ kooboo-cli-coding skill → references/*（按任务类型）
 | --- | --- |
 | 后端 API | 改 `src/code/Services/*` + `src/api/*` → `kb push src/api/...` |
 | MCP 工具 | 改 `mcp-tools/*.ts` → `kb push mcp-tools/...` |
-| 前端页面 | 改 `frontend/src/*` → `pnpm --dir frontend build` → push `page/index.html` + 新 hash 的 `js/` |
-| 全栈 | 先后端 push，再 frontend build + push |
+| 前端页面 | 改 `frontend/src/*` → `pnpm build` → 或 `pnpm build:push` |
+| 全栈 | 先后端 push，再 `pnpm build:push` |
 
 ### 6.2 同步策略
 
@@ -228,9 +228,12 @@ kb push mcp-tools/add_comment.ts
 kb push --git --unstaged    # 推送 git 工作区内的资源变更
 
 # 前端
-pnpm --dir frontend build
-kb push page/index.html
-kb push js/<新 chunk>.js
+pnpm build
+kb push src/page/index.html
+kb push src/js/index.js    # 稳定文件名，manifest 内列出的 chunk 按需 push
+
+# 或一键 build + push
+pnpm build:push
 ```
 
 ### 6.3 验证清单（交付前）

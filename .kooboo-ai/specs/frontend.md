@@ -34,13 +34,15 @@ frontend/                    # 前端源码（开发在此）
 │   ├── api/                 # 前端 API 封装（与 src/api 对应）
 │   ├── composables/         # 组合式函数
 │   └── utils/               # auth、request 等
-├── vite.config.ts
-└── post-build.js            # build 后整理产物目录
+├── vite.config.ts           # outDir: dist；稳定文件名；Kooboo 注入插件
+
+.build-manifest.json         # build 产物清单（gitignore，用于清理旧文件）
+build.sh                     # 根目录 build：dist → src/page|js|css，可选 --push
 
 src/                         # Kooboo CLI 资源目录（build 产物 + 后端）
 ├── page/index.html          # SPA 入口（含 @k-url 与服务端鉴权脚本）
-├── js/                      # Vite 打包 JS（带 hash）
-├── css/                     # Vite 打包 CSS（带 hash）
+├── js/                      # Vite 打包 JS（稳定文件名，如 index.js）
+├── css/                     # Vite 打包 CSS（稳定文件名，如 index.css）
 ├── api/                     # Kooboo API 端点
 └── code/                    # KScript 业务逻辑
 ```
@@ -51,16 +53,22 @@ src/                         # Kooboo CLI 资源目录（build 产物 + 后端�
 # 开发（Vite dev server，代理 /api 到远端 Kooboo）
 pnpm --dir frontend dev
 
-# 生产 build（type-check → vite build → post-build 整理目录）
+# 生产 build（type-check → vite build → build.sh 复制到 src/）
+pnpm build
+
+# 或仅前端编译（不复制到 src/，一般由 build.sh 调用）
 pnpm --dir frontend build
+
+# build 并推送到 Kooboo
+pnpm build:push
 ```
 
 **Build 流程：**
 
-1. Vite `outDir: ../src`，JS/CSS 输出到 `src/` 根目录
-2. `addKoobooUrlPlugin`（closeBundle）在 `src/index.html` 注入 `@k-url /` 和服务端鉴权脚本
-3. `post-build.js` 将产物移入 `src/page/`、`src/js/`、`src/css/`，并清理旧 hash 文件
-4. 根目录 `pnpm dev`（`kb sync`）同步到远端
+1. Vite `outDir: frontend/dist`，JS/CSS 使用**稳定文件名**（无 hash）
+2. `addKoobooUrlPlugin`（closeBundle）在 `dist/index.html` 注入 `@k-url /` 和服务端鉴权脚本
+3. `build.sh` 按 `.build-manifest.json` 清理旧产物，再从 `dist/` 复制到 `src/page/`、`src/js/`、`src/css/`
+4. 根目录 `pnpm dev`（`kb sync`）同步到远端；或 `pnpm build:push` 窄范围推送 manifest 内文件
 
 ### 代码规范
 

@@ -13,7 +13,7 @@ function addKoobooUrlPlugin(): Plugin {
     name: 'add-kooboo-url',
     apply: 'build',
     closeBundle() {
-      const htmlPath = path.resolve(__dirname, '../src/index.html')
+      const htmlPath = path.resolve(__dirname, 'dist/index.html')
 
       if (fs.existsSync(htmlPath)) {
         let html = fs.readFileSync(htmlPath, 'utf-8')
@@ -110,18 +110,18 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../src',
-    emptyOutDir: false,
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
-        // 所有文件输出到根目录（不使用子目录）
-        entryFileNames: '[name]-[hash].js',
-        chunkFileNames: '[name]-[hash].js',
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return '[name]-[hash][extname]'
+          const info = assetInfo.names?.[0] || assetInfo.name || ''
+          if (info.endsWith('.css')) {
+            return '[name].css'
           }
-          return 'assets/[name]-[hash][extname]'
+          return '[name][extname]'
         }
       }
     }

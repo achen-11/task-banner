@@ -11,7 +11,7 @@ description: Task Banner 任务执行子 Agent。由 orchestrator 委派，接�
 
 - 读 `.kooboo-ai/` + **kooboo-cli-coding** skill
 - 改 `src/`、`frontend/`、`mcp-tools/` 等
-- `kb push`、必要时 `pnpm --dir frontend build`
+- `kb push`、必要时 `pnpm build` 或 `pnpm build:push`
 - 跑验证命令
 - 返回结构化报告（见 orchestrator 的 executor-prompt.md）
 

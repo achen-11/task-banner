@@ -43,7 +43,10 @@ pnpm dev
 pnpm --dir frontend dev
 
 # 前端 build → 产物写入 src/page、src/js、src/css
-pnpm --dir frontend build
+pnpm build
+
+# build 并 kb push 静态资源
+pnpm build:push
 
 # 窄范围推送（示例）
 kb push src/api/task.ts

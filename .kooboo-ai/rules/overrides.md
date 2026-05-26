@@ -40,7 +40,7 @@
 
 - 日常开发：`pnpm dev`（`kb sync`）监听全量 `src/`
 - AI 改动后端/API 时：优先窄范围 `kb push src/api/xxx.ts`
-- 前端改动后：先 `pnpm --dir frontend build`，再 sync / push page 与静态资源
+- 前端改动后：先 `pnpm build`（或 `pnpm build:push` 一键推送静态资源）
 
 ## 禁止事项
 
