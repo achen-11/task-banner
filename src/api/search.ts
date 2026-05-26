@@ -1,6 +1,7 @@
 // @k-url /api/search/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import { getUserProjects } from 'code/Services/project'
 import { Task, type TaskType } from 'code/Models/Task'
@@ -31,11 +32,6 @@ interface SearchResultItem {
  * GET /api/search/global?keyword=xxx&limit=20
  */
 k.api.get("global", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as unknown as {
     keyword?: string
@@ -55,9 +51,10 @@ k.api.get("global", () => {
 
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     if (!currentUser) {
       return error('User not found', 404)
     }

@@ -28,8 +28,8 @@
 
 ## 数据层
 
-- 使用 Kooboo Commerce Product 作为持久化（Models 层封装），不使用外部数据库直连
-- Model 命名 PascalCase 单数（`Task.ts`），Service 命名 camelCase（`task.ts`）
+- 使用 `k_sqlite` 模块的 `ksql` ORM（SQLite），**不使用 Commerce**
+- Model 通过 `ksql.define()` 定义，命名 PascalCase 单数（`Task.ts`），Service 命名 camelCase（`task.ts`）
 
 ## 实时通信
 

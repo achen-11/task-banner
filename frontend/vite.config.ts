@@ -28,19 +28,12 @@ function addKoobooUrlPlugin(): Plugin {
         if (!html.includes('env="server"')) {
           const serverScript = `
 
-    <!-- 服务端脚本：检查登录状态并注入用户信息 -->
+    <!-- 服务端脚本：JWT / Kooboo 登录态注入用户信息 -->
     <script env="server" type="module">
-      import { getUserInfo } from './Services.user'
+      import { getCurrentAuthUser } from './Services.auth'
 
-      // 1. 检查登录状态
-      if (!k.account.isLogin) {
-        k.response.redirect('/_Admin/login?permission=u&returnurl=/')
-      } else {
-        // 2. 获取当前登录用户
-        const username = k.account.user.current.userName
-        const userInfo = getUserInfo(username)
-  
-        // 3. 注入用户信息到客户端
+      const userInfo = getCurrentAuthUser()
+      if (userInfo) {
         k.utils.clientJS.setVariable('__USER_INFO__', userInfo)
       }
     </script>`
@@ -73,7 +66,7 @@ export default defineConfig({
     proxy: {
       // 代理所有 /api 开头的请求（包括 WebSocket）
       '/api': {
-        target: 'https://ai_task_manage.redev.cn',
+        target: 'https://ai_task_manage.localkooboo.com',
         changeOrigin: true,
         secure: false,
         ws: true, // 启用 WebSocket 代理
@@ -82,10 +75,29 @@ export default defineConfig({
       },
       // 代理所有 /__kb/kfile 开头的请求到远程服务器
       '/__kb/kfile': {
-        target: 'https://ai_task_manage.redev.cn',
+        target: 'https://ai_task_manage.localkooboo.com',
         changeOrigin: true,
         secure: false,
-        // 不重写路径，保持 /__kb/kfile 前缀
+      },
+      '/__logout__': {
+        target: 'https://ai_task_manage.localkooboo.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/__kbAuthCallback': {
+        target: 'https://ai_task_manage.localkooboo.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/__kbAuthResult': {
+        target: 'https://ai_task_manage.localkooboo.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/_Admin': {
+        target: 'https://ai_task_manage.localkooboo.com',
+        changeOrigin: true,
+        secure: false,
       }
     }
   },

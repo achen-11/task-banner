@@ -1,6 +1,7 @@
 // @k-url /api/test/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import { SocketParser } from 'code/Utils/useSocket'
 
@@ -48,11 +49,6 @@ function broadcastMessage(event: Events, data: any) {
 
 // GET /api/test/websocket?event=task_created&projectId=xxx&message=测试消息
 k.api.get("websocket", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as any
   const event = query.event || 'notification'
@@ -61,9 +57,10 @@ k.api.get("websocket", () => {
   const userId = query.userId // 可选：指定用户 ID
 
   // 3. 获取当前用户
-  const username = k.account.user.current.userName
-  const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
   if (!currentUser) {
     return error('User not found', 404)
   }

@@ -5,7 +5,9 @@
 | URL | 文件 | 说明 |
 | --- | --- | --- |
 | `/` | `src/page/index.html` | Vue SPA 唯一入口，含服务端鉴权脚本 |
-| `/__logout` | `src/api/__logout.ts` | 退出登录 |
+| `/login` | `Login.vue`（Hash） | 账号密码 / Kooboo 登录 |
+| `/__kbAuthCallback` | `src/api/kbAuthCallBack.ts` | Kooboo OAuth 回调 |
+| `/__kbAuthResult` | `src/page/kbAuthResult.html` | Kooboo 登录结果页 |
 
 Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router Hash 模式在客户端处理。
 
@@ -21,8 +23,9 @@ Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router 
 | `/projects/:id` | `ProjectView.vue` | 项目详情（任务、文档、设置） |
 | `/projects/:projectId/documents/:documentId` | `ProjectView.vue` | 文档详情 |
 | `/messages` | `Messages.vue` | 消息通知 |
+| `/login` | `Login.vue` | 登录 / 注册（无需鉴权） |
 
-所有路由挂载在 `MainLayout` 下，`meta.requiresAuth: true`。
+除 `/login` 外，其余路由挂载在 `MainLayout` 下，`meta.requiresAuth: true`。
 
 ## API 前缀
 
@@ -42,9 +45,21 @@ Page 入口通过 `<!-- @k-url / -->` 声明。所有前端路由由 Vue Router 
 
 | 场景 | 行为 |
 | --- | --- |
-| 未登录访问 `/` | Page 服务端脚本重定向 `/_Admin/login?permission=u&returnurl=/` |
-| API 401 | 前端 `request.ts` 拦截，生产环境跳转 `/__logout__` |
-| 开发模式 | Vite proxy + Cookie `jwt_token`，401 仅 console 警告 |
+| 未登录访问受保护页 | 前端路由守卫跳转 `/#/login` |
+| 账号密码登录 | `POST /api/auth/login` → Cookie `task_banner_auth_token` |
+| Kooboo 登录 | `/_Admin/login` → `/__kbAuthCallback` → JWT → `/#/` |
+| API 401 | 前端跳转 `/__logout__` |
+| 退出 | `/__logout__` → 清除 JWT → `/#/login` |
+
+## API 认证端点
+
+```text
+POST /api/auth/login
+POST /api/auth/register
+POST /api/auth/kooboo-login
+GET  /api/auth/me
+POST /api/auth/logout
+```
 
 ## 静态资源
 

@@ -1,6 +1,7 @@
 // @k-url /api/notification/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import {
   getUserNotifications,
@@ -11,11 +12,6 @@ import {
 
 // GET /api/notification/list?page=1&size=20&type=&isRead=
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as unknown as {
     page?: string
@@ -31,9 +27,10 @@ k.api.get("list", () => {
 
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取通知列表
     const result = getUserNotifications(currentUser._id, {
       page,
@@ -52,16 +49,12 @@ k.api.get("list", () => {
 
 // GET /api/notification/unread-count
 k.api.get("unread-count", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取未读数量
     const count = getUnreadCount(currentUser._id)
 
@@ -75,11 +68,6 @@ k.api.get("unread-count", () => {
 
 // PUT /api/notification/read
 k.api.put("read", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id } = body
 
@@ -89,9 +77,10 @@ k.api.put("read", (body: any) => {
 
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 标记为已读
     const updated = markAsRead(id, currentUser._id)
 
@@ -109,16 +98,12 @@ k.api.put("read", (body: any) => {
 
 // PUT /api/notification/read-all
 k.api.put("read-all", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 标记所有为已读
     const count = markAllAsRead(currentUser._id)
 

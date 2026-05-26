@@ -7,15 +7,20 @@ import 'element-plus/dist/index.css'
 
 import App from './App.vue'
 import router from './router'
-import { initAuth } from './utils/auth'
+import { useAuthStore } from './stores/auth'
 
-// 初始化认证状态（开发模式自动登录）
-initAuth()
+async function bootstrap() {
+  const app = createApp(App)
+  const pinia = createPinia()
 
-const app = createApp(App)
+  app.use(pinia)
+  app.use(router)
+  app.use(ElementPlus)
 
-app.use(createPinia())
-app.use(router)
-app.use(ElementPlus)
+  const authStore = useAuthStore()
+  await authStore.checkAuth()
 
-app.mount('#app')
+  app.mount('#app')
+}
+
+bootstrap()

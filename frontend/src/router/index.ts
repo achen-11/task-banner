@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { setupRouterGuards } from './guards'
 import MainLayout from '../layouts/MainLayout.vue'
 
@@ -6,10 +6,19 @@ const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/Login.vue'),
+      meta: {
+        requiresAuth: false,
+        title: 'Task Banner - 登录'
+      }
+    },
+    {
       path: '/',
       component: MainLayout,
       meta: {
-        requiresAuth: true // 需要认证
+        requiresAuth: true
       },
       children: [
         {
@@ -17,7 +26,7 @@ const router = createRouter({
           name: 'home',
           component: () => import('../views/Home.vue'),
           meta: {
-            title: 'TaskFlow - 首页'
+            title: 'Task Banner - 首页'
           }
         },
         {
@@ -25,7 +34,7 @@ const router = createRouter({
           name: 'my-tasks',
           component: () => import('../views/MyTasks.vue'),
           meta: {
-            title: 'TaskFlow - 我的任务'
+            title: 'Task Banner - 我的任务'
           }
         },
         {
@@ -33,7 +42,7 @@ const router = createRouter({
           name: 'projects',
           component: () => import('../views/Projects.vue'),
           meta: {
-            title: 'TaskFlow - 项目列表'
+            title: 'Task Banner - 项目列表'
           }
         },
         {
@@ -41,7 +50,7 @@ const router = createRouter({
           name: 'messages',
           component: () => import('../views/Messages.vue'),
           meta: {
-            title: 'TaskFlow - 消息'
+            title: 'Task Banner - 消息'
           }
         },
         {
@@ -49,7 +58,7 @@ const router = createRouter({
           name: 'project',
           component: () => import('../views/ProjectView.vue'),
           meta: {
-            title: 'TaskFlow - 项目'
+            title: 'Task Banner - 项目'
           }
         },
         {
@@ -57,7 +66,7 @@ const router = createRouter({
           name: 'document',
           component: () => import('../views/ProjectView.vue'),
           meta: {
-            title: 'TaskFlow - 文档'
+            title: 'Task Banner - 文档'
           }
         }
       ]
@@ -65,7 +74,6 @@ const router = createRouter({
   ],
 })
 
-// 设置路由守卫
 setupRouterGuards(router)
 
 export default router

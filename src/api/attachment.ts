@@ -1,6 +1,7 @@
 // @k-url /api/attachment/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import {
   createAttachment,
@@ -44,11 +45,6 @@ function generateThumbnail(fileInfo: any, mimeType: string): string {
 
 // POST /api/attachment/upload
 k.api.post("upload", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const relatedType = k.request.form.get("relatedType") as 'task' | 'comment'
   const relatedId = k.request.form.get("relatedId")
@@ -71,9 +67,10 @@ k.api.post("upload", () => {
   // 4. 上传附件
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to upload files to this project', 403)
@@ -145,10 +142,6 @@ k.api.post("upload", () => {
 
 // PUT /api/attachment/updateRelatedId
 k.api.put("updateRelatedId", (body: any) => {
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   const oldRelatedId = body?.oldRelatedId
   const newRelatedId = body?.newRelatedId
   const relatedType = body?.relatedType
@@ -173,11 +166,6 @@ k.api.put("updateRelatedId", (body: any) => {
 
 // GET /api/attachment/list?relatedType=task&relatedId=xxx
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as unknown as {
     relatedType: 'task' | 'comment'
@@ -197,9 +185,10 @@ k.api.get("list", () => {
   // 3. 获取附件列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const attachments = getAttachmentsByRelation(relatedType, relatedId)
 
     // 如果有附件，检查权限
@@ -220,11 +209,6 @@ k.api.get("list", () => {
 
 // DELETE /api/attachment/delete
 k.api.delete("delete", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id } = body
 
@@ -237,9 +221,10 @@ k.api.delete("delete", (body: any) => {
   // 3. 删除附件
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取附件信息
     const attachment = getAttachmentById(attachmentId)
 

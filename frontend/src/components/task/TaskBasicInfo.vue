@@ -502,7 +502,7 @@ const loadProjectMembers = async () => {
 
     // 创建模式：成员列表加载完成后，设置默认指派人为当前用户
     if (props.mode === 'create' && currentUser && !localTask.value.assigneeId) {
-      const currentUserId = String(currentUser.id)
+      const currentUserId = String(currentUser._id)
       // 确认当前用户在成员列表中
       const isCurrentUserInMembers = projectMembers.value.some(m => m.userId === currentUserId)
       if (isCurrentUserInMembers) {
@@ -613,7 +613,7 @@ watch(() => props.task, async (newTask) => {
 
     // 创建模式：只设置 creatorId，等待成员列表加载后再设置 assigneeId
     if (props.mode === 'create' && currentUser && !localTask.value.creatorId) {
-      localTask.value.creatorId = String(currentUser.id)
+      localTask.value.creatorId = String(currentUser._id)
     }
 
     // 加载附件列表

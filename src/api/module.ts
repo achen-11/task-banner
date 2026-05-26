@@ -1,6 +1,7 @@
 // @k-url /api/module/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import {
   createModule,
@@ -13,11 +14,6 @@ import { checkProjectPermission } from 'code/Services/project'
 
 // GET /api/module/list?projectId=xxx
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { projectId: string }
   const projectId = query.projectId
@@ -29,9 +25,10 @@ k.api.get("list", () => {
   // 3. 获取模块列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to view modules', 403)
@@ -52,11 +49,6 @@ k.api.get("list", () => {
 
 // GET /api/module/detail?id=xxx
 k.api.get("detail", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { id: string }
   const moduleId = query.id
@@ -68,9 +60,10 @@ k.api.get("detail", () => {
   // 3. 获取模块详情
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const module = getModuleById(moduleId)
 
     if (!module) {
@@ -92,11 +85,6 @@ k.api.get("detail", () => {
 
 // POST /api/module/create
 k.api.post("create", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { projectId, name, color, parentId } = body
 
@@ -111,9 +99,10 @@ k.api.post("create", (body: any) => {
   // 3. 创建模块
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目管理员）
     if (!checkProjectPermission(projectId, currentUser._id, 'admin')) {
       return error('You do not have permission to create modules', 403)
@@ -138,11 +127,6 @@ k.api.post("create", (body: any) => {
 
 // PUT /api/module/update
 k.api.put("update", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id, name, color, parentId, order } = body
 
@@ -155,9 +139,10 @@ k.api.put("update", (body: any) => {
   // 3. 更新模块
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取模块信息以检查权限
     const module = getModuleById(moduleId)
 
@@ -193,11 +178,6 @@ k.api.put("update", (body: any) => {
 
 // DELETE /api/module/delete
 k.api.delete("delete", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id } = body
 
@@ -210,9 +190,10 @@ k.api.delete("delete", (body: any) => {
   // 3. 删除模块
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取模块信息以检查权限
     const module = getModuleById(moduleId)
 

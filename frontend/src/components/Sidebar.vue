@@ -200,6 +200,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCurrentUser, logout } from '@/utils/auth'
+import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
 import { useUIStore } from '@/stores/ui'
 import { useTourStore } from '@/stores/tour'
@@ -320,9 +321,12 @@ const handleToggleDarkMode = () => {
 }
 
 // 退出登录
-const handleLogout = () => {
+const authStore = useAuthStore()
+
+const handleLogout = async () => {
   showUserMenu.value = false
   if (confirm('确定要退出登录吗？')) {
+    await authStore.logout()
     logout()
   }
 }

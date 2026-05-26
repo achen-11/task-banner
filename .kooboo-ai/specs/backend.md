@@ -5,7 +5,7 @@
 ```text
 src/api/{resource}.ts       # API 端点：路由、鉴权、参数校验、调用 Service
 src/code/Services/{name}.ts # 业务逻辑
-src/code/Models/{Name}.ts   # 数据模型（Kooboo Commerce ORM 封装）
+src/code/Models/{Name}.ts   # 数据模型（k_sqlite / ksql ORM）
 src/code/Utils/             # 通用工具（response、mitt、useSocket）
 ```
 
@@ -98,7 +98,15 @@ import { Task } from 'code/Models/Task'
 
 ## 数据模型
 
-Models 基于 Kooboo Commerce Product 封装，统一从 `code/Models/index.ts` 导出。
+Models 通过 `k_sqlite` 模块的 `ksql` 定义表结构，统一从 `code/Models/index.ts` 导出：
+
+```typescript
+import { ksql, DataTypes } from 'module/k_sqlite'
+
+export const Task = ksql.define('tasks', { ... }, { timestamps: true })
+```
+
+`module/k_sqlite` 为站点已安装的 Kooboo 模块（`tsconfig` alias `module/*`），本地 `src/module/` 无源码副本。
 
 | Model | 说明 |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Task Banner — AI 协作入口
 
-Task Banner（TaskFlow）是一个基于 Kooboo CLI 的任务管理应用，面向已登录用户，提供项目、任务、文档、消息通知等协作能力。
+Task Banner 是一个基于 Kooboo CLI 的任务管理应用，面向已登录用户，提供项目、任务、文档、消息通知等协作能力。
 
 本目录存放**本项目特有**的约定，优先于全局 `kooboo-cli-coding` skill 的默认规则。
 
@@ -26,9 +26,9 @@ Task Banner（TaskFlow）是一个基于 Kooboo CLI 的任务管理应用，面�
 | --- | --- |
 | 响应格式 | `{ code, message, data }`，见 `code/Utils/response` |
 | API 前缀 | `/api/{resource}/{action}` |
-| 认证 | Kooboo 账号体系；Page 服务端脚本注入 `__USER_INFO__` |
+| 认证 | JWT（`task_banner_auth_token`）+ 账号密码登录 + Kooboo 登录 |
 | 实时通信 | WebSocket `/api/websocket/connect` |
-| 数据层 | Kooboo Commerce `k.commerce.product` 作为 ORM（Models 封装） |
+| 数据层 | `k_sqlite` 模块的 `ksql` ORM（Models 层 `ksql.define`） |
 | 同步命令 | 根目录 `pnpm dev`（`kb sync`） |
 
 ## 开发流程

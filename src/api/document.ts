@@ -1,7 +1,7 @@
 // @k-url /api/document/{action}
 
 import { success, error } from 'code/Utils/response'
-import { getUserInfo } from 'code/Services/user'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import {
   createDocument,
   getDocumentById,
@@ -28,11 +28,10 @@ interface DocumentListQuery {
 }
 // GET /api/document/list?projectId=xxx&page=1&size=20&status=draft&type=markdown&keyword=xxx
 k.api.get("list", () => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const query = k.request.queryString as unknown as DocumentListQuery
   const projectId = query?.projectId
   const page = parseInt(query?.page) || 1
@@ -78,11 +77,10 @@ k.api.get("list", () => {
 
 // GET /api/document/detail?id=xxx
 k.api.get("detail", (id: string) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const documentId = id
 
   if (!documentId || documentId.trim() === '') {
@@ -110,11 +108,10 @@ k.api.get("detail", (id: string) => {
 
 // POST /api/document/create
 k.api.post("create", (body: any) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const { title, content, projectId, type, tags, status } = body
 
   // 参数验证
@@ -187,11 +184,10 @@ k.api.post("create", (body: any) => {
 
 // PUT /api/document/update
 k.api.put("update", (body: any) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const { id, title, content, status, tags, order, changeLog } = body
 
   if (!id || id.trim() === '') {
@@ -277,11 +273,10 @@ k.api.put("update", (body: any) => {
 
 // DELETE /api/document/delete
 k.api.delete("delete", (body: any) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const { id } = body
 
   if (!id || id.trim() === '') {
@@ -347,11 +342,10 @@ k.api.delete("delete", (body: any) => {
 
 // GET /api/document/versions?documentId=xxx
 k.api.get("versions", (documentId: string) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
 
   if (!documentId || documentId.trim() === '') {
     return error('Document ID is required', 400)
@@ -373,11 +367,10 @@ k.api.get("versions", (documentId: string) => {
 
 // GET /api/document/version?documentId=xxx&version=1
 k.api.get("version", (documentId: string, version: string) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const versionNumber = parseInt(version)
 
   if (!documentId || documentId.trim() === '') {
@@ -409,11 +402,10 @@ k.api.get("version", (documentId: string, version: string) => {
 
 // POST /api/document/batch-delete
 k.api.post("batch-delete", (body: any) => {
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
-
-  const currentUser = getUserInfo(k.account.user.current.userName)
   const { documentIds } = body
 
   if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {

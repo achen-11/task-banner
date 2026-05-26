@@ -1,17 +1,17 @@
 // @k-url /api/user/{action}
 
 import { success, error } from 'code/Utils/response'
-import { getUserInfo, updateUserInfo, getAllUsers } from 'code/Services/user'
+import { getCurrentAuthUser } from 'code/Services/auth'
+import { getUserById, updateUserInfo } from 'code/Services/user'
 import { getUserTasksPaginated, getUserTasks } from 'code/Services/task'
 
 // GET /api/user/list
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
+  const currentUser = getCurrentAuthUser()
+  if (!currentUser) {
     return error('Unauthorized', 401)
   }
 
-  // 2. 获取组织内的用户列表
   try {
     // 从组织获取用户列表
     const organizationUsers = k.account.organization.current.users || []
@@ -47,11 +47,6 @@ k.api.get("list", () => {
 
 // PUT /api/user/update
 k.api.put("update", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { userId, displayName, email } = body
 
@@ -62,9 +57,10 @@ k.api.put("update", (body: any) => {
   // 3. 更新用户信息
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查：只能管理员或自己可以修改
     // 这里我们假设在项目成员 tab 中，管理员可以修改任何成员的信息
     // 如果需要更严格的权限控制，可以在这里添加
@@ -79,7 +75,7 @@ k.api.put("update", (body: any) => {
     }
 
     // 获取更新后的用户信息
-    const userInfo = getUserInfo(username)
+    const userInfo = getUserById(currentUser._id)
     return success(userInfo, 'User updated successfully')
 
   } catch (err) {
@@ -90,11 +86,6 @@ k.api.put("update", (body: any) => {
 
 // GET /api/user/tasks?projectId=&projectIds=&status=&priority=&search=&page=1&pageSize=20&sortField=updatedAt&sortDirection=desc
 k.api.get("tasks", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as unknown as {
     projectId?: string
@@ -122,11 +113,9 @@ k.api.get("tasks", () => {
   // 3. 获取用户任务列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
     if (!currentUser) {
-      return error('User not found', 404)
+      return error('Unauthorized', 401)
     }
 
     // 构建筛选条件
@@ -180,19 +169,12 @@ k.api.get("tasks", () => {
 
 // GET /api/user/tasks/stats
 k.api.get("tasks/stats", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取用户任务统计
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
     if (!currentUser) {
-      return error('User not found', 404)
+      return error('Unauthorized', 401)
     }
 
     // 获取用户的所有任务（不分页）

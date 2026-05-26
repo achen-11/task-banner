@@ -2,28 +2,32 @@
  * 路由守卫
  */
 import type { Router } from 'vue-router'
-import { requireAuth, isLogin } from '@/utils/auth'
+import { useAuthStore } from '@/stores/auth'
 
 export function setupRouterGuards(router: Router) {
-  // 全局前置守卫
-  router.beforeEach((to, from, next) => {
-    // 检查是否需要认证
-    if (to.meta.requiresAuth !== false) {
-      // 默认所有路由都需要认证
-      if (requireAuth()) {
-        next()
-      } else {
-        // 生产环境会重定向到登录页，不会执行到这里
-        next(false)
-      }
-    } else {
-      next()
+  router.beforeEach(async (to, _from, next) => {
+    const authStore = useAuthStore()
+
+    if (!authStore.user && !authStore.token) {
+      await authStore.checkAuth()
     }
+
+    const requiresAuth = to.meta.requiresAuth !== false
+
+    if (requiresAuth && !authStore.isAuthenticated) {
+      next({ name: 'login', query: { redirect: to.fullPath } })
+      return
+    }
+
+    if (to.name === 'login' && authStore.isAuthenticated) {
+      next({ path: '/' })
+      return
+    }
+
+    next()
   })
 
-  // 全局后置守卫
   router.afterEach((to) => {
-    // 设置页面标题
-    document.title = (to.meta.title as string) || 'TaskFlow'
+    document.title = (to.meta.title as string) || 'Task Banner'
   })
 }

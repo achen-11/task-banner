@@ -1,5 +1,6 @@
 declare namespace KScript {
   interface k {
+    ai: KScript.AI.KAI;
     /** The HTTP response object that is used to set data into http resposne stream */
     response: Response;
     /** ```ts
@@ -14,7 +15,6 @@ var value = k.request.form.queryname;
     inlineEditor: Kooboo.Sites.Scripting.Global.InlineEditor.KInline;
     module: Kooboo.Sites.ScriptModules.KModule;
     starter: Kooboo.Sites.Scripting.Global.Koobox.KKoobox;
-    emailMarketing: Kooboo.Sites.EmailMarketing.KEmailMarketing;
     /** ```ts
 // a temporary storage for small interactive information. Session does not persist
 k.session.set("key", obj);
@@ -40,17 +40,24 @@ const value = k.session.key;
     DB: Kooboo.Sites.Scripting.Global.Database.KDB;
     api: KScript.Api.KApi;
     utils: Kooboo.Sites.Scripting.Global.KUtils;
+    media: Kooboo.Sites.Scripting.Global.KMedia;
     google: Kooboo.Sites.Scripting.Global.Google.KGoogle;
     mail: Mail;
     commerce: KCommerce;
     integration: KScript.Integration.KIntegration;
     /** One way and two way encryption */
     security: Security;
+    /** Cookie Consent management and others */
+    privacy: Kooboo.Sites.Scripting.Global.KPrivacy;
+    /** Analytics setting and reporting */
+    analytics: Kooboo.Sites.Scripting.Global.Analytics.kAnalytics;
+    integrateCommerce: Kooboo.IntegrateCommerce.KIntegrateCommerce;
     storage: Kooboo.Sites.Storage.KStorage;
     stapScript: Kooboo.Sites.Scripting.Extension.StapTest;
     payment: Kooboo.Sites.Payment.kPay;
     fromSite(nameOrId: any): k;
     t(value: string): string;
+    t(value: string, params: any): string;
     label(NameOrId: string): string;
     label(NameOrId: string, params: any): string;
     /** return value to the caller */
@@ -94,6 +101,17 @@ k.response.json(obj);
 ```
  */
     json(value: any): void;
+    /** ```ts
+Execute the view, and write the response at current context
+```
+ */
+    executeView(ViewNameOrId: string): void;
+    /** ```ts
+Execute the view, and return the result as string
+```
+ */
+    renderViewAsString(ViewNameOrId: string): string;
+    renderTemplate(TemplateBody: string): void;
     renderView(ViewBody: string): void;
     binary(contentType: string, bytes: number[]): void;
     binary(contentType: string, bytes: number[], filename?: string): void;
@@ -129,6 +147,7 @@ k.response.execute("/anotherpage");
 ```
  */
     execute(url: string): void;
+    stop(): void;
   }
 
   interface Request {
@@ -161,8 +180,10 @@ if (k.request.files.count > 0) {
     model: any;
     /** HTTP Method like GET, POST, PUT */
     method: string;
-    /** Client Requst IP */
+    /** Client Requst IP (only IPv4) */
     clientIp: string;
+    /** Client County info */
+    clientCountry: Kooboo.Lib.GeoLocation.CountryLocationModel;
     headers: KDictionary;
     /** Current Requst URL */
     url: string;
@@ -335,6 +356,7 @@ k.file.append("filename.txt", "content to append to text file");
 ```
  */
     append(FileName: string, content: string): void;
+    toValidPath(input: string): string;
     /** ```ts
 // return the relative url path to access the file
 k.file.url("image1.jpg");
@@ -547,6 +569,8 @@ k.cookie.clear();
     shipping: KScript.Commerce.KShipping;
     address: KScript.Commerce.KAddress;
     membership: KScript.Commerce.KMembership;
+    wishlist: KScript.Commerce.KWishlist;
+    currency: KScript.Commerce.KCurrency;
     settings: Kooboo.Sites.Commerce.Settings;
   }
 
@@ -671,6 +695,7 @@ const payload = k.security.fromBase64("aGVsbG8=")
     hmacSha1(input: string, key: string): string;
     hmacMd5(input: string, key: string): string;
     sha256Sign(privateKey: string, value: string): string;
+    newSnowId(): number;
   }
 
   interface PageMeta {
@@ -1368,6 +1393,10 @@ k.response.write(result);
     getTables(): string[];
   }
 
+  interface RedisConnection {
+    getDatabase(db: number): RedisDatabase;
+  }
+
   interface kKeyValue {
     keys: string[];
     values: any[];
@@ -1453,6 +1482,7 @@ k.response.binary(contentType,buffer,"My excel.xlsx");
     size: number;
     requestTime: number;
     errorMessage: string;
+    bodyString(): string;
   }
 
   interface ITable {
@@ -1900,6 +1930,94 @@ task.saveChunk(file, chunk)
     ok: number;
   }
 
+  interface RedisDatabase {
+    /** If key already exists and is a string, this command appends the value at the end of the string. If key does not exist it is created and set as an empty string, so APPEND will be similar to SET in this special case.
+
+https://redis.io/commands/append
+
+Returns:
+The length of the string after the append operation. */
+    stringAppend(key: string, value: string): number;
+    /** Decrements the number stored at key by decrement. If the key does not exist, it is set to 0 before performing the operation. An error is returned if the key contains a value of the wrong type or contains a string that is not representable as integer. This operation is limited to 64 bit signed integers.
+
+See https://redis.io/commands/decrby, https://redis.io/commands/decr.
+
+Returns:
+The value of key after the decrement. */
+    stringDecrement(key: string, value?: number): number;
+    /** Deletes key if it matches the given when condition.
+
+See https://redis.io/commands/delex. */
+    stringDelete(key: string): boolean;
+    /** Get the value of key. If the key does not exist the special value RedisValue.Null is returned. An error is returned if the value stored at key is not a string, because GET only handles string values.
+
+https://redis.io/commands/get
+
+Returns:
+The value of key, or RedisValue.Null when key does not exist. */
+    stringGet(key: string): string;
+    /** Get the value of key and delete the key. If the key does not exist the special value RedisValue.Null is returned. An error is returned if the value stored at key is not a string, because GET only handles string values.
+
+https://redis.io/commands/getdelete
+
+Returns:
+The value of key, or RedisValue.Null when key does not exist. */
+    stringGetDelete(key: string): string;
+    /** Get the value of key. If the key does not exist the special value default is returned. An error is returned if the value stored at key is not a string, because GET only handles string values.
+
+https://redis.io/commands/get
+
+Returns:
+The value of key and its expiry, or default when key does not exist. */
+    stringGetWithExpiry(key: string): Kooboo.Sites.Scripting.Global.Redis.ValueWithExpiry;
+    /** Gets the value of key and update its (relative) expiry. If the key does not exist, the result will be RedisValue.Null.
+
+https://redis.io/commands/getex
+
+Returns:
+The value of key, or RedisValue.Null when key does not exist. */
+    stringGetSetExpiry(key: string, expirySeconds: number): string;
+    /** Returns the substring of the string value stored at key, determined by the offsets start and end (both are inclusive). Negative offsets can be used in order to provide an offset starting from the end of the string. So -1 means the last character, -2 the penultimate and so forth.
+
+https://redis.io/commands/getrange
+
+Returns:
+The substring of the string value stored at key. */
+    stringGetRange(key: string, start: number, end: number): string;
+    /** Atomically sets key to value and returns the old value stored at key.
+
+https://redis.io/commands/getset
+
+Returns:
+The old value stored at key, or RedisValue.Null when key did not exist. */
+    stringGetSet(key: string, value: string): string;
+    /** Increments the string representing a floating point number stored at key by the specified increment. If the key does not exist, it is set to 0 before performing the operation. The precision of the output is fixed at 17 digits after the decimal point regardless of the actual internal precision of the computation.
+
+https://redis.io/commands/incrbyfloat
+
+Returns:
+The value of key after the increment. */
+    stringIncrement(key: string, value?: number): number;
+    /** Set key to hold the string value, if it matches the given when condition.
+
+See https://redis.io/commands/set. */
+    stringSet(key: string, value: string, expirySeconds?: number): boolean;
+    /** Overwrites part of the string stored at key, starting at the specified offset, for the entire length of value. If the offset is larger than the current length of the string at key, the string is padded with zero-bytes to make offset fit. Non-existing keys are considered as empty strings, so this command will make sure it holds a string large enough to be able to set value at offset.
+
+https://redis.io/commands/setrange
+
+Returns:
+The length of the string after it was modified by the command. */
+    stringSetRange(key: string, offset: number, value: string): string;
+    /** Returns the length of the string value stored at key.
+
+https://redis.io/commands/strlen
+
+Returns:
+The length of the string at key, or 0 when key does not exist. */
+    stringLength(key: string): number;
+  }
+
   interface Excel {
     getWorkBook(fileName: string): Kooboo.Sites.Scripting.Global.Office.Excel.KWorkBook;
     getWorkBookFromBytes(buffer: number[], extensionName: string): Kooboo.Sites.Scripting.Global.Office.Excel.KWorkBook;
@@ -1990,6 +2108,50 @@ k.office.excel.readAsArraysFromBytes(buffer,'.xlsx','Sheet1',{firstColumnIndex:0
   }
 
 }
+declare namespace KScript.AI {
+  interface KAI {
+    app: KAIApp;
+    vectorization: KAIVectorization;
+    callFunction(name: string, arguments: any): any;
+  }
+
+  interface KAIApp {
+    menus: menuItem[];
+    getWireFrame(): Kooboo.Sites.AIBuilder.Application.Model.WireFrame;
+    getContext(): Kooboo.Sites.AIBuilder.Application.Model.DomainContext;
+    listScenarios(): Kooboo.Sites.AIBuilder.Application.Model.Scenario[];
+    listFacts(): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
+    listEntities(): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
+  }
+
+  interface KAIVectorization {
+    searchProduct(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchPage(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchView(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchLabel(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchLayout(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchHtmlBlock(keyword: string, options?: Kooboo.Sites.AI.Vectorization.VectorSearchOptions): Kooboo.Sites.AI.Vectorization.VectorSearchResult[];
+    searchTextContent(keyword: string, options?: ContentVectorSearchOptions): ContentVectorSearchResult[];
+  }
+
+  interface menuItem {
+    route: string;
+    anchorText: string;
+    icon: string;
+  }
+
+  interface ContentVectorSearchOptions extends Kooboo.Sites.AI.Vectorization.VectorSearchOptions {
+    folder: string;
+    top: number;
+  }
+
+  interface ContentVectorSearchResult extends Kooboo.Sites.AI.Vectorization.VectorSearchResult {
+    folder: string;
+    scope: number;
+    id: string;
+  }
+
+}
 declare namespace Kooboo.Sites.Scripting.Global.NET {
   interface KNET {
     IP: KIP;
@@ -2016,9 +2178,9 @@ const result= k.utils.ping('baidu.com')
   interface KIP {
     context: Kooboo.Data.Context.RenderContext;
     myIP: string;
-    getCity(IPV4: string): Kooboo.Lib.GeoLocation.IPViewModel;
-    getCountry(IPV4: string): Kooboo.Lib.GeoLocation.IPViewModel;
-    getCityOrCountry(IPV4: string): Kooboo.Lib.GeoLocation.IPViewModel;
+    getCity(IpAddress: string): Kooboo.Data.GeoLocation.IPInfo;
+    getCountry(IpAddress: string): Kooboo.Data.GeoLocation.IPInfo;
+    getCityOrCountry(IpAddress: string): Kooboo.Data.GeoLocation.IPInfo;
   }
 
   interface KDNS {
@@ -2106,8 +2268,9 @@ declare namespace Kooboo.Sites.ScriptModules {
     rootFolder: string;
     culture: string;
     request: Kooboo.Sites.ScriptModules.Render.ModuleRequest;
+    startView: string;
     getBaseUrl(): string;
-    fromRenderContext(context: Kooboo.Data.Context.RenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
+    fromRenderContext(context: Kooboo.Sites.Render.KoobooRenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
     createNewFromRenderContext(context: Kooboo.Data.Context.RenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
     makeModuleUrl(moduleRelativeUrl: string): string;
   }
@@ -2219,39 +2382,6 @@ declare namespace Kooboo.Sites.Scripting.Global.Koobox {
   }
 
 }
-declare namespace Kooboo.Sites.EmailMarketing {
-  interface KEmailMarketing {
-    automation: Kooboo.Sites.EmailMarketing.EmailScript.KAutomation;
-    contactList: Kooboo.Sites.EmailMarketing.EmailScript.KContactList;
-    recipient: Kooboo.Sites.EmailMarketing.EmailScript.KRecipient;
-    media: Kooboo.Sites.EmailMarketing.EmailScript.KMedia;
-    campaign: Kooboo.Sites.EmailMarketing.EmailScript.KCampaign;
-    remoteListHelper: Kooboo.Sites.EmailMarketing.List.RemoteListHelper;
-    tracking: Kooboo.Sites.EmailMarketing.Reporting.Tracking.TrackingStore;
-    page: Kooboo.Sites.EmailMarketing.EmailScript.KPage;
-    notification: Kooboo.Sites.EmailMarketing.EmailScript.KNotification;
-    setting: Kooboo.Sites.EmailMarketing.EmailScript.KSetting;
-    delivery: Kooboo.Sites.EmailMarketing.EmailScript.KDelivery;
-    sendingContext: Kooboo.Sites.EmailMarketing.EmailScript.KSendContext;
-    template: Kooboo.Sites.EmailMarketing.EmailScript.KTemplate;
-    report: Kooboo.Sites.EmailMarketing.EmailScript.KReport;
-    global: Kooboo.Sites.EmailMarketing.EmailScript.KGlobal;
-    kEmailCheck: Kooboo.Sites.EmailMarketing.EmailScript.KEmailCheck;
-  }
-
-  interface SpecialLink extends Kooboo.Data.Interface.IDynamic {
-    baseUrl: string;
-    unSubscribe: string;
-    confirmUnSubscribe: string;
-    doubleOptIn: string;
-    values: Record<string, any>;
-    getUnSubPostUrl(baseUrl: string, contactListId: number, sentRecipientId: number, sendTaskId: number, emailAddress: string): string;
-    getValue(key: string): any;
-    getValue(FieldName: string, Context: Kooboo.Data.Context.RenderContext): any;
-    setValue(FieldName: string, Value: any): void;
-  }
-
-}
 declare namespace Kooboo.Sites.Scripting.Global {
   interface KAccount {
     user: KUser;
@@ -2351,6 +2481,21 @@ const result= k.utils.ping('baidu.com')
 ```
  */
     ping(command: string): PingResult;
+  }
+
+  interface KMedia {
+    subFolders(Folder: string): MediaFolderView[];
+    createFolder(FolderName: string, ParentFolder: string): MediaFolderView;
+    deleteFolder(folder: string): void;
+    folderFiles(Folder: string): MediaFileViewModel[];
+    get(IdOrFilePath: string): MediaFileViewModel;
+    delete(IdOrFilePath: string): void;
+    exists(FilePath: string): boolean;
+    writeBinary(filePath: string, binary: number[], Overwrite: boolean): boolean;
+  }
+
+  interface KPrivacy {
+    cookieConsent: Kooboo.Sites.Scripting.Global.Privacy.KCookieConsent;
   }
 
   interface KWebSocket {
@@ -2563,6 +2708,25 @@ k.clientJS.setVariable("myname", obj);
     remove(input: string, ValueToRemove: string): string;
   }
 
+  interface MediaFolderView {
+    id: string;
+    name: string;
+    fullPath: string;
+  }
+
+  interface MediaFileViewModel {
+    id: any;
+    name: string;
+    filePath: string;
+    height: number;
+    width: number;
+    size: string;
+    lastModified: Date;
+    previewUrl: string;
+    fromImage(context: Kooboo.Data.Context.RenderContext, sitedb: Kooboo.Sites.Repository.SiteDb, image: Kooboo.Sites.Models.Image, baseUrl: string): MediaFileViewModel;
+    fromImages(context: Kooboo.Data.Context.RenderContext, siteDb: Kooboo.Sites.Repository.SiteDb, images: Kooboo.Sites.Models.Image[], baseUrl: string): MediaFileViewModel[];
+  }
+
   interface Document {
     declaration: Declaration;
     root: Element;
@@ -2696,15 +2860,16 @@ k.response.json(logs)
   }
 
   interface CodeLogStore {
+    weekNameFolder: string;
     isActiveWeek: boolean;
     groupByFunctions: Record<string, (p1:System.Int32,p2:System.String,)=>Kooboo.Data.Logging.CodeLog>;
     add(Value: Kooboo.Data.Logging.CodeLog): void;
     getDB(DayOfWeek: number): any;
     add(data: Kooboo.Data.Logging.CodeLog, time?: Date): void;
     close(): void;
-    daysTotal(ProcessSummary: boolean): Record<number, number>;
+    daysTotal(): Record<number, number>;
     daysTotal(summary: Kooboo.Data.Storage.DayLogSummary): Record<number, number>;
-    readSummary(ProcessRead?: boolean): Kooboo.Data.Storage.DayLogSummary;
+    readSummary(): Kooboo.Data.Storage.DayLogSummary;
     take(count: number): Kooboo.Data.Logging.CodeLog[];
     list(PageNumber: number, PageSize: number): any;
     closeRead(): void;
@@ -2800,6 +2965,7 @@ k.site.menus.updateSubMenu(menu.id,menu.children[0].id,'newName','/newUrl');
     currentURLs(): SiteMultilingualInfo[];
     getURLs(relativeUrl: string): SiteMultilingualInfo[];
     getLangUrl(relativeUrl: string, culture: string): string;
+    getUrl(relativeUrl: string): string;
   }
 
   interface ChangeLog {
@@ -2864,9 +3030,11 @@ k.sql == k.mysql
  */
     sql: Kooboo.Sites.Scripting.Interfaces.IRelationalDatabase;
     mongo: KScript.MongoDatabase;
+    redis: KScript.RedisConnection;
     /** The database key value storage */
     keyValue: KScript.kKeyValue;
     getSiteSqliteConnectionString(webSite: Kooboo.Data.Models.WebSite): string;
+    getSqliteDbPath(website: Kooboo.Data.Models.WebSite): string;
   }
 
   interface KeyValueObject extends Kooboo.Sites.DataTraceAndModify.ITraceability {
@@ -3897,6 +4065,182 @@ declare namespace KScript.Integration {
   }
 
 }
+declare namespace Kooboo.Sites.Scripting.Global.Analytics {
+  interface kAnalytics {
+    track(customName: string, parameter: any): void;
+  }
+
+}
+declare namespace Kooboo.IntegrateCommerce {
+  interface KIntegrateCommerce extends Kooboo.Data.Interface.IkScript {
+    tiktok: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
+    shein: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
+    amazon: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
+    getLogFiles(): SummaryFileInfo[];
+    getLogDetails(name: string): string;
+    setOrderDeskCredentials(storeId: string, apiKey: string, ordersCallbackCodeBlock?: string): void;
+    removeOrderDeskCredentials(storeId: string): void;
+  }
+
+  interface SummaryFileInfo {
+    name: string;
+    size: number;
+    string_size: string;
+    created_utc: Date;
+    last_modified_utc: Date;
+  }
+
+  interface PlatformAuthState {
+    ordersCallbackCodeBlock?: string;
+    authCallbackCodeBlock?: string;
+    authWebhookUrl?: string;
+    extra?: string;
+    region?: string;
+  }
+
+  interface PlatformOrderListQuery {
+    from?: Date;
+    to?: Date;
+    pageNumber?: number;
+    pageSize?: number;
+    orderStatus?: string;
+    keyword?: string;
+  }
+
+  interface PlatformOrderListPage {
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    items: PlatformOrderSummary[];
+  }
+
+  interface PlatformOrderDetail {
+    order_id?: string;
+    channel_id?: string;
+    customer?: PlatformOrderDetailCustomer;
+    create_at?: string;
+    currency?: PlatformOrderDetailCurrency;
+    shipping_address?: PlatformOrderDetailShippingAddress;
+    payment_method?: PlatformOrderDetailPaymentMethod;
+    shipping_method?: PlatformOrderDetailShippingMethod;
+    status?: PlatformOrderDetailStatus;
+    totals?: PlatformOrderDetailTotals;
+    order_products?: PlatformOrderDetailProduct[];
+    modified_at?: string;
+    finished_time?: string;
+    comment?: string;
+    store_id?: string;
+    warehouses_ids?: string[];
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderSummary {
+    storeId: string;
+    platformCode: string;
+    platformOrderId: string;
+    platformCreatedAt: Date;
+    platformUpdatedAt?: Date;
+    orderStatus?: string;
+    currency?: string;
+    amountTotal?: number;
+    buyerName?: string;
+  }
+
+  interface PlatformOrderDetailCustomer {
+    id?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderDetailCurrency {
+    name?: string;
+    iso3?: string;
+  }
+
+  interface PlatformOrderDetailShippingAddress {
+    first_name?: string;
+    last_name?: string;
+    postcode?: string;
+    address1?: string;
+    address2?: string;
+    phone?: string;
+    city?: string;
+    country?: PlatformOrderDetailCountry;
+    state?: PlatformOrderDetailState;
+  }
+
+  interface PlatformOrderDetailPaymentMethod {
+    name?: string;
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderDetailShippingMethod {
+    name?: string;
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderDetailStatus {
+    name?: string;
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderDetailTotals {
+    total?: number;
+    subtotal?: number;
+    shipping?: number;
+    tax?: number;
+    discount?: number;
+    additional_fields?: Record<string, any>;
+  }
+
+  interface PlatformOrderDetailProduct {
+    product_id?: string;
+    order_product_id?: string;
+    sku?: string;
+    sku_image?: string;
+    seller_sku?: string;
+    name?: string;
+    price?: number;
+    price_inc_tax?: number;
+    quantity?: number;
+    options?: PlatformOrderDetailProductOption[];
+    variant_id?: string;
+    weight_unit?: string;
+    weight?: number;
+    additional_fields?: Record<string, any>;
+    attachments?: Record<string, SummaryFileInfo[]>;
+  }
+
+  interface PlatformOrderDetailCountry {
+    code2?: string;
+    code3?: string;
+    name?: string;
+  }
+
+  interface PlatformOrderDetailState {
+    code?: string;
+    name?: string;
+  }
+
+  interface PlatformOrderDetailProductOption {
+    option_id?: string;
+    name?: string;
+    value?: string;
+    product_option_value_id?: string;
+  }
+
+  interface SummaryFileInfo {
+    name: string;
+    size: number;
+    string_size: string;
+    created_utc: Date;
+    last_modified_utc: Date;
+  }
+
+}
 declare namespace Kooboo.Sites.Storage {
   interface KStorage extends Kooboo.Data.Interface.IkScript {
     aliyunOSS: IStorageClient;
@@ -4092,7 +4436,7 @@ declare namespace Kooboo.Sites.Payment {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     checkStatus(request: PaymentRequest): PaymentStatusResponse;
   }
 
@@ -4192,6 +4536,15 @@ k.response.redirect(redirectUrl)
   }
 
 }
+declare namespace Kooboo.Lib.GeoLocation {
+  interface CountryLocationModel {
+    countryCode: string;
+    continent: string;
+    latitude: number;
+    longtitude: number;
+  }
+
+}
 declare namespace Kooboo.Sites.Models {
   interface Page extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IScriptable, DomObject {
     headers: HtmlHeader;
@@ -4244,7 +4597,7 @@ declare namespace Kooboo.Sites.Models {
     clone(): any;
   }
 
-  interface HtmlHeader extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface HtmlHeader extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     titles: Record<string, string>;
     customHeader: string;
     metas: HtmlMeta[];
@@ -4260,6 +4613,9 @@ declare namespace Kooboo.Sites.Models {
     hasValue(): boolean;
     getTitle(culture?: string): string;
     setTitle(value: string, culture?: string): void;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -4443,7 +4799,7 @@ declare namespace Kooboo.Sites.Models {
     clone(): any;
   }
 
-  interface HtmlMeta {
+  interface HtmlMeta extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     name: string;
     httpequiv: string;
     property: string;
@@ -4451,9 +4807,30 @@ declare namespace Kooboo.Sites.Models {
     charset: string;
     getContent(culture?: string): string;
     setContent(value: string, culture?: string): void;
+    buildMetaTag(culture: string): string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
   }
 
   type CodeType = 'Event' | 'Datasource' | 'Job' | 'Api' | 'PageScript' | 'Diagnosis' | 'PaymentCallBack' | 'Authentication' | 'Authorization' | 'CodeBlock';
+
+  interface ViewDataMethod extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+    id: any;
+    aliasName: string;
+    methodId: any;
+    viewId: any;
+    children: ViewDataMethod[];
+    hasChildren: boolean;
+    online: boolean;
+    version: number;
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    lastModifyTick: number;
+    name: string;
+    clone(): any;
+  }
 
   interface Path {
     parentPath: Path;
@@ -4566,31 +4943,6 @@ declare namespace Kooboo.Sites.Models {
     clone(): any;
   }
 
-  interface DomElement extends Kooboo.Data.Interface.ISiteObject {
-    id: any;
-    parentId: any;
-    name: string;
-    depth: number;
-    sibling: number;
-    openTagStartIndex: number;
-    endTagEndIndex: number;
-    nodeAttributes: Record<string, string>;
-    nodeAttributeHash: any;
-    nodeAttributeString: string;
-    parentPathHash: any;
-    parentPath: string;
-    subElementString: string;
-    subElementHash: any;
-    koobooId: string;
-    koobooIdHash: any;
-    innerHtmlHash: any;
-    ownerObjectId: any;
-    ownerObjectType: number;
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-  }
-
   interface Form extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, CoreObject {
     body: string;
     engine: string;
@@ -4651,23 +5003,6 @@ declare namespace Kooboo.Sites.Models {
     id: any;
     formId: any;
     values: Record<string, string>;
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-    lastModifyTick: number;
-    name: string;
-    clone(): any;
-  }
-
-  interface ViewDataMethod extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
-    id: any;
-    aliasName: string;
-    methodId: any;
-    viewId: any;
-    children: ViewDataMethod[];
-    hasChildren: boolean;
-    online: boolean;
-    version: number;
     constType: number;
     creationDate: Date;
     lastModified: Date;
@@ -5106,27 +5441,44 @@ var fileResult= request.tasks[0].fileResult; // saved file info
   }
 
   interface KHttpResponse {
+    contentDisposition?: KContentDisposition;
+    contentType?: KContentType;
     success: boolean;
     statusCode: number;
     getHeader(name: string): string[];
     bodyString(): string;
+    /** To save file, use save or saveBinary Instead */
     bodyBinary(): number[];
     /** Save response to fileIO */
     save(path: string): KScript.FileInfo;
+    /** Save response to fileIO */
+    saveBinary(path: string): KScript.FileInfo;
   }
 
   interface RequestTask {
     url: string;
     method: string;
+    timeout: number;
     content: KHttpContent;
     header: any;
     responseType: ResponseType;
     savePath: string;
     isSuccess: boolean;
+    statusCode: number;
     errorMessage: string;
     fileResult: KScript.FileInfo;
     stringResult: string;
     binaryResult: number[];
+  }
+
+  interface KContentDisposition {
+    fileName?: string;
+    size?: number;
+  }
+
+  interface KContentType {
+    mediaType: string;
+    charSet: string;
   }
 
   type ResponseType = 'String' | 'Binary' | 'File';
@@ -5391,313 +5743,6 @@ Result:
   }
 
 }
-declare namespace Kooboo.Sites.EmailMarketing.EmailScript {
-  interface KAutomation {
-    journey: Kooboo.Sites.EmailMarketing.Automation.UserJourney;
-    holidays: Kooboo.Sites.EmailMarketing.Automation.Holidays.IHoliday[];
-    list(): Kooboo.Sites.EmailMarketing.Model.AutomationModel[];
-    get(NameOrId: string): Kooboo.Sites.EmailMarketing.Model.AutomationModel;
-    delete(NameOrId: string): void;
-    listFieldNames(ContactListId: number): string[];
-    triggerDefinition(): TriggerInfo[];
-    update(Model: Kooboo.Sites.EmailMarketing.Model.AutomationModel): EmailScript.Parameter.ActionResult;
-    create(item: Kooboo.Sites.EmailMarketing.Model.AutomationModel): EmailScript.Parameter.ActionResult;
-    isNameExists(Name: string): boolean;
-    listAllTaskModels(): Kooboo.Sites.EmailMarketing.Automation.AutomationTaskWrapper[];
-    getStatus(name: string): Kooboo.Sites.EmailMarketing.Model.CellState[];
-    detail(AutomationName: string, CellId: string, PageNr: number, PageSize: number): any;
-  }
-
-  interface KContactList {
-    filterOperators: string[];
-    valueDataType: string[];
-    list(): Kooboo.Sites.EmailMarketing.Model.Contact.ContactList[];
-    get(ListNameOrId: string): Kooboo.Sites.EmailMarketing.Model.Contact.ContactList;
-    getStat(ListNameOrId: string): Kooboo.Sites.EmailMarketing.Model.Contact.ContactList;
-    contactListNames(ListIds: number[]): string[];
-    isTest(ContactList: number[]): boolean;
-    get(ListNameOrId: string, WithStat: boolean): Kooboo.Sites.EmailMarketing.Model.Contact.ContactList;
-    delete(ListNameOrId: string): void;
-    update(ContactList: Kooboo.Sites.EmailMarketing.Model.Contact.ContactList): EmailScript.Parameter.ActionResult;
-    updateRemoteList(ContactListNameOrId: string, RemoteSetting: Kooboo.Sites.EmailMarketing.Model.Contact.RemoteList): EmailScript.Parameter.ActionResult;
-    updateVirtualList(ContactListNameOrId: string, VirtualSetting: EmailScript.Parameter.VirtualListEdit): EmailScript.Parameter.ActionResult;
-    create(item: EmailScript.Parameter.CreateList): EmailScript.Parameter.ActionResult;
-    isNameExists(ContactListName: string): boolean;
-    linkPage(ContactListId: number, PageId: any, LinkPageType: number): void;
-    linkPageName(ContactListId: number, PageId: any, LinkPageTypeName: string): void;
-    linkNotification(PageId: any, ContactListId: number, NotificationType: number): void;
-    linkNotificationName(PageId: any, ContactListId: number, NotificationTypeName: string): void;
-    updateSubject(ContactListId: number, WelcomeSubject: string, DoubleOptinSubject: string): void;
-  }
-
-  interface KRecipient {
-    close(): void;
-    byContactList(query: EmailScript.Parameter.ContactListQuery): any;
-    byContactListUnVerified(query: EmailScript.Parameter.ListVerificationQuery): any;
-    byContactList(ListNameOrId: string, includeBounce: boolean, includeUnsubscribed: boolean, IncludeActive: boolean, SearchKeyword: string, PageNumber: number, PageSize: number): any;
-    byContactList(ListNameOrId: string, PageNr: number, PageSize: number): any;
-    contactListFields(ListNameOrId: string): string[];
-    get(ListNameOrId: string, recipientId: number): Kooboo.Sites.EmailMarketing.Model.Contact.Recipient;
-    add(ListNameOrId: string, recipient: Kooboo.Sites.EmailMarketing.Model.Contact.Recipient): number;
-    addEmail(ListNameOrId: string, EmailAddress: string): number;
-    addBatch(ListNameOrId: string, recipients: Kooboo.Sites.EmailMarketing.Model.Contact.Recipient[]): void;
-    update(ListNameOrId: string, Id: number, Name: string, EmailAddress: string, obj: any): void;
-    update(ListNameOrId: string, Id: number, obj: any): void;
-    importEmailLines(ListNameOrId: string, EmailLines: string): void;
-    importJson(ListNameOrId: string, Json: string): void;
-    /** Sign up will fire Double Opt In Email. Use Add instead if you do not want that. */
-    signUp(contactListName: string, recipient: Kooboo.Sites.EmailMarketing.Model.Contact.Recipient): number;
-    signUp(contactListName: string, emailAddress: string): number;
-    confirmDoubleOptin(ContactListId: number, RecipientId: number): any;
-    delete(ListNameOrId: string, ContactId: number): void;
-    unSubScribe(ListNameOrId: string, ContactId: number, RemoteContactId: string): boolean;
-    bounce(ListNameOrId: string, ContactId: number): void;
-  }
-
-  interface KMedia {
-    subFolders(Folder: string): MediaFolderView[];
-    createFolder(FolderName: string, ParentFolder: string): MediaFolderView;
-    deleteFolder(folder: string): void;
-    folderFiles(Folder: string): MediaFileViewModel[];
-    get(IdOrFilePath: string): MediaFileViewModel;
-    delete(IdOrFilePath: string): void;
-    exists(FilePath: string): boolean;
-    writeBinary(filePath: string, binary: number[], Overwrite: boolean): boolean;
-  }
-
-  interface KCampaign {
-    eventType: Kooboo.Sites.EmailMarketing.Model.CampaignEventType[];
-    close(): void;
-    create(model: EmailScript.Parameter.CampaignEdit): EmailScript.Parameter.ActionResult;
-    delete(CampaignId: number): void;
-    deleteRange(CampaignMinId: number, CampaignMaxId: number): void;
-    get(CampaignId: number): Kooboo.Sites.EmailMarketing.Model.Campaign;
-    list(pageNr: number, pageSize: number): any;
-    updateEvent(campaignId: number, key: string, CodeBody: string): void;
-    /** Use Campaign.updateHTML instead */
-    updateSource(campaignId: number, htmlSource: string): void;
-    updateHTML(campaignId: number, htmlSource: string): void;
-    updateTextBody(campaignId: number, textBody: string): void;
-    updateAMPBody(campaignId: number, AMPBody: string): void;
-    updateInfo(item: EmailScript.Parameter.CampaignEdit): void;
-    importFile(CampaignId: number, FileName: string, Binary: number[]): boolean;
-    preview(CampaignId: number): string;
-    preview(campaignId: number, ContactListId: number, RecipientId: number): string;
-    /** User Preview Instead */
-    previewHTML(campaignId: number, contactListId: number, recipientId: number): string;
-    generateAIEmail(campaignId: number, model: string, prompt: string): string;
-    modifyAIEmail(code: string, model: string, prompt: string): string;
-    getAIProviders(): Kooboo.Sites.AiSiteBuilder.ProviderInfo[];
-  }
-
-  interface KPage {
-    pageLinkType: Record<string, number>;
-    create(url: string, body: string): EmailScript.Parameter.ActionResult;
-    update(PageId: any, body: string): EmailScript.Parameter.ActionResult;
-    isUrlExists(url: string): boolean;
-    delete(Id: any): void;
-    setOffline(Id: any): void;
-    setOnline(Id: any): void;
-    get(Id: any): Kooboo.Sites.EmailMarketing.Model.PageModel;
-    list(PageNr: number, PageSize: number): Kooboo.Sites.EmailMarketing.Model.PageModelList;
-    importUrl(Url: string, SitePageName: string): EmailScript.Parameter.ActionResult;
-    /** Zip file that contains HTML/CSS/JS and images */
-    importHtmlZip(ZipBytes: number[]): EmailScript.Parameter.ActionResult;
-    linkContactList(PageId: any, ContactListId: number, LinkPageType: number): void;
-    unlinkContactList(PageId: any, ContactListId: number, LinkPageType: number): void;
-  }
-
-  interface KNotification {
-    notificationType: Record<string, number>;
-    create(Name: string, body: string): EmailScript.Parameter.ActionResult;
-    update(NotificationId: any, body: string): EmailScript.Parameter.ActionResult;
-    isNameExists(name: string): boolean;
-    delete(Id: any): void;
-    setOffline(Id: any): void;
-    setOnline(Id: any): void;
-    get(Id: any): Kooboo.Sites.EmailMarketing.Model.PageModel;
-    linkContactList(PageId: any, ContactListId: number, NotificationType: number): void;
-    unlinkContactList(PageId: any, ContactListId: number, NotificationType: number): void;
-    list(PageNr: number, PageSize: number): Kooboo.Sites.EmailMarketing.Model.PageModelList;
-  }
-
-  interface KSetting {
-    codeSample: SampleCode[];
-    current: Kooboo.Sites.EmailMarketing.Model.Settings;
-    fromList: string[];
-    get(): Kooboo.Sites.EmailMarketing.Model.Settings;
-    addSender(Name: string, EmailAddress: string): void;
-    deleteSender(EmailAddress: string): void;
-    addParameter(key: string, value: string): void;
-    deleteParameter(key: string): void;
-    updateServer(Server: Kooboo.Sites.EmailMarketing.Model.SendServerSetting): void;
-    addDomain(domain: string): void;
-    removeDomain(domain: string): void;
-    listDomain(): Kooboo.Sites.EmailMarketing.Model.MailDomain[];
-    getDomain(domain: string): Kooboo.Sites.EmailMarketing.Model.MailDomain;
-    verifyDomain(domain: string): DomainResult;
-    getMailFrom(Domain: string): string;
-    ensureAllDomainStatus(currentSetting: Kooboo.Sites.EmailMarketing.Model.Settings): void;
-    checkDomainStatus(domain: string): void;
-    updateThirdPartyInfo(info: Kooboo.Sites.EmailMarketing.Model.ThirdPartyInfo): void;
-  }
-
-  interface KDelivery {
-    sendToEmail(CampaignId: number, EmailLine: string): void;
-    send(model: EmailScript.Parameter.SendCampaign): void;
-    sendABTest(Campaign: EmailScript.Parameter.SendCampaign, BCampaign: Kooboo.Sites.EmailMarketing.ABTest.ABTestSetting): void;
-    getSendHistory(campaignId: number): Kooboo.Sites.EmailMarketing.Model.SendTask[];
-    taskList(PageNr: number, PageSize: number): any;
-    cancelSending(SendTaskId: number): void;
-    deleteTask(SendTaskId: number): void;
-    preview(Para: EmailScript.Parameter.SendTaskLogSearch): any;
-    removeOpenImageTracking(Html: string): string;
-    sentLog(Para: EmailScript.Parameter.SendTaskLogSearch): any;
-    confirmSending(SendTaskId: number): void;
-  }
-
-  interface KSendContext {
-    link: Kooboo.Sites.EmailMarketing.SpecialLink;
-    contact: Kooboo.Sites.EmailMarketing.Model.Contact.RecipientSent;
-  }
-
-  interface KTemplate {
-    sharePrivate(CampaignId: number, TemplateName: string, ThumbNailBase64: string): EmailScript.Parameter.ActionResult;
-    sharePrivate(CampaignId: number, TemplateName: string): EmailScript.Parameter.ActionResult;
-    sharePublic(campaign: number, Name: string, ThumbNailBase64: string): EmailScript.Parameter.ActionResult;
-    delete(TemplateId: number): void;
-    createCampaign(TemplateId: number, campaignInfo: EmailScript.Parameter.CampaignEdit): EmailScript.Parameter.ActionResult;
-    get(TemplateId: number): Kooboo.Sites.EmailMarketing.Model.TemplateInfo;
-    privateList(PageNr: number, PageSize: number): any;
-  }
-
-  interface KReport {
-    context: Kooboo.Data.Context.RenderContext;
-    clearFolder(SendTaskId: number): void;
-    addOpen(SendTaskId: number, CampaignId: number, SentRecipientId: number, ClientIP: string, UserAgent: string): void;
-    addClick(SendTaskId: number, CampaignId: number, SentRecipientId: number, LinkId: number, ClientIP: string, UserAgent: string): void;
-    addUnSubscribe(ContactListId: number, SentRecipientId: number, SendTaskId: number, emailAddress: string): Kooboo.Sites.EmailMarketing.Global.RecentActionResult;
-    unSubScriberCount(SendTaskId: number): number;
-    unSubscriberList(sendTaskId: number): string[];
-    spamList(sendTaskId: number): string[];
-    addBounce(ContactListId: number, RecipientId: number, SendTaskId: number): void;
-    bounceCount(SendTaskId: number): number;
-    spamCount(SendTaskId: number): number;
-    addSpam(ContactListId: number, RecipientId: number, SendTaskId: number): boolean;
-    openLogs(LogFilter: EmailScript.Parameter.SendTaskLog): any;
-    clickLogs(LogFilter: EmailScript.Parameter.SendTaskLog): any;
-    openSummary(SendTaskId: number): Kooboo.Sites.EmailMarketing.Model.Report.OpenSummary;
-    clickSummary(SendTaskId: number): Kooboo.Sites.EmailMarketing.Model.Report.ClickSummary;
-    getReport(SendTaskId: number): Kooboo.Sites.EmailMarketing.Model.Report.ReportSummary;
-    getReport(SendTaskId: number, WithDetail: boolean): Kooboo.Sites.EmailMarketing.Model.Report.ReportSummary;
-    reportList(PageNr: number, PageSize: number): any;
-    /** Type=click/open, days = 1, 7, 30, when day =1, the data return per hours. */
-    latestReport(SendTaskId: number, Type: string, Days: number): Kooboo.Sites.EmailMarketing.ViewModel.LatestReport;
-    /** Type=click/open, days = 1, 7, 30, when day =1, the data return per hours. */
-    latestReport(SendTaskId: number, Type: string, Days: number, EndTime: Date): Kooboo.Sites.EmailMarketing.ViewModel.LatestReport;
-  }
-
-  interface KGlobal {
-    getAvgRate(): Kooboo.Sites.EmailMarketing.Global.AvgRate;
-    liveSticker(): Kooboo.Sites.EmailMarketing.Global.RecentActionViewModel[];
-    recentActivity(): Kooboo.Sites.EmailMarketing.Global.RecentActionViewModel[];
-  }
-
-  interface KEmailCheck {
-    emailHtmlCheck(htmlBody: string): CodeCheckResponse[];
-    emailCompatiableCheck(htmlBody: string): Kooboo.Sites.CanIUse.Email.EmailCompatibleData[];
-  }
-
-  interface TriggerInfo {
-    name: string;
-    displayName: string;
-    keyOptions: string[];
-    operators: Record<string, any>;
-    defaultOperators: string[];
-  }
-
-  interface MediaFolderView {
-    id: string;
-    name: string;
-    fullPath: string;
-  }
-
-  interface MediaFileViewModel {
-    id: any;
-    filePath: string;
-    height: number;
-    width: number;
-    size: string;
-    lastModified: Date;
-    previewUrl: string;
-    fromImage(context: Kooboo.Data.Context.RenderContext, sitedb: Kooboo.Sites.Repository.SiteDb, image: Kooboo.Sites.Models.Image, baseUrl: string): MediaFileViewModel;
-    fromImages(context: Kooboo.Data.Context.RenderContext, siteDb: Kooboo.Sites.Repository.SiteDb, images: Kooboo.Sites.Models.Image[], baseUrl: string): MediaFileViewModel[];
-  }
-
-  interface DomainResult {
-    success: boolean;
-    requireInfo: DomainDnsRecord[];
-  }
-
-  interface SampleCode {
-    name: string;
-    source: string;
-    defaultList: SampleCode[];
-    linkInfos: LinkInfo[];
-  }
-
-  interface CodeCheckResponse {
-    name: string;
-    error: string;
-    line: number;
-  }
-
-  interface DomainDnsRecord {
-    type: string;
-    host: string;
-    pointTo: string;
-  }
-
-  interface LinkInfo {
-    name: string;
-    key: string;
-    content: string;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.List {
-  interface RemoteListHelper {
-    DBTypes(): string[];
-    getSites(): SiteModel[];
-    getTables(SiteNameOrId: string, DBType: string): string[];
-    getTablesByConnectionString(ConnectionString: string, DBType: string): string[];
-    getColumns(SiteNameOrId: string, DBType: string, TableName: string): any[];
-    getColumnsByConnectionString(ConnectionString: string, DBType: string, TableName: string): any[];
-  }
-
-  interface SiteModel {
-    id: any;
-    siteName: string;
-    displayName: string;
-    fromWebSite(site: Kooboo.Data.Models.WebSite): SiteModel;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Reporting.Tracking {
-  interface TrackingStore {
-    updateTrace(trace: Kooboo.Sites.EmailMarketing.Model.Trace): void;
-    /** This is used for open tracking */
-    getImageTraceRoute(Url: string, SendTaskId: number, CampaignId: number): string;
-    parseImageTrace(route: string): any;
-    /** This is used for click tracking */
-    getLinkTraceRoute(Url: string, locationStart: number, locationEnd: number, FullTag: string, AnchorText: string, SendTaskId: number, CampaignId: number): string;
-    getLinkId(Url: string, locationStart: number, locationEnd: number, FullTag: string, AnchorText: string, SendTaskId: number): number;
-    getLinkElementById(LinkId: number, SendTaskId: number): Kooboo.Sites.EmailMarketing.Model.Report.LinkElement;
-    getLinkUrlById(LinkId: number, SendTaskId: number): string;
-    parseLinkTrace(route: string): any;
-  }
-
-}
 declare namespace Kooboo.Data.Models {
   interface User extends Kooboo.Data.IGolbalObject {
     id: any;
@@ -5725,6 +5770,7 @@ declare namespace Kooboo.Data.Models {
     currency: string;
     registrationDate: Date;
     lastModified: Date;
+    role: string;
     throwIfNotAdmin(): void;
     getPasswordString(): string;
     clone(): User;
@@ -5745,11 +5791,12 @@ declare namespace Kooboo.Data.Models {
     name: string;
     folderName: string;
     displayName: string;
-    cultures: string[];
     culture: Record<string, string>;
-    sitePath: Record<string, string>;
     defaultCulture: string;
     autoDetectCulture: boolean;
+    enableHrefLang: boolean;
+    promoteLinksToHttpHeaders: boolean;
+    defaultLanguagePrefix: boolean;
     continueDownload: boolean;
     published: boolean;
     status: SiteStatus;
@@ -5766,13 +5813,14 @@ declare namespace Kooboo.Data.Models {
     enableCORS: boolean;
     enableFrontEvents: boolean;
     enableBackendEvents: boolean;
+    enablePageInteraction: boolean;
     enableConstraintChecker: boolean;
     enableCache: boolean;
     enableECommerce: boolean;
     enablePublicModule: boolean;
     enableSystemRoute: boolean;
+    enableAbTest: boolean;
     enableFileIOUrl: boolean;
-    enableHtmlMinifier: boolean;
     enableJsCssCompress: boolean;
     enableJsCssBrowerCache: boolean;
     enableImageBrowserCache: boolean;
@@ -5807,25 +5855,27 @@ declare namespace Kooboo.Data.Models {
     defaultDatabase: Kooboo.Data.Definition.DefaultDatabase;
     lighthouseSettingsJson: string;
     pwa: Kooboo.Data.Pwa.PwaSettings;
+    aI: Kooboo.Data.Models.AI.AISettings;
     codeLogSettings: Kooboo.Data.Logging.CodeLogSettings;
     sitemapSettings: Kooboo.Data.Sitemap.SitemapSettings;
     unocssSettings: Kooboo.Data.Unocss.UnocssSettings;
+    canonicalURLSetting: CanonicalURLSetting;
+    navigationFlowSetting: NavigationFlowSetting;
+    resourceGuardianSetting: ResourceGuardianSetting;
     rateLimitSettings: Kooboo.Data.RateLimits.RateLimitSettings;
     accessLimitSettings: Kooboo.Data.RateLimits.AccessLimitSettings;
+    cookieConsentSetting: CookieConsentSetting;
     visibleAdvancedMenus: string[];
     enableTinymceToolbarSettings: boolean;
     tinymceToolbarSettings: string;
     tinymceSettings: Record<string, any>;
     codeSuggestions: string[];
     recordSiteLogVideo: boolean;
-    enableResourceCache: boolean;
-    resourceCaches: Kooboo.Data.Cache.ResourceCacheNames;
     devPassword: string;
     blockingSeo: boolean;
     codeOpenApiSettings: string;
     inlineDesignSettings: InlineDesignSettings;
     nameToId(webSiteName: string, OrgId: any): any;
-    hasSitePath(): boolean;
     getLighthouseItemSetting(lighthouseItemName: string): any;
     siteDb(): Kooboo.Sites.Repository.SiteDb;
     fullStartUrl(): string;
@@ -5895,9 +5945,46 @@ declare namespace Kooboo.Data.Models {
     host: string;
     dataCenter: string;
     orgFullDomain: string;
+    isDefault: boolean;
   }
 
-  type SiteStatus = 'Published' | 'Development' | 'Auditing' | 'Forbidden';
+  type SiteStatus = 'Published' | 'Development' | 'Auditing' | 'Forbidden' | 'Hidden';
+
+  interface CanonicalURLSetting {
+    enable: boolean;
+    forceHttps: boolean;
+    normalizeHomePage: boolean;
+    canonicalDomain: string;
+    ignoreQueryStringKey: string;
+    ignoreKeys: string[];
+  }
+
+  interface NavigationFlowSetting {
+    enable: boolean;
+    goals: GoalModel[];
+    stepStarter: StepGroup[];
+    warningRate: number;
+    riskyRate: number;
+  }
+
+  interface ResourceGuardianSetting {
+    enableResourceLog: boolean;
+    enableGuardian: boolean;
+    protections: ResourceProtectionSetting[];
+  }
+
+  interface CookieConsentSetting {
+    enable: boolean;
+    displayRule: DisplayRule;
+    category: CookieCategory[];
+    cookieText: Record<string, CookieText>;
+    resource: CategoryResource[];
+    tagCategoryResource: Record<string, CategoryResource[]>;
+    closeButton: closeButtonAction;
+    uI: CookieUI;
+    createDefaultText(culture: string): CookieText;
+    createDefaultUI(): CookieUI;
+  }
 
   interface InlineDesignSettings {
     clickElement: boolean;
@@ -5931,14 +6018,46 @@ declare namespace Kooboo.Data.Models {
   interface VisitorLog extends Kooboo.Data.Storage.IWeeklyItem {
     id: number;
     clientIP: string;
-    referer: string;
-    refererHost: string;
+    realIP: string;
+    clientIPHash: any;
+    hashSaltValidator: any;
+    cookieConsent: string;
+    sessionId: string;
+    city: string;
+    countryCode: string;
+    continent: string;
+    clientInfoLong: number;
     clientInfo: Kooboo.Lib.Utilities.UAParser.ClientInfo;
     application: string;
+    browser: string;
+    device: string;
+    referer: string;
+    refererHost: string;
     userAgent: string;
+    secFetchSite: string;
+    requestHost: string;
+    hasCountryCH: boolean;
+    eCT: string;
+    downlink: number;
+    rTT: number;
+    dPR: number;
+    colorScheme: Kooboo.Data.Logging.ColorScheme;
+    viewportWidth: number;
+    aSNDomain: string;
+    iPUserType: Kooboo.Data.GeoLocation.IpUserType;
+    isMobile: boolean;
     userId: any;
+    customerId: string;
+    customerIdHash: any;
+    utm: string;
+    isBot: boolean;
+    botName: string;
+    botScore: number;
+    cartId: string;
+    saltHash: any;
     begin: Date;
     end: Date;
+    responseEnd: Date;
     size: number;
     timeSpan: number;
     millionSecondTake: number;
@@ -5951,12 +6070,125 @@ declare namespace Kooboo.Data.Models {
     addEntry(Name: string, Value: string, StartTime: Date, EndTime: Date, StatusCode: number, Detail?: string): void;
   }
 
+  interface CookieItem {
+    name: string;
+    value: string;
+    domain: string;
+    path: string;
+    description: string;
+    privacyLink: string;
+    vendor: string;
+    category: string;
+    expiresMinutes?: number;
+  }
+
+  interface CookieConsentState {
+    mode: string;
+    categories: Record<string, boolean>;
+    cookieValue: string;
+  }
+
+  interface CommerceState {
+    cartId: string;
+    customerId: string;
+    orderId: string;
+    clear(): void;
+  }
+
   interface NewCard {
     name: string;
     number: string;
     expYear: string;
     expMonth: string;
     cvc: string;
+  }
+
+  interface GoalModel {
+    goalId: number;
+    objectId: any;
+    nodeId: number;
+    name: string;
+    displayName: string;
+    source: Source;
+    description: string;
+    warningRate: number;
+    riskyRate: number;
+    deduplicationMode: GoalDeduplicationMode;
+    deduplicationWindowMinutes: number;
+    entityKey: string;
+  }
+
+  interface StepGroup {
+    nodeId: number;
+    name: string;
+    type: StepItemType;
+    steps: ManualStepDefinition[];
+    clone(): StepGroup;
+  }
+
+  interface ResourceProtectionSetting {
+    priority: number;
+    method: ProtectMethod;
+    startPath: string;
+    extension: string;
+    blackListDomains: string[];
+    watermark: WatermarkSetting;
+    redirectUrl: string;
+    matchPath(path: string): boolean;
+    matchExtension(ext: string): boolean;
+    isBlockedReferer(referer: string): boolean;
+  }
+
+  interface CookieText {
+    title: string;
+    description: string;
+    introduction: string;
+    iframeFallback: string;
+    buttons: ButtonText;
+    links: LinkText;
+  }
+
+  interface CookieUI {
+    customTemplate: boolean;
+    hTML: string;
+    typeAndPosition: string;
+    floatBall: boolean;
+    theme: string;
+    themeOption: CustomTheme;
+  }
+
+  interface DisplayRule {
+    isInclude: boolean;
+    type: string;
+    countries: string[];
+  }
+
+  interface CookieCategory {
+    id: string;
+    name: Record<string, string>;
+    description: Record<string, string>;
+    required: boolean;
+    defaultChecked: boolean;
+  }
+
+  interface CategoryResource {
+    cookieCategory: string;
+    tag: string;
+    uRL: string;
+    cookieItems: CookieDescription[];
+  }
+
+  interface CategoryResource {
+    cookieCategory: string;
+    tag: string;
+    uRL: string;
+    cookieItems: CookieDescription[];
+  }
+
+  interface closeButtonAction {
+    show: boolean;
+    action: string;
+    getAction(countryCode: string): any;
   }
 
   interface VisitorLogItem {
@@ -5972,19 +6204,11 @@ declare namespace Kooboo.Data.Models {
     objectId: any;
     constType: number;
     modelType: any;
+    modelName: string;
     url: string;
     name: string;
     remark: string;
     extensions: any;
-  }
-
-  interface ImageLog extends Kooboo.Data.Storage.IWeeklyItem {
-    id: number;
-    imageId: any;
-    url: string;
-    size: number;
-    clientIP: string;
-    startTime: Date;
   }
 
   interface SiteErrorLog extends Kooboo.Data.Storage.IWeeklyItem {
@@ -5992,6 +6216,8 @@ declare namespace Kooboo.Data.Models {
     objId: any;
     url: string;
     clientIP: string;
+    clientIPHash: any;
+    hashSaltValidator: any;
     startTime: Date;
     message: string;
     statusCode: number;
@@ -6027,6 +6253,56 @@ declare namespace Kooboo.Data.Models {
     isKScript: boolean;
   }
 
+  type SearchType = 'None' | 'FullTextSearch' | 'VectorSearch';
+
+  interface SchemaMapping {
+    schemaType: string;
+    fields: Record<string, string>;
+  }
+
+  type Source = 'Page' | 'Api' | 'Event' | 'Custom' | 'PageClick' | 'Others';
+
+  type GoalDeduplicationMode = 'None' | 'ByEntity' | 'ByTimeWindow';
+
+  type StepItemType = 'Page' | 'Goal';
+
+  interface ManualStepDefinition {
+    stepIndex: number;
+    items: StepItem[];
+    clone(): ManualStepDefinition;
+  }
+
+  type ProtectMethod = 'Forbidden' | 'Redirect' | 'WaterMark';
+
+  interface WatermarkSetting {
+    text: string;
+    opacity: number;
+    fontSize: number;
+    position: string;
+    color: string;
+  }
+
+  interface ButtonText {
+    allowAll: string;
+    allowSelection: string;
+    rejectAll: string;
+  }
+
+  interface LinkText {
+    privacyPolicy: LinkObject;
+    cookiePolicy: LinkObject;
+    settings: LinkObject;
+  }
+
+  interface CustomTheme {
+  }
+
+  interface CookieDescription {
+    name: string;
+    description: Record<string, string>;
+    expireMinutes: number;
+  }
+
   interface Binding extends Kooboo.Data.IGolbalObject {
     id: any;
     organizationId: any;
@@ -6057,6 +6333,16 @@ declare namespace Kooboo.Data.Models {
     isJsonBinding: boolean;
   }
 
+  interface StepItem {
+    type: StepItemType;
+    nodeId: number;
+  }
+
+  interface LinkObject {
+    url: string;
+    anchorText: string;
+  }
+
 }
 declare namespace Kooboo.Data.ViewModel {
   interface RenewInfo {
@@ -6073,6 +6359,7 @@ declare namespace Kooboo.Data.ViewModel {
     default: boolean;
     primaryDomain: string;
     navUrl: string;
+    baseUrl: string;
   }
 
   interface MembershipInfo {
@@ -6154,6 +6441,7 @@ declare namespace Kooboo.Data.ViewModel {
     currency: string;
     registrationDate: Date;
     lastModified: Date;
+    role: string;
     throwIfNotAdmin(): void;
     getPasswordString(): string;
     clone(): Kooboo.Data.Models.User;
@@ -6394,7 +6682,7 @@ declare namespace Kooboo.Sites.Scripting.ScriptModel {
   }
 
   interface SiteSummaryViewModel {
-    siteId: any;
+    siteId: string;
     siteName: string;
     siteDisplayName: string;
     pageCount: number;
@@ -6480,8 +6768,6 @@ declare namespace Kooboo.Data.Cache {
     removeChangeToken: boolean;
   }
 
-  type ResourceCacheNames = 'Style' | 'Script' | 'Image' | 'Content';
-
 }
 declare namespace Kooboo.Sites.Sync {
   type CopyMode = 'Normal' | 'Fast';
@@ -6564,6 +6850,7 @@ var view = k.site.views.get("viewname");
  */
     get(nameOrId: any): Kooboo.Sites.Models.Page;
     getUrls(nameOrId: string): any;
+    updateRoute(id: string, url: string, culture?: string): void;
     /** ```ts
 // Add a routable SiteObject, SiteObject can be page, style or others. 
 var page = {};
@@ -7440,12 +7727,12 @@ declare namespace Kooboo.Sites.Scripting.Global.SiteItem {
   interface Visitor {
     top(count: number): Kooboo.Data.Models.VisitorLog[];
     top500(): Kooboo.Data.Models.VisitorLog[];
-    /** Top visitor source based on last 500 visitors */
+    /** Top visitor source based on last 30 days visitors */
     topSource(): VisitorSource[];
     top5Pages(): Kooboo.Sites.Service.ResourceCount[];
     thisWeek(count: number): Kooboo.Data.Models.VisitorLog[];
-    /** Weekname in the format of year + week number, for example: 2020-12 */
-    byWeek(weekname: string, count: number): Kooboo.Data.Models.VisitorLog[];
+    /** WeekName in the format of year + week number, for example: 2020-12 */
+    byWeek(weekName: string, count: number): Kooboo.Data.Models.VisitorLog[];
     weeks(): string[];
     errorList(options?: ErrorListOptions): any;
   }
@@ -7946,6 +8233,9 @@ declare namespace Kooboo.Sites.Scripting.Global.WebUtility {
 
   interface KImageUtility {
     changeFormat(Binary: number[], NewExtension: string): number[];
+    changeDpi(file: KScript.UploadFile, targetDpi: number, saveAs: string): KScript.FileInfo;
+    changeDpi(file: KScript.FileInfo, targetDpi: number, saveAs?: string): KScript.FileInfo;
+    resize(file: KScript.FileInfo, height: number, width: number, saveAs?: string): KScript.FileInfo;
     resize(image: number[], height: number, width: number): number[];
     /** var image = k.file.readBinary("1.jpg");
 var watermark = k.file.readBinary("2.png")
@@ -7959,8 +8249,13 @@ var output = k.utils.image.addWatermark(image, watermark, {
 
 k.file.writeBinary("output.jpg", output) */
     addWatermark(binary: number[], watermark: number[], option: WatermarkOptions): number[];
-    getSize(Image: number[]): Kooboo.Lib.Utilities.SizeMeansurement;
-    getGifFrameCount(image: number[]): number;
+    getSize(Image: number[]): Kooboo.Lib.Utilities.SizeMeasurement;
+    /** ```ts
+const binary = k.file.readBinary("2.webp"); //support gif and webp
+const count = k.utils.image.getFrameCount(binary);
+```
+ */
+    getFrameCount(image: number[]): number;
     convertToTwoFramesGif(image: number[]): number[];
   }
 
@@ -7975,8 +8270,18 @@ k.file.writeBinary("output.jpg", output) */
   }
 
   interface KTemplateEngine {
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     render(view: string): string;
+    /** ```ts
+Execute the view, and write the response on current context.
+```
+ */
+    executeView(ViewNameOrId: string): void;
+    /** ```ts
+Execute the view, and return the result as string
+```
+ */
+    renderView(ViewNameOrId: string): string;
     renderPage(url: string): string;
   }
 
@@ -8478,7 +8783,7 @@ k.commerce.category.updateFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",updates)
 
   interface KProduct {
     list(query?: KScript.Commerce.Models.ProductQueryParams): KScript.Commerce.Models.ProductSimple[];
-    get(seoNameOrId: string): KScript.Commerce.Models.ProductDetail;
+    get(seoNameOrId: string, options?: KScript.Commerce.Models.GetProductOptions): KScript.Commerce.Models.ProductDetail;
     search(keyword: string, options?: KScript.Commerce.Models.SearchOptions): KScript.Commerce.Models.SearchResult;
     create(value: KScript.Commerce.Models.NewProduct): Kooboo.Sites.Commerce.Entities.Product;
     createVariant(productId: string, value: KScript.Commerce.Models.NewProductVariant): Kooboo.Sites.Commerce.Entities.Product;
@@ -8531,14 +8836,17 @@ var updates=[{
 k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",updates)
 ``` */
     updateVariantFields(id: string, updateFields: KScript.Commerce.Models.UpdateFieldParams[]): void;
-    getDiscountPrice(variantId: string, options?: KScript.Commerce.Models.DiscountPriceOptions): number;
+    getPriceDetail(variantId: string, options?: KScript.Commerce.Models.ProductPriceOptions): KScript.Commerce.Models.ProductPrice;
     addTextDigitalItem(variantId: string, name: string, text: string): void;
     addLinkDigitalItem(variantId: string, name: string, link: string): void;
     addFileDigitalItem(variantId: string, name: string, filePath: string): void;
     removeDigitalItem(variantId: string, digitalItemId: string): void;
+    addReview(model: KScript.Commerce.Models.NewProductReview): void;
+    reviewList(variantId: string): Kooboo.Sites.Commerce.DataStorage.ProductReviewModel[];
   }
 
   interface KCart {
+    currentId: string;
     create(options?: KScript.Commerce.Models.CartOptions): string;
     get(cartId: string): Kooboo.Sites.Commerce.Entities.Cart;
     getDetail(cartId: string, options?: KScript.Commerce.Models.GetCartOptions): KScript.Commerce.Models.CartDetail;
@@ -8568,6 +8876,7 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
   }
 
   interface KCustomer {
+    currentId: string;
     get(id: string): Kooboo.Sites.Commerce.Entities.Customer;
     getByEmail(email: string): Kooboo.Sites.Commerce.Entities.Customer;
     getByPhone(phone: string): Kooboo.Sites.Commerce.Entities.Customer;
@@ -8577,8 +8886,9 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
     create(model: KScript.Commerce.Models.CreateCustomer): Kooboo.Sites.Commerce.Entities.Customer;
     setPassword(id: string, password: string): void;
     login(email: string, password: string): Kooboo.Sites.Commerce.Entities.Customer;
+    logout(): void;
     remove(id: string): void;
-    orders(customerId: string, query?: KScript.Commerce.Models.OrderQuery): KScript.Commerce.Models.OrderResult;
+    orders(customerId: string, query?: KScript.Commerce.Models.CustomerOrderQuery): KScript.Commerce.Models.OrderResult;
     updateAddresses(id: string, addresses: Kooboo.Sites.Commerce.Entities.Address[]): void;
     updateInfo(id: string, info: KScript.Commerce.Models.UpdateCustomer): void;
     addDiscount(id: string, discountId: string): void;
@@ -8591,7 +8901,7 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
     renewMembership(customerId: string): void;
     earnPoints(customerId: string, points: number, description?: string): void;
     redeemPoints(customerId: string, points: number, description?: string): void;
-    points(customerId: Kooboo.Sites.Commerce.ViewModels.PagingQuery, query?: any): KScript.Commerce.Models.LoyaltyPointResult;
+    points(customerId: string, query?: Kooboo.Sites.Commerce.ViewModels.PagingQuery): KScript.Commerce.Models.LoyaltyPointResult;
     info(customerId: string): KScript.Commerce.Models.LoyaltyInfo;
   }
 
@@ -8605,7 +8915,7 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
   }
 
   interface KAddress {
-    counties(): KScript.Commerce.Models.Country[];
+    countries(): KScript.Commerce.Models.Country[];
     provinces(country: string): KScript.Commerce.Models.Province[];
     cities(country: string, state: string): KScript.Commerce.Models.City[];
     addressDetail(address: Kooboo.Sites.Commerce.Entities.Address): AddressDetail;
@@ -8614,6 +8924,20 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
   interface KMembership {
     get(id: string): Kooboo.Sites.Commerce.Entities.Membership;
     list(): Kooboo.Sites.Commerce.Entities.Membership[];
+  }
+
+  interface KWishlist {
+    add(customerId: string, variantId: string): Kooboo.Sites.Commerce.Entities.Customer;
+    remove(customerId: string, variantId: string): Kooboo.Sites.Commerce.Entities.Customer;
+    list(customerId: string): Kooboo.Sites.Commerce.DataStorage.WishlistModel[];
+  }
+
+  interface KCurrency {
+    default: string;
+    list(): KScript.Commerce.Models.CurrencyItem[];
+    /** var usdAmount=2;
+var cnyAmount= k.commerce.currency.convert("USD","CNY",2) */
+    convert(from: string, to: string, value: number): number;
   }
 
   interface GetDiscountOptions {
@@ -8629,6 +8953,7 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
     condition: Kooboo.Sites.Commerce.Condition.Define;
     method: Kooboo.Sites.Commerce.DiscountMethod;
     code: string;
+    codeUsageLimit?: number;
     type: Kooboo.Sites.Commerce.DiscountType;
     value: number;
     isPercent: boolean;
@@ -8638,6 +8963,7 @@ k.commerce.product.updateVariantFields("41e9df9dd67f4e5e8eb80d8a4644e0d7",update
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface AddressDetail {
@@ -8660,10 +8986,10 @@ declare namespace Kooboo.Sites.Commerce {
   interface Settings {
     currencyCode: string;
     currencySymbol: string;
+    currencies: Kooboo.Sites.Commerce.Entities.CurrencyConfig[];
     weightUnit: string;
     earnPoint: Kooboo.Sites.Commerce.RewardPoints.EarnPointSettings;
     redeemPoint: Kooboo.Sites.Commerce.RewardPoints.RedeemPointSettings;
-    shippingCost: number;
     payments: string[];
     productCustomFields: Kooboo.Sites.Commerce.CustomData.CustomField[];
     categoryCustomFields: Kooboo.Sites.Commerce.CustomData.CustomField[];
@@ -8688,6 +9014,7 @@ declare namespace Kooboo.Sites.Commerce {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   type DiscountMethod = 'DiscountCode' | 'AutomaticDiscount';
@@ -8880,6 +9207,47 @@ declare namespace Kooboo.Lib.Security {
   }
 
 }
+declare namespace Kooboo.Sites.Scripting.Global.Privacy {
+  interface KCookieConsent {
+    setting: CookieConsentSettingViewModel;
+    getJSCookies(JSUrl: string, LoadingUrl?: string, tag?: string): Kooboo.Data.Models.CookieItem[];
+  }
+
+  interface CookieConsentSettingViewModel {
+    enable: boolean;
+    displayRule: Kooboo.Data.Models.DisplayRule;
+    category: CookieCategoryViewModel[];
+    cookieText: Kooboo.Data.Models.CookieText;
+    resource: CategoryResourceViewModel[];
+    closeButton: Kooboo.Data.Models.closeButtonAction;
+    uI: Kooboo.Data.Models.CookieUI;
+    fromCookieConsentSetting(setting: Kooboo.Data.Models.CookieConsentSetting, culture: string): CookieConsentSettingViewModel;
+  }
+
+  interface CookieCategoryViewModel {
+    id: string;
+    name: string;
+    description: string;
+    required: boolean;
+    defaultChecked: boolean;
+    resource: CategoryResourceViewModel[];
+    fromCategory(category: Kooboo.Data.Models.CookieCategory, culture: string, resource: CategoryResourceViewModel[]): CookieCategoryViewModel;
+  }
+
+  interface CategoryResourceViewModel {
+    cookieCategory: string;
+    uRL: string;
+    cookieItems: CookieItemViewModel[];
+    fromCategoryResource(categoryResource: Kooboo.Data.Models.CategoryResource, culture: string): CategoryResourceViewModel;
+  }
+
+  interface CookieItemViewModel {
+    name: string;
+    description: string;
+    expireMinutes: number;
+  }
+
+}
 declare namespace Kooboo.Data.Interface {
   interface IkScript {
   }
@@ -8992,29 +9360,60 @@ declare namespace Kooboo.Data.Interface {
   }
 
 }
+declare namespace Kooboo.Sites.Integration {
+  interface IIntegrateCommerceProvider {
+    getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
+    getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    setStoreStatus(storeId: string, enable: boolean): string;
+    removeStore(storeIds: string[]): string;
+    getStores(): Record<string, string>;
+    getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
+    readAttachment(key: string, fileName: string, contentType?: string): void;
+    setOrdersCallbackCode(codeBlockName: string): void;
+  }
+
+}
 declare namespace Kooboo.Data.Context {
   interface RenderContext {
     httpContext: any;
+    logInfo: Kooboo.Data.Context.RenderCompleted.LogInfo;
+    responseSent: boolean;
     request: HttpRequest;
+    response: HttpResponse;
     outputContext: OutputContext;
     enableTextGZip: boolean;
-    response: HttpResponse;
     dataContext: DataContext;
     webSite: Kooboo.Data.Models.WebSite;
+    sessionId: string;
+    sessionGuid: any;
     user: Kooboo.Data.Models.User;
     culture: string;
     placeholderContents: Record<string, string>;
+    schemaFieldValues: Record<string, SchemaFieldValue>;
     items: Record<string, any>;
     headerBindings: HeaderBindings[];
     isSiteBinding: boolean;
     isBackendView: boolean;
+    hasLayoutSet: boolean;
     mockData: boolean;
     isMobile: boolean;
+    compressionStore: Kooboo.Data.Server.SiteCompressionStore;
+    renderCancelled: boolean;
+    defaultDetectDifferentCulture: boolean;
+    cookieConsentState: Kooboo.Data.Models.CookieConsentState;
+    eCommerceState: Kooboo.Data.Models.CommerceState;
+    country: Kooboo.Lib.GeoLocation.CountryLocationModel;
+    allowCompression: boolean;
+    counter: Record<any, number>;
+    getHeader(preferredKey: string, fallbackKey?: string): string;
     addPlaceHolderContent(Key: string, value: string): void;
     setItem(value: any, KeyName?: string): void;
     getItem(KeyName?: string): any;
-    getItem(keyname: string, Setter: any): any;
+    getItem(keyName: string, Setter: any): any;
     hasItem(KeyName?: string): boolean;
+    getOrgId(): any;
+    clone(): RenderContext;
     copyTo(type: any): any;
     getSetting(type: any): any;
     findContext(query: string): any;
@@ -9025,15 +9424,15 @@ declare namespace Kooboo.Data.Context {
   }
 
   interface HttpRequest {
-    headers: any;
-    queryString: any;
+    context: RenderContext;
+    queryString: Record<string, string>;
     forms: any;
     files: Kooboo.Lib.NETMultiplePart.File[];
     cookies: Record<string, string>;
     path: string;
-    query: string;
     url: string;
     contentType: string;
+    ifNoneMatch: string;
     relativeUrl: string;
     rawRelativeUrl: string;
     method: string;
@@ -9045,13 +9444,14 @@ declare namespace Kooboo.Data.Context {
     bodyStream: any;
     model: any;
     iP: string;
-    diskRoot: string;
     altervativeViews: number[];
     culture: string;
     sitePath: string;
     channel: RequestChannel;
     port: number;
     traceIdentifier: string;
+    clientHint: Kooboo.Data.Server.AcceptCH;
+    getQueryString(key: string): string;
     getValue(name: string, needDecode?: boolean): string;
     get(name: string): string;
     getValue(names: string[]): string;
@@ -9059,31 +9459,32 @@ declare namespace Kooboo.Data.Context {
     clone(): HttpRequest;
   }
 
-  interface OutputContext {
-    sb: any;
-    placeHolderContents: Record<string, string>;
-    activeIfResult: ActiveIf;
-    slot: SlotManager;
-  }
-
   interface HttpResponse {
     contentType: string;
     body: number[];
     stream: any;
-    filePart: Kooboo.IndexedDB.FilePart;
-    orginalLength: number;
+    filePart: Kooboo.IndexedDB.FileIO.FilePart;
+    handleByHttpContext: boolean;
     headers: Record<string, string>;
     deletedCookieNames: string[];
     appendedCookies: any[];
     statusCode: number;
     end: boolean;
     redirectLocation: string;
+    segmentResult: RenderSegmentResult;
+    renderOutput: RenderOutputBase;
     appendString(output: string): void;
     appendCookie(CookieName: string, CookieValue: string, days?: number): void;
     appendCookie(CookieName: string, CookieValue: string, expires: Date): void;
     addCookie(cookie: any): void;
     deleteCookie(CookieName: string): void;
     redirect(StatusCode: number, url: string, absolute?: boolean): void;
+    hasResponse(): boolean;
+  }
+
+  interface OutputContext {
+    activeIfResult: ActiveIf;
+    slot: SlotManager;
   }
 
   interface DataContext {
@@ -9093,7 +9494,9 @@ declare namespace Kooboo.Data.Context {
     onDataPush: (p1:System.Collections.IDictionary,)=>void;
     getValueByObjectType(FullPropertyName: string): any;
     getValueByMemberName(MemberName: string): any;
+    getValueFromStackItem(StackItem: any, query: GetValueQuery): any;
     getValue(FullPropertyName: string, excludeJsScopeValue?: boolean): any;
+    getValue(query: GetValueQuery, excludeJsScopeValue: boolean): any;
     push(key: string, value: any): void;
     push(data: any): void;
     pop(): void;
@@ -9115,12 +9518,37 @@ declare namespace Kooboo.Data.Context {
     getContent(context: RenderContext): string;
   }
 
-  type RequestChannel = 'Default' | 'InlineDesign' | 'Draft' | 'API';
+  type RequestChannel = 'Default' | 'InlineDesign' | 'Draft' | 'API' | 'Markdown';
+
+  interface RenderSegmentResult {
+    compressType: Kooboo.Data.Server.CompressionType;
+    originalLength: number;
+    addString(output: string): void;
+    addFile(file: Kooboo.IndexedDB.FileIO.CompressionBlobFile): void;
+    addEncoded(bytes: number[]): void;
+    getPlaceholderIndex(): number;
+    replacePlaceholder(Index: number, value: string): void;
+  }
+
+  interface RenderOutputBase {
+    beforeHeadLength: number;
+    headLength: number;
+    bodyLength: number;
+    hasResposne(): boolean;
+    write(data: string): void;
+    write(charSpan: any): void;
+    write(data: any): void;
+    write(data: number): void;
+    writeNumberAsString(value: number): void;
+    writeToNetwork(writer: any, res: any, compressType: Kooboo.Data.Server.CompressionType, ct: any): any;
+    freezeState(): FrozenState;
+    getWrittenData(frozenState: FrozenState): any;
+  }
 
   interface ActiveIf {
     itemCount: number;
     push(result: IFCheckResult): void;
-    canContinue(currentType: EnumIfConditionType): boolean;
+    canContinue(currentType: EnumIfConditionType, ParentId?: any): boolean;
   }
 
   interface SlotManager {
@@ -9128,6 +9556,17 @@ declare namespace Kooboo.Data.Context {
     push(result: string, name?: string): void;
     popOff(): void;
     get(name?: string): string;
+  }
+
+  interface GetValueQuery {
+    fullPropertyName: string;
+    key: string;
+    subProperty: string;
+    isMember: boolean;
+    memberName: string;
+    partialMerge: boolean;
+    originalMergeField: string;
+    originalValue: string;
   }
 
   interface RepeatCondition {
@@ -9147,9 +9586,16 @@ declare namespace Kooboo.Data.Context {
     initValue(context: RenderContext): void;
   }
 
+  interface FrozenState {
+    beforeHeadOffset: number;
+    headOffset: number;
+    bodyOffset: number;
+  }
+
   interface IFCheckResult {
     type: EnumIfConditionType;
     result: boolean;
+    parentId: any;
   }
 
   type EnumIfConditionType = 'IF' | 'ElseIf' | 'Else';
@@ -9169,17 +9615,6 @@ declare namespace Kooboo.Data.Context {
     query: GetValueQuery;
   }
 
-  interface GetValueQuery {
-    fullPropertyName: string;
-    key: string;
-    subProperty: string;
-    isMember: boolean;
-    memberName: string;
-    partialMerge: boolean;
-    originalMergeField: string;
-    originalValue: string;
-  }
-
 }
 declare namespace Kooboo.Sites.Payment.Methods {
   interface SquareCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
@@ -9188,7 +9623,7 @@ declare namespace Kooboo.Sites.Payment.Methods {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: SquareSetting;
     /** ```
@@ -9213,7 +9648,7 @@ k.response.redirect(charge.nextAction.redirectUrl)
     icon: string;
     supportedCurrency: string[];
     iconType: string;
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.wechat.WeChatV3Setting;
     /** Pay by wechat barcode scan. Example:
@@ -9287,7 +9722,7 @@ declare namespace Kooboo.Sites.Payment.Methods.wechat {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: WeChatV3Setting;
     /** ```ts
@@ -9311,7 +9746,7 @@ const result = k.payment.wechatApp.charge({
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: WeChatV3Setting;
     /** ```ts
@@ -9335,7 +9770,7 @@ const result = k.payment.wechatH5.charge({
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: WeChatV3Setting;
     /** ```ts
@@ -9387,7 +9822,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Stripe {
     supportedCurrency: string[];
     icon: string;
     iconType: string;
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: StripeCheckoutSetting;
     /** 
@@ -9415,7 +9850,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Stripe {
     supportedCurrency: string[];
     icon: string;
     iconType: string;
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: StripeSetting;
     charge(params: KScript.Payment.Stripe.StripePaymentIntentParams): Kooboo.Sites.Payment.ChargeResponse;
@@ -9454,7 +9889,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.PaynlSetting;
     /** 
@@ -9482,7 +9917,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.PaypalSetting;
     /** 
@@ -9510,7 +9945,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.PaypalFormSetting;
     /** 
@@ -9538,7 +9973,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.TwoCheckout.TwoCheckoutSetting;
     /** ```
@@ -9589,7 +10024,7 @@ declare namespace Kooboo.Sites.Payment.Methods.MoneyBoxs {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: MoneyBoxsSetting;
     /** ```
@@ -9678,7 +10113,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Alipay {
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: AlipaySetting;
     /** ```ts
@@ -9700,7 +10135,7 @@ const res = k.payment.alipayApp.charge({
     icon: string;
     supportedCurrency: string[];
     iconType: string;
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: AlipaySetting;
     /** ```ts
@@ -9729,7 +10164,7 @@ const res = k.payment.alipayApp.charge({
     icon: string;
     iconType: string;
     supportedCurrency: string[];
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: AlipaySetting;
     /** ```ts
@@ -9763,17 +10198,294 @@ const res = k.payment.alipayApp.charge({
   }
 
 }
+declare namespace Kooboo.Sites.AIBuilder.Application.Model {
+  interface WireFrame extends AIModelBase {
+    id: any;
+    pages: WireFramePage[];
+    apis: WireFrameAPI[];
+    entities: WireFrameEntity[];
+    name: string;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    isAnalyzed: boolean;
+    analyzedHash: any;
+    refId: any;
+    entitiesByPage(page: WireFramePage): WireFrameEntity[];
+    setAnalyzedHash(): void;
+  }
+
+  interface DomainContext extends AIModelBase {
+    description: string;
+    goal: string;
+    keyWords: string;
+    language: string;
+    id: any;
+    name: string;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    isAnalyzed: boolean;
+    analyzedHash: any;
+    refId: any;
+    setAnalyzedHash(): void;
+  }
+
+  interface Scenario extends AIModelBase {
+    module: string;
+    description: string;
+    locationType: string;
+    isAnalyzed: boolean;
+    id: any;
+    name: string;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    analyzedHash: any;
+    refId: any;
+    setAnalyzedHash(): void;
+  }
+
+  interface Fact extends AIModelBase {
+    name: string;
+    entities: string[];
+    factExpression: string;
+    isDescriptiveFact: boolean;
+    factType: string;
+    roles: Role[];
+    objectTypes: ObjectType[];
+    constraints: Constraint[];
+    examples: Example[];
+    notes: string;
+    analyzedHash: any;
+    isAnalyzed: boolean;
+    id: any;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    refId: any;
+    setAnalyzedHash(): void;
+    isSingleTon(): boolean;
+    getExampleSentence(): string;
+    computeContentHash(): any;
+  }
+
+  interface WireFramePage {
+    route: string;
+    inMenu: boolean;
+    menuName: string;
+    menuIcon: string;
+    scenarios: string[];
+    apis: string[];
+    facts: string[];
+  }
+
+  interface WireFrameEntity {
+    name: string;
+    dbName: string;
+    apis: string[];
+  }
+
+  interface WireFrameAPI {
+    route: string;
+    description: string;
+    returnType: string;
+    method: string;
+    entities: string[];
+    facts: string[];
+  }
+
+  interface AIModelBase {
+    id: any;
+    name: string;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    isAnalyzed: boolean;
+    analyzedHash: any;
+    refId: any;
+    setAnalyzedHash(): void;
+  }
+
+  interface Role {
+    rolePlayer: string;
+    roleName: string;
+  }
+
+  interface ObjectType {
+    name: string;
+    kind: string;
+    identifier?: string;
+    dataType?: string;
+    belongsTo?: string;
+    dbName?: string;
+  }
+
+  interface Constraint {
+    type: string;
+    onRoles: string[];
+  }
+
+  interface Example {
+    sentence: string;
+    fields: Field[];
+  }
+
+  interface Field {
+    fieldName: string;
+    value: string;
+    dbName: string;
+    dataType: string;
+    belongsTo: string;
+  }
+
+  interface Entity extends AIModelBase {
+    id: any;
+    facts: any[];
+    attributes: EntityAttribute[];
+    parentType: string;
+    dbName: string;
+    otherNames: string[];
+    description: string;
+    isHumanEdit: boolean;
+    source: string;
+    modelKind: string;
+    storage: string;
+    sourceEntities: string[];
+    name: string;
+    type: number;
+    lastModified: Date;
+    jsonModel: string;
+    isAnalyzed: boolean;
+    analyzedHash: any;
+    refId: any;
+    removeFact(FactId: any): void;
+    shouldSaveToDatabase(): boolean;
+    setAnalyzedHash(): void;
+  }
+
+  interface EntityAttribute {
+    name: string;
+    otherNames: string[];
+    dbName: string;
+    dataType: string;
+    facts: any[];
+    identifier: boolean;
+    uniqueness: boolean;
+    mandatory: boolean;
+    isHumanEdit: boolean;
+    computed: boolean;
+  }
+
+}
+declare namespace Kooboo.Sites.AI.Vectorization {
+  interface VectorSearchOptions {
+    top: number;
+  }
+
+  interface VectorSearchResult {
+    scope: number;
+    id: string;
+  }
+
+  interface SiteVectorSearchService {
+    product: VectorSearchService;
+    get(name: string): VectorSearchService;
+    dispose(): void;
+  }
+
+  interface VectorSearchService {
+    error: string;
+    errorCount: number;
+    running: boolean;
+    queued: number;
+    getAsync(id: string): any;
+    addOrUpdate(key: string, value: string, timestamp: number, folder?: string): void;
+    syncToDbAsync(): any;
+    findAllAsync(keyword: string, folder: string, top: number): any;
+    findAllAsync(vector: number[], folder: string, top: number): any;
+    deleteAsync(key: string): any;
+    deleteAllAsync(): any;
+    dispose(): void;
+    textToVectorAsync(text: string): any;
+  }
+
+}
 declare namespace Kooboo.Sites.Render {
-  type Type = 'All' | 'Development' | 'Content' | 'Commerce' | 'Self';
+  type Type = 'All' | 'Development' | 'Content' | 'Commerce' | 'Route' | 'RenderPlan' | 'WithVersion' | 'Image' | 'Self';
+
+  interface KoobooRenderContext extends Kooboo.Data.Context.RenderContext {
+    siteCacheFile: Kooboo.Sites.Render.StoreCache.SiteCacheFile;
+    startTime: Date;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    moduleContext: Kooboo.Sites.ScriptModules.ModuleContext;
+    headerRenderOperation: Kooboo.Sites.Render.HeaderRender.HeaderRenderOperation;
+    scriptEnvironment: Kooboo.Sites.Render.Utility.ScriptEnvironment;
+    route: Kooboo.Sites.Routing.Route;
+    page: Kooboo.Sites.Models.Page;
+    logFileSize: number;
+    logConstType: number;
+    viewDataMethods: Kooboo.Sites.Models.ViewDataMethod[];
+    views: Kooboo.Sites.Models.View[];
+    executingView: Kooboo.Sites.Models.View;
+    alternativeViews: number[];
+    log: Kooboo.Data.Models.VisitorLog;
+    isProtected: boolean;
+    httpContext: any;
+    logInfo: Kooboo.Data.Context.RenderCompleted.LogInfo;
+    responseSent: boolean;
+    request: Kooboo.Data.Context.HttpRequest;
+    response: Kooboo.Data.Context.HttpResponse;
+    outputContext: Kooboo.Data.Context.OutputContext;
+    enableTextGZip: boolean;
+    dataContext: Kooboo.Data.Context.DataContext;
+    webSite: Kooboo.Data.Models.WebSite;
+    sessionId: string;
+    sessionGuid: any;
+    user: Kooboo.Data.Models.User;
+    culture: string;
+    placeholderContents: Record<string, string>;
+    schemaFieldValues: Record<string, SchemaFieldValue>;
+    items: Record<string, any>;
+    headerBindings: Kooboo.Data.Context.HeaderBindings[];
+    isSiteBinding: boolean;
+    isBackendView: boolean;
+    hasLayoutSet: boolean;
+    mockData: boolean;
+    isMobile: boolean;
+    compressionStore: Kooboo.Data.Server.SiteCompressionStore;
+    renderCancelled: boolean;
+    defaultDetectDifferentCulture: boolean;
+    cookieConsentState: Kooboo.Data.Models.CookieConsentState;
+    eCommerceState: Kooboo.Data.Models.CommerceState;
+    country: Kooboo.Lib.GeoLocation.CountryLocationModel;
+    allowCompression: boolean;
+    counter: Record<any, number>;
+    addLogEntry(Name: string, Value: string, StartTime: Date, StatusCode: number, detail?: string): void;
+    copyContex(Context: Kooboo.Data.Context.RenderContext): KoobooRenderContext;
+    getHeader(preferredKey: string, fallbackKey?: string): string;
+    addPlaceHolderContent(Key: string, value: string): void;
+    setItem(value: any, KeyName?: string): void;
+    getItem(KeyName?: string): any;
+    getItem(keyName: string, Setter: any): any;
+    hasItem(KeyName?: string): boolean;
+    getOrgId(): any;
+    clone(): Kooboo.Data.Context.RenderContext;
+  }
 
   interface CacheVersion {
     all: number;
     development: number;
     content: number;
     commerce: number;
+    renderPlan: number;
+    route: number;
+    withVersion: number;
+    image: number;
     increase(type: number): void;
     increase(type: Type): void;
     getKey(type: Type, self?: number): string;
+    getVersionByType(type: Type): number;
   }
 
 }
@@ -10160,16 +10872,47 @@ declare namespace Kooboo.Dom {
   type TraverseType = 'First' | 'Last' | 'Previous' | 'Next';
 
 }
-declare namespace Kooboo.Lib.GeoLocation {
-  interface IPViewModel {
-    ip: string;
+declare namespace Kooboo.Data.GeoLocation {
+  interface IPInfo {
     city: string;
     state: string;
-    countryName: string;
     countryCode: string;
+    countryName: string;
+    continentCode: string;
+    latitude: number;
+    longitude: number;
+    aSNDomain: string;
+    iPUserType: IpUserType;
+    appendCityResult(cityRes: CityResponse): void;
+    appendAsnResult(asn: ASNResponse): void;
+    appendCountryResult(country: CountryResponse): void;
+  }
+
+  interface CityResponse {
+    cityName: string;
+    zhName: string;
+    countryCode: string;
+    continentCode: string;
     latitude: number;
     longitude: number;
   }
+
+  interface ASNResponse {
+    aSN: string;
+    name: string;
+    org: string;
+    domain: string;
+    countryCode: string;
+    iPUserType: IpUserType;
+    detectUserType(): IpUserType;
+  }
+
+  interface CountryResponse {
+    continentCode: string;
+    countryCode: string;
+  }
+
+  type IpUserType = 'Unknown' | 'Residential' | 'Hosting' | 'Education' | 'Business' | 'Government';
 
 }
 declare namespace Kooboo.Data.WebSocket {
@@ -10232,636 +10975,6 @@ declare namespace Kooboo.Sites.ScriptModules.Models {
   }
 
   type FileType = 'html' | 'css' | 'javascript';
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Model {
-  interface AutomationModel {
-    name: string;
-    displayName: string;
-    repeat: boolean;
-    enable: boolean;
-    creationDate: Date;
-    json: string;
-  }
-
-  interface CellState {
-    name: string;
-    cellId: string;
-    type: string;
-    total: number;
-    toNext: number;
-    current: number;
-    detailAvailable: boolean;
-  }
-
-  interface Campaign {
-    id: number;
-    editor: string;
-    name: string;
-    subject: string;
-    previewText: string;
-    from: string;
-    enableAMP: boolean;
-    textBody: string;
-    aMPBody: string;
-    to: number[];
-    description: string;
-    pageUrl: string;
-    previewUrl: string;
-    pageName: string;
-    pageId: any;
-    htmlSource: string;
-    beforeCampaign: string;
-    afterCampaign: string;
-    beforeContact: string;
-    afterContact: string;
-    creationDate: Date;
-    lastModifiedTick: number;
-    lastSent: Date;
-    format: string;
-  }
-
-  interface CampaignEventType {
-    key: string;
-    displayName: string;
-    defaultCode: string;
-  }
-
-  interface Trace {
-    id: number;
-    destinationUrl: string;
-    linkId: number;
-    contentType: string;
-    sendTaskId: number;
-    campaignId: number;
-    localSiteId: any;
-  }
-
-  interface PageModel {
-    id: any;
-    url: string;
-    name: string;
-    body: string;
-    lastModified: Date;
-    online: boolean;
-    usedBy: PageUsedByContact[];
-    fromPage(page: Kooboo.Sites.Models.Page, site: Kooboo.Data.Models.WebSite): PageModel;
-    fromPage(page: Kooboo.Sites.Models.Page, site: Kooboo.Data.Models.WebSite, contactList: Kooboo.Sites.EmailMarketing.Model.Contact.ContactList[]): PageModel;
-    fromNotificationPage(page: Kooboo.Sites.Models.Page, site: Kooboo.Data.Models.WebSite, contactList: Kooboo.Sites.EmailMarketing.Model.Contact.ContactList[]): PageModel;
-  }
-
-  interface PageModelList {
-    totalPages: number;
-    totalRecords: number;
-    pageSize: number;
-    pageNr: number;
-    dataList: PageModel[];
-  }
-
-  interface Settings {
-    senders: Sender[];
-    server: SendServerSetting;
-    linkOutParameter: LinkAppendParameter[];
-    domains: MailDomain[];
-    thirdPartyInfo: ThirdPartyInfo;
-  }
-
-  interface SendServerSetting {
-    options: string[];
-    useOption: string;
-    useKooboo: boolean;
-    koobooMTA: string;
-    smtp: SmtpServerSetting;
-  }
-
-  interface MailDomain {
-    domainName: string;
-    domainVerificationStatus: string;
-    lastDomainModified: Date;
-    mailFromSubDomain: string;
-    lastSubDomainModified: Date;
-    subDomainVerificationStatus: string;
-    canUseKoobooMTA: boolean;
-  }
-
-  interface ThirdPartyInfo {
-    provider: string;
-    userName: string;
-    password: string;
-  }
-
-  interface SendTask extends Kooboo.IndexedDB.WORM.MetaObject.IMetaObject {
-    uniqueId: any;
-    id: number;
-    emailHostDomain: string;
-    masterId: number;
-    masterName: string;
-    webSiteId: any;
-    campaignId: number;
-    campaignName: string;
-    subject: string;
-    from: string;
-    hTML: string;
-    text: string;
-    beforeCampaign: string;
-    afterCampaign: string;
-    beforeContact: string;
-    afterContact: string;
-    format: Kooboo.Sites.EmailMarketing.Delivery.EmailFormat;
-    enableAMP: boolean;
-    aMPBody: string;
-    contactListId: number[];
-    contactListNames: string[];
-    emailLine: string;
-    creationTime: Date;
-    sendNow: boolean;
-    sendLater: boolean;
-    isRecursive: boolean;
-    uTCStartTime: Date;
-    uTCEndTime: Date;
-    recursiveNextExecute: Date;
-    repeatUnit: string;
-    repeatInterval: number;
-    lastSentTime: Date;
-    totalContact: number;
-    totalSent: number;
-    isTest: boolean;
-    isCancelled: boolean;
-    isFinished: boolean;
-    isABTest: boolean;
-    aBTestFirstBatchSent: boolean;
-    aBTestPicked: boolean;
-    pickA: boolean;
-    pickB: boolean;
-    requireSendingConfirmation: boolean;
-    confirmSend: boolean;
-    aBTestSetting: Kooboo.Sites.EmailMarketing.ABTest.ABTestSetting;
-    campaignB: Kooboo.Sites.EmailMarketing.Delivery.CampaignInfo;
-    metaByteLen: number;
-    metaKey: number;
-    skipValueBlock: boolean;
-    getFrom(): string;
-    parseMetaBytes(bytes: number[]): void;
-    getMetaBytes(): number[];
-    addOneInterval(start: Date): Date;
-    canRecursiveTaskSend(compareTime?: Date): boolean;
-  }
-
-  interface TemplateInfo {
-    editor: string;
-    id: number;
-    name: string;
-    userName: string;
-    creationDate: Date;
-    previewHTML: string;
-  }
-
-  interface PageUsedByContact {
-    contactListId: number;
-    contactListName: string;
-    linkPages: EnumLinkPageType[];
-  }
-
-  interface Sender {
-    name: string;
-    emailAddress: string;
-    awsServer: Kooboo.Data.Models.AWS.AwsSmtpServer;
-  }
-
-  interface LinkAppendParameter {
-    key: string;
-    value: string;
-  }
-
-  interface SmtpServerSetting {
-    host: string;
-    port: number;
-    sSL: boolean;
-    userName: string;
-    password: string;
-    maxThread: number;
-    maxMailPerConnection: number;
-  }
-
-  type EnumEmailNotification = 'OptinConfirmation' | 'FinalWelcome';
-
-  type EnumLinkPageType = 'SignUpThankYou' | 'ConfirmationThankYou' | 'UnsubscribeThankYou' | 'UnsubscribeConfirmation';
-
-}
-declare namespace EmailScript.Parameter {
-  interface ActionResult {
-    success: boolean;
-    message: string;
-    returnId: string;
-  }
-
-  interface VirtualListEdit {
-    sourceListIds: any[];
-    filters: Kooboo.Sites.EmailMarketing.Model.Contact.ListFilter[];
-  }
-
-  interface CreateList {
-    name: string;
-    isRemote: boolean;
-    isTest: boolean;
-    isVirtual: boolean;
-  }
-
-  interface ContactListQuery {
-    listNameOrId: string;
-    includeBounce: boolean;
-    includeUnsubscribed: boolean;
-    searchKeyword: string;
-    pageNr: number;
-    pageSize: number;
-  }
-
-  interface ListVerificationQuery {
-    listNameOrId: string;
-    pageNr: number;
-    pageSize: number;
-  }
-
-  interface CampaignEdit {
-    id: number;
-    editor: string;
-    name: string;
-    subject: string;
-    previewText: string;
-    from: string;
-    to: number[];
-    format: string;
-    enableAMP: boolean;
-  }
-
-  interface SendCampaign {
-    campaignId: number;
-    tos: any[];
-    utcStart: Date;
-    sendNow: boolean;
-    sendLater: boolean;
-    sendRecursive: boolean;
-    repeatUnit: string;
-    repeatQuantity: number;
-    requireSendingConfirmation: boolean;
-    utcEnd: Date;
-  }
-
-  interface SendTaskLogSearch extends SendTaskLog {
-    emailKeyWord: string;
-    status: string;
-    sendTaskId: number;
-    pageNr: number;
-    pageSize: number;
-  }
-
-  interface SendTaskLog {
-    sendTaskId: number;
-    pageNr: number;
-    pageSize: number;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Automation {
-  interface AutomationTaskWrapper {
-    automationName: string;
-    model: JourneyModel;
-    webSiteId: any;
-    isRepeat: boolean;
-    taskFolder: string;
-    getContactListId(): number;
-    newContactOnly(): boolean;
-    getWebSite(): Kooboo.Data.Models.WebSite;
-    getRecipientDB(): any;
-  }
-
-  interface UserJourney {
-    contactListId: number;
-    recipient: Kooboo.Sites.EmailMarketing.Model.Contact.Recipient;
-    errorCounter: Record<string, number>;
-    logs: string[];
-    increaseErrorCount(Name: string): void;
-    getErrorCount(Name: string): number;
-    addLog(CellName: string, Message: string): void;
-  }
-
-  interface JourneyModel {
-    cells: Kooboo.Sites.EmailMarketing.Automation.Cells.CellBase[];
-    items: ShapeItem[];
-    nextCell(cellId: any): Kooboo.Sites.EmailMarketing.Automation.Cells.CellBase;
-    getStartCell(): Kooboo.Sites.EmailMarketing.Automation.Cells.StartCell;
-    getCell(cellId: any): Kooboo.Sites.EmailMarketing.Automation.Cells.CellBase;
-  }
-
-  interface ShapeItem {
-    id: any;
-    shape: string;
-    source: Point;
-    target: Point;
-    data: any;
-  }
-
-  interface Point {
-    cell: any;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Automation.Holidays {
-  interface IHoliday {
-    name: string;
-    displayName: string;
-    getByYear(year: number): Date;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Model.Contact {
-  interface ContactList {
-    id: number;
-    displayName: string;
-    name: string;
-    isRemote: boolean;
-    isVirtual: boolean;
-    isTest: boolean;
-    remoteList: RemoteList;
-    virtualList: VirtualList;
-    setting: ContactListSetting;
-    creationDate: Date;
-    stat: ContactStat;
-  }
-
-  interface RemoteList {
-    webSiteId: string;
-    dbType: string;
-    connectionString: string;
-    tableName: string;
-    keyFieldName: string;
-    emailFieldName: string;
-    bouncedFieldName: string;
-    unSubScribedFieldName: string;
-  }
-
-  interface Recipient {
-    item: string;
-    id: number;
-    remoteContactId: string;
-    name: string;
-    emailAddress: string;
-    unSubscribe: boolean;
-    bounce: boolean;
-    isConfirm: boolean;
-    data: Record<string, string>;
-    lastModified: Date;
-    creationDate: Date;
-    fields: string[];
-    getValue(key: string): string;
-    toDictionary(): Record<string, string>;
-  }
-
-  interface RecipientSent extends Recipient {
-    listId: number;
-    recipientId: number;
-    contactKey: string;
-    hasSentLog: boolean;
-    lastResCode: number;
-    sentSuccess: boolean;
-    log: string;
-    item: string;
-    id: number;
-    remoteContactId: string;
-    name: string;
-    emailAddress: string;
-    unSubscribe: boolean;
-    bounce: boolean;
-    isConfirm: boolean;
-    data: Record<string, string>;
-    lastModified: Date;
-    creationDate: Date;
-    fields: string[];
-    getValue(key: string): string;
-    toDictionary(): Record<string, string>;
-  }
-
-  interface VirtualList {
-    sourceListIds: number[];
-    filters: ListFilter[];
-  }
-
-  interface ContactListSetting {
-    item: any;
-    enableDoubleOptin: boolean;
-    enableUnsubscribeConfirmation: boolean;
-    emailVerificationSubject: string;
-    enableWelcomeEmail: boolean;
-    welcomeEmailSubject: string;
-    emailFrom: string;
-    notifications: Record<EnumEmailNotification, any>;
-    pages: Record<EnumLinkPageType, any>;
-  }
-
-  interface ContactStat {
-    total: number;
-    growth: number;
-  }
-
-  interface ListFilter {
-    key: string;
-    operator: string;
-    matchValue: string;
-    valueDateType: string;
-  }
-
-}
-declare namespace Kooboo.Sites.AiSiteBuilder {
-  interface ProviderInfo {
-    name: string;
-    displayName: string;
-    duration: number;
-    priceOfOneSite: number;
-    priceOfOnePage: number;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Model.Report {
-  interface LinkElement {
-    id: number;
-    fullTag: string;
-    sendTaskId: number;
-    startLocation: number;
-    endLocation: number;
-    href: string;
-    anchorText: string;
-  }
-
-  interface OpenSummary {
-    sendTaskId: number;
-    totalSent: number;
-    totalOpen: number;
-    totalIP: number;
-    uniqueOpen: number;
-    uniqueIp: number;
-    unsubscribe: number;
-    bounce: number;
-    currentReadId: number;
-    byCountry: Record<string, number>;
-    byCity: Record<string, number>;
-    byUserAgent: Record<string, number>;
-    applicationShares: UserAgentShare[];
-    addCity(City: string): void;
-    addCountry(Country: string): void;
-    addAgent(UserAgent: string): void;
-  }
-
-  interface ClickSummary {
-    sendTaskId: number;
-    totalSent: number;
-    totalClick: number;
-    totalIP: number;
-    uniqueClick: number;
-    clickUserCount: number;
-    uniqueIp: number;
-    totalLinks: number;
-    currentReadId: number;
-    byCountry: Record<string, number>;
-    byCity: Record<string, number>;
-    byUserAgent: Record<string, number>;
-    byLink: Record<number, number>;
-    applicationShares: UserAgentShare[];
-    addCity(City: string): void;
-    addCountry(Country: string): void;
-    addAgent(UserAgent: string): void;
-    addLink(LinkId: number): void;
-  }
-
-  interface ReportSummary {
-    sendTaskId: number;
-    name: string;
-    campaignId: number;
-    campaignHtml: string;
-    campaignText: string;
-    previewHtml: string;
-    format: Kooboo.Sites.EmailMarketing.Delivery.EmailFormat;
-    subject: string;
-    sentTime: Date;
-    totalContacts: number;
-    totalSent: number;
-    totalOpen: number;
-    totalClick: number;
-    uniqueOpen: number;
-    uniqueClick: number;
-    deliveryRate: number;
-    delivery: number;
-    contactListId: number[];
-    contactListNames: string[];
-    openRate: number;
-    clickRate: number;
-    bounced: number;
-    markSpam: number;
-    spamRate: number;
-    unSubScribed: number;
-    unSubScribedRate: number;
-    openLast24Hours: Record<number, number>;
-    clickLast24Hours: Record<number, number>;
-    topClickedLinks: Record<string, number>;
-    isAbTest: boolean;
-    aBTestResult: ABTestResult;
-  }
-
-  interface UserAgentShare {
-    name: string;
-    count: number;
-    percent: number;
-    percentage: number;
-    fromDictionary(AgentCounts: Record<string, number>): UserAgentShare[];
-  }
-
-  interface ABTestResult {
-    testPercent: number;
-    testAmount: number;
-    pickByClick: boolean;
-    pickByOpen: boolean;
-    aCount: number;
-    bCount: number;
-    winnerCampaignId: number;
-    winner: string;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.ABTest {
-  interface ABTestSetting {
-    bCampaign: number;
-    testContactAmount: number;
-    testContactPercent: number;
-    testResultWaitingMinute: number;
-    pickWinnerByOpenRate: boolean;
-    pickWinnerByClickRate: boolean;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.Global {
-  interface RecentActionResult {
-    success: boolean;
-    emailAddress: string;
-  }
-
-  interface AvgRate {
-    delivery: number;
-    open: number;
-    click: number;
-  }
-
-  interface RecentActionViewModel {
-    name: string;
-    recipient: string;
-    action: string;
-    remark: string;
-    userAgent: string;
-    country: string;
-    creationDate: Date;
-  }
-
-}
-declare namespace Kooboo.Sites.EmailMarketing.ViewModel {
-  interface LatestReport {
-    endTime: Date;
-    data: Record<number, number>;
-    performance: Performance;
-  }
-
-  interface Performance {
-    count: number;
-    unique: number;
-    rate: number;
-    totalEmails: number;
-    growth: number;
-  }
-
-}
-declare namespace Kooboo.Sites.CanIUse.Email {
-  interface EmailCompatibleData {
-    slug: string;
-    title: string;
-    description: string;
-    url: string;
-    category: string;
-    tags: string[];
-    keywords: string;
-    notesByNum: any;
-    stats: any;
-    notSupportStats: Stat[];
-    notSupportNotesByNums: EmailNotesByNum[];
-  }
-
-  interface Stat {
-    application: string;
-    platform: string;
-    version: string;
-    support: string;
-  }
-
-  interface EmailNotesByNum {
-    index: string;
-    description: string;
-  }
 
 }
 declare namespace Kooboo.Data {
@@ -11219,6 +11332,7 @@ declare namespace KScript.Commerce.Models {
 
   interface CategoryQueryOptions {
     includeOffline: boolean;
+    where: any;
   }
 
   interface CategorySimple {
@@ -11227,6 +11341,7 @@ declare namespace KScript.Commerce.Models {
     seoName: string;
     description: string;
     image: string;
+    imageMeta: string;
     active: boolean;
     tags: string[];
     parentId: string;
@@ -11238,6 +11353,7 @@ declare namespace KScript.Commerce.Models {
     seoName: string;
     description: string;
     image: string;
+    imageMeta: string;
     active: boolean;
     parentId: string;
     tags: string[];
@@ -11265,6 +11381,8 @@ declare namespace KScript.Commerce.Models {
     categories: string[];
     includeSubCategory: boolean;
     includeOffline: boolean;
+    currency: string;
+    where: any;
   }
 
   interface ProductSimple {
@@ -11272,6 +11390,7 @@ declare namespace KScript.Commerce.Models {
     title: string;
     featuredImage: string;
     images: string[];
+    imageMetas: string;
     active: boolean;
     isDigital: boolean;
     seoName: string;
@@ -11279,6 +11398,11 @@ declare namespace KScript.Commerce.Models {
     attributes: any[];
     variants: Variant[];
     variantOptions: VariantOption[];
+    currency: Kooboo.Sites.Commerce.Entities.Currency;
+  }
+
+  interface GetProductOptions {
+    currency: string;
   }
 
   interface ProductDetail {
@@ -11289,12 +11413,14 @@ declare namespace KScript.Commerce.Models {
     active: boolean;
     isDigital: boolean;
     images: string[];
+    imageMetas: string;
     seoName: string;
     tags: string[];
     attributes: KScript.KeyValue[];
     variants: Variant[];
     categories: CategorySimple[];
     variantOptions: VariantOption[];
+    currency: Kooboo.Sites.Commerce.Entities.Currency;
   }
 
   interface SearchOptions {
@@ -11302,6 +11428,7 @@ declare namespace KScript.Commerce.Models {
     categories: string[];
     includeSubCategory: boolean;
     includeOffline: boolean;
+    currency: string;
   }
 
   interface SearchResult {
@@ -11340,8 +11467,23 @@ declare namespace KScript.Commerce.Models {
     autoDelivery: boolean;
   }
 
-  interface DiscountPriceOptions {
+  interface ProductPriceOptions {
     customerId: string;
+    currency: string;
+  }
+
+  interface ProductPrice {
+    currency: Kooboo.Sites.Commerce.Entities.Currency;
+    originalAmount: number;
+    amount: number;
+  }
+
+  interface NewProductReview {
+    customerId: string;
+    variantId: string;
+    rating: number;
+    comment: string;
+    images: string[];
   }
 
   interface CartOptions {
@@ -11351,6 +11493,7 @@ declare namespace KScript.Commerce.Models {
   }
 
   interface GetCartOptions {
+    currency: string;
     country: string;
     province: string;
     city: string;
@@ -11360,6 +11503,7 @@ declare namespace KScript.Commerce.Models {
     id: string;
     contact: string;
     country: string;
+    currency: Kooboo.Sites.Commerce.Entities.Currency;
     discountCodes: string[];
     activeDiscountCodes: string[];
     note: string;
@@ -11400,6 +11544,7 @@ declare namespace KScript.Commerce.Models {
     note: string;
     address: Kooboo.Sites.Commerce.Entities.Address;
     extensionFields: KScript.KeyValue[];
+    currency: string;
   }
 
   interface CreateOrderInit {
@@ -11415,9 +11560,10 @@ declare namespace KScript.Commerce.Models {
     extensionButton: Kooboo.Sites.Commerce.Entities.ExtensionButton;
     extensionFields: KScript.KeyValue[];
     lines: CreateOrderLineInit[];
+    currency: string;
   }
 
-  interface OrderQuery extends Kooboo.Sites.Commerce.ViewModels.PagingQuery {
+  interface OrderQuery extends CustomerOrderQuery {
     customerId: string;
     paid?: boolean;
     delivered?: boolean;
@@ -11434,6 +11580,16 @@ declare namespace KScript.Commerce.Models {
     lastName: string;
     phone: string;
     password: string;
+  }
+
+  interface CustomerOrderQuery extends Kooboo.Sites.Commerce.ViewModels.PagingQuery {
+    paid?: boolean;
+    delivered?: boolean;
+    canceled?: boolean;
+    startDate?: Date;
+    endDate?: Date;
+    pageIndex: number;
+    pageSize: number;
   }
 
   interface OrderResult {
@@ -11465,6 +11621,7 @@ declare namespace KScript.Commerce.Models {
 
   interface ShippingOptions {
     cartId: string;
+    currency: string;
   }
 
   interface ShippingItem {
@@ -11477,6 +11634,8 @@ declare namespace KScript.Commerce.Models {
     countries: Kooboo.Sites.Commerce.Entities.SupportCountry[];
     currentCost: number;
     code: string;
+    currency: string;
+    symbol: string;
   }
 
   interface Country {
@@ -11501,6 +11660,14 @@ declare namespace KScript.Commerce.Models {
     nameTranslations: Record<string, string>;
   }
 
+  interface CurrencyItem {
+    name: string;
+    nameNative: string;
+    code: string;
+    symbol: string;
+    exchangeRate: number;
+  }
+
   interface Label {
     name: string;
     count: number;
@@ -11514,6 +11681,7 @@ declare namespace KScript.Commerce.Models {
     barcode: string;
     sku: string;
     image: string;
+    imageMeta: string;
     price: number;
     active: boolean;
     selectedOptions: Kooboo.Sites.Commerce.Entities.Option[];
@@ -11592,9 +11760,9 @@ declare namespace Kooboo.Sites.Repository {
     dataMethodSettings: DataMethodSettingRepository;
     syncSettings: SyncSettingRepository;
     syncLog: Kooboo.Sites.Sync.SiteSync;
-    imagePool: any;
-    filePool: any;
+    abTestStore: Kooboo.Sites.Analytics.ABTest.AbTestStore;
     aIAppStore: Kooboo.Sites.AIBuilder.Application.AppBuilderStore;
+    aICommerceStore: any;
     cssClassName: CssClassNameRepository;
     scriptModule: ScriptModuleRepository;
     coreSetting: CoreSettingRepository;
@@ -11607,7 +11775,6 @@ declare namespace Kooboo.Sites.Repository {
     files: CmsFileRepository;
     codeLog: Kooboo.Sites.Scripting.Global.Logging.CodeLogStore;
     folders: FolderRepository;
-    domElements: DomElementRepository;
     routes: RouteRepository;
     forms: FormRepository;
     formSetting: FormSettingRepository;
@@ -11619,10 +11786,12 @@ declare namespace Kooboo.Sites.Repository {
     commerceData: CommerceDataRepository;
     mediaMetadata: MediaMetadataRepository;
     code: CodeRepository;
+    aIFunction: Kooboo.Sites.AI.Functions.Custom.SiteAIFunctionRepository;
     rules: BusinessRuleRepository;
     backendRules: Kooboo.Sites.BackendEvent.BackendRuleRepository;
     relations: RelationRepository;
     searchIndex: SearchIndexRepository;
+    vectorSearch: Kooboo.Sites.AI.Vectorization.SiteVectorSearchService;
     viewDataMethods: ViewDataMethodRepository;
     downloadFailedLog: DownloadFailTrackRepository;
     siteUser: SiteUserRepository;
@@ -11631,9 +11800,6 @@ declare namespace Kooboo.Sites.Repository {
     logFolder: string;
     codeLogFolder: string;
     siteLogVideoFolder: string;
-    visitorLog: Kooboo.Data.Storage.VisitorLogStore;
-    imageLog: Kooboo.Data.Storage.ImageLogStore;
-    botLog: Kooboo.Data.Storage.BotLogStore;
     errorLog: Kooboo.Data.Storage.ErrorLogStore;
     log: Kooboo.IndexedDB.EditLog;
     styles: StyleRepository;
@@ -11667,12 +11833,9 @@ declare namespace Kooboo.Sites.Repository {
     getSiteRepositoryByModelType(ModelType: any): Kooboo.Data.Interface.IRepository;
     isStoreExists(ModelType: any): boolean;
     routeTree(ConstType?: number): Kooboo.Sites.Routing.PathTree;
-    visitorLogWeekNames(): string[];
-    visitorLogByWeek(weekName: string, create?: boolean): Kooboo.Data.Storage.VisitorLogStore;
-    imageLogByWeek(weekName: string): Kooboo.Data.Storage.ImageLogStore;
-    botLogByWeek(weekName: string): Kooboo.Data.Storage.BotLogStore;
+    getFolder(name: string): string;
     errorLogByWeek(weekName: string): Kooboo.Data.Storage.ErrorLogStore;
-    clearLog(storenames: string[]): void;
+    clearLog(storeNames: string[]): void;
   }
 
   interface SearchOptions {
@@ -11709,18 +11872,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Layout): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Layout, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Layout, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Layout): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Layout;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Layout;
     get(nameorid: string): Kooboo.Sites.Models.Layout;
     getWithEvent(id: any): Kooboo.Sites.Models.Layout;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Layout;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Layout;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Layout;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11729,7 +11894,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Layout[];
     isEqual(x: Kooboo.Sites.Models.Layout, y: Kooboo.Sites.Models.Layout): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Layout): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11749,18 +11914,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getWithEvent(id: any): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11769,7 +11936,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.SiteTransfer.Model.ContinueConverter[];
     isEqual(x: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, y: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11790,18 +11957,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Data.Models.DataMethodSetting): boolean;
     addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Data.Models.DataMethodSetting;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Data.Models.DataMethodSetting;
     get(nameorid: string): Kooboo.Data.Models.DataMethodSetting;
     getWithEvent(id: any): Kooboo.Data.Models.DataMethodSetting;
     getByUrl(relativeUrl: string): Kooboo.Data.Models.DataMethodSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Data.Models.DataMethodSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Data.Models.DataMethodSetting;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Data.Models.DataMethodSetting[];
@@ -11809,7 +11978,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Data.Models.DataMethodSetting[];
     isEqual(x: Kooboo.Data.Models.DataMethodSetting, y: Kooboo.Data.Models.DataMethodSetting): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Data.Models.DataMethodSetting): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11832,18 +12001,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.SyncSetting): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SyncSetting, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.SyncSetting, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SyncSetting): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SyncSetting;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.SyncSetting;
     get(nameorid: string): Kooboo.Sites.Models.SyncSetting;
     getWithEvent(id: any): Kooboo.Sites.Models.SyncSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SyncSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SyncSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SyncSetting;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11852,7 +12023,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.SyncSetting[];
     isEqual(x: Kooboo.Sites.Models.SyncSetting, y: Kooboo.Sites.Models.SyncSetting): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.SyncSetting): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11871,18 +12042,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.CssClassName): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CssClassName, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.CssClassName, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CssClassName): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CssClassName;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.CssClassName;
     get(nameorid: string): Kooboo.Sites.Models.CssClassName;
     getWithEvent(id: any): Kooboo.Sites.Models.CssClassName;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CssClassName;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CssClassName;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CssClassName;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11891,7 +12064,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.CssClassName[];
     isEqual(x: Kooboo.Sites.Models.CssClassName, y: Kooboo.Sites.Models.CssClassName): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.CssClassName): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11912,16 +12085,18 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.ScriptModule): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ScriptModule, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.ScriptModule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ScriptModule): boolean;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ScriptModule;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.ScriptModule;
     get(nameorid: string): Kooboo.Sites.Models.ScriptModule;
     getWithEvent(id: any): Kooboo.Sites.Models.ScriptModule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.ScriptModule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ScriptModule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ScriptModule;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11930,7 +12105,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.ScriptModule[];
     isEqual(x: Kooboo.Sites.Models.ScriptModule, y: Kooboo.Sites.Models.ScriptModule): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.ScriptModule): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11955,15 +12130,17 @@ declare namespace Kooboo.Sites.Repository {
     addOrUpdate(setting: Kooboo.Data.Interface.ISiteSetting): void;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.CoreSetting): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.CoreSetting, UserId: any, betweenEvent: ()=>void): boolean;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CoreSetting;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.CoreSetting;
     get(nameorid: string): Kooboo.Sites.Models.CoreSetting;
     getWithEvent(id: any): Kooboo.Sites.Models.CoreSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CoreSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CoreSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CoreSetting;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -11972,7 +12149,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.CoreSetting[];
     isEqual(x: Kooboo.Sites.Models.CoreSetting, y: Kooboo.Sites.Models.CoreSetting): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.CoreSetting): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -11997,16 +12174,18 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.SiteCluster): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SiteCluster, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.SiteCluster, UserId: any, betweenEvent: ()=>void): boolean;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteCluster;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.SiteCluster;
     get(nameorid: string): Kooboo.Sites.Models.SiteCluster;
     getWithEvent(id: any): Kooboo.Sites.Models.SiteCluster;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteCluster;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteCluster;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteCluster;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12015,7 +12194,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.SiteCluster[];
     isEqual(x: Kooboo.Sites.Models.SiteCluster, y: Kooboo.Sites.Models.SiteCluster): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.SiteCluster): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12039,16 +12218,18 @@ declare namespace Kooboo.Sites.Repository {
     swap(RootId: any, IdA: any, IdB: any, UserId?: any): void;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Menu): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Menu, UserId: any, betweenEvent: ()=>void): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Menu;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Menu;
     get(nameorid: string): Kooboo.Sites.Models.Menu;
     getWithEvent(id: any): Kooboo.Sites.Models.Menu;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Menu;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Menu;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12057,7 +12238,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Menu[];
     isEqual(x: Kooboo.Sites.Models.Menu, y: Kooboo.Sites.Models.Menu): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Menu): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12088,18 +12269,20 @@ declare namespace Kooboo.Sites.Repository {
     releaseDownload(relativeUrl: string): void;
     init(): void;
     isEqualTo(value: Kooboo.Sites.SiteTransfer.TransferTask): boolean;
+    addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferTask, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferTask): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.TransferTask;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.SiteTransfer.TransferTask;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.TransferTask;
     getWithEvent(id: any): Kooboo.Sites.SiteTransfer.TransferTask;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferTask;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferTask;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.TransferTask;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12108,7 +12291,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.SiteTransfer.TransferTask[];
     isEqual(x: Kooboo.Sites.SiteTransfer.TransferTask, y: Kooboo.Sites.SiteTransfer.TransferTask): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.SiteTransfer.TransferTask): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12127,18 +12310,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.SiteTransfer.TransferPage): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.TransferPage;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.SiteTransfer.TransferPage;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.TransferPage;
     getWithEvent(id: any): Kooboo.Sites.SiteTransfer.TransferPage;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferPage;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferPage;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.TransferPage;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12147,7 +12332,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.SiteTransfer.TransferPage[];
     isEqual(x: Kooboo.Sites.SiteTransfer.TransferPage, y: Kooboo.Sites.SiteTransfer.TransferPage): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.SiteTransfer.TransferPage): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12164,21 +12349,24 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     upload(contentBytes: number[], fullName: string, UserId: any): Kooboo.Sites.Models.CmsFile;
+    getVersion(Id: any): number;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.CmsFile): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CmsFile, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.CmsFile, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CmsFile): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CmsFile;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.CmsFile;
     get(nameorid: string): Kooboo.Sites.Models.CmsFile;
     getWithEvent(id: any): Kooboo.Sites.Models.CmsFile;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsFile;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsFile;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CmsFile;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12187,7 +12375,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.CmsFile[];
     isEqual(x: Kooboo.Sites.Models.CmsFile, y: Kooboo.Sites.Models.CmsFile): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.CmsFile): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12215,18 +12403,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Folder): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Folder, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Folder, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Folder): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Folder;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Folder;
     get(nameorid: string): Kooboo.Sites.Models.Folder;
     getWithEvent(id: any): Kooboo.Sites.Models.Folder;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Folder;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Folder;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Folder;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12235,58 +12425,8 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Folder[];
     isEqual(x: Kooboo.Sites.Models.Folder, y: Kooboo.Sites.Models.Folder): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Folder): Kooboo.Sites.Relation.ObjectRelation[];
-    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
-    rebuild(): void;
-  }
-
-  interface DomElementRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
-    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
-    siteDb: SiteDb;
-    siteObjectType: any;
-    useCache: boolean;
-    webSite: Kooboo.Data.Models.WebSite;
-    storeName: string;
-    store: any;
-    query: any;
-    tableScan: any;
-    getByKoobooId(OwnerObjectId: any, OwnerConstType: number, KoobooId: string): Kooboo.Sites.Models.DomElement;
-    getSamePageElement(pageelement: Kooboo.Sites.Models.DomElement, DesitinationObjectId: any, ConstType: number): Kooboo.Sites.Models.DomElement;
-    cleanSub(PageElementId: any, AllOwnerElements: Kooboo.Sites.Models.DomElement[]): void;
-    cleanObject(OwnerObjectId: any, ConstType: number): void;
-    listSub(ParentId: any): Kooboo.Sites.Models.DomElement[];
-    addOrUpdate(element: Kooboo.Sites.Models.DomElement, UserId?: any): boolean;
-    addOrUpdateDom(Dom: Kooboo.Dom.Document, OwnerObjectId: any, OwnerConstType: number, NewThread?: boolean): void;
-    suggestLayout(ObjectX: any, ObjectY: any, ConstType: number): Kooboo.Sites.Models.DomElement[];
-    suggestLayout(ObjectIds: any[], ConstType: number): Kooboo.Sites.Models.DomElement[];
-    getAllPageElements(ObjectIds: any[], ConstType: number): any[];
-    testAsLayout(element: Kooboo.Sites.Models.DomElement, sitePages: any[]): boolean;
-    getSamePageElements(sitePages: any[]): Kooboo.Sites.Models.DomElement[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.DomElement): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.DomElement): boolean;
-    delete(id: any): number;
-    delete(id: any, UserId: any): number;
-    getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.DomElement;
-    getAsync(id: any): any;
-    getFromCache(id: any): Kooboo.Sites.Models.DomElement;
-    get(nameorid: string): Kooboo.Sites.Models.DomElement;
-    getWithEvent(id: any): Kooboo.Sites.Models.DomElement;
-    getByUrl(relativeUrl: string): Kooboo.Sites.Models.DomElement;
-    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.DomElement;
-    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.DomElement;
-    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    count(): number;
-    all(UseColumnData: boolean): Kooboo.Sites.Models.DomElement[];
-    all(): Kooboo.Sites.Models.DomElement[];
-    list(UseColumnData?: boolean): Kooboo.Sites.Models.DomElement[];
-    isEqual(x: Kooboo.Sites.Models.DomElement, y: Kooboo.Sites.Models.DomElement): boolean;
-    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
-    checkBeingUsed(SiteObject: Kooboo.Sites.Models.DomElement): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
   }
@@ -12319,14 +12459,16 @@ declare namespace Kooboo.Sites.Repository {
     validate(RouteName: string, ObjectId: any): boolean;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Routing.Route): boolean;
+    addOrUpdate(value: Kooboo.Sites.Routing.Route, UserId: any, betweenEvent: ()=>void): boolean;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Routing.Route;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Routing.Route;
     get(nameorid: string): Kooboo.Sites.Routing.Route;
     getWithEvent(id: any): Kooboo.Sites.Routing.Route;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Routing.Route;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Routing.Route;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12335,7 +12477,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Routing.Route[];
     isEqual(x: Kooboo.Sites.Routing.Route, y: Kooboo.Sites.Routing.Route): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Routing.Route): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12370,16 +12512,18 @@ declare namespace Kooboo.Sites.Repository {
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Form,)=>void): Kooboo.Sites.Models.Form;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Form): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Form, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Form): boolean;
     delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Form;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Form;
     get(nameorid: string): Kooboo.Sites.Models.Form;
     getWithEvent(id: any): Kooboo.Sites.Models.Form;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Form;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Form;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Sites.Models.Form[];
@@ -12387,7 +12531,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Form[];
     isEqual(x: Kooboo.Sites.Models.Form, y: Kooboo.Sites.Models.Form): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Form): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12407,18 +12551,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.FormSetting): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormSetting, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.FormSetting, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormSetting): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.FormSetting;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.FormSetting;
     get(nameorid: string): Kooboo.Sites.Models.FormSetting;
     getWithEvent(id: any): Kooboo.Sites.Models.FormSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.FormSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.FormSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.FormSetting;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12427,7 +12573,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.FormSetting[];
     isEqual(x: Kooboo.Sites.Models.FormSetting, y: Kooboo.Sites.Models.FormSetting): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.FormSetting): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12446,18 +12592,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.FormValue): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormValue, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.FormValue, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormValue): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.FormValue;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.FormValue;
     get(nameorid: string): Kooboo.Sites.Models.FormValue;
     getWithEvent(id: any): Kooboo.Sites.Models.FormValue;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.FormValue;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.FormValue;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.FormValue;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12466,7 +12614,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.FormValue[];
     isEqual(x: Kooboo.Sites.Models.FormValue, y: Kooboo.Sites.Models.FormValue): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.FormValue): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12487,23 +12635,28 @@ declare namespace Kooboo.Sites.Repository {
     listUsedByRelation(image: Kooboo.Sites.Models.Image, constType?: number): Kooboo.Sites.Relation.ObjectRelation[];
     uploadImage(contentBytes: number[], fullName: string, UserId: any, alt?: string): Kooboo.Sites.Models.Image;
     listUsedByPage(PageId: any, UseColumnData?: boolean): Kooboo.Sites.Models.Image[];
-    listUsedByObjects(objectids: any[]): Kooboo.Sites.Models.Image[];
+    listUsedByObjects(objectIds: any[]): Kooboo.Sites.Models.Image[];
     listUsedByPageStyle(PageId: any): Kooboo.Sites.Models.Image[];
     search(keyword: string, skip?: number, count?: number): Kooboo.Sites.Models.Image[];
+    getImageVersion(Id: any): number;
+    getBinaryView(Id: any): Kooboo.Sites.Models.BinaryView.ImageBinaryView;
+    getBinaryView(BlockPosition: number): Kooboo.Sites.Models.BinaryView.ImageBinaryView;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Image): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Image, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Image): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Image;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Image;
     get(nameorid: string): Kooboo.Sites.Models.Image;
     getWithEvent(id: any): Kooboo.Sites.Models.Image;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Image;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Image;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Image;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12512,7 +12665,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Image[];
     isEqual(x: Kooboo.Sites.Models.Image, y: Kooboo.Sites.Models.Image): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Image): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12538,17 +12691,19 @@ declare namespace Kooboo.Sites.Repository {
     addOrUpdate(value: Kooboo.Sites.Models.Page, UserId: any): boolean;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Page): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Page, UserId: any, betweenEvent: ()=>void): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Page;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Page;
     get(nameorid: string): Kooboo.Sites.Models.Page;
     getWithEvent(id: any): Kooboo.Sites.Models.Page;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Page;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Page;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Page;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12557,7 +12712,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Page[];
     isEqual(x: Kooboo.Sites.Models.Page, y: Kooboo.Sites.Models.Page): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Page): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12577,18 +12732,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.View): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.View, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.View, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.View): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.View;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.View;
     get(nameorid: string): Kooboo.Sites.Models.View;
     getWithEvent(id: any): Kooboo.Sites.Models.View;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.View;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.View;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.View;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12597,7 +12754,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.View[];
     isEqual(x: Kooboo.Sites.Models.View, y: Kooboo.Sites.Models.View): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.View): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12631,16 +12788,18 @@ declare namespace Kooboo.Sites.Repository {
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Script): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Script, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Script): boolean;
     delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Script;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Script;
     get(nameorid: string): Kooboo.Sites.Models.Script;
     getWithEvent(id: any): Kooboo.Sites.Models.Script;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Script;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Script;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Sites.Models.Script[];
@@ -12648,7 +12807,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Script[];
     isEqual(x: Kooboo.Sites.Models.Script, y: Kooboo.Sites.Models.Script): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Script): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12667,18 +12826,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.CommerceData): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CommerceData, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.CommerceData, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CommerceData): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CommerceData;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.CommerceData;
     get(nameorid: string): Kooboo.Sites.Models.CommerceData;
     getWithEvent(id: any): Kooboo.Sites.Models.CommerceData;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CommerceData;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CommerceData;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CommerceData;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12687,7 +12848,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.CommerceData[];
     isEqual(x: Kooboo.Sites.Models.CommerceData, y: Kooboo.Sites.Models.CommerceData): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.CommerceData): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12706,18 +12867,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.MediaMetadata): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.MediaMetadata;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.MediaMetadata;
     get(nameorid: string): Kooboo.Sites.Models.MediaMetadata;
     getWithEvent(id: any): Kooboo.Sites.Models.MediaMetadata;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.MediaMetadata;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.MediaMetadata;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.MediaMetadata;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12726,7 +12889,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.MediaMetadata[];
     isEqual(x: Kooboo.Sites.Models.MediaMetadata, y: Kooboo.Sites.Models.MediaMetadata): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.MediaMetadata): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12747,7 +12910,6 @@ declare namespace Kooboo.Sites.Repository {
     all(): Kooboo.Sites.Models.Code[];
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Code[];
     addOrUpdate(Value: Kooboo.Sites.Models.Code, UserId?: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Code): boolean;
     addOrUpdate(Value: Kooboo.Sites.Models.Code, updateSource?: boolean, UpdateSameEmbedded?: boolean, UserId?: any): boolean;
     delete(id: any, UpdateSource?: boolean, UpdateSameEmbedded?: boolean, UserId?: any): number;
     delete(id: any, UserId?: any): number;
@@ -12765,20 +12927,23 @@ declare namespace Kooboo.Sites.Repository {
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Code): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Code, UserId: any, betweenEvent: ()=>void): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Code): boolean;
     delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Code;
     get(nameorid: string): Kooboo.Sites.Models.Code;
     getWithEvent(id: any): Kooboo.Sites.Models.Code;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Code;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Code;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Sites.Models.Code[];
     isEqual(x: Kooboo.Sites.Models.Code, y: Kooboo.Sites.Models.Code): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Code): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12794,22 +12959,24 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    listByEventType(eventtype: Kooboo.Sites.FrontEvent.enumEventType): Kooboo.Sites.Models.BusinessRule[];
+    listByEventType(eventType: Kooboo.Sites.FrontEvent.enumEventType): Kooboo.Sites.Models.BusinessRule[];
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.BusinessRule): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.BusinessRule, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.BusinessRule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.BusinessRule): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.BusinessRule;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.BusinessRule;
     get(nameorid: string): Kooboo.Sites.Models.BusinessRule;
     getWithEvent(id: any): Kooboo.Sites.Models.BusinessRule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.BusinessRule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.BusinessRule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.BusinessRule;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12818,7 +12985,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.BusinessRule[];
     isEqual(x: Kooboo.Sites.Models.BusinessRule, y: Kooboo.Sites.Models.BusinessRule): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.BusinessRule): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12845,18 +13012,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Relation.ObjectRelation): boolean;
     addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Relation.ObjectRelation;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Relation.ObjectRelation;
     get(nameorid: string): Kooboo.Sites.Relation.ObjectRelation;
     getWithEvent(id: any): Kooboo.Sites.Relation.ObjectRelation;
     getByUrl(relativeUrl: string): Kooboo.Sites.Relation.ObjectRelation;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Relation.ObjectRelation;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Relation.ObjectRelation;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12865,13 +13034,14 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Relation.ObjectRelation[];
     isEqual(x: Kooboo.Sites.Relation.ObjectRelation, y: Kooboo.Sites.Relation.ObjectRelation): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Relation.ObjectRelation): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
   }
 
   interface SearchIndexRepository {
+    indexType: number[];
     folder: string;
     siteDb: SiteDb;
     logFolder: string;
@@ -12881,11 +13051,13 @@ declare namespace Kooboo.Sites.Repository {
     getWeekNames(): string[];
     searchCount(WeekName: string): Record<string, number>;
     lastestSearch(count: number): SearchLog[];
-    addOrUpdate(siteobject: Kooboo.Data.Interface.ISiteObject, siteDb: SiteDb): void;
-    delete(siteobject: Kooboo.Data.Interface.ISiteObject): void;
+    getMetaKey(siteobject: Kooboo.Data.Interface.ISiteObject): string;
+    getBody(siteobject: Kooboo.Data.Interface.ISiteObject, siteDb: SiteDb): string;
+    addOrUpdate(siteobject: Kooboo.Data.Interface.ISiteObject, siteDb: SiteDb, searchType: Kooboo.Data.Models.SearchType, updateReference?: boolean): void;
+    delete(siteobject: Kooboo.Data.Interface.ISiteObject, searchType: Kooboo.Data.Models.SearchType): void;
     search(keywords: string, options?: SearchOptions, context?: Kooboo.Data.Context.RenderContext): SearchResult[];
     setData(recordSet: SearchResult[], keywords: string, context: Kooboo.Data.Context.RenderContext, options: SearchOptions): void;
-    sync(SiteDb: SiteDb, Value: Kooboo.Data.Interface.ISiteObject, ChangeType: Kooboo.ChangeType, StoreName: string): void;
+    sync(SiteDb: SiteDb, Value: Kooboo.Data.Interface.ISiteObject, ChangeType: Kooboo.ChangeType, StoreName: string, searchType: Kooboo.Data.Models.SearchType): void;
     rebuild(): void;
     closeLuceneServices(): void;
     delSelf(): void;
@@ -12905,18 +13077,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.ViewDataMethod): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ViewDataMethod;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.ViewDataMethod;
     get(nameorid: string): Kooboo.Sites.Models.ViewDataMethod;
     getWithEvent(id: any): Kooboo.Sites.Models.ViewDataMethod;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.ViewDataMethod;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ViewDataMethod;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ViewDataMethod;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12925,7 +13099,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.ViewDataMethod[];
     isEqual(x: Kooboo.Sites.Models.ViewDataMethod, y: Kooboo.Sites.Models.ViewDataMethod): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.ViewDataMethod): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12944,18 +13118,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.DownloadFailTrack): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.DownloadFailTrack;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.DownloadFailTrack;
     get(nameorid: string): Kooboo.Sites.Models.DownloadFailTrack;
     getWithEvent(id: any): Kooboo.Sites.Models.DownloadFailTrack;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.DownloadFailTrack;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.DownloadFailTrack;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.DownloadFailTrack;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -12964,7 +13140,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.DownloadFailTrack[];
     isEqual(x: Kooboo.Sites.Models.DownloadFailTrack, y: Kooboo.Sites.Models.DownloadFailTrack): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.DownloadFailTrack): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -12986,15 +13162,17 @@ declare namespace Kooboo.Sites.Repository {
     delete(id: any, UserId: any): number;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.SiteUser): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.SiteUser, UserId: any, betweenEvent: ()=>void): boolean;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteUser;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.SiteUser;
     get(nameorid: string): Kooboo.Sites.Models.SiteUser;
     getWithEvent(id: any): Kooboo.Sites.Models.SiteUser;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteUser;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteUser;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteUser;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13003,7 +13181,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.SiteUser[];
     isEqual(x: Kooboo.Sites.Models.SiteUser, y: Kooboo.Sites.Models.SiteUser): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.SiteUser): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13040,16 +13218,18 @@ declare namespace Kooboo.Sites.Repository {
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Style,)=>void): Kooboo.Sites.Models.Style;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Style): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Style, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Style): boolean;
     delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Style;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Style;
     get(nameorid: string): Kooboo.Sites.Models.Style;
     getWithEvent(id: any): Kooboo.Sites.Models.Style;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Style;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Style;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Sites.Models.Style[];
@@ -13057,7 +13237,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Style[];
     isEqual(x: Kooboo.Sites.Models.Style, y: Kooboo.Sites.Models.Style): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Style): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13080,18 +13260,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.ResourceGroup): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ResourceGroup;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.ResourceGroup;
     get(nameorid: string): Kooboo.Sites.Models.ResourceGroup;
     getWithEvent(id: any): Kooboo.Sites.Models.ResourceGroup;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.ResourceGroup;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ResourceGroup;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ResourceGroup;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13100,7 +13282,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.ResourceGroup[];
     isEqual(x: Kooboo.Sites.Models.ResourceGroup, y: Kooboo.Sites.Models.ResourceGroup): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.ResourceGroup): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13140,17 +13322,19 @@ declare namespace Kooboo.Sites.Repository {
     listUsedByPage(PageId: any): Kooboo.Sites.Models.CmsCssRule[];
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.CmsCssRule): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.CmsCssRule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CmsCssRule): boolean;
     delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CmsCssRule;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.CmsCssRule;
     get(nameorid: string): Kooboo.Sites.Models.CmsCssRule;
     getWithEvent(id: any): Kooboo.Sites.Models.CmsCssRule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsCssRule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsCssRule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CmsCssRule;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13159,7 +13343,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.CmsCssRule[];
     isEqual(x: Kooboo.Sites.Models.CmsCssRule, y: Kooboo.Sites.Models.CmsCssRule): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.CmsCssRule): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13181,17 +13365,19 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.ExternalResource): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ExternalResource, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.ExternalResource, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ExternalResource): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ExternalResource;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.ExternalResource;
     get(nameorid: string): Kooboo.Sites.Models.ExternalResource;
     getWithEvent(id: any): Kooboo.Sites.Models.ExternalResource;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ExternalResource;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ExternalResource;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13200,7 +13386,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.ExternalResource[];
     isEqual(x: Kooboo.Sites.Models.ExternalResource, y: Kooboo.Sites.Models.ExternalResource): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.ExternalResource): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13221,18 +13407,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Thumbnail): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Thumbnail, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Thumbnail, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Thumbnail): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Thumbnail;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Thumbnail;
     get(nameorid: string): Kooboo.Sites.Models.Thumbnail;
     getWithEvent(id: any): Kooboo.Sites.Models.Thumbnail;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Thumbnail;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Thumbnail;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Thumbnail;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13241,7 +13429,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Thumbnail[];
     isEqual(x: Kooboo.Sites.Models.Thumbnail, y: Kooboo.Sites.Models.Thumbnail): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Thumbnail): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13262,18 +13450,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.Label): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.Label, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.Label, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.Label): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.Label;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.Label;
     get(nameorid: string): Kooboo.Sites.Contents.Models.Label;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.Label;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.Label;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.Label;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.Label;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13282,7 +13472,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.Label[];
     isEqual(x: Kooboo.Sites.Contents.Models.Label, y: Kooboo.Sites.Contents.Models.Label): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.Label): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13306,18 +13496,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.KConfig): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.KConfig, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.KConfig, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.KConfig): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.KConfig;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.KConfig;
     get(nameorid: string): Kooboo.Sites.Models.KConfig;
     getWithEvent(id: any): Kooboo.Sites.Models.KConfig;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.KConfig;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.KConfig;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.KConfig;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13326,7 +13518,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.KConfig[];
     isEqual(x: Kooboo.Sites.Models.KConfig, y: Kooboo.Sites.Models.KConfig): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.KConfig): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13348,18 +13540,19 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.HtmlBlock): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.HtmlBlock;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.HtmlBlock;
-    get(nameorid: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.HtmlBlock;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.HtmlBlock;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13368,7 +13561,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.HtmlBlock[];
     isEqual(x: Kooboo.Sites.Contents.Models.HtmlBlock, y: Kooboo.Sites.Contents.Models.HtmlBlock): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.HtmlBlock): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13396,18 +13589,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentFolder;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentFolder;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentFolder;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentFolder;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentFolder;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentFolder;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentFolder;
+    parseID(NameOrGuid: string): any;
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
     all(UseColumnData: boolean): Kooboo.Sites.Contents.Models.ContentFolder[];
@@ -13415,7 +13610,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.ContentFolder[];
     isEqual(x: Kooboo.Sites.Contents.Models.ContentFolder, y: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.ContentFolder): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13437,23 +13632,25 @@ declare namespace Kooboo.Sites.Repository {
     getTitlePropertyByContentType(ContentTypeId: any): Kooboo.Sites.Contents.Models.ContentProperty[];
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentType): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentType, UserId: any): boolean;
-    ensureSystemFields(contenttype: Kooboo.Sites.Contents.Models.ContentType): void;
+    ensureSystemFields(contentType: Kooboo.Sites.Contents.Models.ContentType): void;
     isNameExists(contentTypeName: string): boolean;
     getTitleColumns(contentTypeId: any): string[];
     getByFolder(FolderId: any): Kooboo.Sites.Contents.Models.ContentType;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.ContentType): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentType, UserId: any, betweenEvent: ()=>void): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentType;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentType;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentType;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentType;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentType;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentType;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentType;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13462,7 +13659,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.ContentType[];
     isEqual(x: Kooboo.Sites.Contents.Models.ContentType, y: Kooboo.Sites.Contents.Models.ContentType): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.ContentType): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13479,7 +13676,7 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     getCategories(folderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
-    fastGetCategories(folderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
+    fastGetCategories(CategoryFolderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
     updateCategory(ContentId: any, FolderId: any, CategoryIds: any[], UserId: any): void;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory, UserId: any): boolean;
@@ -13487,15 +13684,17 @@ declare namespace Kooboo.Sites.Repository {
     delete(id: any, UserId: any): number;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory, UserId: any, betweenEvent: ()=>void): boolean;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentCategory;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentCategory;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentCategory;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentCategory;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentCategory;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentCategory;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentCategory;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13504,7 +13703,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.ContentCategory[];
     isEqual(x: Kooboo.Sites.Contents.Models.ContentCategory, y: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.ContentCategory): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13522,7 +13721,6 @@ declare namespace Kooboo.Sites.Repository {
     tableScan: any;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.TextContent;
     ensureUserKey(content: Kooboo.Sites.Contents.Models.TextContent): void;
-    addOrUpdate(textContent: Kooboo.Sites.Contents.Models.TextContent, UserId?: any): boolean;
     getView(id: any, lang: string): Kooboo.Sites.ViewModel.TextContentViewModel;
     getView(content: Kooboo.Sites.Contents.Models.TextContent, lang: string): Kooboo.Sites.ViewModel.TextContentViewModel;
     getDefaultContentFromFolder(FolderId: any, CurrentCulture?: string): Kooboo.Sites.ViewModel.TextContentViewModel;
@@ -13530,19 +13728,22 @@ declare namespace Kooboo.Sites.Repository {
     getSortedTextContentsByFolder(folder: Kooboo.Sites.Contents.Models.ContentFolder, includeOfflineData: boolean, sortField?: string, ascending?: boolean, categories?: Record<any, any>): Kooboo.Sites.Contents.Models.TextContent[];
     sortTextContentsByFolder(textContents: Kooboo.Sites.Contents.Models.TextContent[], folder: Kooboo.Sites.Contents.Models.ContentFolder): Kooboo.Sites.Contents.Models.TextContent[];
     eusureNonLangContent(content: Kooboo.Sites.Contents.Models.TextContent, contenttype?: Kooboo.Sites.Contents.Models.ContentType): void;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent): boolean;
-    delete(id: any): number;
     delete(id: any, UserId: any): number;
+    addOrUpdate(textContent: Kooboo.Sites.Contents.Models.TextContent, UserId?: any): boolean;
     init(): void;
     isEqualTo(value: Kooboo.Sites.Contents.Models.TextContent): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent, UserId: any, betweenEvent: ()=>void): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.TextContent;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Contents.Models.TextContent;
     get(nameorid: string): Kooboo.Sites.Contents.Models.TextContent;
     getWithEvent(id: any): Kooboo.Sites.Contents.Models.TextContent;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.TextContent;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.TextContent;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13551,7 +13752,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Contents.Models.TextContent[];
     isEqual(x: Kooboo.Sites.Contents.Models.TextContent, y: Kooboo.Sites.Contents.Models.TextContent): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Contents.Models.TextContent): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13570,18 +13771,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.Authentication): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Authentication, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.Authentication, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Authentication): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Authentication;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.Authentication;
     get(nameorid: string): Kooboo.Sites.Models.Authentication;
     getWithEvent(id: any): Kooboo.Sites.Models.Authentication;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Authentication;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Authentication;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Authentication;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13590,7 +13793,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.Authentication[];
     isEqual(x: Kooboo.Sites.Models.Authentication, y: Kooboo.Sites.Models.Authentication): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.Authentication): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13609,18 +13812,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.OpenApi): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApi, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.OpenApi, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApi): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.OpenApi;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.OpenApi;
     get(nameorid: string): Kooboo.Sites.Models.OpenApi;
     getWithEvent(id: any): Kooboo.Sites.Models.OpenApi;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApi;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApi;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.OpenApi;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13629,7 +13834,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.OpenApi[];
     isEqual(x: Kooboo.Sites.Models.OpenApi, y: Kooboo.Sites.Models.OpenApi): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.OpenApi): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13648,18 +13853,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.SiteJob): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SiteJob, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.SiteJob, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SiteJob): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteJob;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.SiteJob;
     get(nameorid: string): Kooboo.Sites.Models.SiteJob;
     getWithEvent(id: any): Kooboo.Sites.Models.SiteJob;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteJob;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteJob;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteJob;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13668,7 +13875,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.SiteJob[];
     isEqual(x: Kooboo.Sites.Models.SiteJob, y: Kooboo.Sites.Models.SiteJob): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.SiteJob): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13687,18 +13894,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.UserOptions): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.UserOptions, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.UserOptions, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.UserOptions): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.UserOptions;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.UserOptions;
     get(nameorid: string): Kooboo.Sites.Models.UserOptions;
     getWithEvent(id: any): Kooboo.Sites.Models.UserOptions;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.UserOptions;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.UserOptions;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.UserOptions;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13707,7 +13916,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.UserOptions[];
     isEqual(x: Kooboo.Sites.Models.UserOptions, y: Kooboo.Sites.Models.UserOptions): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.UserOptions): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13726,18 +13935,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.SpaMultilingual): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SpaMultilingual;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.SpaMultilingual;
     get(nameorid: string): Kooboo.Sites.Models.SpaMultilingual;
     getWithEvent(id: any): Kooboo.Sites.Models.SpaMultilingual;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SpaMultilingual;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SpaMultilingual;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SpaMultilingual;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13746,7 +13957,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.SpaMultilingual[];
     isEqual(x: Kooboo.Sites.Models.SpaMultilingual, y: Kooboo.Sites.Models.SpaMultilingual): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.SpaMultilingual): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13765,18 +13976,20 @@ declare namespace Kooboo.Sites.Repository {
     init(): void;
     isEqualTo(value: Kooboo.Sites.Models.OpenApiAuthorize): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.OpenApiAuthorize;
-    getAsync(id: any): any;
     getFromCache(id: any): Kooboo.Sites.Models.OpenApiAuthorize;
     get(nameorid: string): Kooboo.Sites.Models.OpenApiAuthorize;
     getWithEvent(id: any): Kooboo.Sites.Models.OpenApiAuthorize;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApiAuthorize;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApiAuthorize;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.OpenApiAuthorize;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -13785,7 +13998,7 @@ declare namespace Kooboo.Sites.Repository {
     list(UseColumnData?: boolean): Kooboo.Sites.Models.OpenApiAuthorize[];
     isEqual(x: Kooboo.Sites.Models.OpenApiAuthorize, y: Kooboo.Sites.Models.OpenApiAuthorize): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: Kooboo.Sites.Models.OpenApiAuthorize): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
@@ -13839,12 +14052,65 @@ declare namespace Kooboo.Data.Pwa {
   }
 
 }
+declare namespace Kooboo.Data.Models.AI {
+  interface AISettings {
+    mcpServer: McpServerOptions;
+    vectorSearch: VectorSearchOptions;
+    payPerCrawl: PayPerCrawlOptions;
+    markdownEngine: MarkdownEngineOptions;
+    jsonLD: JsonLDOptions;
+  }
+
+  interface McpServerOptions {
+    enable: boolean;
+    stateless: boolean;
+    disableBuiltInTools: boolean;
+  }
+
+  interface VectorSearchOptions {
+    enable: boolean;
+    provider: string;
+    model: string;
+  }
+
+  interface PayPerCrawlOptions {
+    enable: boolean;
+    price: number;
+    dailyFreeQuota: number;
+    rules: CrawlRule[];
+  }
+
+  interface MarkdownEngineOptions {
+    enable: boolean;
+    rules: MarkdownOverrideRule[];
+  }
+
+  interface JsonLDOptions {
+    enable: boolean;
+    schemaMappings: Record<string, SchemaMapping>;
+  }
+
+  interface CrawlRule {
+    name: string;
+    multiplier: number;
+    description: string;
+  }
+
+  interface MarkdownOverrideRule {
+    matchPath: string;
+    useObject: string;
+    enable: boolean;
+  }
+
+}
 declare namespace Kooboo.Data.Logging {
   interface CodeLogSettings {
     enable: boolean;
     logLevel: Kooboo.Logging.LogLevel;
     keepDays: number;
   }
+
+  type ColorScheme = 'Unknown' | 'Light' | 'Dark';
 
   interface CodeLog extends Kooboo.Data.Storage.IWeeklyItem {
     message: string;
@@ -13903,10 +14169,23 @@ declare namespace Kooboo.Data.RateLimits {
 
   declare type VersionDataType = 'String' | 'Image';
 
+  declare interface ReadSpanAction extends Function {
+    target?: any;
+    method: any;
+    invoke(span: any): void;
+    beginInvoke(span: any, callback: any, object: any): any;
+    endInvoke(result: any): void;
+    getObjectData(info: any, context: any): void;
+    getInvocationList(): any[];
+    clone(): any;
+    dynamicInvoke(args: any[]): any;
+  }
+
 declare namespace Kooboo.Sites.Service {
   interface ResourceCount {
     name: string;
     count: number;
+    share: number;
     size: number;
     sizeString: string;
   }
@@ -13941,7 +14220,7 @@ declare namespace Kooboo.Sites.Contents.Models {
     clone(): any;
   }
 
-  interface ContentProperty {
+  interface ContentProperty extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     name: string;
     displayName: string;
     controlType: string;
@@ -13958,8 +14237,11 @@ declare namespace Kooboo.Sites.Contents.Models {
     multipleValue: boolean;
     selectionOptions: string;
     settings: string;
-    contentFolder: string;
+    autoGeneratedFrom: string;
     isMedia(): boolean;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
   }
 
   interface MultipleLanguageObject extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.Sites.Models.CoreObject {
@@ -14050,6 +14332,7 @@ declare namespace Kooboo.Sites.Contents.Models {
     enableAvailableDate: boolean;
     availableStartDate: Date;
     availableEndDate: Date;
+    offlineCultures: string[];
     online: boolean;
     version: number;
     constType: number;
@@ -14059,6 +14342,7 @@ declare namespace Kooboo.Sites.Contents.Models {
     onAvailableDate(): boolean;
     getValue(FieldName: string, Lang?: string): any;
     setValue(FieldName: string, Value: string, Lang?: string): void;
+    deepCopy(): TextContent;
     clone(): any;
   }
 
@@ -14079,6 +14363,7 @@ declare namespace Kooboo.Sites.Contents.Models {
   interface MultilingualContent {
     lang: string;
     fieldValues: Record<string, string>;
+    clone(): MultilingualContent;
   }
 
 }
@@ -14214,7 +14499,7 @@ declare namespace Kooboo.Data.Models.Converter {
 
 }
 declare namespace Kooboo.Lib.Utilities {
-  interface SizeMeansurement {
+  interface SizeMeasurement {
     height: number;
     width: number;
   }
@@ -14583,6 +14868,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     active: boolean;
     seoName: string;
     image: string;
+    imageMeta: string;
     type: Kooboo.Sites.Commerce.FilterType;
     condition: Kooboo.Sites.Commerce.Condition.Define;
     parentId: string;
@@ -14593,6 +14879,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface Product extends Kooboo.Sites.Commerce.Entity {
@@ -14603,6 +14890,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     seoName: string;
     featuredImage: string;
     images: string[];
+    imageMetas: string;
     tags: string[];
     isDigital: boolean;
     maxDownloadCount?: number;
@@ -14612,7 +14900,10 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     id: string;
     createdAt: Date;
     updatedAt: Date;
+    getCustomData(key: string, culture: string): any;
+    deepCopy(): Product;
     clone(): any;
+    getGuid(): any;
   }
 
   interface Cart extends Kooboo.Sites.Commerce.Entity {
@@ -14632,6 +14923,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface Address {
@@ -14661,6 +14953,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface Membership extends Kooboo.Sites.Commerce.Entity {
@@ -14678,6 +14971,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface Discount extends Kooboo.Sites.Commerce.Entity {
@@ -14687,6 +14981,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     condition: Kooboo.Sites.Commerce.Condition.Define;
     method: Kooboo.Sites.Commerce.DiscountMethod;
     code: string;
+    codeUsageLimit?: number;
     type: Kooboo.Sites.Commerce.DiscountType;
     value: number;
     isPercent: boolean;
@@ -14696,6 +14991,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
   }
 
   interface DigitalShipping extends Kooboo.Sites.Commerce.Entity {
@@ -14710,6 +15006,14 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     createdAt: Date;
     updatedAt: Date;
     clone(): any;
+    getGuid(): any;
+  }
+
+  interface CurrencyConfig {
+    code: string;
+    symbol: string;
+    exchangeRate: number;
+    autoUpdate: boolean;
   }
 
   interface ExtensionField {
@@ -14724,6 +15028,12 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     exportCode: string;
     filterable: boolean;
     isSelection: boolean;
+  }
+
+  interface Currency {
+    code: string;
+    symbol: string;
+    rate: number;
   }
 
   interface VariantOption extends VariantOptionItem {
@@ -14765,7 +15075,9 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     id: string;
     createdAt: Date;
     updatedAt: Date;
+    applyRate(rate: number): Shipping;
     clone(): any;
+    getGuid(): any;
   }
 
   interface OrderLine {
@@ -14814,6 +15126,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     cost: number;
     description: string;
     condition: Kooboo.Sites.Commerce.Condition.Define;
+    applyRate(rate: number): AdditionalCost;
   }
 
   interface SupportCountry {
@@ -14835,6 +15148,43 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     multilingual: Kooboo.Sites.Commerce.CustomData.MultilingualValue;
     image: string;
   }
+
+}
+declare namespace Kooboo.Sites.Commerce.DataStorage {
+  interface ProductReviewModel {
+    customerId: string;
+    productId: string;
+    variantId: string;
+    rating: number;
+    comment: string;
+    createdAt: Date;
+  }
+
+  interface CustomerOAuthModel {
+    customerId: string;
+    openId: string;
+    type: string;
+    createdAt: Date;
+  }
+
+  interface WishlistModel {
+    customerId: string;
+    productId: string;
+    variantId: string;
+    getHashGuid(): any;
+  }
+
+  interface CustomerPointModel {
+    customerId: string;
+    points: number;
+    createdAt: Date;
+    type: ChangeType;
+    description: string;
+    key: string;
+    disabled: boolean;
+  }
+
+  type ChangeType = 'OrderEarn' | 'OrderRedeem' | 'ManualEarn' | 'ManualRedeem' | 'LoginEarn';
 
 }
 declare namespace Kooboo.Sites.Commerce.ViewModels {
@@ -14902,29 +15252,8 @@ declare namespace Kooboo.Sites.Commerce.ViewModels {
   interface ShippingMail {
     subject: string;
     body: string;
-    default: ShippingMail;
+    default(): ShippingMail;
   }
-
-}
-declare namespace Kooboo.Sites.Commerce.DataStorage {
-  interface CustomerOAuthModel {
-    customerId: string;
-    openId: string;
-    type: string;
-    createdAt: Date;
-  }
-
-  interface CustomerPointModel {
-    customerId: string;
-    points: number;
-    createdAt: Date;
-    type: ChangeType;
-    description: string;
-    key: string;
-    disabled: boolean;
-  }
-
-  type ChangeType = 'OrderEarn' | 'OrderRedeem' | 'ManualEarn' | 'ManualRedeem' | 'LoginEarn';
 
 }
 declare namespace Kooboo.Sites.Commerce.RewardPoints {
@@ -14974,16 +15303,19 @@ declare namespace Kooboo.Sites.Commerce.CustomData {
     allowRepetition: boolean;
     isSummaryField: boolean;
     isSystemField: boolean;
+    tooltip: string;
     embedded: boolean;
     group: string;
     options: Record<string, any>;
     validations: FieldValidation[];
     selectionOptions: any[];
+    settings: string;
   }
 
   interface MultilingualValue extends Record<string, any> {
     comparer: any;
     count: number;
+    capacity: number;
     keys: string[];
     values: any;
     item?: any;
@@ -14992,6 +15324,8 @@ declare namespace Kooboo.Sites.Commerce.CustomData {
     containsKey(key: string): boolean;
     containsValue(value: any): boolean;
     getObjectData(info: any, context: any): void;
+    getAlternateLookup(): any;
+    tryGetAlternateLookup(lookup: any): boolean;
     onDeserialization(sender: any): void;
     remove(key: string): boolean;
     remove(key: string, value: any): boolean;
@@ -15002,7 +15336,7 @@ declare namespace Kooboo.Sites.Commerce.CustomData {
     trimExcess(capacity: number): void;
   }
 
-  type FieldType = 'TextBox' | 'TextArea' | 'RichEditor' | 'Selection' | 'CheckBox' | 'RadioBox' | 'Switch' | 'Number' | 'Content' | 'MediaFile' | 'File' | 'DateTime' | 'ColorPicker' | 'KeyValues' | 'ValueList';
+  type FieldType = 'TextBox' | 'TextArea' | 'RichEditor' | 'Selection' | 'CheckBox' | 'RadioBox' | 'Switch' | 'Number' | 'Content' | 'MediaFile' | 'File' | 'DateTime' | 'ColorPicker' | 'KeyValues' | 'ValueList' | 'AdvancedMediaFile';
 
   interface FieldValidation {
     name: string;
@@ -15029,6 +15363,64 @@ declare namespace Kooboo.Sites.Commerce.Notification {
     event: string;
     url: string;
   }
+
+}
+declare namespace Kooboo.Data.Context.RenderCompleted {
+  interface LogInfo {
+    type: LogType;
+    size: number;
+    startTime: Date;
+    executionEndTime: Date;
+    responseEndTime: Date;
+    isApiCall: boolean;
+    objectId: any;
+    constType: number;
+    errorMessage: string;
+    visitorLog: Kooboo.Data.Models.VisitorLog;
+    blockErrors: CodeBlockError[];
+    hasBlockError(): boolean;
+  }
+
+  type LogType = 'Unknown' | 'Visitor' | 'ResourceLog' | 'CodeError' | 'NotFound';
+
+  interface CodeBlockError {
+    constType: number;
+    objectId: any;
+    errorMessage: string;
+  }
+
+}
+declare namespace Kooboo.Data.Models.JsonLD {
+  interface SchemaFieldValue {
+    id: string;
+    type: string;
+    name: string;
+    value: any;
+    getKey(): string;
+  }
+
+}
+declare namespace Kooboo.Data.Server {
+  interface SiteCompressionStore {
+    fileName: string;
+    getOriginal(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
+    getZstd(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
+    writeBlobSpan(ObjectId: any, Version: number, OriginalValue: any, ZstdValue: any): Kooboo.IndexedDB.FileIO.CompressionBlobFile;
+    readSpan(position: number, length: number, func: any): any;
+    readSpan(position: number, length: number, action: ReadSpanAction): void;
+    close(): void;
+  }
+
+  interface AcceptCH {
+    eCT: number;
+    downlink: number;
+    rTT: number;
+    dPR: number;
+    colorScheme: Kooboo.Data.Logging.ColorScheme;
+    viewportWidth: number;
+  }
+
+  type CompressionType = 'None' | 'Gzip' | 'Zstd';
 
 }
 declare namespace Kooboo.Sites.Payment.Models {
@@ -15137,6 +15529,8 @@ declare namespace KScript.Payment.Stripe {
     returnUrl: string;
     /** The URL where we exchange the status of a transaction. */
     exchangeUrl: string;
+    /** Expiration time, in seconds, default value 86400 */
+    expire: number;
     statsData: StatsData;
     /** Order total amount Example: 1.50 */
     totalAmount: number;
@@ -15256,6 +15650,15 @@ declare namespace KScript.Payment.Alipay {
   }
 
 }
+declare namespace Kooboo.IndexedDB.Serializer {
+  interface IDatabaseObject {
+    toBytes(): number[];
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+  }
+
+}
 declare namespace Kooboo.Dom.CSS {
   interface CSSRuleList {
     length: number;
@@ -15331,39 +15734,6 @@ declare namespace Kooboo.Sites.ScriptModules.Render {
   }
 
 }
-declare namespace Kooboo.Sites.EmailMarketing.Delivery {
-  type EmailFormat = 'HTMLTextAlternative' | 'HTML' | 'TEXT';
-
-  interface CampaignInfo {
-    from: string;
-    subject: string;
-    hTML: string;
-    text: string;
-    webSiteId: any;
-    campaignId: number;
-    campaignName: string;
-    beforeCampaign: string;
-    afterCampaign: string;
-    beforeContact: string;
-    afterContact: string;
-    format: string;
-    enableAMP: boolean;
-    aMPBody: string;
-    lastModifyTick: number;
-    emailFormat: EmailFormat;
-  }
-
-}
-declare namespace Kooboo.IndexedDB.WORM.MetaObject {
-  interface IMetaObject {
-    metaByteLen: number;
-    metaKey: number;
-    skipValueBlock: boolean;
-    parseMetaBytes(bytes: number[]): void;
-    getMetaBytes(): number[];
-  }
-
-}
 declare namespace Kooboo.Sites.OAuth2.BuiltIn {
   interface BuiltInRedirect {
     /** 
@@ -15382,57 +15752,6 @@ k.response.redirect(url);
 
 }
 declare namespace Kooboo.Data.Storage {
-  interface VisitorLogStore {
-    groupByFunctions: Record<string, (p1:System.Int32,p2:System.String,)=>Kooboo.Data.Models.VisitorLog>;
-    topPages: Record<string, number>;
-    topReferrer: Record<string, number>;
-    topApplication: Record<string, number>;
-    topRefUrl: Record<string, number>;
-    topPageId: Record<string, number>;
-    topBrowser: Record<string, number>;
-    topSummary: TopSummary;
-    isActiveWeek: boolean;
-    browser(logItem: Kooboo.Data.Models.VisitorLog, dayOfWeek: number): string;
-    uniqueIP(logItem: Kooboo.Data.Models.VisitorLog, dayOfWeek: number): string;
-    errors(logItem: Kooboo.Data.Models.VisitorLog, DayOfWeek: number): string;
-    closeRead(): void;
-    getPage(logItem: Kooboo.Data.Models.VisitorLog, DayOfWeek: number): string;
-    getPageId(logItem: Kooboo.Data.Models.VisitorLog, DayOfWeek: number): string;
-    getTopReferrer(Summary: DayLogSummary): Record<string, number>;
-    getTopPageId(Summary: DayLogSummary): Record<string, number>;
-    add(Value: Kooboo.Data.Models.VisitorLog): void;
-    getDB(DayOfWeek: number): any;
-    add(data: Kooboo.Data.Models.VisitorLog, time?: Date): void;
-    close(): void;
-    daysTotal(ProcessSummary: boolean): Record<number, number>;
-    daysTotal(summary: DayLogSummary): Record<number, number>;
-    readSummary(ProcessRead?: boolean): DayLogSummary;
-    take(count: number): Kooboo.Data.Models.VisitorLog[];
-    list(PageNumber: number, PageSize: number): any;
-  }
-
-  interface ImageLogStore {
-    groupByFunctions: Record<string, (p1:System.String,)=>Kooboo.Data.Models.ImageLog>;
-    topUrl: Record<string, number>;
-    typeName: string;
-    collection: Kooboo.Data.Models.ImageLog[];
-    add(Value: Kooboo.Data.Models.ImageLog): void;
-    close(): void;
-    readSummary(): WeekLogSummary;
-    list(PageNumber: number, PageSize: number): any;
-  }
-
-  interface BotLogStore {
-    typeName: string;
-    groupByFunctions: Record<string, (p1:System.String,)=>Kooboo.Data.Models.VisitorLog>;
-    topBots: Record<string, number>;
-    collection: Kooboo.Data.Models.VisitorLog[];
-    add(Value: Kooboo.Data.Models.VisitorLog): void;
-    close(): void;
-    readSummary(): WeekLogSummary;
-    list(PageNumber: number, PageSize: number): any;
-  }
-
   interface ErrorLogStore {
     groupByFunctions: Record<string, (p1:System.String,)=>Kooboo.Data.Models.SiteErrorLog>;
     topStatusCode: Record<string, number>;
@@ -15451,23 +15770,6 @@ declare namespace Kooboo.Data.Storage {
     id: number;
   }
 
-  interface DayLogSummary {
-    daysTotal: Record<number, number>;
-    groupBy: Record<string, Record<string, number>>;
-    readDay: number;
-    readDayId: number;
-    addGroupBy(GroupKey: string, ObjectValue: string): void;
-  }
-
-  interface TopSummary {
-    topPages: Record<string, number>;
-    topReferrer: Record<string, number>;
-    topApplication: Record<string, number>;
-    topRefUrl: Record<string, number>;
-    topPageId: Record<string, number>;
-    topBrowser: Record<string, number>;
-  }
-
   interface WeekLogSummary {
     total: number;
     groupBy: Record<string, Record<string, number>>;
@@ -15475,11 +15777,22 @@ declare namespace Kooboo.Data.Storage {
     addGroupBy(GroupKey: string, ObjectValue: string): void;
   }
 
+  interface DayLogSummary {
+    daysTotal: Record<number, number>;
+    groupBy: Record<string, Record<string, number>>;
+    readDay: number;
+    readDayId: number;
+    isFinished: boolean;
+    reachEndCount: number;
+    reachEndDay: number;
+    addGroupBy(GroupKey: string, ObjectValue: string): void;
+  }
+
 }
 declare namespace Kooboo.IndexedDB {
   interface Database {
     log: EditLog;
-    tableLog: BlockFile;
+    tableLog: Kooboo.IndexedDB.FileIO.IBlockFile;
     tablePath: string;
     name: string;
     absolutePath: string;
@@ -15494,7 +15807,7 @@ declare namespace Kooboo.IndexedDB {
     getSequenceOld(name: string): any;
     getObjectStore(name: string): any;
     getReadingStore(name: string, paras?: ObjectStoreParameters): any;
-    rebuildObjectStore(currentStore: any, newparas: ObjectStoreParameters): any;
+    rebuildObjectStore(currentStore: any, newParas: ObjectStoreParameters): any;
     restoreFromDisk(StoreName: string): void;
     restoreFromDisk(store: any): any;
     deleteObjectStore(name: string): void;
@@ -15530,15 +15843,6 @@ declare namespace Kooboo.IndexedDB {
   }
 
   type EditType = 'Add' | 'Update' | 'Delete';
-
-  interface FilePart {
-    fullFileName: string;
-    blockPosition: number;
-    relativePosition: number;
-    relativePositionStart: number;
-    length: number;
-    fieldName: string;
-  }
 
   interface LogEntry {
     id: number;
@@ -15600,23 +15904,34 @@ declare namespace Kooboo.IndexedDB {
     setPrimaryKeyField(expression: any, len?: number): void;
   }
 
-  interface BlockFile {
-    stream: any;
-    openOrCreate(): void;
-    getContent(position: number, KeyColumnOffset: number): number[];
-    add(bytes: number[], TotalByteLen: number): number;
-    updatePart(diskPosition: number, parts: number[]): boolean;
-    get(position: number): number[];
-    getAsync(position: number): any;
-    delete(position: number): void;
-    getLength(position: number): number;
-    getAllCols(position: number, ColumnLen: number): number[];
-    getAllColsAsync(position: number, ColumnLen: number): any;
-    getCol(position: number, relativePos: number, len: number): number[];
-    updateCol(position: number, relativeposition: number, length: number, values: number[]): void;
+}
+declare namespace Kooboo.Sites.Analytics.ABTest {
+  interface AbTestStore {
+    assignmentStore: DailyUserAssignmentStore;
+    getStatStore(TestName: string): AbTestStatStore;
+    hasObjectId(ObjectId: any): boolean;
+    getActiveTests(objectType: number, objectId: any): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel[];
+    addOrUpdate(test: Kooboo.Sites.Analytics.ABTest.Models.AbTestModel): void;
+    delete(testName: string): void;
+    getAll(): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel[];
+    get(TestName: string): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel;
+  }
+
+  interface AbTestStatStore {
+    testName: string;
+    variantStat: any;
+    updateImpression(variantId: number, isUniqueUser: boolean): void;
+    updateConversion(revenue: number, variantId: number): void;
     close(): void;
-    delSelf(): void;
-    flush(): void;
+    dispose(): void;
+  }
+
+  interface DailyUserAssignmentStore {
+    dateName: string;
+    getUserAssignment(UserId: any, TestName: string): number;
+    assignUser(UserId: any, TestName: string, VariantId: number): void;
+    close(): void;
+    dispose(): void;
   }
 
 }
@@ -15626,9 +15941,12 @@ declare namespace Kooboo.Sites.AIBuilder.Application {
     getLang(): string;
     getByName(Name: string): any;
     get(id: any): any;
+    get(): any;
     addOrUpdate(model: any): void;
-    addOrUpdateEntity(entity: Kooboo.Sites.AIBuilder.Application.Model.Entity): string;
+    addOrUpdateEntity(entity: Kooboo.Sites.AIBuilder.Application.Model.Entity, Merge?: boolean): string;
+    combineEntity(response: Kooboo.Sites.AIBuilder.Application.Response.EntityResponse): Kooboo.Sites.AIBuilder.Application.Model.Entity;
     factsByEntityId(entityId: any): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
+    factsByEntity(entity: Kooboo.Sites.AIBuilder.Application.Model.Entity): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
     entitiesByFact(factId: any): Kooboo.Sites.AIBuilder.Application.Model.Entity[];
     entitiesByFacts(factIds: any[]): Record<any, any>;
     entityUsedBy(entityId: any): Kooboo.Sites.AIBuilder.Application.ViewModel.EntityUsedBy[];
@@ -15638,8 +15956,11 @@ declare namespace Kooboo.Sites.AIBuilder.Application {
     listByRef(RefId: any): any[];
     listByType(): any[];
     buildBackGroundChain(model: any): string;
+    buildDomainContextInfo(): string;
     addOrUpdateFact(fact: Kooboo.Sites.AIBuilder.Application.Model.Fact): void;
+    entitiesFilterByFacts(AllEntities: Kooboo.Sites.AIBuilder.Application.Model.Entity[], Facts: Kooboo.Sites.AIBuilder.Application.Model.Fact[]): Kooboo.Sites.AIBuilder.Application.Model.Entity[];
     listScenarioViews(scenarioNames: string[], IncludeFacts?: boolean): Kooboo.Sites.AIBuilder.Application.ViewModel.ScenarioViewModel[];
+    wireFrameByPage(pageUrl: string): Kooboo.Sites.AIBuilder.Application.Model.WireFrame;
   }
 
 }
@@ -15679,6 +16000,66 @@ declare namespace Kooboo.Sites.Sync.SiteClusterSync {
   }
 
 }
+declare namespace Kooboo.Sites.AI.Functions.Custom {
+  interface SiteAIFunctionRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
+    storeName: string;
+    store: any;
+    query: any;
+    tableScan: any;
+    init(): void;
+    isEqualTo(value: SiteAIFunction): boolean;
+    addOrUpdate(value: SiteAIFunction, UserId: any): boolean;
+    addOrUpdate(value: SiteAIFunction, UserId: any, betweenEvent: ()=>void): boolean;
+    addOrUpdate(value: SiteAIFunction): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): SiteAIFunction;
+    getFromCache(id: any): SiteAIFunction;
+    get(nameorid: string): SiteAIFunction;
+    getWithEvent(id: any): SiteAIFunction;
+    getByUrl(relativeUrl: string): SiteAIFunction;
+    getMetaByUrl(relativeUrl: string): SiteAIFunction;
+    getByNameOrId(NameOrGuid: string): SiteAIFunction;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): SiteAIFunction[];
+    all(): SiteAIFunction[];
+    list(UseColumnData?: boolean): SiteAIFunction[];
+    isEqual(x: SiteAIFunction, y: SiteAIFunction): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: SiteAIFunction): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
+  }
+
+  interface SiteAIFunction extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+    id: any;
+    function: string;
+    inputSchema: string;
+    description: string;
+    tags: string[];
+    approvalRequired: boolean;
+    online: boolean;
+    version: number;
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    lastModifyTick: number;
+    name: string;
+    clone(): any;
+  }
+
+}
 declare namespace Kooboo.Sites.BackendEvent {
   interface BackendRuleRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
     storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
@@ -15694,18 +16075,20 @@ declare namespace Kooboo.Sites.BackendEvent {
     init(): void;
     isEqualTo(value: BackendRule): boolean;
     addOrUpdate(value: BackendRule, UserId: any): boolean;
+    addOrUpdate(value: BackendRule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: BackendRule): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
+    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): BackendRule;
-    getAsync(id: any): any;
     getFromCache(id: any): BackendRule;
     get(nameorid: string): BackendRule;
     getWithEvent(id: any): BackendRule;
     getByUrl(relativeUrl: string): BackendRule;
     getMetaByUrl(relativeUrl: string): BackendRule;
     getByNameOrId(NameOrGuid: string): BackendRule;
+    parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
@@ -15714,13 +16097,13 @@ declare namespace Kooboo.Sites.BackendEvent {
     list(UseColumnData?: boolean): BackendRule[];
     isEqual(x: BackendRule, y: BackendRule): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
     checkBeingUsed(SiteObject: BackendRule): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
   }
 
-  type EventType = 'ImageUploading' | 'ImageUpload' | 'ImageUpdating' | 'ImageUpdated' | 'ImageDeleting' | 'ImageDelete' | 'PageCreating' | 'PageCreated' | 'PageUpdating' | 'PageUpdated' | 'PageDeleting' | 'PageDeleted' | 'ViewCreating' | 'ViewCreated' | 'ViewUpdating' | 'ViewUpdated' | 'ViewDeleting' | 'ViewDeleted' | 'LayoutCreating' | 'LayoutCreated' | 'LayoutUpdating' | 'LayoutUpdated' | 'LayoutDeleting' | 'LayoutDeleted' | 'CodeCreating' | 'CodeCreated' | 'CodeUpdating' | 'CodeUpdated' | 'CodeDeleting' | 'CodeDeleted' | 'MenuCreating' | 'MenuCreated' | 'MenuUpdating' | 'MenuUpdated' | 'MenuDeleting' | 'MenuDeleted' | 'HtmlBlockCreating' | 'HtmlBlockCreated' | 'HtmlBlockUpdating' | 'HtmlBlockUpdated' | 'HtmlBlockDeleting' | 'HtmlBlockDeleted' | 'ContentCreating' | 'ContentCreated' | 'ContentUpdating' | 'ContentUpdated' | 'ContentDeleting' | 'ContentDeleted' | 'LabelCreating' | 'LabelCreated' | 'LabelUpdating' | 'LabelUpdated' | 'LabelDeleting' | 'LabelDeleted' | 'ScriptCreating' | 'ScriptCreated' | 'ScriptUpdating' | 'ScriptUpdated' | 'ScriptDeleting' | 'ScriptDeleted' | 'StyleCreating' | 'StyleCreated' | 'StyleUpdating' | 'StyleUpdated' | 'StyleDeleting' | 'StyleDeleted' | 'ProductCreating' | 'ProductCreated' | 'ProductUpdating' | 'ProductUpdated' | 'ProductDeleting' | 'ProductDeleted' | 'ProductCategoryCreating' | 'ProductCategoryCreated' | 'ProductCategoryUpdating' | 'ProductCategoryUpdated' | 'ProductCategoryDeleting' | 'ProductCategoryDeleted' | 'OrderConfirmed' | 'OrderDelivered' | 'OrderCancelled';
+  type EventType = 'ImageUploading' | 'ImageUpload' | 'ImageUpdating' | 'ImageUpdated' | 'ImageDeleting' | 'ImageDelete' | 'PageCreating' | 'PageCreated' | 'PageUpdating' | 'PageUpdated' | 'PageDeleting' | 'PageDeleted' | 'ViewCreating' | 'ViewCreated' | 'ViewUpdating' | 'ViewUpdated' | 'ViewDeleting' | 'ViewDeleted' | 'LayoutCreating' | 'LayoutCreated' | 'LayoutUpdating' | 'LayoutUpdated' | 'LayoutDeleting' | 'LayoutDeleted' | 'CodeCreating' | 'CodeCreated' | 'CodeUpdating' | 'CodeUpdated' | 'CodeDeleting' | 'CodeDeleted' | 'MenuCreating' | 'MenuCreated' | 'MenuUpdating' | 'MenuUpdated' | 'MenuDeleting' | 'MenuDeleted' | 'HtmlBlockCreating' | 'HtmlBlockCreated' | 'HtmlBlockUpdating' | 'HtmlBlockUpdated' | 'HtmlBlockDeleting' | 'HtmlBlockDeleted' | 'ContentCreating' | 'ContentCreated' | 'ContentUpdating' | 'ContentUpdated' | 'ContentDeleting' | 'ContentDeleted' | 'LabelCreating' | 'LabelCreated' | 'LabelUpdating' | 'LabelUpdated' | 'LabelDeleting' | 'LabelDeleted' | 'ScriptCreating' | 'ScriptCreated' | 'ScriptUpdating' | 'ScriptUpdated' | 'ScriptDeleting' | 'ScriptDeleted' | 'StyleCreating' | 'StyleCreated' | 'StyleUpdating' | 'StyleUpdated' | 'StyleDeleting' | 'StyleDeleted' | 'ProductCreating' | 'ProductCreated' | 'ProductUpdating' | 'ProductUpdated' | 'ProductDeleting' | 'ProductDeleted' | 'ProductCopied' | 'ProductCategoryCreating' | 'ProductCategoryCreated' | 'ProductCategoryUpdating' | 'ProductCategoryUpdated' | 'ProductCategoryDeleting' | 'ProductCategoryDeleted' | 'OrderConfirmed' | 'OrderDelivered' | 'OrderCancelled';
 
   interface BackendRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
     eventType: EventType;
@@ -15755,13 +16138,12 @@ declare namespace Kooboo.Lib.Utilities.UAParser {
     oS: string;
     application: ApplicationInfo;
     device: string;
-    toInt(): number;
     fromInt(value: number): ClientInfo;
-    isGoogleBot(VerifyIP: string): boolean;
   }
 
   interface ApplicationInfo {
     isWebBrowser: boolean;
+    isWebView: boolean;
     name: string;
     version: string;
   }
@@ -15783,6 +16165,13 @@ declare namespace Kooboo.Sites.DataTraceAndModify {
   interface ITraceability {
     source: string;
     getTraceInfo(): any;
+  }
+
+}
+declare namespace Kooboo.Sites.Scripting.Global.Redis {
+  interface ValueWithExpiry {
+    expirySeconds: number;
+    value: string;
   }
 
 }
@@ -15871,6 +16260,61 @@ arrays example:[["Id","Name","Age","CreationTime"],["1","My Name","12","2022-12-
   }
 
 }
+declare namespace Kooboo.Sites.Render.StoreCache {
+  interface SiteCacheFile {
+    monthName: number;
+    fileName: string;
+    getCache(identify: CacheIdentity): Kooboo.IndexedDB.FileIO.FilePart;
+    writeBlob(Id: any, version: number, fileType: Kooboo.IndexedDB.FileIO.FileType, blob: any): Kooboo.IndexedDB.FileIO.BlobFile;
+    close(): void;
+  }
+
+  interface CacheIdentity {
+    objectId: any;
+    version: number;
+    afterTime: Date;
+  }
+
+}
+declare namespace Kooboo.Sites.Render.HeaderRender {
+  interface HeaderRenderOperation {
+    dataQuery: DataQuery[];
+    instructions: HeaderRenderInstruction[];
+    addPageInstruction(instruction: HeaderRenderInstruction[]): void;
+    addHeaderInstruction(instruction: HeaderRenderInstruction[]): void;
+    initValue(context: Kooboo.Data.Context.RenderContext): void;
+    assignHeaderValue(context: Kooboo.Sites.Render.KoobooRenderContext, data: any): void;
+    lastVerifyValues(context: Kooboo.Sites.Render.KoobooRenderContext): void;
+  }
+
+  interface HeaderRenderInstruction {
+    setKey(key: string): void;
+    getKey(): string;
+  }
+
+  interface DataQuery {
+    query: Kooboo.Data.Context.GetValueQuery;
+  }
+
+}
+declare namespace Kooboo.Sites.Render.Utility {
+  interface ScriptEnvironment {
+    setValue(key: string, value: any): void;
+    remove(key: string): void;
+    getValue(key: string): any;
+  }
+
+}
+declare namespace Kooboo.IndexedDB.WORM.MetaObject {
+  interface IMetaObject {
+    metaByteLen: number;
+    metaKey: number;
+    skipValueBlock: boolean;
+    parseMetaBytes(bytes: number[]): void;
+    getMetaBytes(): number[];
+  }
+
+}
 declare namespace Kooboo.Mail.ViewModel {
   interface AddressModel {
     name: string;
@@ -15910,12 +16354,14 @@ declare namespace Kooboo.Sites.Commerce.Calculate {
     amount: number;
     code: string;
     title: string;
+    applyRate(rate: number): DiscountAllocation;
   }
 
   interface ShippingAllocation {
     cost: number;
     title: string;
     isAdditional: boolean;
+    applyRate(rate: number): ShippingAllocation;
   }
 
 }
@@ -15951,33 +16397,54 @@ declare namespace Kooboo.Data.Config {
   }
 
 }
-declare namespace Kooboo.Sites.EmailMarketing.Automation.Cells {
-  interface CellBase {
-    cellId: any;
-    cellType: string;
-    title: string;
-    description: string;
+declare namespace Kooboo.IndexedDB.FileIO {
+  interface FilePart {
+    fullFileName: string;
+    blockPosition: number;
+    relativePosition: number;
+    startPosition: number;
+    relativePositionStart: number;
+    length: number;
+    fieldName: string;
+    fileType: FileType;
   }
 
-  interface StartCell extends CellBase {
-    id: string;
-    newContactOnly: boolean;
-    cellType: string;
-    cellId: any;
-    title: string;
-    description: string;
+  interface CompressionBlobFile {
+    startPosition: number;
+    reservedValueLength: number;
   }
 
-}
-declare namespace Kooboo.Data.Models.AWS {
-  interface AwsSmtpServer {
-    server: string;
-    port: number;
-    userName: string;
-    password: string;
-    region: string;
-    maxThread: number;
-    maxMailPerConnection: number;
+  interface IBlockFile {
+    fullFileName: string;
+    length: number;
+    add(bytes: number[], totalByteLen: number): number;
+    get(position: number): number[];
+    getPartial(position: number, offset: number, count: number): number[];
+    updatePart(diskPosition: number, parts: number[]): boolean;
+    updateCol(position: number, relativePosition: number, length: number, values: number[]): void;
+    delete(position: number): void;
+    getLength(position: number): number;
+    getCol(position: number, relativePos: number, len: number): number[];
+    getAllCols(position: number, ColumnLen: number): number[];
+    flush(): void;
+    close(): void;
+    delSelf(): void;
+    get(position: number, converter: any): any;
+    getAllCols(position: number, ColumnLen: number, converter: any): any;
+    readFile(position: number): any;
+    readObject(position: number): any;
+    readToObject(position: number, Value: any): void;
+  }
+
+  type FileType = 'Undefined' | 'GZIP' | 'ZSTD';
+
+  interface BlobFile {
+  }
+
+  interface IFileReader {
+    binary: FilePart;
+    setFieldValue(FieldHash: number, span: any): void;
+    isBinaryField(FieldHash: number): boolean;
   }
 
 }
@@ -16229,105 +16696,91 @@ declare namespace Kooboo.Api {
   }
 
 }
-declare namespace Kooboo.Sites.AIBuilder.Application.Model {
-  interface Entity extends AIModelBase {
-    id: any;
-    facts: any[];
-    attributes: EntityAttribute[];
-    parentType: string;
-    dbName: string;
-    otherNames: string[];
+declare namespace Kooboo.Sites.Analytics.ABTest.Models {
+  interface AbTestModel {
+    name: string;
     description: string;
-    databaseObject: boolean;
-    isHumanEdit: boolean;
-    source: string;
+    constObjectType: number;
+    objectId: any;
+    objectDisplayName: string;
+    status: AbTestStatus;
+    createdAt: Date;
+    startAt: Date;
+    endAt: Date;
+    userCondition: AbTestCondition;
+    variants: AbVariant[];
+    goalId: number;
+    isRunning: boolean;
+  }
+
+  type AbTestStatus = 'Draft' | 'Running' | 'Paused' | 'Completed';
+
+  interface AbTestCondition {
+    script: string;
+    filters: AbTestFilter[];
+  }
+
+  interface AbVariant {
+    id: number;
     name: string;
-    type: number;
-    lastModified: Date;
-    jsonModel: string;
-    isAnalyzed: boolean;
-    refId: any;
-    removeFact(FactId: any): void;
+    weight: number;
+    content: AbVariantContent;
   }
 
-  interface Fact extends AIModelBase {
-    name: string;
-    entities: string[];
-    factExpression: string;
-    isDescriptiveFact: boolean;
-    factType: string;
-    roles: Role[];
-    objectTypes: ObjectType[];
-    constraints: Constraint[];
-    verbalization: string;
-    examples: Example[];
-    notes: string;
-    modified: boolean;
-    constraintVerbalization: ConstraintVerbalization[];
-    id: any;
-    type: number;
-    lastModified: Date;
-    jsonModel: string;
-    isAnalyzed: boolean;
-    refId: any;
-    getSentence(): string;
+  interface AbTestFilter {
+    property: string;
+    comparer: string;
+    value: any;
   }
 
-  interface EntityAttribute {
-    name: string;
-    otherNames: string[];
-    dbName: string;
-    dataType: string;
-    facts: any[];
-    identifier: boolean;
-    uniqueness: boolean;
-    mandatory: boolean;
-    isHumanEdit: boolean;
+  interface AbVariantContent {
+    constObjectType: number;
+    objectId: any;
+    displayName: string;
+    objectName: string;
+    fieldOverWrites: boolean;
+    fieldOverrides: AbFieldOverride[];
   }
 
-  interface AIModelBase {
-    id: any;
-    name: string;
-    type: number;
-    lastModified: Date;
-    jsonModel: string;
-    isAnalyzed: boolean;
-    refId: any;
-  }
-
-  interface Role {
-    rolePlayer: string;
-    roleName: string;
-  }
-
-  interface ObjectType {
-    name: string;
-    kind: string;
-    identifier?: string;
-    dataType?: string;
-    belongsTo?: string;
-    dbName?: string;
-  }
-
-  interface Constraint {
-    type: string;
-    onRoles: string[];
-  }
-
-  interface Example {
-    sentence: string;
-    fields: Field[];
-  }
-
-  interface ConstraintVerbalization {
-    eachObjects: string[];
-    target: string;
-  }
-
-  interface Field {
+  interface AbFieldOverride {
     fieldName: string;
+    values: AbLocalizedValue[];
+  }
+
+  interface AbLocalizedValue {
+    culture: string;
     value: string;
-    belongsTo: string;
+  }
+
+}
+declare namespace Kooboo.Sites.AIBuilder.Application.Response {
+  interface EntityResponse {
+    name: string;
+    dbName: string;
+    oldDbNames: string[];
+    modelKind: string;
+    storage: string;
+    sourceEntities: string[];
+    classificationReason: string;
+    attributes: Kooboo.Sites.AIBuilder.Application.Model.EntityAttribute[];
+  }
+
+  interface FactSplitResponse {
+    facts: FactAnalysis[];
+  }
+
+  interface FactAnalysis {
+    factId: any;
+    originalFactExpression: string;
+    originalSentence: string;
+    shouldSplit: boolean;
+    reason: string;
+    splitFacts: SplitFact[];
+  }
+
+  interface SplitFact {
+    factExpression: string;
+    sentence: string;
   }
 
 }
@@ -16348,26 +16801,6 @@ declare namespace Kooboo.Sites.AIBuilder.Application.ViewModel {
   interface FactView {
     factExpression: string;
     factSentence: string;
-  }
-
-}
-declare namespace Kooboo.Sites.AIBuilder.Application.Response {
-  interface FactSplitResponse {
-    facts: FactAnalysis[];
-  }
-
-  interface FactAnalysis {
-    factId: any;
-    originalFactExpression: string;
-    originalSentence: string;
-    shouldSplit: boolean;
-    reason: string;
-    splitFacts: SplitFact[];
-  }
-
-  interface SplitFact {
-    factExpression: string;
-    sentence: string;
   }
 
 }
@@ -16412,6 +16845,24 @@ declare namespace Kooboo.Sites.SiteTransfer {
   }
 
   type EnumTransferTaskType = 'ByLevel' | 'BySelectedPages' | 'SinglePage';
+
+}
+declare namespace Kooboo.Sites.Models.BinaryView {
+  interface ImageBinaryView extends Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.FileIO.IFileReader {
+    binary: Kooboo.IndexedDB.FileIO.FilePart;
+    id: any;
+    name: string;
+    alt: string;
+    extension: string;
+    isSvg: boolean;
+    height: number;
+    width: number;
+    size: number;
+    version: number;
+    online: boolean;
+    isBinaryField(FieldHash: number): boolean;
+    setFieldValue(fieldHash: number, span: any): void;
+  }
 
 }
 declare namespace Kooboo.Sites.FrontEvent {
@@ -16846,6 +17297,7 @@ declare namespace MimeKit {
     load(contentType: ContentType, content: any, cancellationToken?: any): MimeEntity;
     loadAsync(contentType: ContentType, content: any, cancellationToken?: any): any;
     getText(): string;
+    isAttachment(): boolean;
   }
 
   interface InternetAddress {
@@ -18845,6 +19297,263 @@ Defaults to false. If set to true, the model will output at most one tool use. *
     image: string;
   }
 
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_ChatRecordMessage_Types_Record {
+    msgtime: number;
+    type?: string;
+    content?: string;
+    from_chatroom: boolean;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_CollectMessage_Types_Detail {
+    id?: string;
+    type?: string;
+    ques?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_InfoMessage_Types_NewsItem {
+    url?: string;
+    title?: string;
+    description?: string;
+    picurl?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MeetingVoiceCallMessage_Types_ShareFileData {
+    filename?: string;
+    demooperator?: string;
+    starttime: number;
+    endtime: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MeetingVoiceCallMessage_Types_ShareScreenData {
+    share?: string;
+    starttime: number;
+    endtime: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MixedMessage_Types_Message {
+    type?: string;
+    content?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse {
+    msgid?: string;
+    action?: string;
+    from?: string;
+    tolist?: string[];
+    user?: string;
+    roomid?: string;
+    msgtime: number;
+    msgtype?: string;
+    text: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_TextMessage;
+    image: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ImageMessage;
+    revoke: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_RevokeMessage;
+    agree: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_AgreeMessage;
+    voice: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoiceMessage;
+    video: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VideoMessage;
+    card: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_BusinessCardMessage;
+    location: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_LocationMessage;
+    emotion: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_EmotionMessage;
+    file: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_FileMessage;
+    link: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_LinkMessage;
+    weapp: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MiniProgramMessage;
+    chatrecord: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ChatRecordMessage;
+    todo: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_TodoMessage;
+    vote: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoteMessage;
+    collect: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_CollectMessage;
+    redpacket: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_RedPacketMessage;
+    meeting: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MeetingMessage;
+    doc: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_DocumentMessage;
+    info: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_InfoMessage;
+    calendar: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_CalendarMessage;
+    mixed: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MixedMessage;
+    meeting_voice_call: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MeetingVoiceCallMessage;
+    voip_doc_share: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoIPDocumentShareMessage;
+    external_redpacket: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ExternalRedPacketMessage;
+    sphfeed: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ChannelsFeedMessage;
+    voiceid?: string;
+    voipid?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_AgreeMessage {
+    userid?: string;
+    agree_time: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_BusinessCardMessage {
+    corpname?: string;
+    userid?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_CalendarMessage {
+    title?: string;
+    creatorname?: string;
+    starttime: number;
+    endtime: number;
+    attendeename?: string[];
+    place?: string;
+    remarks?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ChannelsFeedMessage {
+    feed_type: number;
+    sph_name?: string;
+    feed_desc?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ChatRecordMessage {
+    title?: string;
+    item?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_ChatRecordMessage_Types_Record[];
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_CollectMessage {
+    room_name?: string;
+    creator?: string;
+    create_time?: string;
+    title?: string;
+    details?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_CollectMessage_Types_Detail[];
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_DocumentMessage {
+    title?: string;
+    link_url?: string;
+    doc_creator?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_EmotionMessage {
+    type: number;
+    width: number;
+    height: number;
+    sdkfileid?: string;
+    md5sum?: string;
+    imagesize: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ExternalRedPacketMessage {
+    type: number;
+    wish?: string;
+    totalcnt: number;
+    totalamount: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_FileMessage {
+    filename?: string;
+    fileext?: string;
+    sdkfileid?: string;
+    md5sum?: string;
+    filesize: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_ImageMessage {
+    sdkfileid?: string;
+    md5sum?: string;
+    filesize: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_InfoMessage {
+    content?: string;
+    url?: string;
+    title?: string;
+    description?: string;
+    item?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_InfoMessage_Types_NewsItem[];
+    callduration?: number;
+    invitetype?: number;
+    filename?: string;
+    meeting_id?: string;
+    notification_type?: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_LinkMessage {
+    link_url?: string;
+    title?: string;
+    description?: string;
+    image_url?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_LocationMessage {
+    latitude: number;
+    longitude: number;
+    title?: string;
+    address?: string;
+    zoom: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MeetingMessage {
+    meetingtype: number;
+    meetingid?: string;
+    topic?: string;
+    starttime: number;
+    endtime: number;
+    address?: string;
+    remarks?: string;
+    status?: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MeetingVoiceCallMessage {
+    sdkfileid?: string;
+    endtime: number;
+    demofiledata?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MeetingVoiceCallMessage_Types_ShareFileData[];
+    sharescreendata?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MeetingVoiceCallMessage_Types_ShareScreenData[];
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MiniProgramMessage {
+    title?: string;
+    description?: string;
+    displayname?: string;
+    username?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_MixedMessage {
+    item?: SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_Abstractions_MixedMessage_Types_Message[];
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_RedPacketMessage {
+    type: number;
+    wish?: string;
+    totalcnt: number;
+    totalamount: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_RevokeMessage {
+    pre_msgid?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_TextMessage {
+    content?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_TodoMessage {
+    title?: string;
+    content?: string;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VideoMessage {
+    play_length: number;
+    sdkfileid?: string;
+    md5sum?: string;
+    filesize: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoiceMessage {
+    play_length: number;
+    sdkfileid?: string;
+    md5sum?: string;
+    voice_size: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoIPDocumentShareMessage {
+    filename?: string;
+    sdkfileid?: string;
+    md5sum?: string;
+    filesize: number;
+  }
+
+  interface SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse_Types_VoteMessage {
+    voteid?: string;
+    votetype: number;
+    votetitle?: string;
+    voteitem?: string[];
+  }
+
   interface SpamassassinNet_DatabaseKind {
   }
 
@@ -18876,6 +19585,21 @@ Defaults to false. If set to true, the model will output at most one tool use. *
     /** Translation target language */
     to: string;
     text: string;
+  }
+
+  interface WeWork_ChatRecordsRequest {
+    corpId?: string;
+    secretKey?: string;
+    privateKey?: string;
+    lastSequence: number;
+    limit: number;
+  }
+
+  interface WeWork_MediaFileRequest {
+    corpId?: string;
+    secretKey?: string;
+    privateKey?: string;
+    fileId?: string;
   }
 
   interface imageclassify {
@@ -19370,6 +20094,28 @@ prompt: You question
     chat(prompt: string): Kooboo_ApiMarket_OpenAI_ResponseDTO_TurboResDTO;
   }
 
+  interface weworkfinance {
+    /** var request={
+    corpId:"xx",
+    secretKey:"xx",
+    privateKey:"xx",
+    lastSequence:0,
+    limit:100
+}
+k.market.weworkfinance.getChatRecords(request)
+ */
+    getChatRecords(body: WeWork_ChatRecordsRequest): SKIT_FlurlHttpClient_Wechat_Work_ExtendedSDK_Finance_Models_DecryptChatRecordResponse[];
+    /** var request={
+    corpId:"xx",
+    secretKey:"xx",
+    privateKey:"xx",
+    fileId:"xx"
+}
+var base64 = k.market.weworkfinance.getMediaFile(request)
+ */
+    getMediaFile(body: WeWork_MediaFileRequest): string;
+  }
+
   interface Market {
     imageclassify: KMarket.imageclassify;
     audio: KMarket.audio;
@@ -19383,6 +20129,7 @@ prompt: You question
     ocr: KMarket.ocr;
     inboxpreview: KMarket.inboxpreview;
     deepseek: KMarket.deepseek;
+    weworkfinance: KMarket.weworkfinance;
   }
 
 }
@@ -19393,3523 +20140,6 @@ declare namespace KScript {
 
 }
 
-declare namespace KScript.Integration {
-  interface EmptyResponse {
-  }
-
-  interface TikTok_Address {
-    region: string;
-    state: string;
-    city: string;
-    distict: string;
-    town: string;
-    contact_person: string;
-    first_name: string;
-    last_name: string;
-    first_name_local_script: string;
-    last_name_local_script: string;
-    postal_code: string;
-    full_address: string;
-    region_code: string;
-    phone_number: string;
-    address_line1: string;
-    address_line2: string;
-    address_line3: string;
-    address_line4: string;
-    geolocation: TikTok_Geolocation;
-  }
-
-  interface TikTok_AddressBase {
-    full_address: string;
-    phone_number: string;
-    name: string;
-    postal_code: string;
-    address_detail: string;
-    region_code: string;
-    address_line1: string;
-    address_line2: string;
-    address_line3: string;
-    address_line4: string;
-  }
-
-  interface TikTok_Attribute {
-    /** Unique identifier for the attribute. */
-    id: string;
-    /** Display name of the attribute. */
-    name: string;
-    /** Type of the attribute (e.g., text, number, selection). */
-    type: string;
-    /** Indicates whether this attribute is required. */
-    is_requried: boolean;
-    /** Indicates whether this attribute allows custom values. */
-    is_customizable: boolean;
-    /** Indicates whether multiple values can be selected for this attribute. */
-    is_multiple_selection: boolean;
-    values: TikTok_AttributeValue[];
-    value_data_format: string;
-    requirement_conditions: TikTok_RequirementCondition[];
-  }
-
-  interface TikTok_AttributeValue {
-    id: string;
-    name: string;
-    icon_url: string;
-  }
-
-  interface TikTok_Audit {
-    status: string;
-    pre_approved_reasons: string[];
-  }
-
-  interface TikTok_AuditFailedReason {
-    position: string;
-    reasons: string[];
-    suggestions: string[];
-    listing_platform: string;
-  }
-
-  interface TikTok_AuthorizeRequest {
-    /** If the user accepts the authorization request, they will be redirected to the Redirect URL */
-    redirect_url: string;
-    /** A state parameter should be added to your authorization link for extra security */
-    state: string;
-  }
-
-  interface TikTok_BatchShipPackage {
-    handover_method?: TikTok_HandoverMethod;
-    pickup_slot?: TikTok_PickupSlot;
-    self_shipment?: TikTok_SelfShipment;
-    /** Package ID. */
-    id: string;
-  }
-
-  interface TikTok_BatchShipPackagesBody {
-    packages: TikTok_BatchShipPackage[];
-  }
-
-  interface TikTok_BatchShipPackagesDetail {
-    package_id: string;
-  }
-
-  interface TikTok_BatchShipPackagesResponse {
-    errors: TikTok_CommonErrorMessage_BatchShipPackagesDetail[];
-  }
-
-  interface TikTok_Brand {
-    id: string;
-    name: string;
-  }
-
-  interface TikTok_Category {
-    id: string;
-    parent_id: string;
-    local_name: string;
-    is_leaf: boolean;
-  }
-
-  interface TikTok_CategoryChain {
-    id: string;
-    parent_id: string;
-    local_name: string;
-    is_leaf: boolean;
-  }
-
-  interface TikTok_CategoryRuleSizeChart {
-    is_supported: boolean;
-    is_required: boolean;
-  }
-
-  interface TikTok_Certification {
-    id: string;
-    expiration_date: number;
-    images?: TikTok_SimpleUrl[];
-    files?: TikTok_ProductFile[];
-  }
-
-  interface TikTok_CheckResult {
-    check_item: string;
-    is_failed: boolean;
-    fail_reasons: string[];
-  }
-
-  interface TikTok_CombinedListingSku {
-    /** SKU ID. */
-    sku_id: string;
-    /** Quantity of this SKU in the virtual bundle. */
-    sku_count: number;
-    /** Product ID associated with this SKU. */
-    product_id: string;
-    /** Seller-defined SKU identifier. */
-    seller_sku: string;
-  }
-
-  interface TikTok_CombinedSku {
-    product_id: string;
-    sku_id: string;
-    sku_count: number;
-  }
-
-  interface TikTok_CommonMessage {
-    message: string;
-  }
-
-  interface TikTok_CreateFirstMileBundleBody {
-    order_ids: string[];
-    handover_method: TikTok_HandoverMethod;
-    shipping_provider_id?: string;
-    tracking_number?: string;
-    phone_tail_number?: string;
-  }
-
-  interface TikTok_CreateFirstMileBundleErrorDetail {
-    order_id: string;
-  }
-
-  interface TikTok_CreateFirstMileBundleResponse {
-    first_mile_bundle_id: string;
-    url: string;
-    errors: TikTok_CommonErrorMessage_CreateFirstMileBundleErrorDetail[];
-  }
-
-  interface TikTok_CreateGlobalProductBody {
-    title: string;
-    description: string;
-    category_id: string;
-    brand_id: string;
-    main_images: TikTok_SimpleUrl[];
-    skus: TikTok_CreateGlobalProductSku[];
-    package_weight: TikTok_PackageWeight;
-    certifications: TikTok_GlobalProductCertification[];
-    package_dimensions: TikTok_PackageDimensions;
-    product_attributes: TikTok_ProductAttribute[];
-    size_chart: TikTok_ProductSizeChart;
-    video: TikTok_SimpleId;
-    manufacturer: TikTok_GlobalProductManufacturer;
-    category_version: string;
-    responsible_person_ids: string[];
-    manufacturer_ids: string[];
-    external_global_product_id: string;
-  }
-
-  interface TikTok_CreateGlobalProductResponse {
-    global_product_id: string;
-    global_skus: TikTok_GlobalProductSku[];
-  }
-
-  interface TikTok_CreateGlobalProductSku {
-    global_quantity: number;
-    sales_attributes: TikTok_GlobalProductSalesAttribute[];
-    seller_sku: string;
-    price: TikTok_GlobalProductPrice;
-    identifier_code: TikTok_IdentifierCode;
-    inventory: TikTok_GlobalInventory[];
-    sku_unit_count: string;
-    extra_identifier_codes: string[];
-    external_global_sku_id: string;
-    source_locale: string;
-  }
-
-  interface TikTok_CreatePackagesBody {
-    order_id: string;
-    order_line_item_ids: string[];
-    dimension: TikTok_Dimension;
-    shipping_service_id: string;
-    weight: TikTok_Weight;
-  }
-
-  interface TikTok_CreatePackagesResponse {
-    order_id: string;
-    order_line_item_ids: string[];
-    dimension: TikTok_Dimension;
-    shipping_service_info: TikTok_ShippingServiceInfo;
-    package_id: string;
-    weight: TikTok_Weight;
-    create_time: number;
-  }
-
-  interface TikTok_CreateProductBody {
-    save_mode?: string;
-    description: string;
-    category_id: string;
-    brand_id?: string;
-    main_images: TikTok_SimpleUrl[];
-    skus: TikTok_CreateProductSku[];
-    title: string;
-    is_cod_allowed?: boolean;
-    certifications?: TikTok_Certification[];
-    package_dimensions?: TikTok_PackageDimensions;
-    product_attributes?: TikTok_ProductAttribute[];
-    package_weight: TikTok_PackageWeight;
-    video?: TikTok_SimpleId;
-    external_product_id?: string;
-    delivery_option_ids?: string[];
-    size_chart?: TikTok_ProductSizeChart;
-    primary_combined_product_id?: string;
-    is_not_for_sale?: boolean;
-    category_version?: string;
-    manufacturer_ids?: string[];
-    responsible_person_ids?: string[];
-    listing_platforms?: string[];
-    shipping_insurance_requirement?: string;
-    minimum_order_quantity?: number;
-    is_pre_owned?: boolean;
-    idempotency_key?: string;
-  }
-
-  interface TikTok_CreateProductResponse {
-    product_id: string;
-    skus: TikTok_CreateProductResponseSku[];
-    warnings: TikTok_CommonMessage[];
-  }
-
-  interface TikTok_CreateProductResponseSku {
-    id: string;
-    seller_sku: string;
-    sales_attributes: TikTok_SalesAttribute[];
-    external_sku_id: string;
-  }
-
-  interface TikTok_CreateProductSku {
-    sales_attributes?: TikTok_SalesAttributeDetails[];
-    inventory: TikTok_CreateProductSkuInventory[];
-    seller_sku?: string;
-    price: TikTok_ProductPrice;
-    external_sku_id?: string;
-    identifier_code?: TikTok_IdentifierCode;
-    combined_skus?: TikTok_CombinedSku[];
-    sku_unit_count?: string;
-    external_urls?: string[];
-    extra_identifier_codes?: string[];
-    pre_sale?: TikTok_PreSale;
-    list_price?: TikTok_ListPrice;
-    external_list_prices?: TikTok_ExternalListPrice[];
-  }
-
-  interface TikTok_CreateProductSkuInventory {
-    /** The ID of the warehouse where the SKU is stored. 
-Retrieve this value from the [Get Product API](https://partner.tiktokshop.com/docv2/page/get-product-202309).
-
-Note: Optional if there is only 1 warehouse. Otherwise, please provide this ID. */
-    warehouse_id: string;
-    /** The total SKU quantity available in the warehouse.
-Valid range: [1, 99,999] */
-    quantity?: number;
-  }
-
-  type TikTok_Currency = 'BRL' | 'EUR' | 'GBP' | 'IDR' | 'JPY' | 'MXN' | 'MYR' | 'PHP' | 'SGD' | 'THB' | 'USD' | 'VND';
-
-  interface TikTok_DeleteGlobalProductsBody {
-    global_product_ids: string[];
-  }
-
-  interface TikTok_DeleteGlobalProductsDetail {
-    global_product_id: string;
-  }
-
-  interface TikTok_DeleteGlobalProductsError {
-    message: string;
-    code: number;
-    detail: TikTok_DeleteGlobalProductsDetail;
-  }
-
-  interface TikTok_DeleteGlobalProductsResponse {
-    errors: TikTok_DeleteGlobalProductsError[];
-  }
-
-  interface TikTok_DeleteProductsBody {
-    /** The product IDs to delete.
-Max number of IDs: 20. */
-    product_ids: string[];
-  }
-
-  interface TikTok_DeleteProductsDetail {
-    product_id: string;
-  }
-
-  interface TikTok_DeleteProductsError {
-    message: string;
-    code: number;
-    detail: TikTok_DeleteProductsDetail;
-  }
-
-  interface TikTok_DeleteProductsResponse {
-    errors: TikTok_DeleteProductsError[];
-  }
-
-  interface TikTok_DeliveryOption {
-    id: string;
-    name: string;
-    is_available: boolean;
-  }
-
-  interface TikTok_DeliveryPreferences {
-    /** Preferred drop-off location for the delivery. */
-    drop_off_location: string;
-  }
-
-  interface TikTok_Dimension {
-    length: string;
-    width: string;
-    height: string;
-    unit: string;
-  }
-
-  interface TikTok_DimensionLimit {
-    max_height: number;
-    max_length: number;
-    max_width: number;
-    unit: string;
-  }
-
-  interface TikTok_DistrictInfo {
-    /** Name of the address level (e.g., province, city, district). */
-    address_level_name: string;
-    /** Name of the specific address location. */
-    address_name: string;
-    /** Level of the address in the hierarchy. */
-    address_level: string;
-  }
-
-  type TikTok_DocumentFormat = 'PDF' | 'ZPL';
-
-  type TikTok_DocumentSize = 'A6' | 'A5';
-
-  type TikTok_DocumentType = 'SHIPPING_LABEL' | 'PACKING_SLIP' | 'SHIPPING_LABEL_AND_PACKING_SLIP' | 'SHIPPING_LABEL_PICTURE' | 'HAZMAT_LABEL' | 'INVOICE_LABEL';
-
-  interface TikTok_EditGlobalProductBody {
-    title: string;
-    description: string;
-    category_id: string;
-    brand_id: string;
-    main_images: TikTok_SimpleUrl[];
-    skus: TikTok_EditGlobalProductSku[];
-    package_weight: TikTok_PackageWeight;
-    certifications: TikTok_GlobalProductCertification[];
-    package_dimensions: TikTok_PackageDimensions;
-    product_attributes: TikTok_ProductAttribute[];
-    size_chart: TikTok_ProductSizeChart;
-    video: TikTok_SimpleId;
-    manufacturer: TikTok_GlobalProductManufacturer;
-    category_version: string;
-    responsible_person_ids: string[];
-    manufacturer_ids: string[];
-    external_global_product_id: string;
-  }
-
-  interface TikTok_EditGlobalProductResponse {
-    global_skus: TikTok_GlobalProductSku[];
-    publish_results: TikTok_EditProductPublishResult[];
-  }
-
-  interface TikTok_EditGlobalProductSalePrice {
-    region: string;
-    amount: string;
-  }
-
-  interface TikTok_EditGlobalProductSku {
-    global_quantity: number;
-    sales_attributes: TikTok_GlobalProductSalesAttribute[];
-    seller_sku: string;
-    price: TikTok_GlobalProductPrice;
-    identifier_code: TikTok_IdentifierCode;
-    inventory: TikTok_GlobalInventory[];
-    sku_unit_count: string;
-    extra_identifier_codes: string[];
-    external_global_sku_id: string;
-    id: string;
-    sale_prices: TikTok_EditGlobalProductSalePrice[];
-  }
-
-  interface TikTok_EditProductPublishResult {
-    region: string;
-    status: string;
-    fail_reasons: TikTok_CommonMessage[];
-  }
-
-  interface TikTok_ExternalListPrice {
-    /** The external ecommerce platform from which the price is sourced.
-Possible values:
-- SHOPIFY_COMPARE_AT_PRICE: The compare_at_price in Shopify. */
-    source: string;
-    /** The price amount.
-Valid range: [0.01, 7600] */
-    amount: string;
-    /** The currency.
-Possible values: USD */
-    currency: string;
-  }
-
-  interface TikTok_FulfillmentType {
-    handling_duration_days: number;
-    release_date: number;
-  }
-
-  interface TikTok_FulfillmentUploadDeliveryFileBody {
-    /** PDF file data to be uploaded to TikTok Shop. 
-Prerequisites：
-- Only PDF file format is supported.
-- Original file size must not exceed 10MB. */
-    data: KScript.UploadFile | KScript.FileInfo;
-    /** The name of the uploaded file. The file name must include the file type. */
-    name: string;
-  }
-
-  interface TikTok_FulfillmentUploadDeliveryFileResponse {
-    url: string;
-    name: string;
-  }
-
-  interface TikTok_FulfillmentUploadDeliveryImageBody {
-    /** Image file data to be uploaded to TikTok Shop. The picture file is a string generated by base64 encoding.
-Prerequisites：
-- Image format must be JPG, JPEG, or PNG.
-- Image resolution must be between 100 x 100px and 20000 x 20000px.
-- Image size must not exceed 5MB. */
-    data: KScript.UploadFile | KScript.FileInfo;
-  }
-
-  interface TikTok_FulfillmentUploadDeliveryImageResponse {
-    url: string;
-    height: number;
-    width: number;
-  }
-
-  interface TikTok_Geolocation {
-    latitude: string;
-    longitude: string;
-  }
-
-  interface TikTok_GetAttributesResponse {
-    attributes: TikTok_Attribute[];
-  }
-
-  interface TikTok_GetEligibleShippingServiceBody {
-    order_line_item_ids?: string[];
-    weight?: TikTok_Weight;
-    dimension?: TikTok_Dimension;
-  }
-
-  interface TikTok_GetEligibleShippingServiceResponse {
-    order_id: string;
-    order_line_id: string[];
-    weight: TikTok_Weight;
-    shipping_services: TikTok_ShippingService[];
-    dimension: TikTok_Dimension;
-  }
-
-  interface TikTok_GetGlobalAttributesResponse {
-    attributes: TikTok_GlobalAttribute[];
-  }
-
-  interface TikTok_GetGlobalCategoriesResponse {
-    categories: TikTok_Category[];
-  }
-
-  interface TikTok_GetGlobalCategoryRulesResponse {
-    product_certifications: TikTok_ProductCertification[];
-    size_chart: TikTok_CategoryRuleSizeChart;
-    responsible_person: TikTok_ResponsiblePerson;
-    manufacturer: TikTok_Manufacturer;
-  }
-
-  interface TikTok_GetGlobalProductCertification {
-    id: string;
-    title: string;
-    files: TikTok_GetGlobalProductFile[];
-    images: TikTok_GlobalProductImage[];
-  }
-
-  interface TikTok_GetGlobalProductFile {
-    id: string;
-    name: string;
-    format: string;
-    urls: string[];
-  }
-
-  interface TikTok_GetGlobalProductItem {
-    region: string;
-    id: string;
-    sku_mappings: TikTok_SkuMapping[];
-  }
-
-  interface TikTok_GetGlobalProductPrice {
-    /** The currency.
-Possible values based on the region:
-- BRL: Brazil
-- EUR: France, Germany, Ireland, Italy, Spain
-- GBP: United Kingdom
-- IDR: Indonesia
-- JPY: Japan
-- MXN: Mexico
-- MYR: Malaysia
-- PHP: Philippines
-- SGD: Singapore
-- THB: Thailand
-- USD: United States
-- VND: Vietnam */
-    currency: TikTok_Currency;
-    amount?: string;
-    unit_price: string;
-  }
-
-  interface TikTok_GetGlobalProductResponse {
-    id: string;
-    title: string;
-    main_images: TikTok_GlobalProductImage[];
-    video: TikTok_SimpleId;
-    description: string;
-    package_dimensions: TikTok_PackageDimensions;
-    package_weight: TikTok_PackageWeight;
-    certifications: TikTok_GetGlobalProductCertification[];
-    skus: TikTok_GetGlobalProductSku[];
-    update_time: number;
-    create_time: number;
-    product_attributes: TikTok_GlobalProductAttribute[];
-    size_chart: TikTok_SizeChart;
-    products: TikTok_GetGlobalProductItem[];
-    global_seller_id: string;
-    brand: TikTok_SimpleId;
-    category: TikTok_SimpleId;
-    manufacturer: TikTok_GlobalProductManufacturer;
-    responsible_person_ids: string[];
-    manufacturer_ids: string[];
-    source_locale: string;
-    external_global_product_id: string;
-  }
-
-  interface TikTok_GetGlobalProductSalesAttribute {
-    id: string;
-    value_id: string;
-    name: string;
-    value_name: string;
-    sku_img: TikTok_SkuImg;
-  }
-
-  interface TikTok_GetGlobalProductSku {
-    id: string;
-    seller_sku: string;
-    price: TikTok_GetGlobalProductPrice;
-    global_quantity: number;
-    identifier_code: TikTok_IdentifierCode;
-    sales_attributes: TikTok_GetGlobalProductSalesAttribute[];
-    inventory: TikTok_GlobalInventory[];
-    sku_unit_count: string;
-    extra_identifier_codes: string[];
-    external_global_sku_id: string;
-  }
-
-  interface TikTok_GetGlobalSellerWarehouseResponse {
-    global_warehouses: TikTok_GlobalWarehouse[];
-  }
-
-  interface TikTok_GetPackageDetailResponse {
-    package_id: string;
-    orders: TikTok_PackageDetailOrder[];
-    package_status: string;
-    split_and_combine_tag: string;
-    has_multi_skus: boolean;
-    note_tag: string;
-    shipping_provider_name: string;
-    shipping_provider_id: string;
-    shipping_type: string;
-    delivery_option_name: string;
-    delivery_option_id: string;
-    tracking_number: string;
-    last_mile_tracking_number: string;
-    pickup_slot: TikTok_PickupSlot;
-    create_time: number;
-    handover_method: string;
-    order_line_item_ids: string[];
-    recipient_address: TikTok_AddressBase;
-    sender_address: TikTok_AddressBase;
-    weight: TikTok_Weight;
-    dimension: TikTok_Dimension;
-    update_time: number;
-    insurance: TikTok_Insurance;
-  }
-
-  interface TikTok_GetPackageHandoverTimeSlotsPickupSlot {
-    start_time?: number;
-    end_time?: number;
-    avaliable: boolean;
-  }
-
-  interface TikTok_GetPackageHandoverTimeSlotsResponse {
-    can_pickup: boolean;
-    can_drop_off: boolean;
-    can_van_collection: boolean;
-    drop_off_point_url: string;
-    pickup_slots: TikTok_GetPackageHandoverTimeSlotsPickupSlot[];
-  }
-
-  interface TikTok_GetPackageShippingDocumentResponse {
-    doc_url: string;
-    tracking_number: string;
-  }
-
-  interface TikTok_GetProductAttribute {
-    id: string;
-    values: TikTok_Value[];
-    name: string;
-  }
-
-  interface TikTok_GetProductCertification {
-    id: string;
-    expiration_date: number;
-    title: string;
-    files: TikTok_GetProductFile[];
-    images: TikTok_GetProductImage[];
-  }
-
-  interface TikTok_GetProductCombinedSku {
-    product_id: string;
-    sku_id: string;
-    sku_count: number;
-    seller_sku: string;
-    title: string;
-    sales_attributes: TikTok_GetProductSalesAttribute[];
-    price: TikTok_GetProductPrice;
-    inventory: TikTok_Inventory[];
-    product_main_image: TikTok_ProductMainImage;
-    categories: TikTok_Category[];
-    brand: TikTok_Brand;
-    combined_listing_not_live_reasons: string[];
-  }
-
-  interface TikTok_GetProductFile {
-    id: string;
-    name: string;
-    format: string;
-    urls: string[];
-  }
-
-  interface TikTok_GetProductImage {
-    uri: string;
-    height: number;
-    width: number;
-    thumb_urls: string[];
-    urls: string[];
-  }
-
-  interface TikTok_GetProductPrice {
-    /** The currency.
-Possible values based on the region:
-- BRL: Brazil
-- EUR: France, Germany, Ireland, Italy, Spain
-- GBP: United Kingdom
-- IDR: Indonesia
-- JPY: Japan
-- MXN: Mexico
-- MYR: Malaysia
-- PHP: Philippines
-- SGD: Singapore
-- THB: Thailand
-- USD: United States
-- VND: Vietnam */
-    currency: TikTok_Currency;
-    tax_exclusive_price: string;
-    sale_price: string;
-    unit_price: string;
-  }
-
-  interface TikTok_GetProductResponse {
-    id: string;
-    status: string;
-    title: string;
-    category_chains: TikTok_CategoryChain[];
-    brand: TikTok_Brand;
-    main_images: TikTok_MainImage[];
-    video: TikTok_Video;
-    description: string;
-    package_dimensions: TikTok_PackageDimensions;
-    package_weight: TikTok_PackageWeight;
-    skus: TikTok_GetProductSku[];
-    certifications: TikTok_GetProductCertification[];
-    size_chart: TikTok_GetProductSizeChart;
-    is_cod_allowed: boolean;
-    product_attributes: TikTok_GetProductAttribute[];
-    audit_failed_reasons: TikTok_AuditFailedReason[];
-    update_time: number;
-    create_time: number;
-    delivery_options: TikTok_DeliveryOption[];
-    external_product_id: string;
-    product_types: string[];
-    is_not_for_sale: boolean;
-    recommended_categories: TikTok_RecommendedCategory[];
-    manufacturer_ids: string[];
-    responsible_person_ids: string[];
-    listing_quality_tier: string;
-    integrated_platform_statuses: TikTok_IntegratedPlatformStatus[];
-    shipping_insurance_requirement: string;
-    minimum_order_quantity: number;
-    is_pre_owned: boolean;
-    audit: TikTok_Audit;
-    global_product_association: TikTok_GlobalProductAssociation;
-    prescription_requirement: TikTok_PrescriptionRequirement;
-    product_families: TikTok_ProductFamily[];
-    subscribe_info: TikTok_SubscribeInfo;
-    has_draft: boolean;
-    primary_combined_product_id: string;
-    product_status: string;
-    is_replicated: boolean;
-  }
-
-  interface TikTok_GetProductSalesAttribute {
-    id: string;
-    value_id: string;
-    name?: string;
-    value_name?: string;
-    sku_img: TikTok_SkuImg;
-    supplementary_sku_images: TikTok_SupplementarySkuImage[];
-  }
-
-  interface TikTok_GetProductSizeChart {
-    template?: TikTok_SimpleId;
-    image: TikTok_GetProductImage;
-  }
-
-  interface TikTok_GetProductSku {
-    seller_sku: string;
-    inventory: TikTok_Inventory[];
-    external_sku_id: string;
-    identifier_code: TikTok_IdentifierCode;
-    sku_unit_count: string;
-    external_urls: string[];
-    extra_identifier_codes: string[];
-    pre_sale: TikTok_PreSale;
-    list_price: TikTok_ListPrice;
-    external_list_prices: TikTok_ExternalListPrice[];
-    id: string;
-    price: TikTok_GetProductPrice;
-    sales_attributes: TikTok_GetProductSalesAttribute[];
-    combined_skus: TikTok_GetProductCombinedSku[];
-    global_listing_policy: TikTok_GlobalListingPolicy;
-    status_info: TikTok_StatusInfo;
-  }
-
-  interface TikTok_GetShippingProvidersResponse {
-    shipping_providers: TikTok_ShippingProvider[];
-  }
-
-  interface TikTok_GetTrackingResponse {
-    tracking: TikTok_Tracking[];
-  }
-
-  interface TikTok_GetWarehouseDeliveryOptionsResponse {
-    delivery_options: TikTok_WarehouseDeliveryOptions[];
-  }
-
-  type TikTok_GetWarehouseDeliveryOptionsScope = 'WAREHOUSE' | 'PRODUCT';
-
-  interface TikTok_GetWarehouseListResponse {
-    warehouses: TikTok_Warehouse[];
-  }
-
-  interface TikTok_GlobalAttribute {
-    /** Unique identifier for the attribute. */
-    id: string;
-    /** Display name of the attribute. */
-    name: string;
-    /** Type of the attribute (e.g., text, number, selection). */
-    type: string;
-    /** Indicates whether this attribute is required. */
-    is_requried: boolean;
-    /** Indicates whether this attribute allows custom values. */
-    is_customizable: boolean;
-    /** Indicates whether multiple values can be selected for this attribute. */
-    is_multiple_selection: boolean;
-    values: TikTok_Value[];
-    requirement_conditions: TikTok_RegionRequirementCondition[];
-    optional_regions: string[];
-    required_regions: string[];
-  }
-
-  interface TikTok_GlobalInventory {
-    /** The updated SKU quantity.
-Valid range: [0, 99,999] */
-    quantity: number;
-    global_warehouse_id: string;
-  }
-
-  interface TikTok_GlobalListingPolicy {
-    price_sync: boolean;
-    inventory_type: string;
-    replicate_source: TikTok_ReplicateSource;
-  }
-
-  interface TikTok_GlobalProductAssociation {
-    global_product_id: string;
-    sku_mappings: TikTok_SkuMapping[];
-  }
-
-  interface TikTok_GlobalProductAttribute {
-    id: string;
-    values: TikTok_Value[];
-    name: string;
-  }
-
-  interface TikTok_GlobalProductCertification {
-    id: string;
-    images: TikTok_SimpleUrl[];
-    files: TikTok_GlobalProductFile[];
-  }
-
-  interface TikTok_GlobalProductFile {
-    id: string;
-    name: string;
-    format: string;
-  }
-
-  interface TikTok_GlobalProductImage {
-    height: number;
-    width: number;
-    uri: string;
-  }
-
-  interface TikTok_GlobalProductManufacturer {
-    name: string;
-    address: string;
-    phone_number: string;
-    email: string;
-  }
-
-  interface TikTok_GlobalProductPrice {
-    /** The currency.
-Possible values based on the region:
-- BRL: Brazil
-- EUR: France, Germany, Ireland, Italy, Spain
-- GBP: United Kingdom
-- IDR: Indonesia
-- JPY: Japan
-- MXN: Mexico
-- MYR: Malaysia
-- PHP: Philippines
-- SGD: Singapore
-- THB: Thailand
-- USD: United States
-- VND: Vietnam */
-    currency: TikTok_Currency;
-    amount?: string;
-  }
-
-  interface TikTok_GlobalProductSalesAttribute {
-    id: string;
-    value_id: string;
-    name: string;
-    value_name: string;
-    sku_img: TikTok_SimpleUrl;
-  }
-
-  interface TikTok_GlobalProductSku {
-    id: string;
-    seller_sku: string;
-    sales_attributes: TikTok_SalesAttribute[];
-    external_global_sku_id: string;
-  }
-
-  interface TikTok_GlobalWarehouse {
-    id: string;
-    name: string;
-    ownership: string;
-  }
-
-  interface TikTok_HandlingDuration {
-    /** Number of days required to handle the order. */
-    days: string;
-    /** Type of handling duration. */
-    type: string;
-  }
-
-  type TikTok_HandoverMethod = 'PICKUP' | 'DROP_OFF';
-
-  interface TikTok_IdentifierCode {
-    code: string;
-    type: string;
-  }
-
-  type TikTok_ImageUseCase = 'MAIN_IMAGE' | 'ATTRIBUTE_IMAGE' | 'DESCRIPTION_IMAGE' | 'CERTIFICATION_IMAGE' | 'SIZE_CHART_IMAGE';
-
-  interface TikTok_Insurance {
-    is_purchased: boolean;
-    coverage_amount: string;
-    is_claim_eligible: boolean;
-    claim_status: string;
-  }
-
-  interface TikTok_IntegratedPlatformStatus {
-    platform: string;
-    status: string;
-  }
-
-  interface TikTok_Inventory {
-    /** The ID of the warehouse where the SKU is stored. 
-Retrieve this value from the [Get Product API](https://partner.tiktokshop.com/docv2/page/get-product-202309).
-
-Note: Optional if there is only 1 warehouse. Otherwise, please provide this ID. */
-    warehouse_id: string;
-  }
-
-  interface TikTok_ItemTax {
-    /** Type of tax applied. */
-    tax_type: string;
-    /** Amount of tax applied to the item. */
-    tax_amount: string;
-    /** Tax rate percentage applied. */
-    tax_rate: string;
-  }
-
-  interface TikTok_ListPrice {
-    /** The price amount.
-Valid range: [0.01, 7600]
-
-Note: 
-- The value must be equal to or greater than skus.price.amount. Otherwise, it will be discarded.
-- If the value is verified to be legitimate by the audit team, it will be stored and returned in the [Get Product API](https://partner.tiktokshop.com/docv2/page/6509d85b4a0bb702c057fdda). */
-    amount: string;
-    /** The currency.
-Possible values: USD */
-    currency: string;
-  }
-
-  interface TikTok_MainImage {
-    uri: string;
-    height: number;
-    width: number;
-    thumb_urls: string[];
-    urls: string[];
-  }
-
-  interface TikTok_Manufacturer {
-    is_required: boolean;
-    optional_regions: string[];
-    required_regions: string[];
-  }
-
-  interface TikTok_OptimizedImage {
-    height: number;
-    width: number;
-    original_uri: string;
-    original_url: string;
-    optimized_uri: string;
-    optimized_url: string;
-    optimize_status: string;
-  }
-
-  interface TikTok_OptimizedImageBody {
-    /** The list of images to be optimized. 
-Use the [Upload Product Image API](https://partner.tiktokshop.com/docv2/page/upload-product-image-202309) to upload the images first and obtain the corresponding image URIs.
-Max count: 200 */
-    images: TikTok_OptimizedRequestImage[];
-  }
-
-  interface TikTok_OptimizedImagesResponse {
-    images: TikTok_OptimizedImage[];
-  }
-
-  interface TikTok_OptimizedRequestImage {
-    /** The URI of the image. 
-Retrieve the URI from the [Upload Product Image API](https://partner.tiktokshop.com/docv2/page/upload-product-image-202309). */
-    uri: string;
-    /** The optimization type.
-Possible values:
-- WHITE_BACKGROUND: Change the background to white. */
-    optimization_mode: string[];
-  }
-
-  interface TikTok_Order {
-    /** TikTok Shop order ID. */
-    id: string;
-    /** Message from the buyer. */
-    buyer_message: string;
-    /** Cancellation request initiator.
-Available values: SELLER, BUYER, SYSTEM */
-    cancellation_initiator: string;
-    /** The ID of the current shipping provider. */
-    shipping_provider_id: string;
-    /** The date and time that the order was created. Unix timestamp. */
-    create_time: number;
-    /** Name of the shipping provider. */
-    shipping_provider: string;
-    /** List of packages included in the order. */
-    packages: TikTok_SimpleId[];
-    /** Payment info about this order. */
-    payment: TikTok_Payment;
-    /** Recipient address information. Not available under UNPAID and ON_HOLD statuses. */
-    recipient_address: TikTok_RecipientAddress;
-    /** Current status of the order.
-Available values:
-- UNPAID: The order has been created but not yet paid.
-- PAID: The order has been paid but not yet shipped.
-- IN_PREPARATION: The order is being prepared for shipment.
-- IN_TRANSIT: The package has been collected by the carrier and delivery is in progress.
-- DELIVERED: The package has been delivered to the buyer.
-- COMPLETED: The order has been completed, and no further returns or refunds are allowed.
-- CANCELLED: The order has been cancelled. */
-    status: string;
-    /** Fulfillment type.
-Available values:
-- FULFILLMENT_BY_SELLER: Sellers fulfill orders directly from their own inventory.
-- FULFILLMENT_BY_TIKTOK: Sellers send products to TikTok's fulfillment centers for processing. */
-    fulfillment_type: string;
-    /** Delivery type of the order. */
-    delivery_type: string;
-    /** Payment timestamp in Unix format. */
-    paid_time: number;
-    /** Ready to ship (RTS) service level agreement (SLA) timestamp in Unix format. */
-    rts_sla_time: number;
-    /** Time to ship (TTS) service level agreement (SLA) timestamp in Unix format. */
-    tts_sla_time: number;
-    /** Reason for order cancellation. */
-    cancel_reason: string;
-    /** Last update timestamp in Unix format. */
-    update_time: number;
-    /** Name of the payment method used. */
-    payment_method_name: string;
-    /** Ready to ship (RTS) timestamp in Unix format. */
-    rts_time: number;
-    /** Tracking number for the shipment. */
-    tracking_number: string;
-    /** Indicates if the order is split or combined. */
-    split_or_combine_tag: string;
-    /** Whether the recipient address has been updated. */
-    has_updated_recipient_address: boolean;
-    /** Cancel order service level agreement (SLA) timestamp in Unix format. */
-    cancel_order_sla_time: number;
-    /** ID of the warehouse handling the order. */
-    warehouse_id: string;
-    /** Cancellation request timestamp in Unix format. */
-    request_cancel_time: number;
-    /** Shipping type of the order. */
-    shipping_type: string;
-    /** ID of the user who placed the order. */
-    user_id: string;
-    /** Notes from the seller. */
-    seller_note: string;
-    /** Delivery service level agreement (SLA) timestamp in Unix format. */
-    delivery_sla_time: number;
-    /** Whether the order is cash on delivery (COD). */
-    is_cod: boolean;
-    /** ID of the delivery option selected. */
-    delivery_option_id: string;
-    /** Cancellation timestamp in Unix format. */
-    cancel_time: number;
-    /** Whether an invoice needs to be uploaded. */
-    need_upload_invoice: string;
-    /** Name of the delivery option selected. */
-    delivery_option_name: string;
-    /** CPF (Cadastro de Pessoas Físicas) number (Brazilian tax identification). */
-    cpf: string;
-    /** Line item info list. */
-    line_items: TikTok_OrderListLineItem[];
-    /** Buyer's email address. */
-    buyer_email: string;
-    /** Delivery due timestamp in Unix format. */
-    delivery_due_time: number;
-    /** Whether the order is a sample order. */
-    is_sample_order: boolean;
-    /** Shipping due timestamp in Unix format. */
-    shipping_due_time: number;
-    /** Collection due timestamp in Unix format. */
-    collection_due_time: number;
-    /** Required delivery timestamp based on the selected delivery option in Unix format. */
-    delivery_option_required_delivery_time: number;
-    /** Whether the order is on hold. */
-    is_on_hold_order: boolean;
-    /** Delivery timestamp in Unix format. */
-    delivery_time: number;
-    /** Whether the order is a replacement order. */
-    is_replacement_order: boolean;
-    /** Collection timestamp in Unix format. */
-    collection_time: number;
-    /** ID of the order being replaced. */
-    replaced_order_id: string;
-    /** Whether the cancellation was requested by the buyer. */
-    is_buyer_request_cancel: boolean;
-    /** Pickup cut-off timestamp in Unix format. */
-    pick_up_cut_off_time: number;
-    /** Fast dispatch service level agreement (SLA) timestamp in Unix format. */
-    fast_dispatch_sla_time: number;
-    /** Commerce platform associated with the order. */
-    commerce_platform: string;
-    /** Type of the order. */
-    order_type: string;
-    /** Release date timestamp in Unix format. */
-    release_date: number;
-    /** Handling duration information. */
-    handling_duration: TikTok_HandlingDuration;
-    /** ID of the auto-combine group. */
-    auto_combine_group_id: string;
-    /** Name associated with the CPF number. */
-    cpf_name: string;
-    /** Whether the order is an exchange order. */
-    is_exchange_order: boolean;
-    /** ID of the source order for the exchange. */
-    exchange_source_order_id: string;
-    /** ID of the consultation associated with the order. */
-    consultation_id: string;
-    /** Fast delivery program associated with the order. */
-    fast_delivery_program: string;
-    /** Fulfillment priority level of the order. */
-    fulfillment_priority_level: number;
-    /** Recommended shipping timestamp in Unix format. */
-    recommended_shipping_time: number;
-  }
-
-  interface TikTok_OrderDetail {
-    id: string;
-    cancellation_initiator: string;
-    shipping_provider: string;
-    shipping_provider_id: string;
-    user_id: string;
-    status: string;
-    rts_time: number;
-    /** Payment information for the order. */
-    payment: TikTok_Payment;
-    /** Recipient address information for the order.
-Not available under UNPAID and ON_HOLD statuses. */
-    recipient_address: TikTok_RecipientAddress;
-    buyer_message: string;
-    create_time: number;
-    tracking_number: string;
-    cancel_reason: string;
-    rts_sla_time: number;
-    paid_time: number;
-    fulfillment_type: string;
-    seller_note: string;
-    tts_sla_time: number;
-    cancel_order_sla_time: number;
-    update_time: number;
-    packages: TikTok_SimpleId[];
-    delivery_type: string;
-    is_sample_order: boolean;
-    warehouse_id: string;
-    split_or_combine_tag: string;
-    has_updated_recipient_address: boolean;
-    cpf: string;
-    delivery_option_id: string;
-    delivery_sla_time: number;
-    payment_method_name: string;
-    payment_card_type: string;
-    channel_entity_national_registry_id: string;
-    payment_method_code: string;
-    payment_auth_code: string;
-    shipping_due_time: number;
-    line_items: TikTok_OrderDetailLineItem[];
-    shipping_type: string;
-    buyer_email: string;
-    delivery_time: number;
-    need_upload_invoice: string;
-    is_cod: boolean;
-    request_cancel_time: number;
-    delivery_option_required_delivery_time: number;
-    delivery_option_name: string;
-    is_buyer_request_cancel: boolean;
-    delivery_due_time: number;
-    collection_time: number;
-    is_on_hold_order: boolean;
-    cancel_time: number;
-    is_replacement_order: boolean;
-    replaced_order_id: string;
-    collection_due_time: number;
-    pick_up_cut_off_time: number;
-    fast_dispatch_sla_time: number;
-    commerce_platform: string;
-    order_type: string;
-    release_date: number;
-    /** Information about the handling duration for the order.
-Only applicable for orders with order_type = PRE_ORDER. */
-    handling_duration: TikTok_HandlingDuration;
-    auto_combine_group_id: string;
-    cpf_name: string;
-    is_exchange_order: boolean;
-    exchange_source_order_id: string;
-    consultation_id: string;
-    fast_delivery_program: string;
-  }
-
-  interface TikTok_OrderDetailLineItem {
-    id: string;
-    sku_id: string;
-    combined_listing_skus: TikTok_CombinedListingSku[];
-    product_id: string;
-    product_name: string;
-    sku_name: string;
-    sku_image: string;
-    original_price: string;
-    sale_price: string;
-    platform_discount: string;
-    display_status: string;
-    cancel_user: string;
-    sku_type: string;
-    seller_sku: string;
-    shipping_provider_id: string;
-    seller_discount: string;
-    currency: string;
-    package_id: string;
-    rts_time: number;
-    item_tax: TikTok_ItemTax[];
-    package_status: string;
-    shipping_provider_name: string;
-    is_gift: boolean;
-    cancel_reason: string;
-    small_order_fee: string;
-    retail_delivery_fee: string;
-    tracking_number: string;
-    buyer_service_fee: string;
-    handling_duration_days: string;
-    is_dangerous_good: boolean;
-    needs_prescription: boolean;
-  }
-
-  interface TikTok_OrderDetailResponse {
-    orders: TikTok_OrderDetail[];
-  }
-
-  interface TikTok_OrderListBody {
-    /** Filter orders to show only those that are created on or after the specified date and time. Unix timestamp.
-
-Note:
-create_time_ge and create_time_lt together constitute the creation time filter condition.
-- If create_time_ge is filled but create_time_lt is empty, create_time_lt will default to the current time.
-- If create_time_lt is filled but create_time_ge is empty, create_time_ge will default to the earliest shop time. */
-    create_time_ge?: number;
-    /** Filter orders to show only those that are created before the specified date and time. Unix timestamp.
-Refer to notes in create_time_ge for more usage information. */
-    create_time_lt?: number;
-    /** Filter orders to show only those that are updated on or after the specified date and time. Unix timestamp.
-
-Note:
-update_time_ge and update_time_lt together define the update time filter condition.
-- If update_time_ge is filled but update_time_lt is empty, update_time_lt will default to the current time.
-- If update_time_lt is filled but update_time_ge is empty, update_time_ge will default to the earliest shop time. */
-    update_time_ge?: number;
-    /** Filter orders to show only those that are updated before the specified date and time. Unix timestamp.
-Refer to notes in update_time_ge for more usage information. */
-    update_time_lt?: number;
-    /** Specific order status.
-Available values:
-- UNPAID: The order has been placed, but payment has not been completed.
-- ON_HOLD: The order has been accepted and is awaiting fulfillment. The buyer may still cancel without the seller’s approval. If order_type=PRE_ORDER, the product is still awaiting release so payment will only be authorized 1 day before the release, but the seller should start preparing for the release.
-- AWAITING_SHIPMENT: The order is ready to be shipped, but no items have been shipped yet.
-- PARTIALLY_SHIPPING: Some items in the order have been shipped, but not all.
-- AWAITING_COLLECTION: Shipping has been arranged, but the package is waiting to be collected by the carrier.
-- IN_TRANSIT: The package has been collected by the carrier and delivery is in progress.
-- DELIVERED: The package has been delivered to the buyer.
-- COMPLETED: The order has been completed, and no further returns or refunds are allowed.
-- CANCELLED: The order has been cancelled. */
-    order_status?: TikTok_OrderStatus;
-    /** Specific order status.
-Available values:
-- UNPAID: The order has been placed, but payment has not been completed.
-- ON_HOLD: The order has been accepted and is awaiting fulfillment. The buyer may still cancel without the seller’s approval. If order_type=PRE_ORDER, the product is still awaiting release so payment will only be authorized 1 day before the release, but the seller should start preparing for the release.
-- AWAITING_SHIPMENT: The order is ready to be shipped, but no items have been shipped yet.
-- PARTIALLY_SHIPPING: Some items in the order have been shipped, but not all.
-- AWAITING_COLLECTION: Shipping has been arranged, but the package is waiting to be collected by the carrier.
-- IN_TRANSIT: The package has been collected by the carrier and delivery is in progress.
-- DELIVERED: The package has been delivered to the buyer.
-- COMPLETED: The order has been completed, and no further returns or refunds are allowed.
-- CANCELLED: The order has been cancelled. */
-    shipping_type?: TikTok_ShippingType;
-    /** Buyer user ID. */
-    buyer_user_id?: string;
-    /** Whether the buyer has initiated an order cancellation request. */
-    is_buyer_request_cancel?: boolean;
-    /** Filter orders by pickup/sales warehouse IDs.
-Applicable only if the multi-warehouse feature is enabled.
-Max count: 100 */
-    warehouse_ids?: string[];
-  }
-
-  interface TikTok_OrderListLineItem {
-    /** Line item ID. */
-    id: string;
-    /** SKU ID. */
-    sku_id: string;
-    /** For a virtual bundle SKU, returns an array of related product SKUs that compose the virtual bundle. */
-    combined_listing_skus: TikTok_CombinedListingSku[];
-    /** Display status of the line item.
-Available values:
-- UNPAID: The order has been placed, but payment has not yet completed.
-- AWAITING_SHIPMENT: The order is ready for shipment, but no items have been shipped yet.
-- AWAITING_COLLECTION: Shipping has been arranged, but the package is waiting to be collected by the carrier.
-- IN_TRANSIT: The package has been collected by the carrier and delivery is in progress.
-- DELIVERED: The package has been delivered to the buyer.
-- COMPLETED: The order has been completed, and no further returns or refunds are allowed.
-- CANCELLED: The order has been cancelled. */
-    display_status: string;
-    /** Product name. */
-    product_name: string;
-    /** The seller stock keeping unit (SKU) of the item. */
-    seller_sku: string;
-    /** SKU image. */
-    sku_image: string;
-    /** The name of the SKU, combined by product SKU attribute like size or color. e.g. "Black, 26" */
-    sku_name: string;
-    /** Product ID. */
-    product_id: string;
-    /** Item sale price. Please refer to the currency of payment_info. */
-    sale_price: string;
-    /** Deposit fee that is applied to certain products, typically beverage containers such as bottles or cans.
-Note: Only available in Germany market */
-    pfand_fee: string;
-    /** Platform discount amount. Please refer to the currency of payment_info. */
-    platform_discount: string;
-    /** Seller discount amount. Please refer to the currency of payment_info. */
-    seller_discount: string;
-    sku_type: string;
-    cancel_reason: string;
-    /** Original price of the product. Please refer to the currency of payment_info. */
-    original_price: string;
-    /** The time when the order is ready to ship. Unix timestamp. */
-    rts_time: number;
-    package_status: string;
-    currency: string;
-    shipping_provider_name: string;
-    cancel_user: string;
-    shipping_provider_id: string;
-    is_gift: boolean;
-    item_tax: TikTok_ItemTax[];
-    tracking_number: string;
-    package_id: string;
-    retail_delivery_fee: string;
-    buyer_service_fee: string;
-    small_order_fee: string;
-    handling_duration_days: string;
-    is_dangerous_good: boolean;
-    needs_prescription: boolean;
-  }
-
-  interface TikTok_OrderListResponse {
-    /** Token to retrieve the next page of results. Empty if no more pages. */
-    next_page_token: string;
-    /** Total number of orders matching the query criteria. */
-    total_count: number;
-    /** List of orders for the current page. */
-    orders: TikTok_Order[];
-  }
-
-  type TikTok_OrderListSortField = 'create_time' | 'update_time';
-
-  type TikTok_OrderStatus = 'UNPAID' | 'ON_HOLD' | 'AWAITING_SHIPMENT' | 'PARTIALLY_SHIPPING' | 'AWAITING_COLLECTION' | 'IN_TRANSIT' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
-
-  interface TikTok_PackageDetailOrder {
-    id: string;
-    skus: TikTok_PackageDetailOrderSku[];
-  }
-
-  interface TikTok_PackageDetailOrderSku {
-    id: string;
-    name: string;
-    image_url: string;
-    quantity: number;
-  }
-
-  interface TikTok_PackageDimensions {
-    length: string;
-    width: string;
-    height: string;
-    unit: string;
-  }
-
-  type TikTok_PackageStatus = 'PROCESSING' | 'FULFILLING' | 'COMPLETED' | 'CANCELLED';
-
-  interface TikTok_PackageWeight {
-    value: string;
-    unit: string;
-  }
-
-  interface TikTok_Payment {
-    /** Currency code used for the payment. */
-    currency: string;
-    /** Subtotal amount of the order before discounts and fees. */
-    sub_total: string;
-    /** Shipping fee for the order. */
-    shipping_fee: string;
-    /** Discount amount provided by the seller. */
-    seller_discount: string;
-    /** Discount amount provided by the platform. */
-    platform_discount: string;
-    /** Total amount paid for the order. */
-    total_amount: string;
-    /** Original total product price before any discounts. */
-    original_total_product_price: string;
-    /** Original shipping fee before any discounts. */
-    original_shipping_fee: string;
-    /** Seller discount applied to the shipping fee. */
-    shipping_fee_seller_discount: string;
-    /** Platform discount applied to the shipping fee. */
-    shipping_fee_platform_discount: string;
-    /** Co-funded discount applied to the shipping fee (shared between seller and platform). */
-    shipping_fee_cofunded_discount: string;
-    /** Total tax amount for the order. */
-    tax: string;
-    /** Small order fee, applicable in Thailand market. */
-    small_order_fee: string;
-    /** Tax amount applied to the shipping fee. */
-    shipping_fee_tax: string;
-    /** Tax amount applied to the product price. */
-    product_tax: string;
-    /** Retail delivery fee for certain delivery methods. */
-    retail_delivery_fee: string;
-    /** Service fee charged to the buyer. */
-    buyer_service_fee: string;
-    /** Fee for handling the order. */
-    handling_fee: string;
-    /** Insurance fee for the shipment. */
-    shipping_insurance_fee: string;
-    /** Insurance fee for the items in the shipment. */
-    item_insurance_fee: string;
-  }
-
-  interface TikTok_PickupSlot {
-    start_time?: number;
-    end_time?: number;
-  }
-
-  interface TikTok_PreSale {
-    type: string;
-    fulfillment_type: TikTok_FulfillmentType;
-  }
-
-  interface TikTok_PrescriptionRequirement {
-    needs_prescription: boolean;
-  }
-
-  interface TikTok_PriceDetailLineItem {
-    id: string;
-    currency: string;
-    total: string;
-    payment: string;
-    sku_list_price: string;
-    sku_sale_price: string;
-    subtotal: string;
-    subtotal_deduction_seller: string;
-    subtotal_deduction_platform: string;
-    subtotal_tax_amount: string;
-    voucher_deduction_platform: string;
-    voucher_deduction_seller: string;
-    shipping_list_price: string;
-    shipping_sale_price: string;
-    shipping_fee_deduction_seller: string;
-    shipping_fee_deduction_platform: string;
-    shipping_fee_deduction_platform_voucher: string;
-    tax_amount: string;
-    tax_rate: string;
-    net_price_amount: string;
-    cod_fee: string;
-    cod_fee_amount: string;
-    sku_gift_original_price: string;
-    sku_gift_net_price: string;
-  }
-
-  interface TikTok_PriceDetailResponse {
-    currency: string;
-    total: string;
-    payment: string;
-    sku_list_price: string;
-    sku_sale_price: string;
-    subtotal: string;
-    subtotal_deduction_seller: string;
-    subtotal_deduction_platform: string;
-    subtotal_tax_amount: string;
-    voucher_deduction_platform: string;
-    voucher_deduction_seller: string;
-    shipping_list_price: string;
-    shipping_sale_price: string;
-    shipping_fee_deduction_seller: string;
-    shipping_fee_deduction_platform: string;
-    shipping_fee_deduction_platform_voucher: string;
-    tax_amount: string;
-    tax_rate: string;
-    net_price_amount: string;
-    cod_fee: string;
-    cod_fee_net_amount: string;
-    sku_gift_original_price: string;
-    sku_gift_net_price: string;
-    line_items: TikTok_PriceDetailLineItem[];
-  }
-
-  interface TikTok_ProductAttribute {
-    id: string;
-    values: TikTok_Value[];
-  }
-
-  interface TikTok_ProductCategoriesResponse {
-    categories: TikTok_ProductCategory[];
-  }
-
-  interface TikTok_ProductCategory {
-    id: string;
-    parent_id: string;
-    local_name: string;
-    is_leaf: boolean;
-    permission_statuses: string[];
-  }
-
-  interface TikTok_ProductCertification {
-    id: string;
-    name: string;
-    is_required: boolean;
-    sample_image_url: string;
-    required_regions: string[];
-    optional_regions: string[];
-    requirement_conditions: TikTok_RegionRequirementCondition[];
-  }
-
-  interface TikTok_ProductFamily {
-    id: string;
-    products: TikTok_SimpleId[];
-  }
-
-  interface TikTok_ProductFile {
-    id: string;
-    name: string;
-    format: string;
-  }
-
-  interface TikTok_ProductInventory {
-    warehouse_id: string;
-    quantity: number;
-  }
-
-  interface TikTok_ProductMainImage {
-    uri: string;
-    height: number;
-    width: number;
-    thumb_urls: string[];
-    urls: string[];
-  }
-
-  interface TikTok_ProductPrerequisitesResponse {
-    check_results: TikTok_CheckResult[];
-  }
-
-  interface TikTok_ProductPrice {
-    /** The currency.
-Possible values based on the region:
-- BRL: Brazil
-- EUR: France, Germany, Ireland, Italy, Spain
-- GBP: United Kingdom
-- IDR: Indonesia
-- JPY: Japan
-- MXN: Mexico
-- MYR: Malaysia
-- PHP: Philippines
-- SGD: Singapore
-- THB: Thailand
-- USD: United States
-- VND: Vietnam */
-    currency: TikTok_Currency;
-    amount?: string;
-    sale_price?: string;
-  }
-
-  interface TikTok_ProductSizeChart {
-    template?: TikTok_SimpleId;
-    image?: TikTok_SimpleUrl;
-  }
-
-  interface TikTok_PublishGlobalProductBody {
-    publish_target: TikTok_PublishTarget[];
-  }
-
-  interface TikTok_PublishGlobalProductResponse {
-    products: TikTok_PublishProduct[];
-    publish_result: TikTok_PublishResult[];
-  }
-
-  interface TikTok_PublishProduct {
-    region: string;
-    shop_id: string;
-    skus: TikTok_PublishProductSku[];
-    id: string;
-  }
-
-  interface TikTok_PublishProductResponseSku {
-    related_global_sku_id: string;
-    price: TikTok_ProductPrice;
-    inventory: TikTok_ProductInventory;
-  }
-
-  interface TikTok_PublishProductSku {
-    related_global_sku_id: string;
-    id: string;
-    seller_sku: string;
-    sale_attributes: TikTok_SalesAttribute[];
-  }
-
-  interface TikTok_PublishResult {
-    region: string;
-    /** The status of publishing the product to the market.
-Possible values:
-- SUCCESS: The global product was successfully published to the local shop, submitted for listing, and is now under review.
-- DRAFT: The global product was saved as a draft local product due to validation errors.
-- FAILED: Synchronization of the global product to the local shop was unsuccessful. */
-    status: TikTok_PublishStatus;
-    fail_reasons: TikTok_CommonMessage[];
-  }
-
-  type TikTok_PublishStatus = 'SUCCESS' | 'DRAFT' | 'FAILED';
-
-  interface TikTok_PublishTarget {
-    region: string;
-    responsible_person_ids: string[];
-    manufacturer_ids: string[];
-    skus: TikTok_PublishProductResponseSku[];
-  }
-
-  interface TikTok_RecipientAddress {
-    full_address: string;
-    phone_number: string;
-    name: string;
-    postal_code: string;
-    address_detail: string;
-    region_code: string;
-    address_line1: string;
-    address_line2: string;
-    address_line3: string;
-    address_line4: string;
-    /** First name of the recipient. */
-    first_name: string;
-    /** Last name of the recipient. */
-    last_name: string;
-    /** First name of the recipient in local script. */
-    first_name_local_script: string;
-    /** Last name of the recipient in local script. */
-    last_name_local_script: string;
-    /** District information for the address. */
-    district_info: TikTok_DistrictInfo[];
-    /** Delivery preferences specified by the buyer. */
-    delivery_preferences: TikTok_DeliveryPreferences;
-    /** Post town or city of the recipient address. */
-    post_town: string;
-  }
-
-  interface TikTok_RecommendCategoryBody {
-    /** The product title. 
-Title length:
-- DE, ES, FR, IE, IT, JP, UK, US: [1, 255] 
-- BR, MX: [1, 300]
-- Other regions: [25, 255] */
-    product_title: string;
-    /** The product description in HTML format.
-
->>>
-Note:
-- The content must conform to the HTML syntax. All HTML tags are accepted but to optimize display on the TikTok Shop product detail page, the system will automatically convert certain tags into alternative formats, such as rendering <table> tags as images.
-- Max length: 10,000 characters.
-- Image guidelines: You must use TikTok Shop image URLs. Max 30 <img> tags, each under 4000px with src, width, and height attributes.
-Recommendations: 
-- If you are syncing a pre-existing description from another platform, include the full HTML source description here.
-- Provide a detailed description, ideally over 300 characters.
-- Include 3-5 key selling points, each under 250 characters, with supporting images.
-- Use 1600x1600 px for the image dimensions. */
-    description: string;
-    /** Product images, including gallery images, images that appear in the description, product variant images. */
-    images: TikTok_RecommendCategoryImage[];
-    /** The category tree version to use for this product.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: For US shops, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version: string;
-    /** Recommend categories that belong to the specified platform.
-Possible values:
-- TIKTOK_SHOP
-- TOKOPEDIA
-Default: TIKTOK_SHOP
-
-Applicable only for sellers that migrated from Tokopedia. */
-    listing_platform: string;
-    /** A flag to indicate whether to include matching categories that are prohibited on TikTok Shop. Set this to true to identify if the product falls under a category that you can't list on TikTok Shop in any circumstances.
-Note:
-- Applicable only for BR and MX markets.
-- Default: false */
-    include_prohibited_categories: boolean;
-  }
-
-  interface TikTok_RecommendCategoryImage {
-    uri: string;
-  }
-
-  interface TikTok_RecommendCategoryItem {
-    id: string;
-    name: string;
-    level: number;
-    is_leaf: boolean;
-    permission_statuses: string[];
-  }
-
-  interface TikTok_RecommendCategoryResponse {
-    leaf_category_id: string;
-    categories: TikTok_RecommendCategoryItem[];
-  }
-
-  interface TikTok_RecommendGlobalCategoriesBody {
-    /** The product title. 
-Title length:
-- DE, ES, FR, IE, IT, JP, UK, US: [1, 255] 
-- MX:[1,300] 
-- Other regions: [25, 255] */
-    product_title: string;
-    /** The product description in HTML format.
-
-
-Note:
-- The content must conform to the HTML syntax. All HTML tags are accepted but to optimize display on the TikTok Shop product detail page, the system will automatically convert certain tags into alternative formats, such as rendering <table> tags as images.
-- Max length: 10,000 characters.
-- Image guidelines: You must use TikTok Shop image URLs. Max 30 <img> tags, each under 4000px with src, width, and height attributes.
-
-Recommendations: 
-- If you are syncing a pre-existing description from another platform, include the full HTML source description here.
-- Provide a detailed description, ideally over 300 characters.
-- Include 3-5 key selling points, each under 250 characters, with supporting images.
-- Use 1600x1600 px for the image dimensions. */
-    description: string;
-    /** Product images, including gallery images, images that appear in the description, product variant images. */
-    images: TikTok_SimpleUrl[];
-    /** The category tree version to use for this product.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: If the seller account contains an active US shop, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version: string;
-  }
-
-  interface TikTok_RecommendGlobalCategoriesResponse {
-    leaf_category_id: string;
-    categories: TikTok_RecommendGlobalCategory[];
-  }
-
-  interface TikTok_RecommendGlobalCategory {
-    id: string;
-    name: string;
-    level: number;
-    is_leaf: boolean;
-  }
-
-  interface TikTok_RecommendedCategory {
-    id: string;
-    local_name: string;
-  }
-
-  interface TikTok_RegionRequirementCondition {
-    condition_type: string;
-    attribute_id: string;
-    attribute_value_id: string;
-    region: string;
-  }
-
-  interface TikTok_ReplicateSource {
-    product_id: string;
-    shop_id: string;
-    sku_id: string;
-  }
-
-  interface TikTok_RequirementCondition {
-    condition_type: string;
-    attribute_id: string;
-    attribute_value_id: string;
-  }
-
-  interface TikTok_ResponsiblePerson {
-    is_required: boolean;
-    optional_regions: string[];
-    required_regions: string[];
-  }
-
-  interface TikTok_SalesAttribute {
-    id: string;
-    value_id: string;
-  }
-
-  interface TikTok_SalesAttributeDetails {
-    id?: string;
-    value_id?: string;
-    name?: string;
-    value_name?: string;
-    sku_img?: TikTok_SimpleUrl;
-    supplementary_sku_images?: TikTok_SimpleUrl[];
-  }
-
-  interface TikTok_SalesAttributeMapping {
-    local_attribute_id: string;
-    global_attribute_id: string;
-    local_value_id: string;
-    global_value_id: string;
-  }
-
-  interface TikTok_SearchGlobalProduct {
-    id: string;
-    title: string;
-    status: string;
-    skus: TikTok_SearchGlobalProductsSku[];
-    create_time: number;
-    update_time: number;
-  }
-
-  interface TikTok_SearchGlobalProductsBody {
-    status: string;
-    seller_skus: string[];
-    create_time_ge: number;
-    create_time_le: number;
-    update_time_ge: number;
-    update_time_le: number;
-  }
-
-  interface TikTok_SearchGlobalProductsResponse {
-    /** Token to retrieve the next page of results. Empty if no more pages. */
-    next_page_token: string;
-    /** Total number of orders matching the query criteria. */
-    total_count: number;
-    global_products: TikTok_SearchGlobalProduct[];
-  }
-
-  interface TikTok_SearchGlobalProductsSku {
-    id: string;
-    seller_sku: string;
-  }
-
-  interface TikTok_SearchPackageBody {
-    /** Filter orders to show only those that are created on or after the specified date and time. Unix timestamp.
-
-Note:
-create_time_ge and create_time_lt together constitute the creation time filter condition.
-- If create_time_ge is filled but create_time_lt is empty, create_time_lt will default to the current time.
-- If create_time_lt is filled but create_time_ge is empty, create_time_ge will default to the earliest shop time. */
-    create_time_ge?: number;
-    /** Filter orders to show only those that are created before the specified date and time. Unix timestamp.
-Refer to notes in create_time_ge for more usage information. */
-    create_time_lt?: number;
-    /** Filter orders to show only those that are updated on or after the specified date and time. Unix timestamp.
-
-Note:
-update_time_ge and update_time_lt together define the update time filter condition.
-- If update_time_ge is filled but update_time_lt is empty, update_time_lt will default to the current time.
-- If update_time_lt is filled but update_time_ge is empty, update_time_ge will default to the earliest shop time. */
-    update_time_ge?: number;
-    /** Filter orders to show only those that are updated before the specified date and time. Unix timestamp.
-Refer to notes in update_time_ge for more usage information. */
-    update_time_lt?: number;
-    package_status?: TikTok_PackageStatus;
-  }
-
-  interface TikTok_SearchPackageItem {
-    id: string;
-    orders: TikTok_PackageDetailOrder[];
-    create_time: number;
-    update_time: number;
-    status: string;
-    tracking_number: string;
-    shipping_provider_name: string;
-    shipping_provider_id: string;
-    order_line_item_ids: string[];
-  }
-
-  interface TikTok_SearchPackageResponse {
-    next_page_token: string;
-    total_count: number;
-    packages: TikTok_SearchPackageItem[];
-  }
-
-  type TikTok_SearchPackageSortField = 'create_time' | 'update_time' | 'order_pay_time';
-
-  interface TikTok_SearchProduct {
-    id: string;
-    title: string;
-    status: string;
-    skus: TikTok_SearchProductsSku[];
-    sales_regions: string[];
-    create_time: number;
-    update_time: number;
-    product_sync_fail_reasons: string[];
-    is_not_for_sale: boolean;
-    recommended_categories: TikTok_RecommendedCategory[];
-    listing_quality_tier: string;
-    integrated_platform_statuses: TikTok_IntegratedPlatformStatus[];
-    audit: TikTok_Audit;
-    product_families: TikTok_ProductFamily[];
-    has_draft: boolean;
-  }
-
-  interface TikTok_SearchProductsBody {
-    status?: TikTok_SearchProductsStatus;
-    seller_skus: string[];
-    create_time_ge?: number;
-    create_time_le?: number;
-    update_time_ge?: number;
-    update_time_le?: number;
-    category_version?: string;
-    listing_quality_tiers?: string[];
-    listing_platforms?: string[];
-    audit_status?: string[];
-    sku_ids?: string[];
-    sns_filter?: string;
-    return_draft_version?: boolean;
-  }
-
-  interface TikTok_SearchProductsPrice {
-    /** The currency.
-Possible values based on the region:
-- BRL: Brazil
-- EUR: France, Germany, Ireland, Italy, Spain
-- GBP: United Kingdom
-- IDR: Indonesia
-- JPY: Japan
-- MXN: Mexico
-- MYR: Malaysia
-- PHP: Philippines
-- SGD: Singapore
-- THB: Thailand
-- USD: United States
-- VND: Vietnam */
-    currency: TikTok_Currency;
-    tax_exclusive_price: string;
-    sale_price: string;
-  }
-
-  interface TikTok_SearchProductsResponse {
-    /** Token to retrieve the next page of results. Empty if no more pages. */
-    next_page_token: string;
-    /** Total number of orders matching the query criteria. */
-    total_count: number;
-    products: TikTok_SearchProduct[];
-  }
-
-  interface TikTok_SearchProductsSku {
-    id: string;
-    seller_sku: string;
-    price: TikTok_SearchProductsPrice;
-    inventory: TikTok_Inventory[];
-    list_price: TikTok_ListPrice;
-    external_list_prices: TikTok_ExternalListPrice[];
-    pre_sale: TikTok_PreSale;
-    status_info: TikTok_StatusInfo;
-  }
-
-  type TikTok_SearchProductsStatus = 'ALL' | 'DRAFT' | 'PENDING' | 'FAILED' | 'ACTIVATE' | 'SELLER_DEACTIVATED' | 'PLATFORM_DEACTIVATED' | 'FREEZE' | 'DELETED';
-
-  interface TikTok_SearchSizeChart {
-    template_id: string;
-    template_name: string;
-    images: TikTok_SiteChartImage[];
-  }
-
-  interface TikTok_SearchSizeChartBody {
-    /** Filter size charts by size chart template IDs. 
-Max: 50 IDs */
-    ids?: string[];
-    /** Filter size charts by size chart template name or by key words in the template name.
-If both ids and keyword are provided, ids takes priority. */
-    keyword?: string;
-  }
-
-  interface TikTok_SearchSizeChartsResponse {
-    /** Token to retrieve the next page of results. Empty if no more pages. */
-    next_page_token: string;
-    /** Total number of orders matching the query criteria. */
-    total_count: number;
-    size_chart: TikTok_SearchSizeChart[];
-  }
-
-  interface TikTok_SelfShipment {
-    tracking_number: string;
-    shipping_provider_id: string;
-  }
-
-  interface TikTok_ShipPackageBody {
-    handover_method?: TikTok_HandoverMethod;
-    pickup_slot?: TikTok_PickupSlot;
-    self_shipment?: TikTok_SelfShipment;
-  }
-
-  interface TikTok_ShippingProvider {
-    id: string;
-    name: string;
-  }
-
-  interface TikTok_ShippingService {
-    id: string;
-    name: string;
-    price: string;
-    currency: string;
-    earliest_delivery_days: number;
-    latest_delivery_days: number;
-    is_default: boolean;
-    shipping_provider_name: string;
-    shipping_provider_id: string;
-  }
-
-  interface TikTok_ShippingServiceInfo {
-    id: string;
-    name: string;
-    price: string;
-    currency: string;
-    earliest_delivery_days: number;
-    latest_delivery_days: number;
-    shipping_provider_id: string;
-    shipping_provider_name: string;
-  }
-
-  type TikTok_ShippingType = 'TIKTOK' | 'SELLER';
-
-  interface TikTok_ShopInfo {
-    id: string;
-    name: string;
-    region: string;
-    seller_type: string;
-    cipher: string;
-    code: string;
-  }
-
-  interface TikTok_SimpleId {
-    id: string;
-  }
-
-  interface TikTok_SimpleUrl {
-    uri: string;
-  }
-
-  interface TikTok_SiteChartImage {
-    uri: string;
-    url: string;
-    locale: string;
-  }
-
-  interface TikTok_SizeChart {
-    image: TikTok_GlobalProductImage;
-    template: TikTok_SimpleId;
-  }
-
-  interface TikTok_SkuImg {
-    uri: string;
-    height: number;
-    width: number;
-    thumb_urls: string[];
-    urls: string[];
-  }
-
-  interface TikTok_SkuMapping {
-    global_sku_id: string;
-    local_sku_id: string;
-    sales_attribute_mappings: TikTok_SalesAttributeMapping[];
-  }
-
-  type TikTok_SortOrder = 'ASC' | 'DESC';
-
-  interface TikTok_SplitOrderPackage {
-    splittable_group_id: string;
-    id: string;
-  }
-
-  interface TikTok_SplitOrdersBody {
-    splittable_groups: TikTok_SplittableGroup[];
-  }
-
-  interface TikTok_SplitOrdersResponse {
-    packages: TikTok_SplitOrderPackage[];
-  }
-
-  interface TikTok_SplittableGroup {
-    id: string;
-    order_line_item_ids: string[];
-  }
-
-  interface TikTok_StatusInfo {
-    status: string;
-    deactivation_source: string;
-  }
-
-  interface TikTok_SubscribeDiscountDetail {
-    discount_level: string;
-    discount_value: number;
-  }
-
-  interface TikTok_SubscribeInfo {
-    support_subscribe: boolean;
-    subscribe_status: string;
-    subscribe_discount_details: TikTok_SubscribeDiscountDetail[];
-    subscribe_promotion_config: TikTok_SubscribePromotionConfig[];
-  }
-
-  interface TikTok_SubscribePromotionConfig {
-    discount_level: string;
-    discount_options: number[];
-    max_discount: number;
-    min_discount: number;
-  }
-
-  interface TikTok_SupplementarySkuImage {
-    uri: string;
-    height: number;
-    width: number;
-    thumb_urls: string[];
-    urls: string[];
-  }
-
-  interface TikTok_TikTokShops {
-    shops: TikTok_ShopInfo[];
-  }
-
-  interface TikTok_TokenResponse {
-    /** User access token needed to make calls to TikTok Shop Open API endpoints. Pass this value in the x-tts-access-token header of an API request to authorize the request. */
-    access_token: string;
-    /** Expiration timestamp for access token, with default expiration time set to seven days. The unix timestamp represents the date and time the access token will expire. */
-    access_token_expire_in: number;
-    /** A token to refresh the access token. */
-    refresh_token: string;
-    /** Expiration timestamp for refresh token. The unix timestamp represents the date and time the refresh token will expire. */
-    refresh_token_expire_in: number;
-    /** An ID used to identify the user who has authorized the retrieval of their data in API calls. */
-    open_id: string;
-    /** The name of the seller you are authorizing for your app. */
-    seller_name: string;
-    /** The region where the seller is based. */
-    seller_base_region: string;
-    /** Type of user, with possible values:
-0: Seller
-1: Creator
-3: Partner */
-    user_type: number;
-    /** The authorized API scopes for the app.
-This field will return the Scope Key value of the authorized API scopes. */
-    granted_scopes: string[];
-  }
-
-  interface TikTok_Tracking {
-    description: string;
-    update_time_millis: number;
-  }
-
-  interface TikTok_UpdateGlobalInventoryBody {
-    global_skus: TikTok_UpdateGlobalInventorySku[];
-  }
-
-  interface TikTok_UpdateGlobalInventoryItem {
-    global_warehouse_id: string;
-    quantity: number;
-  }
-
-  interface TikTok_UpdateGlobalInventorySku {
-    id: string;
-    inventory: TikTok_UpdateGlobalInventoryItem[];
-  }
-
-  interface TikTok_UpdateInventoryBody {
-    skus: TikTok_UpdateInventorySku[];
-  }
-
-  interface TikTok_UpdateInventoryDetail {
-    sku_id: string;
-    extra_errors: TikTok_UpdateInventoryExtraError[];
-  }
-
-  interface TikTok_UpdateInventoryError {
-    message: string;
-    code: number;
-    detail: TikTok_UpdateInventoryDetail;
-  }
-
-  interface TikTok_UpdateInventoryExtraError {
-    message: string;
-    warehouse_id: string;
-    code: number;
-  }
-
-  interface TikTok_UpdateInventoryResponse {
-    errors: TikTok_UpdateInventoryError[];
-  }
-
-  interface TikTok_UpdateInventorySku {
-    id: string;
-    inventory: TikTok_Inventory[];
-  }
-
-  interface TikTok_UpdatePriceBody {
-    /** A list of Stock Keeping Units (SKUs) used to identify distinct variants of the product. */
-    skus: TikTok_UpdatePriceSku[];
-  }
-
-  interface TikTok_UpdatePriceSku {
-    /** The SKU ID generated by TikTok Shop. One product can contain multiple SKU IDs.
-
-Note: 
-- The SKU ID must belong to a product with the ACTIVATE status.
-- If you are updating multiple SKUs, all the SKU IDs must belong to the same product. */
-    id: string;
-    /** SKU pricing information. */
-    price: TikTok_ProductPrice;
-    /** The SKU's list price information. This is equivalent to the manufacturer's suggested retail price (MSRP), or the recommended retail price (RRP).
-Applicable only for the US market.
-
-Note: This value may appear as the strikethrough price on the product page. 
-However, whether the strikethrough price is shown and the amount shown are subject to the audit team's review and decision based on various pricing information. */
-    list_price: TikTok_ListPrice;
-    /** The SKU list price (e.g. MSRP, RRP) or original price information on external ecommerce platforms.
-Applicable only for selected sellers in the US market.
-
-Note: This value may appear as the strikethrough price on the product page. 
-However, whether the strikethrough price is shown and the amount shown are subject to the audit team's review and decision based on various pricing information. */
-    external_list_prices: TikTok_ExternalListPrice[];
-  }
-
-  interface TikTok_UploadProductImageResponse {
-    uri: string;
-    url: string;
-    height: number;
-    width: number;
-    use_case: string;
-  }
-
-  interface TikTok_Value {
-    id: string;
-    name: string;
-  }
-
-  interface TikTok_Video {
-    id: string;
-    cover_url: string;
-    format: string;
-    url: string;
-    width: number;
-    height: number;
-    size: number;
-  }
-
-  interface TikTok_Warehouse {
-    id: string;
-    entity_id: string;
-    name: string;
-    effect_status: string;
-    type: string;
-    sub_type: string;
-    is_default: boolean;
-    address: TikTok_Address;
-  }
-
-  interface TikTok_WarehouseDeliveryOptions {
-    id: string;
-    name: string;
-    type: string;
-    description: string;
-    dimension_limit: TikTok_DimensionLimit;
-    weight_limit: TikTok_WeightLimit;
-    platform: string[];
-  }
-
-  interface TikTok_Weight {
-    value: string;
-    unit: string;
-  }
-
-  interface TikTok_WeightLimit {
-    max_weight: number;
-    min_weight: number;
-    unit: string;
-  }
-
-  interface TikTok_CommonErrorMessage_BatchShipPackagesDetail {
-    message: string;
-    code: number;
-    detail: TikTok_BatchShipPackagesDetail;
-  }
-
-  interface TikTok_CommonErrorMessage_CreateFirstMileBundleErrorDetail {
-    message: string;
-    code: number;
-    detail: TikTok_CreateFirstMileBundleErrorDetail;
-  }
-
-  interface TikTok_TikTokResponse_BatchShipPackagesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_BatchShipPackagesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_CreateFirstMileBundleResponse {
-    code: number;
-    message: string;
-    data?: TikTok_CreateFirstMileBundleResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_CreateGlobalProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_CreateGlobalProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_CreatePackagesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_CreatePackagesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_CreateProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_CreateProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_DeleteGlobalProductsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_DeleteGlobalProductsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_DeleteProductsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_DeleteProductsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_EditGlobalProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_EditGlobalProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_EmptyResponse {
-    code: number;
-    message: string;
-    data?: EmptyResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_FulfillmentUploadDeliveryFileResponse {
-    code: number;
-    message: string;
-    data?: TikTok_FulfillmentUploadDeliveryFileResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_FulfillmentUploadDeliveryImageResponse {
-    code: number;
-    message: string;
-    data?: TikTok_FulfillmentUploadDeliveryImageResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetAttributesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetAttributesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetEligibleShippingServiceResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetEligibleShippingServiceResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetGlobalAttributesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetGlobalAttributesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetGlobalCategoriesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetGlobalCategoriesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetGlobalCategoryRulesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetGlobalCategoryRulesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetGlobalProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetGlobalProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetGlobalSellerWarehouseResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetGlobalSellerWarehouseResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetPackageDetailResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetPackageDetailResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetPackageHandoverTimeSlotsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetPackageHandoverTimeSlotsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetPackageShippingDocumentResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetPackageShippingDocumentResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetShippingProvidersResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetShippingProvidersResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetTrackingResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetTrackingResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetWarehouseDeliveryOptionsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetWarehouseDeliveryOptionsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_GetWarehouseListResponse {
-    code: number;
-    message: string;
-    data?: TikTok_GetWarehouseListResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_OptimizedImagesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_OptimizedImagesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_OrderDetailResponse {
-    code: number;
-    message: string;
-    data?: TikTok_OrderDetailResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_OrderListResponse {
-    code: number;
-    message: string;
-    /** Response model for the Get Order List API. */
-    data?: TikTok_OrderListResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_PriceDetailResponse {
-    code: number;
-    message: string;
-    data?: TikTok_PriceDetailResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_ProductCategoriesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_ProductCategoriesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_ProductPrerequisitesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_ProductPrerequisitesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_PublishGlobalProductResponse {
-    code: number;
-    message: string;
-    data?: TikTok_PublishGlobalProductResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_RecommendCategoryResponse {
-    code: number;
-    message: string;
-    data?: TikTok_RecommendCategoryResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_RecommendGlobalCategoriesResponse {
-    code: number;
-    message: string;
-    data?: TikTok_RecommendGlobalCategoriesResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_SearchGlobalProductsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_SearchGlobalProductsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_SearchPackageResponse {
-    code: number;
-    message: string;
-    data?: TikTok_SearchPackageResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_SearchProductsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_SearchProductsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_SearchSizeChartsResponse {
-    code: number;
-    message: string;
-    data?: TikTok_SearchSizeChartsResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_SplitOrdersResponse {
-    code: number;
-    message: string;
-    data?: TikTok_SplitOrdersResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_TikTokShops {
-    code: number;
-    message: string;
-    data?: TikTok_TikTokShops;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_TokenResponse {
-    code: number;
-    message: string;
-    /** https://partner.tiktokshop.com/docv2/page/authorization-overview-202407
-Get Access Token API / Get Refresh Token API */
-    data?: TikTok_TokenResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_UpdateInventoryResponse {
-    code: number;
-    message: string;
-    data?: TikTok_UpdateInventoryResponse;
-    request_id?: string;
-  }
-
-  interface TikTok_TikTokResponse_UploadProductImageResponse {
-    code: number;
-    message: string;
-    data?: TikTok_UploadProductImageResponse;
-    request_id?: string;
-  }
-
-  interface Fulfillment_SplitOrders_query {
-    /** TikTok Shop order ID. */
-    order_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_GetEligibleShippingService_query {
-    /** TikTok Shop order ID. */
-    order_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_CreatePackages_query {
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_SearchPackage_query {
-    /** The number of results to be returned per page. 
-Valid range: [1-50]. */
-    page_size: number;
-    sort_field?: TikTok_SearchPackageSortField;
-    sort_order?: TikTok_SortOrder;
-    /** An opaque token used to retrieve the next page of a paginated result set. 
-Retrieve this value from the result of the next_page_token from a previous response. It is not needed for the first page. */
-    page_token?: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_ShipPackage_query {
-    /** TikTok Shop package ID. */
-    package_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_GetPackageShippingDocument_query {
-    /** Available document types: 
-- SHIPPING_LABEL: Returns the shipping label in PDF format by default.
-- PACKING_SLIP: Returns the packing slip in PDF format by default.
-- SHIPPING_LABEL_AND_PACKING_SLIP: Returns both the shipping label and the packing slip for the package, both in PDF format by default.              
-- SHIPPING_LABEL_PICTURE: Returns the shipping label in PNG format. 
-- HAZMAT_LABEL: Returns the hazmat label in PDF format by default. You must only use this value when there are hazmat items in the package. When you use the value, document_size is fixed to A4, and you don't need to specify document_size.
-- INVOICE_LABEL: For Brazil market only, document_size is fixed to A6, and you don't need to specify document_size. Returns the invoice label in PDF format by default */
-    document_type: TikTok_DocumentType;
-    /** Use this field to specify the size of the document to obtain. This parameter is only applicable to shipping labels, picking slips, and packing slips that are in the PDF format. It is not applicable for hazmat labels as these are fixed to A4. 
-If you specify SHIPPING_LABEL_PICTURE for the document_type, any value specified in the document_size will be ignored. */
-    document_size?: TikTok_DocumentSize;
-    /** The format of the shipping document.
-Possible values: 
-- PDF (Default)
-- ZPL (Only for BR market)
-            
-Note: Not applicable for SHIPPING_LABEL_PICTURE document type. */
-    document_format?: TikTok_DocumentFormat;
-    /** TikTok Shop package ID. */
-    package_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Fulfillment_UploadDeliveryFile_query {
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Logistics_GetWarehouseDeliveryOptions_query {
-    /** The warehouse ID. */
-    warehouse_id: string;
-    /** Specify the scope of delivery options to retrieve.
-- WAREHOUSE: Returns all delivery options currently active for the warehouse. By default, orders will be shipped based on these options.
-- PRODUCT: Returns the delivery options that can be assigned directly to a product. Use this if you want to enable custom delivery options for a product, overriding the default warehouse options. Only delivery_options.id and delivery_options.name will be included in the response when this is specified.
-Default: WAREHOUSE */
-    scope?: TikTok_GetWarehouseDeliveryOptionsScope;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Order_GetOrderList_query {
-    /** The number of results to be returned per page. 
-Default: 20. Valid range: [1-100]. */
-    page_size: number;
-    /** The sort order for the sort_field parameter. Default: DESC
-Possible values:
-- ASC: Ascending order
-- DESC: Descending order */
-    sort_order?: TikTok_SortOrder;
-    /** An opaque token used to retrieve the next page of a paginated result set. 
-Retrieve this value from the result of the next_page_token from a previous response. 
-It is not needed for the first page. */
-    page_token?: string;
-    /** The returned results will be sorted by the specified field. 
-Default: create_time
-Possible values:
-- create_time
-- update_time
-
-Specify the order for sorting the returned results by using the sort_order parameter. */
-    sort_field?: TikTok_OrderListSortField;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetCategories_query {
-    /** The BCP-47 locale codes for displaying category information.
-Default: The default locale of your shop.
-Possible values:
-- de-DE
-- en-GB
-- en-IE
-- en-US
-- es-ES
-- es-MX
-- fr-FR
-- id-ID
-- it-IT
-- ja-JP
-- ms-MY
-- pt-BR
-- th-TH
-- vi-VN
-- zh-CN */
-    locale?: string;
-    /** Filter categories by this keyword in local_name. */
-    keyword?: string;
-    /** Filter categories by the category tree version.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: For US shops, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version?: string;
-    /** Filter categories by the specified platform.
-Possible values:
-- TIKTOK_SHOP
-- TOKOPEDIA
-Default: TIKTOK_SHOP
-
-Applicable only for sellers that migrated from Tokopedia. */
-    listing_platform?: string;
-    /** A flag to indicate whether to include categories that are prohibited on TikTok Shop. 
-Set this to true to identify which are the product categories that you can't list on TikTok Shop in any circumstances.
-Applicable only for BR, MX, EU and SEA markets. */
-    include_prohibited_categories?: boolean;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_RecommendCategories_query {
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetAttributes_query {
-    /** The ID of the category of this product. It must be a leaf category. */
-    category_id: string;
-    /** The BCP-47 locale codes for displaying category information.
-Default: The default locale of your shop.
-Possible values:
-- de-DE
-- en-GB
-- en-IE
-- en-US
-- es-ES
-- es-MX
-- fr-FR
-- id-ID
-- it-IT
-- ja-JP
-- ms-MY
-- pt-BR
-- th-TH
-- vi-VN
-- zh-CN */
-    locale?: string;
-    /** Filter categories by the category tree version.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: For US shops, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version?: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_CreateProduct_query {
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetProduct_query {
-    product_id: string;
-    return_under_review_version?: boolean;
-    return_draft_version?: boolean;
-    locale?: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_SearchProducts_query {
-    page_size: string;
-    page_token?: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_UpdatePrice_query {
-    /** The product ID generated by TikTok Shop. */
-    product_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_UpdateInventory_query {
-    /** The product ID generated by TikTok Shop. */
-    product_id: string;
-    /** Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop */
-    shop_cipher: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetGlobalCategories_query {
-    /** The BCP-47 locale codes for displaying category information. 
-Default: en-US
-Possible values:
-- de-DE
-- en-GB
-- en-IE
-- en-US
-- es-ES
-- es-MX
-- fr-FR
-- id-ID
-- it-IT
-- ja-JP
-- ms-MY
-- th-TH
-- vi-VN
-- zh-CN */
-    locale?: string;
-    /** Filter categories by this keyword in local_name. */
-    keyword?: string;
-    /** Filter categories by the category tree version.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: If the seller account contains an active US shop, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version?: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_RecommendGlobalCategories_query {
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetGlobalCategoryRules_query {
-    category_id: string;
-    category_version?: string;
-    locale?: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_GetGlobalAttributes_query {
-    /** The ID of the category of this product. It must be a leaf category. */
-    category_id: string;
-    /** The BCP-47 locale codes for displaying category information.
-Default: The default locale of your shop.
-Possible values:
-- de-DE
-- en-GB
-- en-IE
-- en-US
-- es-ES
-- es-MX
-- fr-FR
-- id-ID
-- it-IT
-- ja-JP
-- ms-MY
-- pt-BR
-- th-TH
-- vi-VN
-- zh-CN */
-    locale?: string;
-    /** Filter categories by the category tree version.
-Possible values based on region:
-- US: v2, represents the 7-level category tree.
-  Important: For US shops, you must pass v2 when using this API.
-- Other regions: v1, represents the 3-level category tree.
-Default: v1 */
-    category_version?: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_CreateGlobalProduct_query {
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_EditGlobalProduct_query {
-    /** The global product ID generated by TikTok Shop. */
-    global_product_id: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface Product_SearchGlobalProducts_query {
-    /** The number of results to be returned per page. 
-Valid range: [1-100] */
-    page_size: number;
-    /** An opaque token used to retrieve the next page of a paginated result set. 
-Retrieve this value from the result of the next_page_token from a previous response. 
-It is not needed for the first page. */
-    page_token?: string;
-    /** The seller access_token value from Get Access Token */
-    access_token: string;
-  }
-
-  interface tiktok {
-    /** # Obtain an authorization link
-[More details](https://partner.tiktokshop.com/docv2/page/authorization-overview-202407)
-
-# Example:
-- /page/login
-```html
-
-<a env="server" :href="k.integration.tikTok.getAuthUrl(k.site.info.makeAbsUrl('/api/callback/tiktok'), JSON.stringify({foo:'bar'}))">TikTok Login</a>
-
-```
----
-- /api/callback/{action}
-```ts
-
-k.api.get("tiktok", (data: string, state: string) => {
-  const value = JSON.parse(data);
-  const stateObj = JSON.parse(state); // {foo: 'bar'}
-  const days = Math.floor((value.access_token_expire_in - Date.now() / 1000) / 3600 / 24);
-  k.cookie.set("tiktok_token", JSON.stringify(value), days);
-  k.response.setHeader("Location", "/home");
-  k.response.statusCode(301);
-});
-
-```
----
-#### **redirect_url**:
-If the user accepts the authorization request, they will be redirected to the Redirect URL
-#### **state**:
-A state parameter should be added to your authorization link for extra security
- */
-    getAuthUrl(redirect_url?: string, state?: string): string;
-    /** Refresh Token
-[More details](https://partner.tiktokshop.com/docv2/page/authorization-overview-202407)
----
-#### **refresh_token**:
-A refresh token obtained in the response parameters of the Get Access Token API.
- */
-    refreshToken(refresh_token: string): TikTok_TikTokResponse_TokenResponse;
-    /** Retrieves the list of shops that a seller has authorized for an app.
-[More details](https://partner.tiktokshop.com/docv2/page/get-authorized-shops-202309)
----
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    getAuthorizedShops(access_token: string): TikTok_TikTokResponse_TikTokShops;
-    /** Use this API to confirm an order split. Note that ​​supported split levels vary by region​​:
-- Some regions support ​​item-level splits​​ (splitting individual units of the same SKU).
-- Others only support ​​all-units splits​​ (splitting different SKUs into separate packages).
-
-[More details](https://partner.tiktokshop.com/docv2/page/split-orders-202309)
- */
-    Fulfillment_SplitOrders(body: TikTok_SplitOrdersBody, query: Fulfillment_SplitOrders_query): TikTok_TikTokResponse_SplitOrdersResponse;
-    /** Use this API ( for US ) to query the list of available shipping services when specifying packages' size or weight. 
-The shipping fee and delivery time is an estimate only and is based on the package dimensions and weight you provided. 
-Options listed may differ if you change the package attributes at the time of shipping.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-eligible-shipping-service-202309)
- */
-    Fulfillment_GetEligibleShippingService(body: TikTok_GetEligibleShippingServiceBody, query: Fulfillment_GetEligibleShippingService_query): TikTok_TikTokResponse_GetEligibleShippingServiceResponse;
-    /** If you send multiple packages to TikTok Shop warehouse in a single first-mile bundle, you can use the API to create a first-mile bundle on TikTok Shop and get the bundle ID.
-
-[More details](https://partner.tiktokshop.com/docv2/page/create-first-mile-bundle-202407)
- */
-    Fulfillment_CreateFirstMileBundle(body: TikTok_CreateFirstMileBundleBody): TikTok_TikTokResponse_CreateFirstMileBundleResponse;
-    /** Use this API to ship orders (purchase labels). This API is region specific to the US. 
-The shipping fee and delivery time is an estimate only and is based on the package dimensions and weight you provided. 
-Based on the package attributes, options listed below may differ from your shipping subscriptions.
-
-[More details](https://partner.tiktokshop.com/docv2/page/create-packages-202309)
- */
-    Fulfillment_CreatePackages(body: TikTok_CreatePackagesBody, query: Fulfillment_CreatePackages_query): TikTok_TikTokResponse_CreatePackagesResponse;
-    /** Retrieve package IDs based on specified conditions. Package creation time and information update time are the common querying conditions.
-
-[More details](https://partner.tiktokshop.com/docv2/page/search-package-202309)
- */
-    Fulfillment_SearchPackage(body: TikTok_SearchPackageBody, query: Fulfillment_SearchPackage_query): TikTok_TikTokResponse_SearchPackageResponse;
-    /** Use this API to retrieve the time slots available for pickup, drop-off, or van collection for the seller's specified package by using package ID.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-package-handover-time-slots-202309)
----
-#### **package_id**:
-TikTok Shop package ID.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Fulfillment_GetPackageHandoverTimeSlots(package_id: string, shop_cipher: string, access_token: string): TikTok_TikTokResponse_GetPackageHandoverTimeSlotsResponse;
-    /** Use this API to ship a package. 
-There are two kinds of shipping options available: `TikTok Shipping` or `Seller Shipping`.
-
-[More details](https://partner.tiktokshop.com/docv2/page/ship-package-202309)
- */
-    Fulfillment_ShipPackage(body: TikTok_ShipPackageBody, query: Fulfillment_ShipPackage_query): TikTok_TikTokResponse_EmptyResponse;
-    /** Use this API to batch ship packages by providing multiple package IDs. 
-This API is available for TikTok shipping orders as well as seller shipping orders. 
-
-[More details](https://partner.tiktokshop.com/docv2/page/batch-ship-packages-202309)
----
-#### **packages**:
-No Description
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Fulfillment_BatchShipPackages(packages?: TikTok_BatchShipPackage[], shop_cipher: string, access_token: string): TikTok_TikTokResponse_BatchShipPackagesResponse;
-    /** For orders shipped by TikTok Shop, this API retrieves the URL of shipping documents (shipping label and packing slip) for a package specified by the package ID. 
-This API is only applicable to "TikTok Shipping" orders. To obtain the shipping documents URL via this API, first call "Ship Package" to ship the corresponding package.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-package-shipping-document-202309)
- */
-    Fulfillment_GetPackageShippingDocument(query: Fulfillment_GetPackageShippingDocument_query): TikTok_TikTokResponse_GetPackageShippingDocumentResponse;
-    /** Returns information about a package, including handover time slot, tracking number, and shipping provider information.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-package-detail-202309)
----
-#### **package_id**:
-TikTok Shop package ID.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Fulfillment_GetPackageDetail(package_id: string, shop_cipher: string, access_token: string): TikTok_TikTokResponse_GetPackageDetailResponse;
-    /** This API can use the order number to obtain the corresponding logistics tracking information.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-tracking-202309)
----
-#### **order_id**:
-TikTok Shop order ID.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Fulfillment_GetTracking(order_id: string, shop_cipher: string, access_token: string): TikTok_TikTokResponse_GetTrackingResponse;
-    /** This API is used for the seller to upload the proof of delivery file for a package, and to generate the URL of the corresponding file. 
-The generated URL is used for the [Update Package Delivery Status API](https://partner.tiktokshop.com/docv2/page/update-package-delivery-status-202309). 
-
-[More details](https://partner.tiktokshop.com/docv2/page/fulfillment-upload-delivery-file-202309)
- */
-    Fulfillment_UploadDeliveryFile(body: TikTok_FulfillmentUploadDeliveryFileBody, query: Fulfillment_UploadDeliveryFile_query): TikTok_TikTokResponse_FulfillmentUploadDeliveryFileResponse;
-    /** This API is used for the seller to upload the proof of delivery image for a package, and to generate the URL of the corresponding file. 
-The generated URL is used in the [Update Package Delivery Status API](https://partner.tiktokshop.com/docv2/page/update-package-delivery-status-202309) to indicate that the parcel has been delivered. 
-
-[More details](https://partner.tiktokshop.com/docv2/page/fulfillment-upload-delivery-image-202309)
----
-#### **data**:
-Image file data to be uploaded to TikTok Shop. The picture file is a string generated by base64 encoding.
-Prerequisites：
-- Image format must be JPG, JPEG, or PNG.
-- Image resolution must be between 100 x 100px and 20000 x 20000px.
-- Image size must not exceed 5MB.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Fulfillment_UploadDeliveryImage(data?: KScript.UploadFile | KScript.FileInfo, shop_cipher: string, access_token: string): TikTok_TikTokResponse_FulfillmentUploadDeliveryImageResponse;
-    /** This API retrieves all warehouse information associated with the seller. 
-Warehouse information includes name, status, address, and other details.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-warehouse-list-202309)
----
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Logistics_GetWarehouseList(shop_cipher: string, access_token: string): TikTok_TikTokResponse_GetWarehouseListResponse;
-    /** This API retrieves all global warehouse information associated with the seller. 
-Warehouse information includes global warehouse ID, warehouse name, and warehouse ownership.
- 
-[More details](https://partner.tiktokshop.com/docv2/page/get-global-seller-warehouse-202309)
----
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Logistics_GetGlobalSellerWarehouse(access_token: string): TikTok_TikTokResponse_GetGlobalSellerWarehouseResponse;
-    /** This API is used to obtain a list of delivery options available through the seller's designated warehouse.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-warehouse-delivery-options-202309)
- */
-    Logistics_GetWarehouseDeliveryOptions(query: Logistics_GetWarehouseDeliveryOptions_query): TikTok_TikTokResponse_GetWarehouseDeliveryOptionsResponse;
-    /** This API is used to obtain the shipping provider corresponding to the specified delivery option
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-shipping-providers-202309)
----
-#### **delivery_option_id**:
-The specific delivery option identifier for getting the shipping provider list.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Logistics_GetShippingProviders(delivery_option_id: string, shop_cipher: string, access_token: string): TikTok_TikTokResponse_GetShippingProvidersResponse;
-    /** Returns a list of orders created or updated during the timeframe indicated by the specified parameters. 
-You can also apply a range of filtering criteria to narrow the list of orders returned, 
-such as order status, delivery option type, and buyer user ID.
-[More details](https://partner.tiktokshop.com/docv2/page/get-order-list-202309)
- */
-    Order_GetOrderList(body: TikTok_OrderListBody, query: Order_GetOrderList_query): TikTok_TikTokResponse_OrderListResponse;
-    /** Get the detailed order information of an order, including important attributes such as order status, 
-shipping addresses, payment details, price and tax info, and package information.
-[More details](https://partner.tiktokshop.com/docv2/page/get-order-detail-202507)
----
-#### **ids**:
-A list of TikTok Shop order ID values.
-Max count: 50
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Order_GetOrderDetail(ids: string[], shop_cipher: string, access_token: string): TikTok_TikTokResponse_OrderDetailResponse;
-    /** Get the detailed pricing calculation information of an order or a line item, including vouchers, tax, etc.
-[More details](https://partner.tiktokshop.com/docv2/page/get-price-detail-202407)
----
-#### **order_id**:
-TikTok Shop order ID.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Order_GetPriceDetail(order_id: string, shop_cipher: string, access_token: string): TikTok_TikTokResponse_PriceDetailResponse;
-    /** Check if a TikTok shop is ready to list products.
-Each shop needs to satisfy a series of TikTok Shop requirements before you can start listing products. 
-Before you proceed to list products, use this API to check if your shop has satisfied all requirements.
-Tip: We recommend that you run this check before any bulk updates to avoid listing issues. For example, 
-sellers may change the delivery option to "Shipped by seller" but fail to add a shipping template, 
-thus blocking the shop from listing products. In this case, the API would return is_failed=true for the SHIPPING_TEMPLATE check item and you can prompt the seller to fix the problem. 
-
-[More details](https://partner.tiktokshop.com/docv2/page/check-listing-prerequisites-202312)
----
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_CheckListingPrerequisites(shop_cipher: string, access_token: string): TikTok_TikTokResponse_ProductPrerequisitesResponse;
-    /** Retrieve the list of product categories available for your shop.
-Product categories are updated frequently, so it's recommended to call the API in real time to ensure you are using the latest category data. 
-Caching category data locally may result in using outdated information, leading to errors when creating products.
-For the Indonesia market: To list a product on both TikTok Shop and Tokopedia, you must use only categories that are available on both platforms. 
-Please call this API twice to identify the overlapping categories.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-categories-202309)
- */
-    Product_GetCategories(query: Product_GetCategories_query): TikTok_TikTokResponse_ProductCategoriesResponse;
-    /** Retrieve the recommended category for a candidate product based on its title, description, and images.
-If you are syncing product catalogs from an external system to TikTok Shop, use this API to facilitate product categorization.
-Note: The language used in text fields such as descriptions and titles must align with the target market's language (e.g. don't use Chinese).
-
-[More details](https://partner.tiktokshop.com/docv2/page/recommend-category-202309)
- */
-    Product_RecommendCategories(body: TikTok_RecommendCategoryBody, query: Product_RecommendCategories_query): TikTok_TikTokResponse_RecommendCategoryResponse;
-    /** Retrieve the standard built-in product and sales attributes for listing a product in a particular category based on your shop's location.
-Products on TikTok Shop are grouped into categories predefined by TikTok Shop, and each category is associated with a standard set of product attributes and sales attributes.
-- Sales attributes (e.g. size, color, length) define product variants and are optional if your product is straightforward and has no variants.
-- Product attributes (e.g. manufacturer, country of origin, materials used) describe the product as a whole, regardless of variant. Some product attributes are mandatory based on listing policies.
-Use this API to determine the mandatory and optional attributes before listing a product.
-Note: It must be a leaf category that corresponds to the category tree type specified in the category_version property.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-attributes-202309)
- */
-    Product_GetAttributes(query: Product_GetAttributes_query): TikTok_TikTokResponse_GetAttributesResponse;
-    /** Upload local images to TikTok Shop for use as product images, variant images, size charts, certification images and so on.
-
-```ts
-k.api.post(() => {
-  const token = "TODO: GetToken";
-  k.request.files.find(it => it.name == "file");
-  const result = k.integration.tiktok.Product_UploadProductImage(file, "MAIN_IMAGE", token);
-  return result;
-});
-```
-[More details](https://partner.tiktokshop.com/docv2/page/upload-product-image-202309)
----
-#### **data**:
-The local image file to be uploaded.
-
-Note:
-- Supported formats: JPG, JPEG, PNG, WEBP, HEIC, BMP
-- Max size: 10MB
-- Dimensions: [100x100 px, 20000x20000 px]
-- For use_case=MAIN_IMAGE, the dimensions must be between 300x300 px and 4000x4000 px.
-- For use_case=SIZE_CHART_IMAGE, the dimension must be at least 1024 px on the shorter side.
-#### **use_case**:
-The usage scenario of the image.
-Possible values:
-- MAIN_IMAGE: An image displayed in the product image gallery.
-- ATTRIBUTE_IMAGE: An image that represents a product variant (e.g. color).
-- DESCRIPTION_IMAGE: An image used within the product description.
-- CERTIFICATION_IMAGE: An image to provide supporting information to meet TikTok Shop requirements for listing restricted products (e.g., images of certifications, product packaging, labeling).
-- SIZE_CHART_IMAGE: An image that displays the product's measurement details.
-            
-Note: Images for use cases MAIN_IMAGE and ATTRIBUTE_IMAGE that do not fit within the 3:4 to 4:3 aspect ratio range will be automatically converted to 1:1.
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_UploadProductImage(data: KScript.UploadFile | KScript.FileInfo, use_case?: TikTok_ImageUseCase, access_token: string): TikTok_TikTokResponse_UploadProductImageResponse;
-    /** Retrieve size charts that a seller has created.
-
-[More details](https://partner.tiktokshop.com/docv2/page/search-size-charts-202407)
----
-#### **ids**:
-Filter size charts by size chart template IDs. 
-Max: 50 IDs
-#### **keyword**:
-Filter size charts by size chart template name or by key words in the template name.
-If both ids and keyword are provided, ids takes priority.
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_SearchSizeCharts(ids?: string[], keyword?: string, access_token: string): TikTok_TikTokResponse_SearchSizeChartsResponse;
-    /** Create and list products intended for sale exclusively in local shops.
-
-[More details](https://partner.tiktokshop.com/docv2/page/create-product-202309)
- */
-    Product_CreateProduct(body: TikTok_CreateProductBody, query: Product_CreateProduct_query): TikTok_TikTokResponse_CreateProductResponse;
-    /** Delete non-frozen products that you no longer need.
-For the Indonesia market: You can only delete products that are not frozen on all listing platforms. 
-If the product is frozen on any platform, it cannot be deleted.
-
-[More details](https://partner.tiktokshop.com/docv2/page/delete-products-202309)
----
-#### **product_ids**:
-The product IDs to delete.
-Max number of IDs: 20.
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_DeleteProducts(product_ids?: string[], shop_cipher: string, access_token: string): TikTok_TikTokResponse_DeleteProductsResponse;
-    /** Retrieve all properties of a product, except those in the FREEZE or DELETED status.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-product-202309)
- */
-    Product_GetProduct(query: Product_GetProduct_query): TikTok_TikTokResponse_GetProductResponse;
-    /** Retrieve a list of products that meet the specified conditions. 
-This API will only return the key product properties. 
-You can pass a returned product ID to the [Get Product API](https://partner.tiktokshop.com/docv2/page/get-product-202309) to obtain more details about the product.
-
-[More details](https://partner.tiktokshop.com/docv2/page/search-products-202502)
- */
-    Product_SearchProducts(body: TikTok_SearchProductsBody, query: Product_SearchProducts_query): TikTok_TikTokResponse_SearchProductsResponse;
-    /** Update the price of multiple SKUs belonging to a product in the ACTIVATE status and not included in any ongoing promotions.
-Note: The data response field is always empty as there is no additional response data.
-
-[More details](https://partner.tiktokshop.com/docv2/page/update-price-202309)
- */
-    Product_UpdatePrice(body: TikTok_UpdatePriceBody, query: Product_UpdatePrice_query): TikTok_TikTokResponse_EmptyResponse;
-    /** Update the inventory quantity of SKUs belonging to a product in the ACTIVATE status.
-
-[More details](https://partner.tiktokshop.com/docv2/page/update-inventory-202309)
- */
-    Product_UpdateInventory(body: TikTok_UpdateInventoryBody, query: Product_UpdateInventory_query): TikTok_TikTokResponse_UpdateInventoryResponse;
-    /** Optimize images used in your TikTok Shop by changing the background to white.
-This is especially useful for images displayed in the product image gallery as it enhances product visibility. 
-Note: 
-- The images to be optimized must first be uploaded to TikTok Shop through the [Upload Product Image API](https://partner.tiktokshop.com/docv2/page/upload-product-image-202309). You will not be able to optimize any images that are not hosted by TikTok Shop.
-- Images that were previously optimized will not be processed again.
-- The optimization is processed asynchronously and typically completes within a few seconds. Therefore, the optimize_status returned in the first API request for an image is always PROCESSING, indicating that optimization is underway. Please call the API again after a few seconds to get the final optimization status.
-
-[More details](https://partner.tiktokshop.com/docv2/page/optimized-images-202404)
----
-#### **images**:
-The list of images to be optimized. 
-Use the [Upload Product Image API](https://partner.tiktokshop.com/docv2/page/upload-product-image-202309) to upload the images first and obtain the corresponding image URIs.
-Max count: 200
-#### **shop_cipher**:
-Use this property to pass shop information in requesting the API. Failure in passing the correct value when requesting the API for cross-border shops will return incorrect response. 
-Get by API Get Authorization Shop
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_OptimizedImages(images?: TikTok_OptimizedRequestImage[], shop_cipher: string, access_token: string): TikTok_TikTokResponse_OptimizedImagesResponse;
-    /** Retrieve all available product categories, regardless of market variations.
-Product categories are updated frequently, so it's recommended to call the API in real time to ensure you are using the latest category data. 
-Caching category data locally may result in using outdated information, leading to errors when creating global products. 
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-global-categories-202309)
- */
-    Product_GetGlobalCategories(query: Product_GetGlobalCategories_query): TikTok_TikTokResponse_GetGlobalCategoriesResponse;
-    /** Retrieve the recommended categories for a candidate global product based on its title, description, and images.
-If you are syncing product catalogs from an external system to TikTok Shop, use this API to facilitate product classification.
-Note: Double-byte characters (e.g. Chinese characters) are not supported in text fields such as descriptions and titles. If you include them, the API request will fail.
-
-[More details](https://partner.tiktokshop.com/docv2/page/recommend-global-categories-202309)
- */
-    Product_RecommendGlobalCategories(body: TikTok_RecommendGlobalCategoriesBody, query: Product_RecommendGlobalCategories_query): TikTok_TikTokResponse_RecommendGlobalCategoriesResponse;
-    /** Retrieve the additional requirements (beyond mandatory product attributes) for listing a global product in a particular category, regardless of market variations. 
-Requirements may include product certifications, size charts, dimensions and more.
-Use this API to determine the supporting information that you must prepare before listing a global product.
-Note: It must be a [leaf category](https://partner.tiktokshop.com/docv2/page/get-global-categories-202309) that corresponds to the category tree type specified in the category_version property.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-global-category-rules-202309)
- */
-    Product_GetGlobalCategoryRules(query: Product_GetGlobalCategoryRules_query): TikTok_TikTokResponse_GetGlobalCategoryRulesResponse;
-    /** Retrieve the standard built-in product and sales attributes for listing a global product in a particular category, regardless of market variations.
-Products on TikTok Shop are grouped into categories predefined by TikTok Shop, and each category is associated with a standard set of product attributes and sales attributes.
-- Sales attributes (e.g. size, color, length) define product variants and are optional if your product is straightforward and has no variants.
-- Product attributes (e.g. manufacturer, country of origin, materials used) describe the product as a whole, regardless of variant. Some product attributes are mandatory based on listing policies.
-Use this API to determine the mandatory and optional attributes before listing a global product.
-Note: It must be a [leaf category](https://partner.tiktokshop.com/docv2/page/get-global-categories-202309) that corresponds to the category tree type specified in the category_version property.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-global-attributes-202309)
- */
-    Product_GetGlobalAttributes(query: Product_GetGlobalAttributes_query): TikTok_TikTokResponse_GetGlobalAttributesResponse;
-    /** Create global products to be sold in one or multiple shops outside of the seller's base country.
-
-[More details](https://partner.tiktokshop.com/docv2/page/create-global-product-202309)
- */
-    Product_CreateGlobalProduct(body: TikTok_CreateGlobalProductBody, query: Product_CreateGlobalProduct_query): TikTok_TikTokResponse_CreateGlobalProductResponse;
-    /** Publish and convert a global product to local products in one or multiple shops in supported markets. 
-After publishing, the product is sent for review by TikTok Shop in the respective markets. 
-For sellers in the EU market, the provided information will also be automatically translated into all EU languages supported by TikTok Shop.
-
-[More details](https://partner.tiktokshop.com/docv2/page/publish-global-product-202309)
----
-#### **publish_target**:
-No Description
-#### **global_product_id**:
-The global product ID generated by TikTok Shop.
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_PublishGlobalProduct(publish_target?: TikTok_PublishTarget[], global_product_id: string, access_token: string): TikTok_TikTokResponse_PublishGlobalProductResponse;
-    /** Edit global products to update information such as product name, description, images, and prices.
-
-[More details](https://partner.tiktokshop.com/docv2/page/edit-global-product-202309)
- */
-    Product_EditGlobalProduct(body: TikTok_EditGlobalProductBody, query: Product_EditGlobalProduct_query): TikTok_TikTokResponse_EditGlobalProductResponse;
-    /** Delete global products that you no longer need.
-
-[More details](https://partner.tiktokshop.com/docv2/page/delete-global-products-202309)
----
-#### **global_product_ids**:
-No Description
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_DeleteGlobalProducts(global_product_ids?: string[], access_token: string): TikTok_TikTokResponse_DeleteGlobalProductsResponse;
-    /** Retrieve all properties of a global product that is in the "DRAFT", "UNPUBLISHED", or "PUBLISHED" status, and the corresponding local product IDs in the published markets.
-
-[More details](https://partner.tiktokshop.com/docv2/page/get-global-product-202309)
----
-#### **global_product_id**:
-The global product ID generated by TikTok Shop.
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product_GetGlobalProduct(global_product_id: string, access_token: string): TikTok_TikTokResponse_GetGlobalProductResponse;
-    /** Retrieve a list of global products that meet the specified conditions. 
-This API will only return the key product properties. You can pass a returned global product ID to the Get Global Product API to obtain more details about the product.
-
-[More details](https://partner.tiktokshop.com/docv2/page/search-global-products-202312)
- */
-    Product_SearchGlobalProducts(body: TikTok_SearchGlobalProductsBody, query: Product_SearchGlobalProducts_query): TikTok_TikTokResponse_SearchGlobalProductsResponse;
-    /** Update the inventory of unpublished global products if you have access to the Multi-Warehouse feature.
-The inventory of published global products will not be affected by this update operation.
-
-[More details](https://partner.tiktokshop.com/docv2/page/update-global-inventory-202309)
----
-#### **global_skus**:
-No Description
-#### **global_product_id**:
-The global product ID generated by TikTok Shop.
-#### **access_token**:
-The seller access_token value from Get Access Token
- */
-    Product(global_skus?: TikTok_UpdateGlobalInventorySku[], global_product_id: string, access_token: string): TikTok_TikTokResponse_EmptyResponse;
-  }
-
-  interface KIntegration {
-    tiktok: KScript.Integration.tiktok;
-  }
-
-}
-declare namespace KScript {
-  interface k {
-    integration: KScript.Integration.KIntegration;
-  }
-
-}
 
 declare namespace Kooboo.Sites.Models.Security {
   interface Full {
@@ -22974,6 +20204,7 @@ declare namespace KScript {
 declare namespace Kooboo.KContent {
   interface KContentInstance {
     operators(): KScript.Operators;
+    onlineStatus(contentId: string): record<string,boolean>;
   }
 
   interface queryOptions {

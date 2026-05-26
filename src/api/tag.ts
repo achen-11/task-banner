@@ -1,6 +1,7 @@
 // @k-url /api/tag/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import {
   createTag,
@@ -14,11 +15,6 @@ import { checkProjectPermission } from 'code/Services/project'
 
 // GET /api/tag/list?projectId=xxx
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { projectId: string }
   const projectId = query.projectId
@@ -30,9 +26,10 @@ k.api.get("list", () => {
   // 3. 获取标签列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to view tags', 403)
@@ -53,11 +50,6 @@ k.api.get("list", () => {
 
 // GET /api/tag/detail?id=xxx
 k.api.get("detail", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { id: string }
   const tagId = query.id
@@ -69,9 +61,10 @@ k.api.get("detail", () => {
   // 3. 获取标签详情
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const tag = getTagById(tagId)
 
     if (!tag) {
@@ -93,11 +86,6 @@ k.api.get("detail", () => {
 
 // POST /api/tag/create
 k.api.post("create", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { projectId, name, color, prompt, showInQuickBar, order } = body
 
@@ -112,9 +100,10 @@ k.api.post("create", (body: any) => {
   // 3. 创建标签
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to create tags', 403)
@@ -145,11 +134,6 @@ k.api.post("create", (body: any) => {
 
 // PUT /api/tag/update
 k.api.put("update", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id, name, color, prompt, showInQuickBar, order } = body
 
@@ -162,9 +146,10 @@ k.api.put("update", (body: any) => {
   // 3. 更新标签
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取标签信息以检查权限
     const tag = getTagById(tagId)
 
@@ -205,11 +190,6 @@ k.api.put("update", (body: any) => {
 
 // PUT /api/tag/updateOrder
 k.api.put("updateOrder", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { projectId, updates } = body
 
@@ -231,9 +211,10 @@ k.api.put("updateOrder", (body: any) => {
   // 3. 更新标签顺序
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to reorder tags', 403)
@@ -255,11 +236,6 @@ k.api.put("updateOrder", (body: any) => {
 
 // DELETE /api/tag/delete
 k.api.delete("delete", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id } = body
 
@@ -272,9 +248,10 @@ k.api.delete("delete", (body: any) => {
   // 3. 删除标签
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取标签信息以检查权限
     const tag = getTagById(tagId)
 

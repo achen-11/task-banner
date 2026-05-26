@@ -1,6 +1,7 @@
 // @k-url /api/dashboard/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo } from 'code/Services/user'
 import {
   getDashboardStats,
@@ -16,11 +17,6 @@ import {
 
 // GET /api/dashboard/data?period=week
 k.api.get("data", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取查询参数
   const query = k.request.queryString as unknown as { period?: string }
   const period = query.period === 'month' ? 'month' : 'week'
@@ -28,9 +24,10 @@ k.api.get("data", () => {
   // 3. 获取仪表板数据
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 同步获取所有数据
     const stats = getDashboardStats(currentUser._id)
     const taskTrends = getTaskTrends(currentUser._id, period)
@@ -54,17 +51,13 @@ k.api.get("data", () => {
 
 // GET /api/dashboard/stats
 k.api.get("stats", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取统计数据
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const stats = getDashboardStats(currentUser._id)
 
     return success(stats)
@@ -77,11 +70,6 @@ k.api.get("stats", () => {
 
 // GET /api/dashboard/trends?period=week
 k.api.get("trends", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取查询参数
   const query = k.request.queryString as unknown as { period?: string }
   const period = query.period === 'month' ? 'month' : 'week'
@@ -89,9 +77,10 @@ k.api.get("trends", () => {
   // 3. 获取趋势数据
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const taskTrends = getTaskTrends(currentUser._id, period)
 
     return success(taskTrends)
@@ -104,11 +93,6 @@ k.api.get("trends", () => {
 
 // GET /api/dashboard/recent-projects?limit=5
 k.api.get("recentProjects", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取查询参数
   const query = k.request.queryString as unknown as { limit?: string }
   const limit = parseInt(query.limit || '5') 
@@ -116,9 +100,10 @@ k.api.get("recentProjects", () => {
   // 3. 获取最近项目
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const recentProjects = getRecentProjects(currentUser._id, limit)
 
     return success(recentProjects)
@@ -131,11 +116,6 @@ k.api.get("recentProjects", () => {
 
 // GET /api/dashboard/today-tasks?limit=10
 k.api.get("todayTasks", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取查询参数
   const query = k.request.queryString as unknown as { limit?: string }
   const limit = parseInt(query.limit || '10') 
@@ -143,9 +123,10 @@ k.api.get("todayTasks", () => {
   // 3. 获取今日待办任务
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const todayTasks = getTodayTasks(currentUser._id, limit)
 
     return success(todayTasks)
@@ -158,17 +139,13 @@ k.api.get("todayTasks", () => {
 
 // GET /api/dashboard/quick-projects
 k.api.get("quickProjects", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取快速项目列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const quickProjects = getQuickProjects(currentUser._id)
 
     return success(quickProjects)

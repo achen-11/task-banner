@@ -20,8 +20,7 @@ export const User = ksql.define(
     },
     password: {
       type: DataTypes.String,
-      required: true,
-      select: false // 默认查询不包含密码
+      required: true
     },
     avatar: {
       type: DataTypes.String,
@@ -34,6 +33,11 @@ export const User = ksql.define(
     isAdmin: {
       type: DataTypes.Boolean,
       default: false
+    },
+    koobooId: {
+      type: DataTypes.String,
+      default: '',
+      index: true
     }
   },
   {

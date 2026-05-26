@@ -1,4 +1,10 @@
-//@k-url /__logout
-k.account.logout();
-k.cookie.clear();
-k.response.redirect("/_Admin/login?permission=o&returnurl=/");
+//@k-url /__logout__
+
+import { logout } from 'code/Services/auth'
+k.api.get(()=>{
+    if (k.account.isLogin) {
+      k.account.user.logout()
+    }
+    logout()
+    k.response.redirect('/')
+})

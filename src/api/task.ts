@@ -1,6 +1,7 @@
 // @k-url /api/task/{action}
 
 import { success, error } from 'code/Utils/response'
+import { getCurrentAuthUser } from 'code/Services/auth'
 import { getUserInfo, getUserById } from 'code/Services/user'
 import {
   createTask,
@@ -22,11 +23,6 @@ import { createMCPOperationNotification } from 'code/Services/notification'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 获取参数
   const query = k.request.queryString as unknown as {
     projectId: string
@@ -54,9 +50,10 @@ k.api.get("list", () => {
   // 3. 获取任务列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to view tasks in this project', 403)
@@ -93,11 +90,6 @@ k.api.get("list", () => {
 
 // GET /api/task/detail?id=xxx
 k.api.get("detail", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { id: string }
   const taskId = query.id
@@ -109,9 +101,10 @@ k.api.get("detail", () => {
   // 3. 获取任务详情
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const task = getTaskDetailById(taskId)
 
     if (!task) {
@@ -133,11 +126,6 @@ k.api.get("detail", () => {
 
 // POST /api/task/create
 k.api.post("create", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { projectId, moduleIds, title, content, status, priority, assigneeId, dueDate, progress, tags, tagIds, summary } = body
 
@@ -152,9 +140,10 @@ k.api.post("create", (body: any) => {
   // 3. 创建任务
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 权限检查（需要是项目成员）
     if (!checkProjectPermission(projectId, currentUser._id, 'member')) {
       return error('You do not have permission to create tasks in this project', 403)
@@ -225,11 +214,6 @@ k.api.post("create", (body: any) => {
 
 // PUT /api/task/update
 k.api.put("update", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id, title, content, status, priority, assigneeId, moduleIds, dueDate, progress, tags, tagIds, summary } = body
 
@@ -242,9 +226,10 @@ k.api.put("update", (body: any) => {
   // 3. 更新任务
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -329,11 +314,6 @@ k.api.put("update", (body: any) => {
 
 // DELETE /api/task/delete
 k.api.delete("delete", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { id } = body
 
@@ -346,9 +326,10 @@ k.api.delete("delete", (body: any) => {
   // 3. 删除任务
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -415,11 +396,6 @@ k.api.delete("delete", (body: any) => {
 
 // PUT /api/task/updateOrder
 k.api.put("updateOrder", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { tasks } = body
 
@@ -430,9 +406,10 @@ k.api.put("updateOrder", (body: any) => {
   // 3. 批量更新任务顺序
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取第一个任务以检查项目权限
     const firstTask = getTaskById(tasks[0].id)
 
@@ -461,11 +438,6 @@ k.api.put("updateOrder", (body: any) => {
 
 // GET /api/task/activities?taskId=xxx
 k.api.get("activities", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { taskId: string }
   const taskId = query.taskId
@@ -477,9 +449,10 @@ k.api.get("activities", () => {
   // 3. 获取任务活动历史
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -505,11 +478,6 @@ k.api.get("activities", () => {
 
 // POST /api/task/comment
 k.api.post("comment", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { taskId, content, summary, type, mentionedUsers, attachments, metadata } = body
 
@@ -524,9 +492,10 @@ k.api.post("comment", (body: any) => {
   // 3. 创建评论
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -595,11 +564,6 @@ k.api.post("comment", (body: any) => {
 
 // POST /api/task/import-as-comment
 k.api.post("import-as-comment", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { taskId, content, summary, type, mentionedUsers } = body
 
@@ -614,9 +578,10 @@ k.api.post("import-as-comment", (body: any) => {
   // 3. 创建评论（替代原来的导入逻辑）
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -675,11 +640,6 @@ k.api.post("import-as-comment", (body: any) => {
 
 // GET /api/task/comments?taskId=xxx&page=1&size=20&type=all
 k.api.get("comments", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as {
     taskId: string
@@ -699,9 +659,10 @@ k.api.get("comments", () => {
   // 3. 获取评论列表
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取任务信息以检查权限
     const task = getTaskById(taskId)
 
@@ -777,11 +738,6 @@ k.api.get("comments", () => {
 
 // PUT /api/task/comment
 k.api.put("comment", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { commentId, content, summary } = body
 
@@ -796,9 +752,10 @@ k.api.put("comment", (body: any) => {
   // 3. 更新评论
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取评论信息
     const comment = TaskComment.findById(commentId) as any
 
@@ -866,11 +823,6 @@ k.api.put("comment", (body: any) => {
 
 // DELETE /api/task/comment
 k.api.delete("comment", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { commentId?: string }
   const commentId = query.commentId
@@ -882,9 +834,10 @@ k.api.delete("comment", () => {
   // 3. 删除评论
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 获取评论信息
     const comment = TaskComment.findById(commentId) as any
 
@@ -934,11 +887,6 @@ k.api.delete("comment", () => {
 
 // POST /api/task/reaction
 k.api.post("reaction", (body: any) => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const { commentId, emoji } = body
 
@@ -953,9 +901,10 @@ k.api.post("reaction", (body: any) => {
   // 3. 添加/移除反应
   try {
     // 获取当前用户
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
-
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     // 检查评论是否存在
     const comment = TaskComment.findById(commentId) as any
     if (!comment) {
@@ -1021,11 +970,6 @@ k.api.post("reaction", (body: any) => {
 
 // GET /api/task/reactions?commentId=xxx
 k.api.get("reactions", () => {
-  // 1. 鉴权检查
-  if (!k.account.isLogin) {
-    return error('Unauthorized', 401)
-  }
-
   // 2. 参数验证
   const query = k.request.queryString as unknown as { commentId?: string }
   const commentId = query.commentId
@@ -1060,8 +1004,10 @@ k.api.get("reactions", () => {
     })
 
     // 获取当前用户的反应
-    const username = k.account.user.current.userName
-    const currentUser = getUserInfo(username)
+    const currentUser = getCurrentAuthUser()
+    if (!currentUser) {
+      return error('Unauthorized', 401)
+    }
     const userReactions = reactions.filter(r => r.userId === currentUser._id)
 
     return success({

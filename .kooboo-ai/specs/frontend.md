@@ -5,7 +5,7 @@
 - [ ] SSR
 - [x] Local
 
-TaskFlow 是需登录的后台协作应用，含看板拖拽、实时消息、图表等复杂交互，采用 Vue 3 SPA。
+Task Banner 是需登录的后台协作应用，含看板拖拽、实时消息、图表等复杂交互，采用 Vue 3 SPA。
 
 ## Local 路线
 
@@ -74,9 +74,10 @@ pnpm --dir frontend build
 | 环境 | 认证方式 | API 基址 |
 | --- | --- | --- |
 | 开发 | Cookie `jwt_token` + Vite proxy | `VITE_API_BASE_URL=`（空，走 proxy） |
-| 生产 | Page 服务端脚本注入 `__USER_INFO__` | `VITE_API_BASE_URL=https://ai_task_manage.redev.cn` |
+| 生产 | Page 服务端脚本注入 `__USER_INFO__` | `VITE_API_BASE_URL=https://ai_task_manage.localkooboo.com` |
 
-- 开发代理目标：`https://ai_task_manage.redev.cn`（`/api`、`/__kb/kfile`）
+- 站点 URL：`https://ai_task_manage.localkooboo.com`
+- 开发代理目标：同上（`/api`、`/__kb/kfile`）
 - 生产未登录：Page 脚本重定向 `/_Admin/login?permission=u&returnurl=/`
 - 退出登录：`/__logout__`（`src/api/__logout.ts`）
 
