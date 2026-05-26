@@ -159,17 +159,6 @@ export function getDocumentVersion(documentId: string, version: number): Promise
   })
 }
 
-/**
- * 导出文档
- * @param id 文档 ID
- */
-export function exportDocument(id: string): Promise<Blob> {
-  return request.get('/api/document/export', {
-    params: { id },
-    responseType: 'blob'
-  })
-}
-
 export default {
   getDocumentList,
   getDocumentDetail,
@@ -177,7 +166,6 @@ export default {
   updateDocument,
   deleteDocument,
   getDocumentVersions,
-  getDocumentVersion,
-  exportDocument
+  getDocumentVersion
 }
 

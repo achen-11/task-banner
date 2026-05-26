@@ -40,13 +40,6 @@ export interface TaskListResponse {
   hasMore: boolean
 }
 
-export interface BatchUpdateData {
-  status?: string
-  priority?: string
-  dueDate?: number
-  assigneeId?: string
-}
-
 /**
  * 获取用户列表（组织内的所有用户）
  */
@@ -82,17 +75,6 @@ export function getUserTasksStats(): Promise<UserTasksStats> {
 }
 
 /**
- * 批量更新任务
- */
-export function updateTasksBatch(taskIds: string[], updates: BatchUpdateData): Promise<void> {
-  return request({
-    url: '/api/tasks/batch',
-    method: 'PUT',
-    data: { taskIds, updates }
-  })
-}
-
-/**
  * 快速创建任务
  */
 export function createQuickTask(data: {
@@ -114,6 +96,5 @@ export default {
   updateUser,
   getUserTasks,
   getUserTasksStats,
-  updateTasksBatch,
   createQuickTask
 }

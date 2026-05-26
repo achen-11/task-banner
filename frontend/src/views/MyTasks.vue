@@ -56,6 +56,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useProjectStore } from '@/stores/project'
 import { useUserTasksStore } from '@/stores/userTasks'
 import { ElMessage } from 'element-plus'
+import { exportTasksToMarkdown, copyToClipboard } from '@/utils/export'
 
 // 组件导入
 import ViewSwitcher from '@/components/my-tasks/ViewSwitcher.vue'
@@ -103,8 +104,29 @@ const handleTaskCreated = () => {
 }
 
 // 处理导出
-const handleExport = () => {
-  ElMessage.info('导出功能正在开发中')
+const handleExport = async () => {
+  const tasksToExport =
+    selectedTaskIds.value.length > 0
+      ? tasks.value.filter(task => selectedTaskIds.value.includes(task._id))
+      : tasks.value
+
+  if (tasksToExport.length === 0) {
+    ElMessage.warning('没有可导出的任务')
+    return
+  }
+
+  try {
+    const markdown = exportTasksToMarkdown(tasksToExport)
+    const copied = await copyToClipboard(markdown)
+    if (copied) {
+      ElMessage.success(`已导出 ${tasksToExport.length} 个任务到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('Export tasks error:', error)
+    ElMessage.error('导出失败')
+  }
 }
 
 // 处理任务点击

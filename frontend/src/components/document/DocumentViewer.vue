@@ -153,7 +153,7 @@ import {
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import DocumentVersionsDialog from './DocumentVersionsDialog.vue'
-import { getDocumentDetail, exportDocument, type DocumentDetail } from '@/api/document'
+import { getDocumentDetail, type DocumentDetail } from '@/api/document'
 
 // 使用 API 中导出的类型
 type Document = DocumentDetail
@@ -327,16 +327,17 @@ const handleAction = async (command: string) => {
   }
 }
 
-// 导出文档
+// 导出文档（客户端生成，文档详情已加载）
 const handleExport = async () => {
   if (!document.value) return
 
   try {
-    const blob = await exportDocument(document.value!._id)
+    const content = document.value.content || ''
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
     const url = window.URL.createObjectURL(blob)
     const a = window.document.createElement('a')
     a.href = url
-    a.download = `${document.value!.title}.md`
+    a.download = `${document.value.title}.md`
     window.document.body.appendChild(a)
     a.click()
     window.document.body.removeChild(a)
@@ -354,7 +355,7 @@ const handleShare = async () => {
   if (!document.value) return
 
   try {
-    const url = `${window.location.origin}/document/${document.value!._id}`
+    const url = `${window.location.origin}/#/projects/${document.value.projectId}/documents/${document.value._id}`
     await navigator.clipboard.writeText(url)
     ElMessage.success('分享链接已复制到剪贴板')
   } catch (error) {
