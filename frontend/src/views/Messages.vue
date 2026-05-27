@@ -65,6 +65,22 @@
           </button>
         </div>
       </div>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">展示</span>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="option in viewModeOptions"
+            :key="option.value"
+            type="button"
+            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+            :class="filterChipClass(viewMode === option.value)"
+            @click="viewMode = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -74,6 +90,83 @@
 
     <!-- 消息列表 -->
     <div v-else class="bg-white dark:bg-gray-800 rounded-md shadow-md divide-y divide-gray-100 dark:divide-gray-700">
+      <!-- 按任务聚合 -->
+      <template v-if="viewMode === 'aggregate'">
+        <div
+          v-for="group in groupedMessages"
+          :key="group.key"
+          class="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+          :class="{ 'bg-blue-50/60 dark:bg-blue-900/20': group.unreadCount > 0 }"
+        >
+          <div
+            class="p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            @click="handleGroupNavigate(group)"
+          >
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-semibold text-blue-700 dark:text-blue-300">
+              {{ group.title.charAt(0).toUpperCase() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ group.title }}</p>
+                <span
+                  v-if="group.unreadCount > 0"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-500 text-white shrink-0"
+                >
+                  {{ group.unreadCount }} 未读
+                </span>
+                <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">{{ group.items.length }} 条</span>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ summarizeGroupActivity(group) }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ formatTime(group.latestAt) }}</p>
+            </div>
+            <button
+              type="button"
+              class="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500"
+              :title="expandedGroups.has(group.key) ? '收起' : '展开详情'"
+              @click.stop="toggleGroupExpand(group.key)"
+            >
+              <svg
+                class="w-4 h-4 transition-transform"
+                :class="{ 'rotate-180': expandedGroups.has(group.key) }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="expandedGroups.has(group.key)" class="px-4 pb-3 space-y-2">
+            <div
+              v-for="message in group.items"
+              :key="message._id"
+              class="p-3 rounded-md border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 cursor-pointer transition-colors"
+              :class="{ 'border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800': !message.isRead }"
+              @click="handleNotificationClick(message)"
+            >
+              <div class="flex items-start gap-2">
+                <span
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
+                  :class="isAiNotification(message)
+                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
+                >
+                  {{ getNotificationSourceLabel(message) }}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-gray-900 dark:text-gray-100">{{ message.content }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
+                </div>
+                <div v-if="!message.isRead" class="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 平铺列表 -->
+      <template v-else>
       <div
         v-for="message in filteredMessages"
         :key="message._id"
@@ -157,9 +250,13 @@
           </div>
         </div>
       </div>
+      </template>
 
       <!-- 空状态 -->
-      <div v-if="filteredMessages.length === 0 && !loading" class="p-8 text-center text-gray-500 dark:text-gray-400">
+      <div
+        v-if="(viewMode === 'aggregate' ? groupedMessages.length : filteredMessages.length) === 0"
+        class="p-8 text-center text-gray-500 dark:text-gray-400"
+      >
         暂无消息
       </div>
     </div>
@@ -180,11 +277,17 @@ import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
 import { formatRelativeTime } from '@/utils/time'
 import { isAiNotification, getNotificationSourceLabel } from '@/utils/notification'
+import {
+  groupNotificationsByTask,
+  summarizeGroupActivity,
+  type NotificationGroup
+} from '@/utils/notificationGroups'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 type ReadFilter = 'all' | 'unread'
 type TypeFilter = 'all' | 'task' | 'comment' | 'mention'
 type SourceFilter = 'all' | 'ai' | 'human'
+type ViewMode = 'aggregate' | 'flat'
 
 interface FilterOption<T extends string> {
   value: T
@@ -201,6 +304,13 @@ const markingAllAsRead = ref(false)
 const readFilter = ref<ReadFilter>('all')
 const typeFilter = ref<TypeFilter>('all')
 const sourceFilter = ref<SourceFilter>('all')
+const viewMode = ref<ViewMode>('aggregate')
+const expandedGroups = ref(new Set<string>())
+
+const viewModeOptions: { value: ViewMode; label: string }[] = [
+  { value: 'aggregate', label: '按任务聚合' },
+  { value: 'flat', label: '平铺列表' }
+]
 
 const readFilterOptions = ref<FilterOption<ReadFilter>[]>([
   { value: 'all', label: '全部', count: 0 },
@@ -239,6 +349,62 @@ const filteredMessages = computed(() => {
     return true
   })
 })
+
+const groupedMessages = computed(() => groupNotificationsByTask(filteredMessages.value))
+
+const toggleGroupExpand = (key: string) => {
+  const next = new Set(expandedGroups.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedGroups.value = next
+}
+
+const markMessagesAsRead = async (items: Notification[]) => {
+  const unread = items.filter(item => !item.isRead)
+  if (unread.length === 0) return
+
+  await Promise.all(
+    unread.map(async item => {
+      await markNotificationAsRead(item._id)
+      item.isRead = true
+    })
+  )
+
+  updateFilterCounts()
+}
+
+const navigateToTask = async (taskId: string) => {
+  try {
+    const task = await getTaskDetail(taskId)
+    if (task?.projectId) {
+      router.push({
+        path: `/projects/${task.projectId}`,
+        query: {
+          tab: 'board',
+          taskId
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Failed to get task detail:', error)
+    router.push('/projects')
+  }
+}
+
+const handleGroupNavigate = async (group: NotificationGroup) => {
+  try {
+    await markMessagesAsRead(group.items)
+  } catch (error) {
+    console.error('Failed to mark group notifications as read:', error)
+  }
+
+  if (group.relatedTaskId) {
+    await navigateToTask(group.relatedTaskId)
+  }
+}
 
 const formatTime = (timestamp: number) => formatRelativeTime(timestamp)
 
@@ -283,21 +449,7 @@ const handleNotificationClick = async (message: Notification) => {
   }
 
   if (message.relatedTaskId) {
-    try {
-      const task = await getTaskDetail(message.relatedTaskId)
-      if (task?.projectId) {
-        router.push({
-          path: `/projects/${task.projectId}`,
-          query: {
-            tab: 'board',
-            taskId: message.relatedTaskId
-          }
-        })
-      }
-    } catch (error) {
-      console.error('Failed to get task detail:', error)
-      router.push('/projects')
-    }
+    await navigateToTask(message.relatedTaskId)
   }
 }
 
