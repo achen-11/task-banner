@@ -206,6 +206,24 @@
                 </span>
               </div>
               <div class="flex items-center space-x-2">
+                <el-button size="small" @click="handleExportDocument">
+                  <el-icon class="mr-1">
+                    <Download />
+                  </el-icon>
+                  导出
+                </el-button>
+                <el-button size="small" @click="handleShareDocument">
+                  <el-icon class="mr-1">
+                    <Share />
+                  </el-icon>
+                  分享
+                </el-button>
+                <el-button size="small" @click="showVersionsDialog = true">
+                  <el-icon class="mr-1">
+                    <Clock />
+                  </el-icon>
+                  版本
+                </el-button>
                 <el-tooltip>
                   <template #content>
                     <div class="flex items-center gap-1.5">
@@ -391,6 +409,12 @@
     <!-- 新建文档对话框 -->
     <CreateDocumentDialog v-model:visible="showCreateDialog" :project-id="projectId" @created="handleDocumentCreated" />
 
+    <DocumentVersionsDialog
+      v-model:visible="showVersionsDialog"
+      :document-id="selectedDocument?._id"
+      @restore="handleVersionRestore"
+    />
+
     <!-- 快捷键提示悬浮按钮 -->
     <div class="fixed bottom-4 right-4 z-20">
       <el-popover placement="top" :width="200" trigger="hover" title="快捷键说明">
@@ -447,11 +471,13 @@ import { ref, computed, onMounted, onUnmounted, watch, inject, type Ref } from '
 import { useRouter } from 'vue-router'
 import { formatShortcut } from '@/composables/useKeyboard'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft, Loading, Check, Close } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, View, Document, FolderOpened, ArrowRight, ArrowLeft, Loading, Check, Close, Download, Share, Clock } from '@element-plus/icons-vue'
 import { ChevronRight, ChevronLeft, Keyboard } from 'lucide-vue-next'
 import { marked } from 'marked'
 import CreateDocumentDialog from '../document/CreateDocumentDialog.vue'
+import DocumentVersionsDialog from '../document/DocumentVersionsDialog.vue'
 import { getDocumentList, updateDocument, deleteDocument as deleteDocumentAPI, type Document as DocumentType } from '@/api/document'
+import { buildDocumentShareUrl, copyDocumentShareUrl, downloadDocumentFile } from '@/utils/documentActions'
 
 // 使用 API 中导出的类型
 type Document = DocumentType
@@ -472,8 +498,7 @@ const documents = ref<Document[]>([])
 const searchKeyword = ref('')
 const statusFilter = ref('')
 const showCreateDialog = ref(false)
-const showViewerDialog = ref(false)
-const showEditorDialog = ref(false)
+const showVersionsDialog = ref(false)
 const selectedDocument = ref<Document | null>(null)
 const viewingDocumentId = ref<string | null>(null)
 const isEditMode = ref(false)
@@ -733,11 +758,6 @@ const selectDocument = (document: Document) => {
   isEditMode.value = false
 }
 
-const viewDocument = (document: Document) => {
-  selectedDocument.value = document
-  isEditMode.value = false
-}
-
 const editDocument = (document: Document) => {
   selectedDocument.value = document
   isEditMode.value = true
@@ -768,37 +788,53 @@ const cancelEdit = () => {
   savingStatus.value = 'idle'
 }
 
-// 复制文档链接
-const shareDocument = async (document: Document) => {
+const handleExportDocument = () => {
+  if (!selectedDocument.value) return
+
   try {
-    // 检查projectId是否有效
+    const content = isEditMode.value ? editingContent.value : selectedDocument.value.content
+    downloadDocumentFile({
+      title: isEditMode.value ? (editingTitle.value || selectedDocument.value.title) : selectedDocument.value.title,
+      content,
+      type: selectedDocument.value.type
+    })
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
+  }
+}
+
+const handleShareDocument = async (document?: Document) => {
+  const target = document || selectedDocument.value
+  if (!target) return
+
+  try {
     if (!props.projectId) {
       ElMessage.error('项目ID无效，无法生成链接')
       return
     }
 
-    // 生成文档的唯一URL
-    const documentUrl = router.resolve({
-      name: 'document',
-      params: {
-        projectId: props.projectId,
-        documentId: document._id
-      }
-    }).href
-
-    // 获取当前域名并构建完整URL
-    const baseUrl = window.location.origin + window.location.pathname.replace(/#.*$/, '')
-    // hash模式下，documentUrl已经包含#号，不需要再加
-    const fullUrl = baseUrl + documentUrl
-
-    console.log('Generated document URL:', fullUrl) // 调试日志
-
-    // 复制到剪贴板
-    await navigator.clipboard.writeText(fullUrl)
+    const fullUrl = buildDocumentShareUrl(router, props.projectId, target._id)
+    await copyDocumentShareUrl(fullUrl)
     ElMessage.success('文档链接已复制到剪贴板')
   } catch (error) {
     console.error('复制链接失败:', error)
     ElMessage.error('复制链接失败')
+  }
+}
+
+const shareDocument = (document: Document) => {
+  void handleShareDocument(document)
+}
+
+const handleVersionRestore = async () => {
+  await fetchDocuments()
+  if (selectedDocument.value) {
+    const refreshed = documents.value.find(doc => doc._id === selectedDocument.value!._id)
+    if (refreshed) {
+      selectedDocument.value = refreshed
+    }
   }
 }
 
@@ -913,19 +949,6 @@ const deleteDocument = async (document: Document) => {
 const handleDocumentCreated = () => {
   ElMessage.success('文档创建成功')
   fetchDocuments()
-}
-
-const handleDocumentSaved = () => {
-  ElMessage.success('文档保存成功')
-  fetchDocuments()
-  showEditorDialog.value = false
-  selectedDocument.value = null
-}
-
-const handleDocumentEdit = (document: Document) => {
-  showViewerDialog.value = false
-  showEditorDialog.value = true
-  selectedDocument.value = document
 }
 
 const formatDate = (timestamp: number) => {
