@@ -156,7 +156,6 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project, UpdateProjectParams } from '@/types/project'
-import { updateProject } from '@/api/project'
 import { useProjectStore } from '@/stores/project'
 
 interface Props {
@@ -232,7 +231,7 @@ const handleSave = async () => {
   try {
     loading.value = true
 
-    const updatedProject = await updateProject(formData.value)
+    const updatedProject = await projectStore.updateProject(formData.value)
 
     ElMessage.success('项目信息已更新')
     emit('updated', updatedProject)
