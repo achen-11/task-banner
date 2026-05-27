@@ -67,22 +67,31 @@
       <section class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40">
           <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">个人偏好</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">「我的任务」页默认状态筛选</p>
         </div>
         <el-form class="p-6" label-position="top" @submit.prevent="handleSavePreferences">
-          <el-form-item label="默认显示状态">
-            <el-checkbox-group v-model="preferenceStatuses" class="flex flex-wrap gap-x-6 gap-y-2">
-              <el-checkbox
-                v-for="option in TASK_STATUS_OPTIONS"
-                :key="option.value"
-                :label="option.value"
+          <div class="account-pref-field">
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">默认显示状态</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5 mb-4 leading-relaxed">
+              用于「我的任务」页的初始状态筛选；至少选择一项。「重置筛选」也会回到此处配置。
+            </p>
+            <div
+              class="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/30 px-4 py-4"
+            >
+              <el-checkbox-group
+                v-model="preferenceStatuses"
+                class="flex flex-wrap gap-x-8 gap-y-3 account-pref-checkboxes"
               >
-                {{ option.label }}
-              </el-checkbox>
-            </el-checkbox-group>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">至少选择一项；「重置筛选」也会回到此处配置。</p>
-          </el-form-item>
-          <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
+                <el-checkbox
+                  v-for="option in TASK_STATUS_OPTIONS"
+                  :key="option.value"
+                  :label="option.value"
+                >
+                  {{ option.label }}
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+          <div class="flex justify-end pt-6 mt-6 border-t border-gray-100 dark:border-gray-700">
             <el-button type="primary" native-type="submit" :loading="savingPreferences">
               保存偏好
             </el-button>
@@ -264,3 +273,16 @@ async function handleChangePassword() {
 
 onMounted(loadProfile)
 </script>
+
+<style scoped>
+.account-pref-field :deep(.el-checkbox) {
+  margin-right: 0;
+  height: auto;
+  align-items: center;
+}
+
+.account-pref-checkboxes :deep(.el-checkbox__label) {
+  padding-left: 8px;
+  line-height: 1.5;
+}
+</style>

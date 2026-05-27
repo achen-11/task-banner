@@ -9,7 +9,7 @@ Task Banner 是一个基于 Kooboo CLI 的任务管理应用，面向已登录�
 1. 本文件
 2. `specs/agent-sop.md` — **Agent 协作 SOP**（MCP 拉任务 → 实现 → 回写）
 3. `specs/frontend.md` — 前端路线与 build 约定
-4. `specs/ui-design.md` — UI/UX 约定与自检（含 design-taste skill 引用）
+4. `specs/ui-design.md` — UI/UX 约定与自检（可选参考 [Taste Skill](https://www.tasteskill.dev/)）
 5. `specs/backend.md` — API、Service、Model 约定
 6. `specs/mcp.md` — MCP Tools 约定与工具列表
 7. `specs/routing.md` — URL 与路由映射
