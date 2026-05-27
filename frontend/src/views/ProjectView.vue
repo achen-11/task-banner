@@ -126,8 +126,8 @@
         </button>
       </div>
 
-      <!-- Tab 栏 -->
-      <nav class="flex px-6 space-x-8 bg-white dark:bg-gray-800">
+      <!-- Tab 栏（专注模式下隐藏，F1 或浮动按钮退出后可切换） -->
+      <nav v-show="!focusMode" class="flex px-6 space-x-8 bg-white dark:bg-gray-800">
         <button
           v-for="tab in tabs"
           :key="tab.value"
@@ -144,7 +144,10 @@
     </div>
 
     <!-- Tab 内容 -->
-    <div class="overflow-auto p-6" :class="focusMode ? 'h-full' : 'flex-1'">
+    <div
+      class="overflow-auto"
+      :class="focusMode && (currentTab === 'board' || currentTab === 'documents') ? 'h-full' : 'flex-1 p-6'"
+    >
       <ProjectOverview v-if="currentTab === 'overview'" :project="project" />
       <ProjectTaskList v-else-if="currentTab === 'list'" :project-id="projectId" />
       <ProjectBoard v-else-if="currentTab === 'board'" ref="projectBoardRef" :project="project" />
@@ -218,8 +221,8 @@ const documentId = computed(() => route.params.documentId as string | undefined)
 // 头部展开/收起状态
 const collapsed = ref(false)
 
-// 当前 Tab - 从路由query获取，默认list
-const currentTab = ref((route.query.tab as string) || 'overview')
+// 当前 Tab - 默认看板（#1021：进入项目优先专注看板视图）
+const currentTab = ref((route.query.tab as string) || 'board')
 const projectBoardRef = ref<InstanceType<typeof ProjectBoard> | null>(null)
 
 const handleHeaderCreateTask = () => {
@@ -245,24 +248,27 @@ const focusMode = ref(false)
 // 向子组件提供专注模式状态
 provide('focusMode', focusMode)
 
+function enterFocusMode() {
+  if (focusMode.value) return
+  focusMode.value = true
+  collapsed.value = true
+  uiStore.setSidebarCollapsed(true)
+}
+
+function exitFocusMode() {
+  if (!focusMode.value) return
+  focusMode.value = false
+  collapsed.value = false
+  uiStore.setSidebarCollapsed(false)
+}
+
 // 专注模式切换方法 - F1专用
 const toggleFocusMode = () => {
-  focusMode.value = !focusMode.value
-
-  // 直接控制三个元素的状态
   if (focusMode.value) {
-    // 进入专注模式：收起所有元素
-    collapsed.value = true // 收起顶部项目详情
-    uiStore.setSidebarCollapsed(true) // 收起左侧菜单栏
-    // 左侧文件列表由子组件的watch处理
+    exitFocusMode()
   } else {
-    // 退出专注模式：展开所有元素
-    collapsed.value = false // 展开顶部项目详情
-    uiStore.setSidebarCollapsed(false) // 展开左侧菜单栏
-    // 左侧文件列表由子组件的watch处理
+    enterFocusMode()
   }
-
-  // 通知子组件状态变化
 }
 
 // 向子组件提供专注模式切换方法
@@ -409,16 +415,26 @@ const loadProject = async () => {
   }
 }
 
-// 监听 Tab 切换，自动展开/收起头部
+// 监听 Tab 切换：看板默认进入专注模式；离开看板/文档时退出专注
 watch(currentTab, (newTab) => {
   if (newTab === 'overview') {
-    // 切换到概览时自动展开
     collapsed.value = false
-  } else if (newTab === 'list' || newTab === 'board') {
-    // 切换到列表或看板时自动收起
+    exitFocusMode()
+  } else if (newTab === 'list') {
     collapsed.value = true
+    exitFocusMode()
+  } else if (newTab === 'board') {
+    collapsed.value = true
+    if (route.query.focus !== '0') {
+      enterFocusMode()
+    }
+  } else if (newTab === 'documents') {
+    collapsed.value = true
+  } else {
+    exitFocusMode()
+    collapsed.value = false
   }
-})
+}, { immediate: true })
 
 // 处理项目更新
 const handleProjectUpdated = (updatedProject: Project) => {
