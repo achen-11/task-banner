@@ -13,21 +13,58 @@
       </el-button>
     </div>
 
-    <!-- 消息筛选 -->
-    <div class="mb-6 flex flex-wrap gap-2">
-      <button
-        v-for="filter in filters"
-        :key="filter.value"
-        @click="currentFilter = filter.value"
-        class="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200"
-        :class="currentFilter === filter.value ? 'bg-blue-500 dark:bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-      >
-        {{ filter.label }}
-        <span v-if="filter.count > 0" class="ml-2 px-2 py-0.5 rounded-full text-xs"
-          :class="currentFilter === filter.value ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'">
-          {{ filter.count }}
-        </span>
-      </button>
+    <!-- 多维筛选：状态 / 类型 / 来源 分别独立 -->
+    <div class="mb-6 bg-white dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">状态</span>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="option in readFilterOptions"
+            :key="option.value"
+            type="button"
+            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+            :class="filterChipClass(readFilter === option.value)"
+            @click="readFilter = option.value"
+          >
+            {{ option.label }}
+            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">类型</span>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="option in typeFilterOptions"
+            :key="option.value"
+            type="button"
+            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+            :class="filterChipClass(typeFilter === option.value)"
+            @click="typeFilter = option.value"
+          >
+            {{ option.label }}
+            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">来源</span>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="option in sourceFilterOptions"
+            :key="option.value"
+            type="button"
+            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+            :class="filterChipClass(sourceFilter === option.value)"
+            @click="sourceFilter = option.value"
+          >
+            {{ option.label }}
+            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -100,12 +137,12 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               <span
-                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
                 :class="isAiNotification(message)
                   ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
               >
-                {{ isAiNotification(message) ? 'AI' : '人类' }}
+                {{ getNotificationSourceLabel(message) }}
               </span>
               <p class="text-sm text-gray-900 dark:text-gray-100 truncate">
                 {{ message.content }}
@@ -130,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -142,106 +179,113 @@ import {
 import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
 import { formatRelativeTime } from '@/utils/time'
-import { isAiNotification, isHumanNotification } from '@/utils/notification'
+import { isAiNotification, getNotificationSourceLabel } from '@/utils/notification'
 import { usePageTitle } from '@/composables/usePageTitle'
 
-const router = useRouter()
+type ReadFilter = 'all' | 'unread'
+type TypeFilter = 'all' | 'task' | 'comment' | 'mention'
+type SourceFilter = 'all' | 'ai' | 'human'
 
-// 页面标题管理
+interface FilterOption<T extends string> {
+  value: T
+  label: string
+  count: number
+}
+
+const router = useRouter()
 const { setUnreadCount, decrementUnread } = usePageTitle()
 
-// 加载状态
 const loading = ref(false)
 const markingAllAsRead = ref(false)
 
-// 筛选选项
-const filters = ref([
+const readFilter = ref<ReadFilter>('all')
+const typeFilter = ref<TypeFilter>('all')
+const sourceFilter = ref<SourceFilter>('all')
+
+const readFilterOptions = ref<FilterOption<ReadFilter>[]>([
   { value: 'all', label: '全部', count: 0 },
-  { value: 'unread', label: '未读', count: 0 },
-  { value: 'ai', label: 'AI', count: 0 },
-  { value: 'human', label: '人类', count: 0 },
+  { value: 'unread', label: '未读', count: 0 }
+])
+
+const typeFilterOptions = ref<FilterOption<TypeFilter>[]>([
+  { value: 'all', label: '全部', count: 0 },
   { value: 'task', label: '任务', count: 0 },
   { value: 'comment', label: '评论', count: 0 },
   { value: 'mention', label: '@提醒', count: 0 }
 ])
 
-// 当前筛选
-const currentFilter = ref('all')
+const sourceFilterOptions = ref<FilterOption<SourceFilter>[]>([
+  { value: 'all', label: '全部', count: 0 },
+  { value: 'ai', label: 'AI', count: 0 },
+  { value: 'human', label: '人工', count: 0 }
+])
 
-// 消息列表
 const messages = ref<Notification[]>([])
 const unreadCount = ref(0)
 
-// 筛选后的消息
+const filterChipClass = (active: boolean) =>
+  active
+    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+    : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+
 const filteredMessages = computed(() => {
-  let result = messages.value
-
-  if (currentFilter.value === 'unread') {
-    result = result.filter(m => !m.isRead)
-  } else if (currentFilter.value === 'ai') {
-    result = result.filter(m => isAiNotification(m))
-  } else if (currentFilter.value === 'human') {
-    result = result.filter(m => isHumanNotification(m))
-  } else if (currentFilter.value === 'task') {
-    result = result.filter(m => m.type.includes('task_'))
-  } else if (currentFilter.value === 'comment') {
-    result = result.filter(m => m.type === 'commented')
-  } else if (currentFilter.value === 'mention') {
-    result = result.filter(m => m.type === 'mentioned')
-  }
-
-  return result
+  return messages.value.filter(message => {
+    if (readFilter.value === 'unread' && message.isRead) return false
+    if (typeFilter.value === 'task' && !message.type.includes('task_')) return false
+    if (typeFilter.value === 'comment' && message.type !== 'commented') return false
+    if (typeFilter.value === 'mention' && message.type !== 'mentioned') return false
+    if (sourceFilter.value === 'ai' && !isAiNotification(message)) return false
+    if (sourceFilter.value === 'human' && isAiNotification(message)) return false
+    return true
+  })
 })
 
-// 格式化时间
-const formatTime = (timestamp: number) => {
-  return formatRelativeTime(timestamp)
-}
+const formatTime = (timestamp: number) => formatRelativeTime(timestamp)
 
-// 更新筛选器计数
 const updateFilterCounts = () => {
   const unread = messages.value.filter(m => !m.isRead).length
-  const ai = messages.value.filter(m => isAiNotification(m)).length
-  const human = messages.value.filter(m => isHumanNotification(m)).length
   const task = messages.value.filter(m => m.type.includes('task_')).length
   const comment = messages.value.filter(m => m.type === 'commented').length
   const mention = messages.value.filter(m => m.type === 'mentioned').length
+  const ai = messages.value.filter(m => isAiNotification(m)).length
+  const human = messages.value.length - ai
 
-  filters.value = [
+  readFilterOptions.value = [
     { value: 'all', label: '全部', count: messages.value.length },
-    { value: 'unread', label: '未读', count: unread },
-    { value: 'ai', label: 'AI', count: ai },
-    { value: 'human', label: '人类', count: human },
+    { value: 'unread', label: '未读', count: unread }
+  ]
+  typeFilterOptions.value = [
+    { value: 'all', label: '全部', count: messages.value.length },
     { value: 'task', label: '任务', count: task },
     { value: 'comment', label: '评论', count: comment },
     { value: 'mention', label: '@提醒', count: mention }
   ]
+  sourceFilterOptions.value = [
+    { value: 'all', label: '全部', count: messages.value.length },
+    { value: 'ai', label: 'AI', count: ai },
+    { value: 'human', label: '人工', count: human }
+  ]
+
   unreadCount.value = unread
-  // 同步更新页面标题
   setUnreadCount(unread)
 }
 
-// 处理通知点击
 const handleNotificationClick = async (message: Notification) => {
-  // 如果未读，先标记为已读
   if (!message.isRead) {
     try {
       await markNotificationAsRead(message._id)
       message.isRead = true
       updateFilterCounts()
-      // 减少未读数量，更新页面标题
       decrementUnread()
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
     }
   }
 
-  // 跳转到相关任务
   if (message.relatedTaskId) {
     try {
-      // 获取任务详情以获取项目ID
       const task = await getTaskDetail(message.relatedTaskId)
-      if (task && task.projectId) {
+      if (task?.projectId) {
         router.push({
           path: `/projects/${task.projectId}`,
           query: {
@@ -252,23 +296,19 @@ const handleNotificationClick = async (message: Notification) => {
       }
     } catch (error) {
       console.error('Failed to get task detail:', error)
-      // 如果获取失败，尝试直接跳转到项目列表
       router.push('/projects')
     }
   }
 }
 
-// 全部标记为已读
 const handleMarkAllAsRead = async () => {
   markingAllAsRead.value = true
   try {
     const result = await markAllNotificationsAsRead()
-    // 更新本地状态
     messages.value.forEach(m => {
       m.isRead = true
     })
     updateFilterCounts()
-    // 重置未读数量，恢复页面标题
     setUnreadCount(0)
     ElMessage.success(`已标记 ${result.count} 条消息为已读`)
   } catch (error) {
@@ -279,21 +319,19 @@ const handleMarkAllAsRead = async () => {
   }
 }
 
-// 加载消息
 const loadMessages = async () => {
   loading.value = true
   try {
     const result = await getNotifications({
       page: 1,
-      size: 100 // 暂时加载所有，后续可以优化为分页
+      size: 100
     })
-    
-    // 格式化消息，添加时间显示
+
     messages.value = result.items.map(msg => ({
       ...msg,
       timeAgo: formatRelativeTime(msg.createdAt)
     }))
-    
+
     updateFilterCounts()
   } catch (error) {
     console.error('Failed to load messages:', error)
@@ -303,7 +341,6 @@ const loadMessages = async () => {
   }
 }
 
-// 加载未读数量
 const loadUnreadCount = async () => {
   try {
     const result = await getUnreadCount()
@@ -313,12 +350,6 @@ const loadUnreadCount = async () => {
   }
 }
 
-// 监听筛选变化，重新加载
-watch(currentFilter, () => {
-  // 筛选是前端计算，不需要重新加载
-})
-
-// 页面可见性变化处理
 const handleVisibilityChange = () => {
   if (!document.hidden) {
     loadUnreadCount()

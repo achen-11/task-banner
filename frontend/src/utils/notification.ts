@@ -11,8 +11,8 @@ export function isAiNotification(
   return content.includes('AI 通过 MCP') || title.startsWith('AI ')
 }
 
-export function isHumanNotification(
+export function getNotificationSourceLabel(
   notification: Pick<Notification, 'title' | 'content' | 'source'>
-): boolean {
-  return !isAiNotification(notification)
+): string {
+  return isAiNotification(notification) ? 'AI' : '人工'
 }
