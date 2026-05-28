@@ -7,10 +7,14 @@
     <div class="flex-1 flex flex-col min-h-screen overflow-hidden">
       <!-- Header -->
       <AppHeader @toggle-sidebar="toggleSidebar" />
+      <FocusModeHintBar />
 
       <!-- 页面内容 -->
       <main class="flex-1 overflow-auto">
-        <div class="w-full px-4 py-4 mx-auto h-full">
+        <div
+          class="w-full mx-auto h-full"
+          :class="uiStore.pageFocusMode ? 'p-0' : 'px-4 py-4'"
+        >
           <router-view />
         </div>
       </main>
@@ -56,6 +60,7 @@ import { ElTour, ElTourStep } from 'element-plus'
 import { useRoute } from 'vue-router'
 import Sidebar from '@/components/Sidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import FocusModeHintBar from '@/components/common/FocusModeHintBar.vue'
 import KeyboardShortcutsPanel from '@/components/common/KeyboardShortcutsPanel.vue'
 import GlobalSearchModal from '@/components/common/GlobalSearchModal.vue'
 import { useKeyboard, registerShortcut } from '@/composables/useKeyboard'

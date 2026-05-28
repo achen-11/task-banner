@@ -10,7 +10,7 @@ export const useUserTasksStore = defineStore('userTasks', () => {
   const tasks = ref<Task[]>([])
   const loading = ref(false)
   const stats = ref<UserTasksStats>()
-  const currentView = ref<'list' | 'board'>('list')
+  const currentView = ref<'list' | 'board'>('board')
   const filters = ref<UserTaskFilters>({ status: [...DEFAULT_MY_TASKS_STATUSES] })
   const selectedTaskIds = ref<string[]>([])
   const pagination = ref({

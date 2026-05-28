@@ -1,8 +1,8 @@
 <template>
   <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center px-6 py-3">
-      <!-- 左侧：收起按钮 + 面包屑 -->
-      <div class="flex items-center">
+      <!-- 左侧：收起按钮 + 面包屑 + 专注退出 -->
+      <div class="flex items-center gap-3 min-w-0">
         <el-tooltip placement="bottom">
           <template #content>
             <div class="flex items-center gap-1.5">
@@ -12,7 +12,7 @@
           </template>
           <button
             @click="toggleSidebar"
-            class="w-8 h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors mr-3"
+            class="w-8 h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors shrink-0"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -21,22 +21,35 @@
         </el-tooltip>
 
         <!-- 面包屑 -->
-        <nav class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <router-link
-            v-for="(item, index) in breadcrumbs"
-            :key="index"
-            :to="item.path"
-            class="hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            :class="{ 'text-gray-900 dark:text-gray-100 font-medium': index === breadcrumbs.length - 1 }"
-          >
-            {{ item.name }}
-            <span v-if="index < breadcrumbs.length - 1" class="mx-2">/</span>
-          </router-link>
+        <nav class="flex items-center text-sm text-gray-500 dark:text-gray-400 min-w-0">
+          <template v-for="(item, index) in breadcrumbs" :key="`${item.path}-${index}`">
+            <router-link
+              :to="item.path"
+              class="hover:text-gray-700 dark:hover:text-gray-300 transition-colors truncate max-w-[12rem]"
+              :class="{ 'text-gray-900 dark:text-gray-100 font-medium': index === breadcrumbs.length - 1 }"
+              :title="item.name"
+            >
+              {{ item.name }}
+            </router-link>
+            <span v-if="index < breadcrumbs.length - 1" class="mx-2 shrink-0">/</span>
+          </template>
         </nav>
+
+        <el-button
+          v-if="uiStore.pageFocusMode"
+          type="primary"
+          size="small"
+          class="shrink-0 !ml-1"
+          :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
+          @click="handleExitFocus"
+        >
+          <Minimize2 class="w-3.5 h-3.5 mr-1 inline-block" />
+          退出专注
+        </el-button>
       </div>
 
       <!-- 右侧：搜索框 -->
-      <div class="flex items-center">
+      <div class="flex items-center shrink-0">
         <div class="relative">
           <input
             type="text"
@@ -57,16 +70,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Keyboard } from 'lucide-vue-next'
-
+import { Keyboard, Minimize2 } from 'lucide-vue-next'
+import { useUIStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 const emit = defineEmits<{
   toggleSidebar: []
 }>()
 
 const route = useRoute()
+const uiStore = useUIStore()
+const projectStore = useProjectStore()
 const searchQuery = ref('')
 
-// 面包屑导航
 const breadcrumbs = computed(() => {
   const crumbs: Array<{ name: string; path: string }> = []
 
@@ -83,22 +98,32 @@ const breadcrumbs = computed(() => {
     crumbs.push({ name: '账号设置', path: '/account' })
   } else if (route.path.startsWith('/projects/')) {
     crumbs.push({ name: '首页', path: '/' })
-    crumbs.push({ name: '项目', path: route.path })
+    const projectName = projectStore.currentProject?.name?.trim()
+    crumbs.push({
+      name: projectName || '项目',
+      path: route.params.documentId
+        ? `/projects/${route.params.projectId || route.params.id}`
+        : route.path
+    })
+    if (route.params.documentId) {
+      crumbs.push({ name: '文档', path: route.path })
+    }
   }
 
   return crumbs
 })
 
-// 切换侧边栏
 const toggleSidebar = () => {
   emit('toggleSidebar')
 }
 
-// 搜索处理
+const handleExitFocus = () => {
+  uiStore.exitPageFocusMode()
+}
+
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
     console.log('搜索:', searchQuery.value)
-    // TODO: 实现搜索功能
   }
 }
 </script>

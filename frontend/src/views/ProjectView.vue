@@ -168,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, inject, provide, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, provide, nextTick, toRef } from 'vue'
 import { ElIcon } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
@@ -242,37 +242,40 @@ watch(() => route.query.tab, (newTab) => {
 // 设置对话框状态
 const showSettingsDialog = ref(false)
 
-// 专注模式状态（在ProjectView中管理）
-const focusMode = ref(false)
+const focusMode = computed(() => uiStore.pageFocusMode)
 
-// 向子组件提供专注模式状态
-provide('focusMode', focusMode)
+provide('focusMode', toRef(uiStore, 'pageFocusMode'))
 
-function enterFocusMode() {
-  if (focusMode.value) return
-  focusMode.value = true
+function enterFocusMode(options?: { showHint?: boolean }) {
+  if (uiStore.pageFocusMode) return
   collapsed.value = true
-  uiStore.setSidebarCollapsed(true)
+  uiStore.enterPageFocusMode({ showHint: options?.showHint })
 }
 
 function exitFocusMode() {
-  if (!focusMode.value) return
-  focusMode.value = false
+  if (!uiStore.pageFocusMode) return
+  uiStore.exitPageFocusMode()
   collapsed.value = false
-  uiStore.setSidebarCollapsed(false)
 }
 
-// 专注模式切换方法 - F1专用
 const toggleFocusMode = () => {
-  if (focusMode.value) {
+  if (uiStore.pageFocusMode) {
     exitFocusMode()
   } else {
     enterFocusMode()
   }
 }
 
-// 向子组件提供专注模式切换方法
 provide('toggleFocusMode', toggleFocusMode)
+
+watch(
+  () => uiStore.pageFocusMode,
+  (active) => {
+    if (!active) {
+      collapsed.value = false
+    }
+  }
+)
 
 // 向子组件提供文档ID
 provide('documentId', documentId)
@@ -426,7 +429,7 @@ watch(currentTab, (newTab) => {
   } else if (newTab === 'board') {
     collapsed.value = true
     if (route.query.focus !== '0') {
-      enterFocusMode()
+      enterFocusMode({ showHint: false })
     }
   } else if (newTab === 'documents') {
     collapsed.value = true
@@ -467,12 +470,16 @@ watch(() => [route.params.id, route.params.projectId], ([id, projectId]) => {
 onMounted(() => {
   loadProject()
 
-  // 添加全局键盘事件监听
   document.addEventListener('keydown', handleGlobalKeyboardShortcuts)
+
+  if (currentTab.value === 'board' && route.query.focus !== '0' && uiStore.pageFocusMode) {
+    uiStore.triggerFocusEnterHint()
+  }
 })
 
 // 组件卸载时移除事件监听器
 onUnmounted(() => {
   document.removeEventListener('keydown', handleGlobalKeyboardShortcuts)
+  uiStore.exitPageFocusMode()
 })
 </script>
