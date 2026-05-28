@@ -73,7 +73,6 @@ export const useUIStore = defineStore('ui', () => {
   const enterPageFocusMode = (options?: { showHint?: boolean }) => {
     if (pageFocusMode.value) return
     pageFocusMode.value = true
-    setSidebarCollapsed(true)
 
     if (options?.showHint === false) return
 
@@ -89,7 +88,6 @@ export const useUIStore = defineStore('ui', () => {
     pageFocusMode.value = false
     focusEnterHintVisible.value = false
     clearFocusHintTimer()
-    setSidebarCollapsed(false)
   }
 
   const togglePageFocusMode = (options?: { showHint?: boolean }) => {
