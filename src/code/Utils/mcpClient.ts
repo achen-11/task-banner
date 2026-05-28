@@ -12,6 +12,8 @@ const DEFAULT_CLIENT: McpClientInfo = { id: 'ai', label: 'AI' }
 const KNOWN_LABELS: Record<string, string> = {
   ai: 'AI',
   cursor: 'Cursor',
+  claude: 'Claude',
+  deepseek: 'DeepSeek',
   codex: 'Codex'
 }
 

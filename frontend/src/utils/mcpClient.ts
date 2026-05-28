@@ -26,6 +26,16 @@ export const MCP_CLIENT_STYLES: Record<string, McpClientStyle> = {
     label: 'Codex',
     avatarClass: 'bg-emerald-700 text-white',
     initials: 'Cx'
+  },
+  claude: {
+    label: 'Claude',
+    avatarClass: 'bg-[#D97757] text-white',
+    initials: 'Cl'
+  },
+  deepseek: {
+    label: 'DeepSeek',
+    avatarClass: 'bg-[#0066FF] text-white',
+    initials: 'DS'
   }
 }
 

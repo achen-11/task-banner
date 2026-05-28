@@ -35,7 +35,9 @@ MCP 工具使用 `{ ok, data | error }`，与 HTTP API 的 `{ code, message, dat
 
 | Header | 说明 |
 | --- | --- |
-| `X-TaskBanner-Client` | 客户端 id：`ai`（默认）、`cursor`、`codex` 或自定义 |
+| `X-TaskBanner-Client` | 客户端 id：`ai`（默认）、`cursor`、`claude`、`deepseek`、`codex` 或自定义 |
+
+Logo SVG 源文件在仓库 `assets/mcp-clients/`（含 `README.md` 上传说明），上传至站点媒体库后由前端 `/mcp-clients/{id}.svg` 或 `VITE_MCP_CLIENT_ICON_BASE` 加载。
 | `X-MCP-Client` | 同上（别名） |
 
 写入 `comment.metadata` 与通知 `metadata`，前端展示对应名称与头像样式；人工评论不受影响。
