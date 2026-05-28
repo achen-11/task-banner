@@ -24,6 +24,7 @@
     "github-markdown-css": "^5.8.1",
     "lucide-vue-next": "^0.548.0",
     "markdown-it": "^14.1.0",
+    "markdown-it-multimd-table": "^4.2.3",
     "markdown-it-task-lists": "^2.1.1",
     "marked": "^16.4.1",
     "pinia": "^3.0.3",

@@ -1,14 +1,19 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- 标题和过滤器（固定在顶部） -->
-    <div class="flex-shrink-0 flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        {{ props.commentSelectionMode ? `选择评论 (${props.selectedCommentIds?.length || 0})` : '活动历史' }}
+    <div
+      v-if="!hideHeader"
+      class="flex-shrink-0 flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700"
+    >
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        {{ props.commentSelectionMode ? `选择评论 (${props.selectedCommentIds?.length || 0})` : '讨论' }}
       </h3>
       <div class="flex items-center gap-2">
         <button
+          v-if="!commentsOnly"
           v-for="filter in filters"
           :key="filter.value"
+          type="button"
           class="px-3 py-1 text-xs font-medium rounded-lg transition-colors"
           :class="currentFilter === filter.value
             ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
@@ -16,6 +21,23 @@
           @click="currentFilter = filter.value"
         >
           {{ filter.label }}
+        </button>
+        <button
+          type="button"
+          class="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          :title="sortDescending ? '最新优先' : '最早优先'"
+          @click="emit('update:sortDescending', !sortDescending)"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              :d="sortDescending
+                ? 'M3 4h13M3 8h9M3 12h5M3 16h2M10 16l4 4 4-4M14 4v16'
+                : 'M3 4h2M3 8h5M3 12h9M3 16h13M10 8l4-4 4 4M14 4v16'"
+            />
+          </svg>
         </button>
       </div>
     </div>
@@ -134,6 +156,13 @@
                   />
                 </template>
               </div>
+
+              <AttachmentList
+                v-if="activity.attachments?.length"
+                compact
+                class="mt-3"
+                :attachments="activity.attachments"
+              />
 
               <!-- 反应表情 -->
               <div v-if="!props.commentSelectionMode" class="flex items-center gap-2 mt-3">
@@ -264,7 +293,7 @@
         <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
-        <p class="text-gray-500 dark:text-gray-400 text-sm">暂无活动记录</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">暂无评论</p>
       </div>
     </div>
 
@@ -287,8 +316,36 @@
         min-height="100px"
         @submit="addComment"
       />
-      <div class="flex justify-end mt-2">
+      <div v-if="pendingCommentFiles.length" class="mt-2 flex flex-wrap gap-1">
+        <span
+          v-for="(f, i) in pendingCommentFiles"
+          :key="i"
+          class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
+        >
+          {{ f.name }}
+          <button type="button" class="text-gray-400 hover:text-red-500" @click="pendingCommentFiles.splice(i, 1)">×</button>
+        </span>
+      </div>
+      <div class="flex items-center justify-between mt-2 gap-2">
+        <div class="flex items-center gap-2">
+          <input
+            ref="commentFileInputRef"
+            type="file"
+            multiple
+            class="hidden"
+            @change="onCommentFilesSelected"
+          />
+          <button
+            v-if="!editingCommentId && props.projectId"
+            type="button"
+            class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="commentFileInputRef?.click()"
+          >
+            添加附件
+          </button>
+        </div>
         <button
+          type="button"
           class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2"
           :class="editingCommentId
             ? 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600'
@@ -314,12 +371,16 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import MarkdownEditor from '../common/MarkdownEditor.vue'
 import DetailModal from '../common/DetailModal.vue'
+import AttachmentList from '../attachment/AttachmentList.vue'
+import { uploadAttachments } from '@/api/attachment'
+import type { Attachment } from '@/api/attachment'
 import { getTaskActivities, addTaskComment, updateTaskComment, deleteTaskComment, toggleCommentReaction, getCommentReactions, type TaskActivity as APITaskActivity } from '@/api/task'
 import { formatRelativeTime } from '@/utils/time'
 import { getCurrentUser } from '@/utils/auth'
 
 interface Task {
   _id: string
+  projectId?: string
   title: string
   status: string
   priority: string
@@ -354,21 +415,32 @@ interface Activity {
   newValue?: string
   summary?: string
   commentType?: string // 'user' | 'ai_completion' | 'ai_revision' | 'system'
+  attachments?: Attachment[]
 }
 
 interface Props {
   task: Task | null
+  projectId?: string
   commentSelectionMode?: boolean
   selectedCommentIds?: string[]
+  /** 仅展示评论（讨论区） */
+  commentsOnly?: boolean
+  sortDescending?: boolean
+  /** 由外层 Tab 提供标题时隐藏顶栏 */
+  hideHeader?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   commentSelectionMode: false,
-  selectedCommentIds: () => []
+  selectedCommentIds: () => [],
+  commentsOnly: true,
+  sortDescending: true,
+  hideHeader: false
 })
 
 const emit = defineEmits<{
   (e: 'commentSelectionChange', selectedIds: string[]): void
+  (e: 'update:sortDescending', value: boolean): void
 }>()
 
 // 过滤器
@@ -382,6 +454,16 @@ const currentFilter = ref<'all' | 'comments' | 'history'>('all')
 
 // 新评论
 const newComment = ref('')
+const pendingCommentFiles = ref<File[]>([])
+const commentFileInputRef = ref<HTMLInputElement>()
+
+const onCommentFilesSelected = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  if (input.files?.length) {
+    pendingCommentFiles.value.push(...Array.from(input.files))
+    input.value = ''
+  }
+}
 
 // 活动数据
 const activities = ref<Activity[]>([])
@@ -442,7 +524,12 @@ const loadActivities = async () => {
           content: activity.content || '',
           timestamp: activity.timestamp,
           summary: activity.summary || '',
-          commentType: activity.commentType || 'user'
+          commentType: activity.commentType || 'user',
+          attachments: (activity.attachments || []).map(a => ({
+            ...a,
+            relatedType: 'comment' as const,
+            relatedId: activity.id
+          }))
         }
       } else if (activity.type === 'field_change') {
         // 生成字段变更描述
@@ -628,16 +715,17 @@ watch(() => props.task?._id, (newId) => {
   }
 }, { immediate: true })
 
-// 过滤后的活动（倒序：最新的在最上面）
+// 过滤后的活动
 const filteredActivities = computed(() => {
   let filtered = activities.value
-  if (currentFilter.value === 'comments') {
+  if (props.commentsOnly || currentFilter.value === 'comments') {
     filtered = activities.value.filter(a => a.type === 'comment')
   } else if (currentFilter.value === 'history') {
     filtered = activities.value.filter(a => a.type !== 'comment')
   }
-  // 倒序排列（时间戳大的在前）
-  return [...filtered].sort((a, b) => b.timestamp - a.timestamp)
+  return [...filtered].sort((a, b) =>
+    props.sortDescending ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
+  )
 })
 
 // 添加或编辑评论
@@ -671,7 +759,22 @@ const addComment = async () => {
       // 添加新评论
       const result = await addTaskComment(props.task._id, commentContent)
 
-      // 将新评论添加到列表，确保有用户信息
+      let attachments: Attachment[] = (result.attachments || []).map(a => ({
+        ...a,
+        relatedType: 'comment' as const,
+        relatedId: result.id
+      }))
+      const pid = props.projectId || props.task.projectId
+      if (pendingCommentFiles.value.length && pid) {
+        attachments = await uploadAttachments(
+          pendingCommentFiles.value,
+          'comment',
+          result.id,
+          pid
+        )
+        pendingCommentFiles.value = []
+      }
+
       const newActivity: Activity = {
         id: result.id,
         type: 'comment',
@@ -682,7 +785,8 @@ const addComment = async () => {
         },
         userId: result.userId,
         content: result.content || '',
-        timestamp: result.timestamp
+        timestamp: result.timestamp,
+        attachments
       }
 
       activities.value.unshift(newActivity)

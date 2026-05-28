@@ -63,7 +63,7 @@
               <!-- 任务标题 -->
               <div class="flex-1 min-w-0 px-3">
                 <input
-                  v-if="currentTask"
+                  v-if="currentTask && (mode === 'create' || isEditing)"
                   ref="titleInputRef"
                   :value="currentTask.title"
                   type="text"
@@ -72,8 +72,14 @@
                   @input="handleTitleInput"
                   @compositionstart="handleTitleCompositionStart"
                   @compositionend="handleTitleCompositionEnd"
-                  @blur="mode === 'view' ? handleTaskUpdate({ title: ($event.target as HTMLInputElement).value }) : null"
+                  @blur="mode === 'view' && isEditing ? handleTaskUpdate({ title: ($event.target as HTMLInputElement).value }) : null"
                 />
+                <h2
+                  v-else-if="currentTask"
+                  class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate"
+                >
+                  {{ currentTask.title || '无标题' }}
+                </h2>
               </div>
             </div>
 
@@ -99,6 +105,23 @@
 
               <!-- 查看模式：操作按钮组 -->
               <template v-if="mode === 'view'">
+                <button
+                  v-if="!isEditing"
+                  type="button"
+                  class="px-3 py-1.5 text-sm text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded transition-colors"
+                  @click="enterEditMode"
+                >
+                  编辑
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                  @click="exitEditMode"
+                >
+                  完成编辑
+                </button>
+
                 <!-- 导出按钮 -->
                 <button
                   class="px-3 py-1.5 text-sm transition-colors flex items-center gap-1"
@@ -154,42 +177,162 @@
             </div>
           </div>
 
-          <!-- 两列布局内容区域（独立滚动） -->
-          <div class="flex-1 overflow-hidden">
-            <div
-              class="h-full grid gap-6 px-6 pt-6 pb-4"
-              :class="isWideLayout ? 'grid-cols-2' : 'grid-cols-1'"
-            >
-              <!-- 左列：基础信息（独立滚动） -->
-              <div class="overflow-y-auto pr-3 -mr-3">
-                <div class="pr-3">
-                  <TaskBasicInfo ref="taskBasicInfoRef" :task="currentTask" :mode="mode" :project-id="projectId" @update="handleTaskUpdate" />
-                </div>
+          <!-- 主体：创建单栏 + 查看「详情 + 变更日志」 -->
+          <div class="flex-1 flex overflow-hidden min-h-0">
+            <!-- 创建任务：主栏 + 计划侧栏 -->
+            <template v-if="mode === 'create'">
+              <div class="flex-1 overflow-y-auto px-6 py-5 min-w-0">
+                <TaskBasicInfo
+                  ref="taskBasicInfoRef"
+                  :task="currentTask"
+                  mode="create"
+                  :project-id="projectId"
+                  :due-date-in-sidebar="true"
+                  @update="handleTaskUpdate"
+                />
               </div>
+              <TaskMetaSidebar
+                :due-date="currentTask?.dueDate"
+                @update:due-date="handleTaskUpdate({ dueDate: $event })"
+              />
+            </template>
 
-              <!-- 右列：评论列表（内部滚动） -->
-              <div class="h-full pl-3 -ml-3 overflow-hidden">
-                <div class="h-full pl-3">
-                  <TaskActivity
-                    v-if="currentTask && mode === 'view'"
-                    ref="taskActivityRef"
-                    :task="currentTask"
-                    :comment-selection-mode="isCommentSelectionMode"
-                    :selected-comment-ids="selectedCommentIds"
-                    @comment-selection-change="handleCommentSelectionChange"
-                  />
-                  <div v-else-if="mode === 'create'" class="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                    <div class="text-center">
-                      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <p>创建任务后将显示活动历史</p>
+            <!-- 查看任务：主区（描述+Tab）+ 右侧简略信息 -->
+            <template v-else-if="currentTask">
+              <div class="flex-1 flex min-h-0 overflow-hidden">
+                <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+                  <!-- 描述区：高度随内容；与讨论区并排时按展开状态分配 flex -->
+                  <div
+                    class="overflow-y-auto p-3 border-b border-gray-200 dark:border-gray-700 transition-[flex-grow] duration-200 ease-out"
+                    :class="descPanelLayoutClass"
+                  >
+                    <TaskBasicInfo
+                      ref="taskBasicInfoRef"
+                      :task="currentTask"
+                      mode="view"
+                      :hide-attributes="!isEditing"
+                      :project-id="projectId"
+                      :readonly="!isEditing"
+                      @update="handleTaskUpdate"
+                      @desc-expanded-change="onDescExpandedChange"
+                    />
+                  </div>
+
+                  <!-- 讨论区：可收起为窄条；描述收起时占满剩余高度 -->
+                  <div
+                    class="flex flex-col border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-[flex-grow] duration-200 ease-out min-h-0"
+                    :class="discussionPanelLayoutClass"
+                  >
+                    <div class="flex-shrink-0 flex items-center justify-between gap-2 p-3">
+                      <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-700/80 p-0.5">
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+                          :class="activityTab === 'discussion'
+                            ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                          @click="activityTab = 'discussion'; isDiscussionPanelExpanded = true"
+                        >
+                          讨论
+                        </button>
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+                          :class="activityTab === 'changelog'
+                            ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                          @click="activityTab = 'changelog'; isDiscussionPanelExpanded = true"
+                        >
+                          变更日志
+                        </button>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button
+                          v-show="isDiscussionPanelExpanded"
+                          type="button"
+                          class="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          :title="(activityTab === 'discussion' ? activitySortDescending : changelogSortDescending) ? '最新优先' : '最早优先'"
+                          @click="toggleActiveTabSort"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              :d="(activityTab === 'discussion' ? activitySortDescending : changelogSortDescending)
+                                ? 'M3 4h13M3 8h9M3 12h5M3 16h2M10 16l4 4 4-4M14 4v16'
+                                : 'M3 4h2M3 8h5M3 12h9M3 16h13M10 8l4-4 4 4M14 4v16'"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          :title="isDiscussionPanelExpanded ? '收起讨论区' : '展开讨论区'"
+                          @click="isDiscussionPanelExpanded = !isDiscussionPanelExpanded"
+                        >
+                          <svg
+                            class="w-4 h-4 transition-transform duration-200"
+                            :class="{ 'rotate-180': !isDiscussionPanelExpanded }"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      v-if="!isDiscussionPanelExpanded"
+                      type="button"
+                      class="mx-3 mb-3 py-2 text-xs text-center text-gray-500 dark:text-gray-400 rounded-lg border border-dashed border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      @click="isDiscussionPanelExpanded = true"
+                    >
+                      展开{{ activityTab === 'changelog' ? '变更日志' : '讨论' }}区
+                    </button>
+
+                    <div
+                      v-show="isDiscussionPanelExpanded"
+                      class="flex-1 min-h-0 overflow-hidden px-3 pb-3"
+                    >
+                      <TaskActivity
+                        v-show="activityTab === 'discussion'"
+                        class="h-full"
+                        ref="taskActivityRef"
+                        :task="currentTask"
+                        :project-id="currentTask.projectId || projectId"
+                        :comments-only="true"
+                        hide-header
+                        :sort-descending="activitySortDescending"
+                        :comment-selection-mode="isCommentSelectionMode"
+                        :selected-comment-ids="selectedCommentIds"
+                        @update:sort-descending="activitySortDescending = $event"
+                        @comment-selection-change="handleCommentSelectionChange"
+                      />
+                      <TaskChangeLog
+                        v-show="activityTab === 'changelog'"
+                        ref="taskChangeLogRef"
+                        class="h-full"
+                        :task="currentTask"
+                        v-model:sort-descending="changelogSortDescending"
+                      />
                     </div>
                   </div>
                 </div>
+
+                <TaskBriefSidebar
+                  ref="taskBriefSidebarRef"
+                  :task="currentTask"
+                  :project-id="projectId || currentTask.projectId"
+                  :readonly="!isEditing"
+                  :show-view-all-changelog="activityTab === 'discussion'"
+                  @update="(p) => handleTaskUpdate(p as Partial<Task>)"
+                  @view-all-changelog="activityTab = 'changelog'"
+                />
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
@@ -202,7 +345,10 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBasicInfo from './task/TaskBasicInfo.vue'
 import TaskActivity from './task/TaskActivity.vue'
-import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI, addTaskComment } from '@/api/task'
+import TaskChangeLog from './task/TaskChangeLog.vue'
+import TaskMetaSidebar from './task/TaskMetaSidebar.vue'
+import TaskBriefSidebar from './task/TaskBriefSidebar.vue'
+import { createTask as createTaskAPI, updateTask as updateTaskAPI, deleteTask as deleteTaskAPI, addTaskComment, getTaskActivities } from '@/api/task'
 import { exportTaskToMarkdown, copyToClipboard, importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, formatDate, ImportService } from '@/utils/export'
 import {
   getStatusBadgeClass,
@@ -253,6 +399,52 @@ const emit = defineEmits<{
 const titleInputRef = ref<HTMLInputElement>()
 const taskActivityRef = ref<InstanceType<typeof TaskActivity>>()
 const taskBasicInfoRef = ref<InstanceType<typeof TaskBasicInfo>>()
+const taskChangeLogRef = ref<InstanceType<typeof TaskChangeLog>>()
+const taskBriefSidebarRef = ref<InstanceType<typeof TaskBriefSidebar>>()
+
+const isEditing = ref(false)
+const activityTab = ref<'discussion' | 'changelog'>('discussion')
+const isDiscussionPanelExpanded = ref(true)
+const isDescExpanded = ref(true)
+
+/** 描述区外层：避免描述收起后仍占 flex 比例留白 */
+const descPanelLayoutClass = computed(() => {
+  if (!isDiscussionPanelExpanded.value) {
+    return 'flex-1 min-h-0'
+  }
+  if (!isDescExpanded.value) {
+    return 'flex-shrink-0 max-h-[40vh] overflow-y-auto'
+  }
+  return 'flex-[1_1_42%] max-h-[52vh] min-h-0'
+})
+
+const discussionPanelLayoutClass = computed(() => {
+  if (!isDiscussionPanelExpanded.value) {
+    return 'flex-shrink-0'
+  }
+  if (!isDescExpanded.value) {
+    return 'flex-1 min-h-[200px]'
+  }
+  return 'flex-[1_1_58%] min-h-[200px]'
+})
+
+/** 描述收起且讨论区也收起时，自动展开讨论区，避免连点两次 */
+const onDescExpandedChange = (expanded: boolean) => {
+  isDescExpanded.value = expanded
+  ensureDiscussionOpenWhenDescCollapsed()
+}
+
+const ensureDiscussionOpenWhenDescCollapsed = () => {
+  if (!isDescExpanded.value && !isDiscussionPanelExpanded.value) {
+    isDiscussionPanelExpanded.value = true
+  }
+}
+
+watch(isDiscussionPanelExpanded, () => {
+  ensureDiscussionOpenWhenDescCollapsed()
+})
+const activitySortDescending = ref(true)
+const changelogSortDescending = ref(true)
 
 
 // 创建模式下的新任务数据
@@ -271,7 +463,7 @@ const isSaving = ref(false)
 const isComposing = ref(false)
 
 // 抽屉宽度管理
-const drawerWidth = ref(1000) // 默认宽度 1000px
+const drawerWidth = ref(1180) // 默认宽度
 const minWidth = 600
 const maxWidth = 1600
 const isResizing = ref(false)
@@ -280,8 +472,25 @@ const isResizing = ref(false)
 const isCommentSelectionMode = ref(false)
 const selectedCommentIds = ref<string[]>([])
 
-// 响应式布局
-const isWideLayout = computed(() => drawerWidth.value >= 900)
+const enterEditMode = () => {
+  isEditing.value = true
+  nextTick(() => titleInputRef.value?.focus())
+}
+
+const exitEditMode = async () => {
+  if (taskBasicInfoRef.value && 'savePending' in taskBasicInfoRef.value) {
+    taskBasicInfoRef.value.savePending()
+  }
+  isEditing.value = false
+}
+
+const toggleActiveTabSort = () => {
+  if (activityTab.value === 'discussion') {
+    activitySortDescending.value = !activitySortDescending.value
+  } else {
+    changelogSortDescending.value = !changelogSortDescending.value
+  }
+}
 
 // 当前任务索引
 const currentTaskIndex = computed(() => {
@@ -771,10 +980,11 @@ const handleTaskUpdate = async (updates: Partial<Task>) => {
       ...updates
     })
 
-    // 通知父组件任务已更新
     emit('task-updated', updatedTask)
+    taskChangeLogRef.value?.reload()
+    taskBriefSidebarRef.value?.reloadChanges()
 
-    } catch (err: any) {
+  } catch (err: any) {
     console.error('Failed to update task:', err)
     ElMessage.error(err?.message || '更新任务失败')
   }
@@ -932,10 +1142,52 @@ onUnmounted(() => {
   window.removeEventListener('websocket:comment-deleted', handleWebSocketCommentDeleted as EventListener)
 })
 
+/** 根据描述/评论数量设置描述区与讨论区默认展开状态 */
+const applyDiscussionPanelDefaults = async () => {
+  if (props.mode !== 'view' || !props.taskId || !currentTask.value) return
+
+  const hasDesc = !!(currentTask.value.content?.trim())
+  let commentCount = 0
+  try {
+    const activities = await getTaskActivities(props.taskId)
+    commentCount = activities.filter(a => a.type === 'comment').length
+  } catch {
+    /* 加载失败时保持当前默认 */
+  }
+
+  await nextTick()
+
+  if (commentCount > 0) {
+    isDiscussionPanelExpanded.value = true
+    isDescExpanded.value = false
+    activityTab.value = 'discussion'
+    taskBasicInfoRef.value?.setDescExpanded?.(false)
+  } else if (hasDesc) {
+    isDiscussionPanelExpanded.value = false
+    isDescExpanded.value = true
+    taskBasicInfoRef.value?.setDescExpanded?.(true)
+  } else {
+    isDiscussionPanelExpanded.value = true
+    isDescExpanded.value = true
+    taskBasicInfoRef.value?.setDescExpanded?.(true)
+  }
+}
+
+watch(() => props.taskId, () => {
+  isEditing.value = false
+  activityTab.value = 'discussion'
+  if (props.isOpen && props.mode === 'view') {
+    applyDiscussionPanelDefaults()
+  }
+})
+
 // 监听抽屉打开状态
 watch(() => props.isOpen, async (newValue, oldValue) => {
   if (newValue && !oldValue) {
-    // 抽屉打开时
+    if (props.mode === 'view') {
+      isEditing.value = false
+      await applyDiscussionPanelDefaults()
+    }
     if (props.mode === 'create') {
       // 创建模式：重置新任务数据
       newTaskData.value = {

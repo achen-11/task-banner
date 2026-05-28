@@ -3,12 +3,14 @@
     <!-- 附件网格 -->
     <div
       v-if="attachments.length > 0"
-      class="grid grid-cols-2 gap-3"
+      class="grid gap-2"
+      :class="compact ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 gap-3'"
     >
       <AttachmentCard
         v-for="attachment in attachments"
         :key="attachment._id"
         :attachment="attachment"
+        :compact="compact"
         @preview="handlePreview"
         @delete="handleDelete"
       />
@@ -53,9 +55,13 @@ interface Attachment {
 
 interface Props {
   attachments: Attachment[]
+  /** 任务详情等紧凑场景：小缩略图 + 点击预览 */
+  compact?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  compact: false
+})
 
 const emit = defineEmits<{
   (e: 'delete', id: string): void

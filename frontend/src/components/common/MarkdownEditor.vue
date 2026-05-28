@@ -117,6 +117,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import MarkdownIt from 'markdown-it'
 // @ts-ignore - no types available for markdown-it-task-lists
 import taskLists from 'markdown-it-task-lists'
+// @ts-ignore
+import multimdTable from 'markdown-it-multimd-table'
 import 'github-markdown-css/github-markdown-light.css'
 import {
   Bold,
@@ -171,6 +173,12 @@ md.use(taskLists, {
   enabled: true,
   label: true,
   labelAfter: true
+})
+
+md.use(multimdTable, {
+  multiline: true,
+  rowspan: true,
+  headerless: false
 })
 
 // 渲染 Markdown
@@ -735,5 +743,48 @@ defineExpose({
 
 .markdown-preview :deep(em) {
   font-style: italic;
+}
+
+.markdown-preview :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 13px;
+  display: table;
+}
+
+.markdown-preview :deep(thead) {
+  display: table-header-group;
+}
+
+.markdown-preview :deep(tbody) {
+  display: table-row-group;
+}
+
+.markdown-preview :deep(tr) {
+  display: table-row;
+}
+
+.markdown-preview :deep(th),
+.markdown-preview :deep(td) {
+  display: table-cell;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-preview :deep(th) {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.dark .markdown-preview :deep(th),
+.dark .markdown-preview :deep(td) {
+  border-color: #4b5563;
+}
+
+.dark .markdown-preview :deep(th) {
+  background-color: #374151;
 }
 </style>

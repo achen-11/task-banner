@@ -1,7 +1,11 @@
 <template>
   <div class="attachment-card group relative bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
     <!-- 图片类型 -->
-    <div v-if="isImage" class="relative bg-gray-100 dark:bg-gray-700 h-32 overflow-hidden">
+    <div
+      v-if="isImage"
+      class="relative bg-gray-100 dark:bg-gray-700 overflow-hidden"
+      :class="compact ? 'h-20' : 'h-32'"
+    >
       <!-- 图片加载占位符 -->
       <div v-if="imageError" class="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
         <div class="text-center text-gray-400 dark:text-gray-500">
@@ -46,7 +50,11 @@
     </div>
 
     <!-- 其他文件类型 -->
-    <div v-else class="p-4 flex items-center justify-center h-32 bg-gray-50">
+    <div
+      v-else
+      class="flex items-center justify-center bg-gray-50 dark:bg-gray-800"
+      :class="compact ? 'p-2 h-20' : 'p-4 h-32'"
+    >
       <div class="text-center">
         <div class="text-4xl mb-2">{{ getFileIcon(attachment.mimeType) }}</div>
         <div class="text-xs text-gray-500">{{ getFileExtension(attachment.name) }}</div>
@@ -54,13 +62,23 @@
     </div>
 
     <!-- 文件信息 -->
-    <div class="p-3 border-t border-gray-100">
-      <div class="text-sm font-medium text-gray-900 truncate mb-1" :title="attachment.name">
+    <div
+      class="border-t border-gray-100 dark:border-gray-700"
+      :class="compact ? 'p-1.5' : 'p-3'"
+    >
+      <div
+        class="font-medium text-gray-900 dark:text-gray-100 truncate"
+        :class="compact ? 'text-[10px] mb-0' : 'text-sm mb-1'"
+        :title="attachment.name"
+      >
         {{ attachment.name }}
       </div>
-      <div class="flex items-center justify-between text-xs text-gray-500">
+      <div
+        class="flex items-center justify-between text-gray-500 dark:text-gray-400"
+        :class="compact ? 'text-[10px]' : 'text-xs'"
+      >
         <span>{{ formatFileSize(attachment.size) }}</span>
-        <span>{{ formatDate(attachment.createdAt) }}</span>
+        <span v-if="!compact">{{ formatDate(attachment.createdAt) }}</span>
       </div>
     </div>
 
@@ -98,9 +116,12 @@ interface Attachment {
 
 interface Props {
   attachment: Attachment
+  compact?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  compact: false
+})
 
 defineEmits<{
   (e: 'preview', attachment: Attachment): void

@@ -1,69 +1,62 @@
 <template>
-  <div class="h-full flex flex-col">
-    <!-- 任务信息区域（固定在上方） -->
-    <div class="flex-shrink-0 space-y-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-      <!-- 折叠按钮和保存状态 -->
-      <div class="flex items-center justify-between">
-        <!-- 保存状态和保存按钮（仅查看模式） -->
-        <div v-if="mode === 'view'" class="flex items-center gap-2">
-          <div class="text-xs">
-            <span v-if="isSaving" class="text-orange-500 dark:text-orange-400 flex items-center gap-1">
-              <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              保存中...
-            </span>
-            <span v-else-if="hasUnsavedChanges" class="text-gray-400 dark:text-gray-500 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              未保存
-            </span>
-            <span v-else-if="lastSavedAt" class="text-green-500 dark:text-green-400 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              已保存
-            </span>
-          </div>
-          <!-- 保存按钮 -->
-          <button
-            v-if="hasUnsavedChanges && !isSaving"
-            @click="handleSave"
-            class="px-2 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-1"
-            title="保存更改 (Cmd+S)"
-          >
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            保存
-          </button>
-        </div>
-        <div v-else class="flex-1"></div>
-
-        <!-- 折叠按钮 -->
-        <button
-          class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 transition-colors"
-          @click="isFieldsCollapsed = !isFieldsCollapsed"
+  <div class="flex flex-col min-h-0">
+    <!-- 基础属性（可折叠；查看模式在右侧窄栏展示时隐藏） -->
+    <section
+      v-if="!hideAttributes"
+      class="flex-shrink-0 pb-4 border-b border-gray-200 dark:border-gray-700"
+    >
+      <button
+        type="button"
+        class="w-full flex items-center justify-between gap-2 py-1 mb-2 group"
+        @click="isAttrsExpanded = !isAttrsExpanded"
+      >
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">基础信息</h3>
+        <svg
+          class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-transform"
+          :class="{ 'rotate-180': isAttrsExpanded }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-          <span>{{ isFieldsCollapsed ? '展开详情' : '收起详情' }}</span>
-          <svg
-            class="w-4 h-4 transition-transform"
-            :class="{ 'rotate-180': !isFieldsCollapsed }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <p
+        v-if="!isAttrsExpanded"
+        class="text-xs text-gray-500 dark:text-gray-400 truncate mb-2"
+      >
+        {{ attrsSummary }}
+      </p>
+
+      <div v-show="isAttrsExpanded" class="space-y-4">
+      <div v-if="mode === 'view' && !readonly" class="flex items-center gap-2">
+        <div class="text-xs">
+          <span v-if="isSaving" class="text-orange-500 dark:text-orange-400 flex items-center gap-1">
+            <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            保存中...
+          </span>
+          <span v-else-if="hasUnsavedChanges" class="text-gray-400 dark:text-gray-500 flex items-center gap-1">
+            未保存
+          </span>
+          <span v-else-if="lastSavedAt" class="text-green-500 dark:text-green-400 flex items-center gap-1">
+            已保存
+          </span>
+        </div>
+        <button
+          v-if="hasUnsavedChanges && !isSaving"
+          type="button"
+          class="px-2 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+          title="保存更改 (Cmd+S)"
+          @click="handleSave"
+        >
+          保存
         </button>
       </div>
 
-      <!-- 紧凑的字段网格（可折叠） -->
-      <div
-        v-show="!isFieldsCollapsed"
-        class="space-y-4"
-      >
+      <div class="space-y-4">
         <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
         <!-- 状态 -->
         <div class="flex items-center gap-2">
@@ -72,6 +65,7 @@
             v-model="localTask.status"
             size="small"
             class="flex-1"
+            :disabled="readonly"
             @change="handleUpdate({ status: localTask.status })"
           >
             <el-option label="待办" value="todo" />
@@ -88,6 +82,7 @@
             v-model="localTask.priority"
             size="small"
             class="flex-1"
+            :disabled="readonly"
             @change="handleUpdate({ priority: localTask.priority })"
           >
             <el-option label="低" value="low" />
@@ -105,6 +100,7 @@
             clearable
             class="flex-1"
             placeholder="未指派"
+            :disabled="readonly"
             @change="handleUpdate({ assigneeId: localTask.assigneeId })"
           >
             <el-option
@@ -116,8 +112,8 @@
           </el-select>
         </div>
 
-        <!-- 截止日期 -->
-        <div class="flex items-center gap-2">
+        <!-- 截止日期（创建模式若在侧栏展示则隐藏） -->
+        <div v-if="!dueDateInSidebar" class="flex items-center gap-2">
           <label class="text-xs text-gray-500 w-16">截止</label>
           <el-date-picker
             :model-value="localTask.dueDate"
@@ -126,6 +122,7 @@
             class="flex-1"
             placeholder="选择日期"
             format="MM/DD"
+            :disabled="readonly"
             @update:model-value="handleDueDateChange"
           />
         </div>
@@ -139,6 +136,7 @@
             size="small"
             class="flex-1"
             placeholder="选择模块"
+            :disabled="readonly"
             @change="handleModulesChange"
           >
             <el-option
@@ -167,6 +165,8 @@
           <button
             v-for="tag in quickAccessTags"
             :key="tag._id"
+            type="button"
+            :disabled="readonly"
             @click="toggleQuickTag(tag._id)"
             class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full transition-all"
             :class="isTagSelected(tag._id)
@@ -191,6 +191,8 @@
           >
             {{ tag.name }}
             <button
+              v-if="!readonly"
+              type="button"
               class="opacity-0 group-hover:opacity-100 hover:bg-black/20 rounded-full p-0.5 transition-all"
               @click="removeTag(tag._id)"
             >
@@ -202,8 +204,10 @@
 
           <!-- 添加其他标签按钮 -->
           <button
-            @click="showTagSelector = true"
+            v-if="!readonly"
+            type="button"
             class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 border border-dashed border-gray-300 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors"
+            @click="showTagSelector = true"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -233,55 +237,64 @@
         </div>
         </div>
       </div>
-    </div>
-
-    <!-- 任务描述区域（可滚动） -->
-    <div class="flex-1 overflow-y-auto mt-4">
-      <!-- 描述标签和编辑/预览切换 -->
-      <div class="flex items-center justify-between mb-2">
-        <label class="text-xs font-medium text-gray-500 dark:text-gray-400">描述</label>
-        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
-          <button
-            @click="setEditorMode(false)"
-            :class="{ 'active': !isPreviewMode }"
-            class="mode-toggle-btn"
-            title="编辑模式"
-          >
-            <Edit3 :size="14" />
-            <span class="text-xs">编辑</span>
-          </button>
-          <button
-            @click="setEditorMode(true)"
-            :class="{ 'active': isPreviewMode }"
-            class="mode-toggle-btn"
-            title="预览模式"
-          >
-            <Eye :size="14" />
-            <span class="text-xs">预览</span>
-          </button>
-        </div>
       </div>
+    </section>
 
+    <!-- 任务描述（可折叠） -->
+    <section class="flex-shrink-0 mt-0 pb-4">
+      <button
+        type="button"
+        class="w-full flex items-center justify-between gap-2 py-1 mb-3 group"
+        @click="isDescExpanded = !isDescExpanded"
+      >
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">描述</h3>
+        <svg
+          class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-transform"
+          :class="{ 'rotate-180': isDescExpanded }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <p
+        v-if="!isDescExpanded"
+        class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2"
+      >
+        {{ descSummary }}
+      </p>
+
+      <div v-show="isDescExpanded">
+      <div
+        v-if="readonly && !localTask.content?.trim()"
+        class="rounded-xl border border-dashed border-gray-200 dark:border-gray-600 px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500"
+      >
+        暂无描述
+      </div>
       <MarkdownEditor
+        v-else
         ref="markdownEditorRef"
         v-model="localTask.content"
-        :read-only="false"
-        placeholder="添加任务描述... 支持 Markdown 语法 (Cmd+S 保存)"
-        min-height="300px"
+        :read-only="readonly"
+        :placeholder="readonly ? '' : '点击添加任务描述… 支持 Markdown (Cmd+S 保存)'"
+        min-height="200px"
         @update:model-value="handleContentChange"
         @save="handleSave"
         @paste-file="handlePasteFile"
       />
-      <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-        支持 Markdown 语法：**加粗** *斜体* - [ ] 任务列表等
-      </div>
+      <p v-if="!readonly" class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+        支持 Markdown 语法
+      </p>
 
-      <!-- 附件区域 -->
-      <div class="mt-6">
+      <!-- 附件 -->
+      <div class="mt-5">
         <div class="flex items-center justify-between mb-3">
           <label class="text-xs font-medium text-gray-500 dark:text-gray-400">附件</label>
           <button
-            v-if="!showUploadArea"
+            v-if="!readonly && !showUploadArea"
+            type="button"
             class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
             @click="showUploadArea = true"
           >
@@ -319,13 +332,15 @@
         <!-- 附件列表 -->
         <div v-if="localTask.attachments && localTask.attachments.length > 0">
           <AttachmentList
+            compact
             :attachments="localTask.attachments"
             @delete="handleAttachmentDelete"
             @error="handleAttachmentError"
           />
         </div>
       </div>
-    </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -344,7 +359,6 @@ import { getCurrentUser } from '@/utils/auth'
 import type { ProjectMember } from '@/types/project'
 import type { Tag } from '@/types/tag'
 import type { Module } from '@/types/module'
-import { Edit3, Eye } from 'lucide-vue-next'
 
 interface Attachment {
   _id: string
@@ -386,14 +400,24 @@ interface Props {
   task: Task | null
   mode?: 'view' | 'create'
   projectId?: string
+  /** 预览模式：字段与描述只读 */
+  readonly?: boolean
+  /** 截止日期在右侧计划栏展示 */
+  dueDateInSidebar?: boolean
+  /** 属性已在右侧窄栏展示（主区仅描述+附件） */
+  hideAttributes?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'view'
+  mode: 'view',
+  readonly: false,
+  dueDateInSidebar: false,
+  hideAttributes: false
 })
 
 const emit = defineEmits<{
   (e: 'update', updates: Partial<Task>): void
+  (e: 'desc-expanded-change', expanded: boolean): void
 }>()
 
 // 项目成员列表
@@ -471,26 +495,60 @@ const selectedOtherTags = computed(() => {
     .filter((tag): tag is Tag => tag !== undefined)
 })
 
-// 字段折叠状态（默认收起）
-const isFieldsCollapsed = ref(false)
+// 分区折叠（默认展开）
+const isAttrsExpanded = ref(true)
+const isDescExpanded = ref(true)
+
+watch(isDescExpanded, (expanded) => {
+  emit('desc-expanded-change', expanded)
+}, { immediate: true })
+
+const statusLabels: Record<string, string> = {
+  todo: '待办',
+  in_progress: '进行中',
+  review: '待验收',
+  completed: '已完成'
+}
+const priorityLabels: Record<string, string> = {
+  low: '低',
+  medium: '中',
+  high: '高'
+}
+
+const attrsSummary = computed(() => {
+  const parts = [
+    statusLabels[localTask.value.status] || localTask.value.status,
+    priorityLabels[localTask.value.priority] || localTask.value.priority
+  ]
+  const assignee = projectMembers.value.find(m => m.userId === localTask.value.assigneeId)
+  if (assignee) parts.push(getUserDisplayName(assignee))
+  else parts.push('未指派')
+  return parts.join(' · ')
+})
+
+const descSummary = computed(() => {
+  const c = localTask.value.content?.trim()
+  if (!c) return '暂无描述'
+  const plain = c.replace(/[#*`\[\]]/g, '').replace(/\n+/g, ' ')
+  return plain.length > 80 ? `${plain.slice(0, 80)}…` : plain
+})
 
 // 附件上传区域显示状态
 const showUploadArea = ref(false)
 
-// Markdown 编辑器引用和状态
+// Markdown 编辑器引用
 const markdownEditorRef = ref<InstanceType<typeof MarkdownEditor>>()
-const isPreviewMode = ref(false)
 
 // 附件上传组件引用
 const attachmentUploadRef = ref<InstanceType<typeof AttachmentUpload>>()
 
-// 设置编辑器模式
-const setEditorMode = (preview: boolean) => {
-  isPreviewMode.value = preview
-  if (markdownEditorRef.value) {
-    markdownEditorRef.value.setPreviewMode(preview)
-  }
-}
+watch(() => props.readonly, (ro) => {
+  nextTick(() => {
+    if (markdownEditorRef.value && 'setPreviewMode' in markdownEditorRef.value) {
+      markdownEditorRef.value.setPreviewMode(ro)
+    }
+  })
+}, { immediate: true })
 
 // 加载项目成员列表
 const loadProjectMembers = async () => {
@@ -648,6 +706,7 @@ watch(() => props.projectId, async (newProjectId) => {
 
 // 处理任务描述变更
 const handleContentChange = (newContent: string) => {
+  if (props.readonly) return
   localTask.value.content = newContent
 
   // 创建模式：立即通知父组件更新
@@ -673,6 +732,7 @@ const handleSave = () => {
 
 // 处理更新
 const handleUpdate = async (updates: Partial<Task>) => {
+  if (props.readonly) return
   // 查看模式下显示保存状态
   if (props.mode === 'view') {
     isSaving.value = true
@@ -763,8 +823,15 @@ const associatePendingAttachments = async (taskId: string) => {
 }
 
 // 暴露方法
+const setDescExpanded = (expanded: boolean) => {
+  isDescExpanded.value = expanded
+}
+
 defineExpose({
-  associatePendingAttachments
+  associatePendingAttachments,
+  hasUnsavedChanges: () => hasUnsavedChanges.value,
+  savePending: handleSave,
+  setDescExpanded
 })
 
 // 处理粘贴文件
