@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="h-full flex flex-col bg-gray-50 dark:bg-gray-900"
-    :class="focusMode ? '' : 'p-6'"
-  >
+  <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 p-6">
     <div v-show="!focusMode" class="shrink-0">
       <ViewSwitcher :selected-tasks-count="selectedTasksCount" :loading="loading" @export="handleExport" />
       <TaskStatsCards :stats="stats" />

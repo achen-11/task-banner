@@ -1,8 +1,6 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
-const FOCUS_HINT_DISMISSED_KEY = 'task_banner_focus_hint_dismissed'
-
 export const useUIStore = defineStore('ui', () => {
   // 侧边栏收起状态
   const sidebarCollapsed = ref(false)
@@ -77,15 +75,14 @@ export const useUIStore = defineStore('ui', () => {
     pageFocusMode.value = true
     setSidebarCollapsed(true)
 
-    const showHint = options?.showHint !== false
-    if (!showHint || localStorage.getItem(FOCUS_HINT_DISMISSED_KEY)) return
+    if (options?.showHint === false) return
 
     focusEnterHintVisible.value = true
     clearFocusHintTimer()
     focusHintTimer = setTimeout(() => {
       focusEnterHintVisible.value = false
       focusHintTimer = null
-    }, 5000)
+    }, 4500)
   }
 
   const exitPageFocusMode = () => {
@@ -103,21 +100,15 @@ export const useUIStore = defineStore('ui', () => {
     }
   }
 
-  const dismissFocusHintPermanent = () => {
-    localStorage.setItem(FOCUS_HINT_DISMISSED_KEY, '1')
-    focusEnterHintVisible.value = false
-    clearFocusHintTimer()
-  }
-
   /** 已在专注模式时仍可弹出一次进入提示（用于页面首次自动进入） */
   const triggerFocusEnterHint = () => {
-    if (!pageFocusMode.value || localStorage.getItem(FOCUS_HINT_DISMISSED_KEY)) return
+    if (!pageFocusMode.value) return
     focusEnterHintVisible.value = true
     clearFocusHintTimer()
     focusHintTimer = setTimeout(() => {
       focusEnterHintVisible.value = false
       focusHintTimer = null
-    }, 5000)
+    }, 4500)
   }
 
   const hideFocusEnterHint = () => {
@@ -137,7 +128,6 @@ export const useUIStore = defineStore('ui', () => {
     enterPageFocusMode,
     exitPageFocusMode,
     togglePageFocusMode,
-    dismissFocusHintPermanent,
     triggerFocusEnterHint,
     hideFocusEnterHint
   }
