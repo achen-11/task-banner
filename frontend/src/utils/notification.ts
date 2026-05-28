@@ -1,4 +1,5 @@
 import type { Notification, NotificationType } from '@/types/notification'
+import { resolveMcpClientFromMetadata } from '@/utils/mcpClient'
 
 export function isAiNotification(
   notification: Pick<Notification, 'title' | 'content' | 'source'>
@@ -12,9 +13,20 @@ export function isAiNotification(
 }
 
 export function getNotificationSourceLabel(
-  notification: Pick<Notification, 'title' | 'content' | 'source'>
+  notification: Pick<Notification, 'title' | 'content' | 'source' | 'metadata'>
 ): string {
-  return isAiNotification(notification) ? 'AI' : '人工'
+  if (!isAiNotification(notification)) return '人工'
+  return resolveMcpClientFromMetadata(notification.metadata).label
+}
+
+/** MCP/AI 通知展示名（默认 AI，可由 metadata.client 覆盖） */
+export function getNotificationActorLabel(
+  notification: Pick<Notification, 'title' | 'content' | 'source' | 'metadata' | 'sender'>
+): string {
+  if (!isAiNotification(notification)) {
+    return notification.sender?.displayName || notification.sender?.username || '系统'
+  }
+  return resolveMcpClientFromMetadata(notification.metadata).label
 }
 
 const ACTION_LABELS: Record<NotificationType, string> = {
@@ -64,9 +76,7 @@ export function formatNotificationHeadline(
   notification: Notification,
   timeLabel: string
 ): string {
-  const actor = isAiNotification(notification)
-    ? 'AI'
-    : notification.sender?.displayName || notification.sender?.username || '系统'
+  const actor = getNotificationActorLabel(notification)
 
   if (notification.type === 'commented') {
     const taskTitle = extractTaskTitleFromNotification(notification)

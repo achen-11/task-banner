@@ -41,6 +41,7 @@ import { TaskComment } from 'code/Models/TaskComment'
 import { pushCommentCreated } from 'code/Services/websocket'
 import { buildCommentPreview, pushAiOperationNotification } from 'code/Services/notification'
 import { parseMcpRequestArgs } from 'code/Utils/mcpArgs'
+import { buildMcpMetadata } from 'code/Utils/mcpClient'
 
 const args = parseMcpRequestArgs(k.request.body)
 const currentUser = getCurrentAuthUser()
@@ -80,9 +81,7 @@ if (!currentUser) {
       type: commentType,
       mentionedUsers,
       attachments: [],
-      metadata: {
-        source: 'mcp'
-      }
+      metadata: buildMcpMetadata()
     })
 
     const comment = TaskComment.findById(commentId)

@@ -100,7 +100,7 @@ export function getTaskActivities(taskId: string): Activity[] {
         commentType: comment.type || 'user',
         mentionedUsers: comment.mentionedUsers || [],
         attachments: ensureAttachmentArray(comment.attachments),
-        metadata: comment.metadata || {},
+        metadata: (comment.metadata as Record<string, unknown>) || {},
         timestamp: comment.createdAt
       }
     }),

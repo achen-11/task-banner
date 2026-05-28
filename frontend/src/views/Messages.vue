@@ -109,13 +109,15 @@
               ]"
               @click="handleNotificationClick(message)"
             >
+              <McpClientBadge
+                v-if="isAiNotification(message)"
+                :client-id="resolveMcpClientFromMetadata(message.metadata).id"
+              />
               <div
-                class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
-                :class="isAiNotification(message)
-                  ? 'bg-[#3762E3] text-white'
-                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'"
+                v-else
+                class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
               >
-                {{ isAiNotification(message) ? 'AI' : actorInitial(message) }}
+                {{ actorInitial(message) }}
               </div>
               <div class="flex-1 min-w-0">
                 <p
@@ -150,13 +152,15 @@
               : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'"
             @click="handleNotificationClick(message)"
           >
+            <McpClientBadge
+              v-if="isAiNotification(message)"
+              :client-id="resolveMcpClientFromMetadata(message.metadata).id"
+            />
             <div
-              class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
-              :class="isAiNotification(message)
-                ? 'bg-[#3762E3] text-white'
-                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'"
+              v-else
+              class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
             >
-              {{ isAiNotification(message) ? 'AI' : actorInitial(message) }}
+              {{ actorInitial(message) }}
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
@@ -192,6 +196,7 @@ import {
 } from '@/api/notification'
 import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
+import McpClientBadge from '@/components/common/McpClientBadge.vue'
 import {
   isAiNotification,
   formatNotificationHeadline,
@@ -200,6 +205,7 @@ import {
   formatTaskDueMeta,
   getNotificationBody
 } from '@/utils/notification'
+import { resolveMcpClientFromMetadata } from '@/utils/mcpClient'
 import { groupNotificationsByTask, type NotificationGroup } from '@/utils/notificationGroups'
 import { usePageTitle } from '@/composables/usePageTitle'
 import MessageFilterBar, { type FilterGroupConfig } from '@/components/messages/MessageFilterBar.vue'

@@ -24,6 +24,7 @@ export interface Notification {
   relatedTaskId?: string
   relatedCommentId?: string
   source?: 'human' | 'ai'
+  metadata?: Record<string, unknown>
   isRead: boolean
   createdAt: number
   // 前端扩展字段

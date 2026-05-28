@@ -37,6 +37,10 @@ export const Notification = ksql.define(
       type: DataTypes.String,
       default: 'human' // human | ai
     },
+    metadata: {
+      type: DataTypes.Object,
+      default: () => ({})
+    },
     isRead: {
       type: DataTypes.Boolean,
       default: false

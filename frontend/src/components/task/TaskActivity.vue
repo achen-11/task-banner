@@ -57,8 +57,17 @@
 
         <!-- 活动项 -->
         <div class="flex gap-3">
-          <!-- 用户头像 -->
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 relative z-10">
+          <!-- 用户 / MCP 客户端头像 -->
+          <McpClientBadge
+            v-if="activity.type === 'comment' && showAgentBadge(activity)"
+            :client-id="agentClientId(activity)"
+            size="sm"
+            class="relative z-10 flex-shrink-0"
+          />
+          <div
+            v-else
+            class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 relative z-10"
+          >
             {{ getUserDisplayName(activity.user).charAt(0).toUpperCase() }}
           </div>
 
@@ -85,12 +94,12 @@
                    :class="{ 'ml-8': props.commentSelectionMode }">
                 <div class="flex items-center justify-between w-full">
                   <div class="flex items-center gap-2">
-                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ getUserDisplayName(activity.user) }}</span>
-                    <!-- AI 标签 -->
-                    <span v-if="activity.commentType === 'ai_completion'"
-                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300">
-                      AI
-                    </span>
+                    <McpClientBadge
+                      v-if="showAgentBadge(activity)"
+                      :client-id="agentClientId(activity)"
+                      size="sm"
+                    />
+                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ getCommentActorLabel(activity) }}</span>
                     <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatRelativeTime(activity.timestamp) }}</span>
                   </div>
                   <!-- 编辑删除按钮组 -->
@@ -377,6 +386,12 @@ import type { Attachment } from '@/api/attachment'
 import { getTaskActivities, addTaskComment, updateTaskComment, deleteTaskComment, toggleCommentReaction, getCommentReactions, type TaskActivity as APITaskActivity } from '@/api/task'
 import { formatRelativeTime } from '@/utils/time'
 import { normalizeAttachmentList } from '@/utils/attachments'
+import {
+  isMcpAgentComment,
+  isMcpAgentMetadata,
+  resolveMcpClientFromMetadata
+} from '@/utils/mcpClient'
+import McpClientBadge from '@/components/common/McpClientBadge.vue'
 import { getCurrentUser } from '@/utils/auth'
 
 interface Task {
@@ -416,6 +431,7 @@ interface Activity {
   newValue?: string
   summary?: string
   commentType?: string // 'user' | 'ai_completion' | 'ai_revision' | 'system'
+  metadata?: Record<string, unknown>
   attachments?: Attachment[]
 }
 
@@ -526,6 +542,7 @@ const loadActivities = async () => {
           timestamp: activity.timestamp,
           summary: activity.summary || '',
           commentType: activity.commentType || 'user',
+          metadata: activity.metadata || {},
           attachments: normalizeAttachmentList(activity.attachments).map(a => ({
             ...a,
             relatedType: 'comment' as const,
@@ -905,6 +922,25 @@ const getUserDisplayName = (user: Activity['user']): string => {
   return user.displayName || user.username || user.email || user._id || '未知用户'
 }
 
+const showAgentBadge = (activity: Activity) =>
+  activity.type === 'comment' && isMcpAgentComment(activity.commentType, activity.metadata)
+
+const agentClientId = (activity: Activity) => {
+  if (isMcpAgentMetadata(activity.metadata)) {
+    return resolveMcpClientFromMetadata(activity.metadata).id
+  }
+  return 'ai'
+}
+
+const getCommentActorLabel = (activity: Activity) => {
+  if (isMcpAgentMetadata(activity.metadata)) {
+    return resolveMcpClientFromMetadata(activity.metadata).label
+  }
+  if (isMcpAgentComment(activity.commentType, null)) {
+    return 'AI'
+  }
+  return getUserDisplayName(activity.user)
+}
 
 // 切换评论选择状态
 const toggleCommentSelection = (commentId: string) => {

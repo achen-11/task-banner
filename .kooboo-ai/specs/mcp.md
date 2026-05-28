@@ -22,6 +22,24 @@ MCP 工具使用 `{ ok, data | error }`，与 HTTP API 的 `{ code, message, dat
 - 调用 `getCurrentAuthUser()`（JWT 或 Kooboo 会话）
 - 写操作前 `checkProjectPermission(projectId, userId, 'member')`
 
+## MCP 客户端标识（可选）
+
+在 Cursor / Codex 的 `mcp.json` 里为 TaskBanner 配置请求头，站点 `mcp-tools` 通过 `k.request.headers` 读取，**无需每次 tool 传参**：
+
+```json
+"headers": {
+  "Authorization": "Bearer <jwt>",
+  "X-TaskBanner-Client": "cursor"
+}
+```
+
+| Header | 说明 |
+| --- | --- |
+| `X-TaskBanner-Client` | 客户端 id：`ai`（默认）、`cursor`、`codex` 或自定义 |
+| `X-MCP-Client` | 同上（别名） |
+
+写入 `comment.metadata` 与通知 `metadata`，前端展示对应名称与头像样式；人工评论不受影响。
+
 ## 工具列表
 
 | 工具 | 说明 |

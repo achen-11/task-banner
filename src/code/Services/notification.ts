@@ -7,6 +7,7 @@ import { Task, type TaskType } from 'code/Models/Task'
 import { TaskComment } from 'code/Models/TaskComment'
 import { getUserById, type UserInfo } from 'code/Services/user'
 import { pushNotification } from 'code/Services/websocket'
+import { getMcpClientFromRequest } from 'code/Utils/mcpClient'
 
 const COMMENT_PREVIEW_MAX = 200
 
@@ -48,6 +49,7 @@ export interface NotificationInfo {
   relatedTaskId?: string
   relatedCommentId?: string
   source: 'human' | 'ai'
+  metadata?: Record<string, unknown>
   isRead: boolean
   createdAt: number
 }
@@ -81,6 +83,7 @@ export function createNotification(data: {
   relatedTaskId?: string
   relatedCommentId?: string
   source?: 'human' | 'ai'
+  metadata?: Record<string, unknown>
 }): string {
   // 不给自己发通知
   // 这个检查应该在调用方进行，但这里也做一次防御性检查
@@ -93,6 +96,7 @@ export function createNotification(data: {
     relatedTaskId: data.relatedTaskId || '',
     relatedCommentId: data.relatedCommentId || '',
     source: data.source || 'human',
+    metadata: data.metadata || {},
     isRead: false,
     createdAt: Date.now()
   })
@@ -152,6 +156,7 @@ export function getUserNotifications(
       relatedTaskId: notification.relatedTaskId || undefined,
       relatedCommentId: notification.relatedCommentId || undefined,
       source: inferNotificationSource(notification),
+      metadata: (notification.metadata as Record<string, unknown>) || {},
       isRead: notification.isRead,
       createdAt: notification.createdAt
     }
@@ -438,40 +443,43 @@ export function createMCPOperationNotification(
   projectId?: string,
   options?: { commentId?: string; commentPreview?: string }
 ): string {
+  const client = getMcpClientFromRequest()
+  const who = client.label
+
   const actionMap: Record<string, { title: string; content: string; type: NotificationTypeEnum }> = {
     task_created: {
-      title: 'AI 创建了新任务',
-      content: `AI 通过 MCP 创建了任务「${resourceTitle}」`,
+      title: `${who} 创建了新任务`,
+      content: `${who} 通过 MCP 创建了任务「${resourceTitle}」`,
       type: 'task_assigned'
     },
     task_updated: {
-      title: 'AI 更新了任务',
-      content: `AI 通过 MCP 更新了任务「${resourceTitle}」`,
+      title: `${who} 更新了任务`,
+      content: `${who} 通过 MCP 更新了任务「${resourceTitle}」`,
       type: 'task_updated'
     },
     task_commented: {
-      title: `AI 评论 · ${resourceTitle}`,
+      title: `${who} 评论 · ${resourceTitle}`,
       content: (options?.commentPreview || '').trim() || `（无文字内容）· 任务「${resourceTitle}」`,
       type: 'commented'
     },
     task_deleted: {
-      title: 'AI 删除了任务',
-      content: `AI 通过 MCP 删除了任务「${resourceTitle}」`,
+      title: `${who} 删除了任务`,
+      content: `${who} 通过 MCP 删除了任务「${resourceTitle}」`,
       type: 'task_status_changed'
     },
     document_created: {
-      title: 'AI 创建了新文档',
-      content: `AI 通过 MCP 创建了文档「${resourceTitle}」`,
+      title: `${who} 创建了新文档`,
+      content: `${who} 通过 MCP 创建了文档「${resourceTitle}」`,
       type: 'commented'
     },
     document_updated: {
-      title: 'AI 更新了文档',
-      content: `AI 通过 MCP 更新了文档「${resourceTitle}」`,
+      title: `${who} 更新了文档`,
+      content: `${who} 通过 MCP 更新了文档「${resourceTitle}」`,
       type: 'commented'
     },
     document_deleted: {
-      title: 'AI 删除了文档',
-      content: `AI 通过 MCP 删除了文档「${resourceTitle}」`,
+      title: `${who} 删除了文档`,
+      content: `${who} 通过 MCP 删除了文档「${resourceTitle}」`,
       type: 'commented'
     }
   }
@@ -488,6 +496,11 @@ export function createMCPOperationNotification(
     content: actionInfo.content,
     relatedTaskId: action.startsWith('task_') ? resourceId : undefined,
     relatedCommentId: action === 'task_commented' ? options?.commentId : undefined,
-    source: 'ai'
+    source: 'ai',
+    metadata: {
+      source: 'mcp',
+      client: client.id,
+      clientLabel: client.label
+    }
   })
 }
