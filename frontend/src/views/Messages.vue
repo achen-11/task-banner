@@ -1,80 +1,36 @@
 <template>
-  <div class="p-8">
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">消息</h1>
-      <el-button 
-        v-if="unreadCount > 0" 
-        type="default" 
-        size="small"
-        @click="handleMarkAllAsRead"
-        :loading="markingAllAsRead"
-      >
-        全部标记为已读
-      </el-button>
-    </div>
-
-    <!-- 多维筛选：状态 / 类型 / 来源 分别独立 -->
-    <div class="mb-6 bg-white dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700 p-4 space-y-3">
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">状态</span>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="option in readFilterOptions"
-            :key="option.value"
-            type="button"
-            class="px-3 py-1.5 text-sm rounded-md transition-colors"
-            :class="filterChipClass(readFilter === option.value)"
-            @click="readFilter = option.value"
-          >
-            {{ option.label }}
-            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
-          </button>
-        </div>
+  <div class="min-h-full bg-gray-50 dark:bg-gray-900 p-8">
+    <!-- 页头 -->
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">任务消息</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          {{ pageSubtitle }}
+        </p>
       </div>
-
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">类型</span>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="option in typeFilterOptions"
-            :key="option.value"
-            type="button"
-            class="px-3 py-1.5 text-sm rounded-md transition-colors"
-            :class="filterChipClass(typeFilter === option.value)"
-            @click="typeFilter = option.value"
-          >
-            {{ option.label }}
-            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">来源</span>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="option in sourceFilterOptions"
-            :key="option.value"
-            type="button"
-            class="px-3 py-1.5 text-sm rounded-md transition-colors"
-            :class="filterChipClass(sourceFilter === option.value)"
-            @click="sourceFilter = option.value"
-          >
-            {{ option.label }}
-            <span v-if="option.count > 0" class="ml-1.5 text-xs opacity-80">{{ option.count }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 border-t border-gray-100 dark:border-gray-700">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 w-10 shrink-0">展示</span>
-        <div class="flex flex-wrap gap-2">
+      <div class="flex items-center gap-3 shrink-0">
+        <el-button
+          v-if="unreadCount > 0"
+          type="default"
+          size="small"
+          :loading="markingAllAsRead"
+          @click="handleMarkAllAsRead"
+        >
+          全部标记为已读
+        </el-button>
+        <div
+          class="inline-flex p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          role="tablist"
+        >
           <button
             v-for="option in viewModeOptions"
             :key="option.value"
             type="button"
-            class="px-3 py-1.5 text-sm rounded-md transition-colors"
-            :class="filterChipClass(viewMode === option.value)"
+            role="tab"
+            class="px-3 py-1.5 text-sm font-medium rounded-md transition-all"
+            :class="viewMode === option.value
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="viewMode = option.value"
           >
             {{ option.label }}
@@ -83,179 +39,139 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="bg-white dark:bg-gray-800 rounded-md shadow-md p-8 text-center text-gray-500 dark:text-gray-400">
+    <MessageFilterBar
+      :groups="filterGroups"
+      :model-value="{ read: readFilter, type: typeFilter, source: sourceFilter }"
+      @update="onFilterUpdate"
+    />
+
+    <div v-if="loading" class="mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-12 text-center text-gray-500 dark:text-gray-400">
       加载中...
     </div>
 
-    <!-- 消息列表 -->
-    <div v-else class="bg-white dark:bg-gray-800 rounded-md shadow-md divide-y divide-gray-100 dark:divide-gray-700">
+    <div v-else class="mt-4 space-y-3">
       <!-- 按任务聚合 -->
       <template v-if="viewMode === 'aggregate'">
         <div
           v-for="group in groupedMessages"
           :key="group.key"
-          class="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-          :class="{ 'bg-blue-50/60 dark:bg-blue-900/20': group.unreadCount > 0 }"
+          class="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden transition-shadow"
+          :class="expandedGroups.has(group.key)
+            ? 'border-blue-200 dark:border-blue-800 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/40'
+            : 'border-gray-100 dark:border-gray-700'"
         >
-          <div
-            class="p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-            @click="handleGroupNavigate(group)"
+          <button
+            type="button"
+            class="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors"
+            @click="toggleGroupExpand(group.key)"
           >
-            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-semibold text-blue-700 dark:text-blue-300">
-              {{ group.title.charAt(0).toUpperCase() }}
-            </div>
+            <ChevronDown
+              v-if="expandedGroups.has(group.key)"
+              class="w-5 h-5 text-[#3762E3] shrink-0"
+            />
+            <ChevronRight
+              v-else
+              class="w-5 h-5 text-gray-400 shrink-0"
+            />
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ group.title }}</p>
-                <span
-                  v-if="group.unreadCount > 0"
-                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-500 text-white shrink-0"
-                >
-                  {{ group.unreadCount }} 未读
-                </span>
-                <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">{{ group.items.length }} 条</span>
-              </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ summarizeGroupActivity(group) }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ formatTime(group.latestAt) }}</p>
-            </div>
-            <button
-              type="button"
-              class="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500"
-              :title="expandedGroups.has(group.key) ? '收起' : '展开详情'"
-              @click.stop="toggleGroupExpand(group.key)"
-            >
-              <svg
-                class="w-4 h-4 transition-transform"
-                :class="{ 'rotate-180': expandedGroups.has(group.key) }"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
-
-          <div v-if="expandedGroups.has(group.key)" class="px-4 pb-3 space-y-2">
-            <div
-              v-for="message in group.items"
-              :key="message._id"
-              class="p-3 rounded-md border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 cursor-pointer transition-colors"
-              :class="{ 'border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800': !message.isRead }"
-              @click="handleNotificationClick(message)"
-            >
-              <div class="flex items-start gap-2">
-                <span
-                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
-                  :class="isAiNotification(message)
-                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
-                >
-                  {{ getNotificationSourceLabel(message) }}
-                </span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm text-gray-900 dark:text-gray-100">{{ message.content }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
-                </div>
-                <div v-if="!message.isRead" class="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <!-- 平铺列表 -->
-      <template v-else>
-      <div
-        v-for="message in filteredMessages"
-        :key="message._id"
-        class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
-        :class="{ 'bg-blue-50 dark:bg-blue-900/30': !message.isRead }"
-        @click="handleNotificationClick(message)"
-      >
-        <div class="flex items-start">
-          <!-- 图标 -->
-          <div class="flex-shrink-0 mr-4">
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center"
-              :class="{
-                'bg-blue-100 dark:bg-blue-900/50': message.type === 'task_assigned',
-                'bg-green-100 dark:bg-green-900/50': message.type === 'task_status_changed',
-                'bg-yellow-100 dark:bg-yellow-900/50': message.type === 'task_updated',
-                'bg-purple-100 dark:bg-purple-900/50': message.type === 'commented',
-                'bg-pink-100 dark:bg-pink-900/50': message.type === 'mentioned'
-              }"
-            >
-              <svg
-                v-if="message.type === 'task_assigned'"
-                class="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <svg
-                v-else-if="message.type === 'task_status_changed'"
-                class="w-5 h-5 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <svg
-                v-else-if="message.type === 'commented' || message.type === 'mentioned'"
-                class="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-              <svg
-                v-else
-                class="w-5 h-5 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-          </div>
-
-          <!-- 内容 -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1">
-              <span
-                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
-                :class="isAiNotification(message)
-                  ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
-                  : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
-              >
-                {{ getNotificationSourceLabel(message) }}
-              </span>
-              <p class="text-sm text-gray-900 dark:text-gray-100 truncate">
-                {{ message.content }}
+              <p class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {{ group.title }}
+              </p>
+              <p v-if="groupMetaLine(group)" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ groupMetaLine(group) }}
               </p>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ message.timeAgo || formatTime(message.createdAt) }}</p>
-          </div>
+            <div class="flex items-center gap-2 shrink-0 text-xs">
+              <span
+                v-if="group.unreadCount > 0"
+                class="inline-flex items-center px-2 py-0.5 rounded-md font-medium bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 border border-red-100 dark:border-red-900/50"
+              >
+                {{ group.unreadCount }} 条未读
+              </span>
+              <span class="text-gray-400 dark:text-gray-500">
+                <template v-if="group.unreadCount === 0">已读 · </template>
+                共 {{ group.items.length }} 条
+              </span>
+            </div>
+          </button>
 
-          <!-- 未读标记 -->
-          <div v-if="!message.isRead" class="flex-shrink-0 ml-4">
-            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div v-if="expandedGroups.has(group.key)" class="border-t border-gray-100 dark:border-gray-700">
+            <button
+              v-for="(message, idx) in group.items"
+              :key="message._id"
+              type="button"
+              class="w-full px-4 py-3 flex items-start gap-3 text-left transition-colors"
+              :class="[
+                idx > 0 ? 'border-t border-gray-50 dark:border-gray-700/80' : '',
+                message.isRead
+                  ? 'opacity-70 hover:opacity-100 hover:bg-gray-50/50 dark:hover:bg-gray-700/20'
+                  : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'
+              ]"
+              @click="handleNotificationClick(message)"
+            >
+              <div
+                class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
+                :class="isAiNotification(message)
+                  ? 'bg-[#3762E3] text-white'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'"
+              >
+                {{ isAiNotification(message) ? 'AI' : actorInitial(message) }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p
+                  class="text-sm font-medium truncate"
+                  :class="message.isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'"
+                >
+                  {{ formatNotificationHeadline(message, formatNotificationTimeLabel(message.createdAt)) }}
+                </p>
+                <p
+                  class="text-sm mt-0.5 line-clamp-2"
+                  :class="message.isRead ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'"
+                >
+                  {{ message.content }}
+                </p>
+              </div>
+              <div v-if="!message.isRead" class="w-2 h-2 rounded-full bg-[#3762E3] shrink-0 mt-2" />
+            </button>
           </div>
         </div>
-      </div>
       </template>
 
-      <!-- 空状态 -->
+      <!-- 平铺 -->
+      <template v-else>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+          <button
+            v-for="message in filteredMessages"
+            :key="message._id"
+            type="button"
+            class="w-full px-4 py-3 flex items-start gap-3 text-left transition-colors"
+            :class="message.isRead
+              ? 'opacity-75 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-gray-700/30'
+              : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'"
+            @click="handleNotificationClick(message)"
+          >
+            <div
+              class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
+              :class="isAiNotification(message)
+                ? 'bg-[#3762E3] text-white'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'"
+            >
+              {{ isAiNotification(message) ? 'AI' : actorInitial(message) }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                {{ formatNotificationHeadline(message, formatNotificationTimeLabel(message.createdAt)) }}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2">{{ message.content }}</p>
+            </div>
+            <div v-if="!message.isRead" class="w-2 h-2 rounded-full bg-[#3762E3] shrink-0 mt-2" />
+          </button>
+        </div>
+      </template>
+
       <div
         v-if="(viewMode === 'aggregate' ? groupedMessages.length : filteredMessages.length) === 0"
-        class="p-8 text-center text-gray-500 dark:text-gray-400"
+        class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-12 text-center text-gray-500 dark:text-gray-400"
       >
         暂无消息
       </div>
@@ -264,79 +180,85 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  getNotifications, 
-  markNotificationAsRead, 
+import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import {
+  getNotifications,
+  markNotificationAsRead,
   markAllNotificationsAsRead,
-  getUnreadCount 
+  getUnreadCount
 } from '@/api/notification'
 import { getTaskDetail } from '@/api/task'
 import type { Notification } from '@/types/notification'
-import { formatRelativeTime } from '@/utils/time'
-import { isAiNotification, getNotificationSourceLabel } from '@/utils/notification'
 import {
-  groupNotificationsByTask,
-  summarizeGroupActivity,
-  type NotificationGroup
-} from '@/utils/notificationGroups'
+  isAiNotification,
+  formatNotificationHeadline,
+  formatNotificationTimeLabel,
+  formatPriorityShort,
+  formatTaskDueMeta
+} from '@/utils/notification'
+import { groupNotificationsByTask, type NotificationGroup } from '@/utils/notificationGroups'
 import { usePageTitle } from '@/composables/usePageTitle'
+import MessageFilterBar, { type FilterGroupConfig } from '@/components/messages/MessageFilterBar.vue'
 
 type ReadFilter = 'all' | 'unread'
 type TypeFilter = 'all' | 'task' | 'comment' | 'mention'
 type SourceFilter = 'all' | 'ai' | 'human'
 type ViewMode = 'aggregate' | 'flat'
 
-interface FilterOption<T extends string> {
-  value: T
-  label: string
-  count: number
-}
-
 const router = useRouter()
 const { setUnreadCount, decrementUnread } = usePageTitle()
 
 const loading = ref(false)
 const markingAllAsRead = ref(false)
-
 const readFilter = ref<ReadFilter>('all')
 const typeFilter = ref<TypeFilter>('all')
 const sourceFilter = ref<SourceFilter>('all')
 const viewMode = ref<ViewMode>('aggregate')
 const expandedGroups = ref(new Set<string>())
+const messages = ref<Notification[]>([])
+const unreadCount = ref(0)
+const taskMetaById = ref<Record<string, { priority: string; dueDate?: number }>>({})
 
 const viewModeOptions: { value: ViewMode; label: string }[] = [
   { value: 'aggregate', label: '按任务聚合' },
-  { value: 'flat', label: '平铺列表' }
+  { value: 'flat', label: '平铺' }
 ]
 
-const readFilterOptions = ref<FilterOption<ReadFilter>[]>([
-  { value: 'all', label: '全部', count: 0 },
-  { value: 'unread', label: '未读', count: 0 }
+const filterGroups = computed<FilterGroupConfig[]>(() => [
+  {
+    key: 'read',
+    label: '状态',
+    modelKey: 'read',
+    options: [
+      { value: 'all', label: '全部' },
+      { value: 'unread', label: '未读' }
+    ]
+  },
+  {
+    key: 'type',
+    label: '类型',
+    modelKey: 'type',
+    options: [
+      { value: 'all', label: '全部' },
+      { value: 'task', label: '任务' },
+      { value: 'comment', label: '评论' },
+      { value: 'mention', label: '@提醒' }
+    ]
+  },
+  {
+    key: 'source',
+    label: '来源',
+    modelKey: 'source',
+    options: [
+      { value: 'all', label: '全部' },
+      { value: 'ai', label: 'AI' },
+      { value: 'human', label: '人工' }
+    ]
+  }
 ])
-
-const typeFilterOptions = ref<FilterOption<TypeFilter>[]>([
-  { value: 'all', label: '全部', count: 0 },
-  { value: 'task', label: '任务', count: 0 },
-  { value: 'comment', label: '评论', count: 0 },
-  { value: 'mention', label: '@提醒', count: 0 }
-])
-
-const sourceFilterOptions = ref<FilterOption<SourceFilter>[]>([
-  { value: 'all', label: '全部', count: 0 },
-  { value: 'ai', label: 'AI', count: 0 },
-  { value: 'human', label: '人工', count: 0 }
-])
-
-const messages = ref<Notification[]>([])
-const unreadCount = ref(0)
-
-const filterChipClass = (active: boolean) =>
-  active
-    ? 'bg-blue-500 dark:bg-blue-600 text-white'
-    : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
 
 const filteredMessages = computed(() => {
   return messages.value.filter(message => {
@@ -352,28 +274,90 @@ const filteredMessages = computed(() => {
 
 const groupedMessages = computed(() => groupNotificationsByTask(filteredMessages.value))
 
+const pageSubtitle = computed(() => {
+  const total = filteredMessages.value.length
+  const tasksWithUnread = groupedMessages.value.filter(g => g.unreadCount > 0).length
+  if (viewMode.value === 'flat') {
+    return total === 0 ? '暂无消息' : `共 ${total} 条`
+  }
+  if (tasksWithUnread === 0) {
+    return total === 0 ? '暂无消息' : `共 ${total} 条消息`
+  }
+  return `${tasksWithUnread} 个任务含未读，共 ${total} 条`
+})
+
+const onFilterUpdate = (key: 'read' | 'type' | 'source', value: string) => {
+  if (key === 'read') readFilter.value = value as ReadFilter
+  else if (key === 'type') typeFilter.value = value as TypeFilter
+  else sourceFilter.value = value as SourceFilter
+}
+
+const actorInitial = (message: Notification) => {
+  const name = message.sender?.displayName || message.sender?.username || '人'
+  return name.charAt(0).toUpperCase()
+}
+
+const groupMetaLine = (group: NotificationGroup) => {
+  if (!group.relatedTaskId) return null
+  const meta = taskMetaById.value[group.relatedTaskId]
+  if (!meta) return null
+  const parts: string[] = []
+  if (meta.priority) parts.push(formatPriorityShort(meta.priority))
+  const due = formatTaskDueMeta(meta.dueDate)
+  if (due) parts.push(due)
+  return parts.length ? parts.join(' · ') : null
+}
+
+const syncTaskMeta = async (groups: NotificationGroup[]) => {
+  const ids = [
+    ...new Set(groups.map(g => g.relatedTaskId).filter((id): id is string => Boolean(id)))
+  ]
+  const pending = ids.filter(id => !taskMetaById.value[id])
+  if (pending.length === 0) return
+
+  await Promise.all(
+    pending.map(async id => {
+      try {
+        const task = await getTaskDetail(id)
+        taskMetaById.value[id] = { priority: task.priority, dueDate: task.dueDate }
+      } catch {
+        /* 元信息可选 */
+      }
+    })
+  )
+}
+
+const defaultExpandGroups = () => {
+  const groups = groupedMessages.value
+  if (groups.length === 0) {
+    expandedGroups.value = new Set()
+    return
+  }
+  const first = groups.find(g => g.unreadCount > 0) ?? groups[0]
+  expandedGroups.value = new Set([first!.key])
+}
+
+watch(groupedMessages, groups => {
+  syncTaskMeta(groups)
+})
+
+watch([readFilter, typeFilter, sourceFilter, viewMode], () => {
+  if (viewMode.value === 'aggregate') {
+    defaultExpandGroups()
+  }
+})
+
 const toggleGroupExpand = (key: string) => {
   const next = new Set(expandedGroups.value)
-  if (next.has(key)) {
-    next.delete(key)
-  } else {
-    next.add(key)
-  }
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
   expandedGroups.value = next
 }
 
-const markMessagesAsRead = async (items: Notification[]) => {
-  const unread = items.filter(item => !item.isRead)
-  if (unread.length === 0) return
-
-  await Promise.all(
-    unread.map(async item => {
-      await markNotificationAsRead(item._id)
-      item.isRead = true
-    })
-  )
-
-  updateFilterCounts()
+const updateUnreadState = () => {
+  const unread = messages.value.filter(m => !m.isRead).length
+  unreadCount.value = unread
+  setUnreadCount(unread)
 }
 
 const navigateToTask = async (taskId: string) => {
@@ -382,58 +366,12 @@ const navigateToTask = async (taskId: string) => {
     if (task?.projectId) {
       router.push({
         path: `/projects/${task.projectId}`,
-        query: {
-          tab: 'board',
-          taskId
-        }
+        query: { tab: 'board', taskId }
       })
     }
-  } catch (error) {
-    console.error('Failed to get task detail:', error)
+  } catch {
     router.push('/projects')
   }
-}
-
-const handleGroupNavigate = async (group: NotificationGroup) => {
-  try {
-    await markMessagesAsRead(group.items)
-  } catch (error) {
-    console.error('Failed to mark group notifications as read:', error)
-  }
-
-  if (group.relatedTaskId) {
-    await navigateToTask(group.relatedTaskId)
-  }
-}
-
-const formatTime = (timestamp: number) => formatRelativeTime(timestamp)
-
-const updateFilterCounts = () => {
-  const unread = messages.value.filter(m => !m.isRead).length
-  const task = messages.value.filter(m => m.type.includes('task_')).length
-  const comment = messages.value.filter(m => m.type === 'commented').length
-  const mention = messages.value.filter(m => m.type === 'mentioned').length
-  const ai = messages.value.filter(m => isAiNotification(m)).length
-  const human = messages.value.length - ai
-
-  readFilterOptions.value = [
-    { value: 'all', label: '全部', count: messages.value.length },
-    { value: 'unread', label: '未读', count: unread }
-  ]
-  typeFilterOptions.value = [
-    { value: 'all', label: '全部', count: messages.value.length },
-    { value: 'task', label: '任务', count: task },
-    { value: 'comment', label: '评论', count: comment },
-    { value: 'mention', label: '@提醒', count: mention }
-  ]
-  sourceFilterOptions.value = [
-    { value: 'all', label: '全部', count: messages.value.length },
-    { value: 'ai', label: 'AI', count: ai },
-    { value: 'human', label: '人工', count: human }
-  ]
-
-  unreadCount.value = unread
-  setUnreadCount(unread)
 }
 
 const handleNotificationClick = async (message: Notification) => {
@@ -441,13 +379,12 @@ const handleNotificationClick = async (message: Notification) => {
     try {
       await markNotificationAsRead(message._id)
       message.isRead = true
-      updateFilterCounts()
+      updateUnreadState()
       decrementUnread()
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
     }
   }
-
   if (message.relatedTaskId) {
     await navigateToTask(message.relatedTaskId)
   }
@@ -460,11 +397,9 @@ const handleMarkAllAsRead = async () => {
     messages.value.forEach(m => {
       m.isRead = true
     })
-    updateFilterCounts()
-    setUnreadCount(0)
+    updateUnreadState()
     ElMessage.success(`已标记 ${result.count} 条消息为已读`)
-  } catch (error) {
-    console.error('Failed to mark all as read:', error)
+  } catch {
     ElMessage.error('标记失败')
   } finally {
     markingAllAsRead.value = false
@@ -474,19 +409,11 @@ const handleMarkAllAsRead = async () => {
 const loadMessages = async () => {
   loading.value = true
   try {
-    const result = await getNotifications({
-      page: 1,
-      size: 100
-    })
-
-    messages.value = result.items.map(msg => ({
-      ...msg,
-      timeAgo: formatRelativeTime(msg.createdAt)
-    }))
-
-    updateFilterCounts()
-  } catch (error) {
-    console.error('Failed to load messages:', error)
+    const result = await getNotifications({ page: 1, size: 100 })
+    messages.value = result.items
+    updateUnreadState()
+    defaultExpandGroups()
+  } catch {
     ElMessage.error('加载消息失败')
   } finally {
     loading.value = false
@@ -497,15 +424,13 @@ const loadUnreadCount = async () => {
   try {
     const result = await getUnreadCount()
     unreadCount.value = result.count
-  } catch (error) {
-    console.error('Failed to load unread count:', error)
+  } catch {
+    /* ignore */
   }
 }
 
 const handleVisibilityChange = () => {
-  if (!document.hidden) {
-    loadUnreadCount()
-  }
+  if (!document.hidden) loadUnreadCount()
 }
 
 onMounted(() => {
