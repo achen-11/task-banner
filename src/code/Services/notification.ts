@@ -4,8 +4,27 @@
 
 import { Notification, type NotificationType } from 'code/Models/Notification'
 import { Task, type TaskType } from 'code/Models/Task'
+import { TaskComment } from 'code/Models/TaskComment'
 import { getUserById, type UserInfo } from 'code/Services/user'
 import { pushNotification } from 'code/Services/websocket'
+
+const COMMENT_PREVIEW_MAX = 200
+
+/** 从评论 summary / content 生成通知正文预览（纯文本、截断） */
+export function buildCommentPreview(summary?: string, content?: string): string {
+  const raw = (summary || '').trim() || (content || '').trim()
+  if (!raw) return ''
+  const plain = raw
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]+`/g, ' ')
+    .replace(/[#>*_\-\[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!plain) return ''
+  return plain.length > COMMENT_PREVIEW_MAX
+    ? `${plain.slice(0, COMMENT_PREVIEW_MAX)}…`
+    : plain
+}
 
 /**
  * 通知类型
@@ -123,18 +142,21 @@ export function getUserNotifications(
   // 分页
   const start = (page - 1) * size
   const end = start + size
-  const items = allNotifications.slice(start, end).map(notification => ({
-    _id: notification._id,
-    userId: notification.userId,
-    type: notification.type as NotificationTypeEnum,
-    title: notification.title,
-    content: notification.content,
-    relatedTaskId: notification.relatedTaskId || undefined,
-    relatedCommentId: notification.relatedCommentId || undefined,
-    source: inferNotificationSource(notification),
-    isRead: notification.isRead,
-    createdAt: notification.createdAt
-  }))
+  const items = allNotifications.slice(start, end).map(notification => {
+    const base: NotificationInfo = {
+      _id: notification._id,
+      userId: notification.userId,
+      type: notification.type as NotificationTypeEnum,
+      title: notification.title,
+      content: notification.content,
+      relatedTaskId: notification.relatedTaskId || undefined,
+      relatedCommentId: notification.relatedCommentId || undefined,
+      source: inferNotificationSource(notification),
+      isRead: notification.isRead,
+      createdAt: notification.createdAt
+    }
+    return enrichNotificationPreview(base)
+  })
 
   return { items, total }
 }
@@ -203,6 +225,71 @@ export function markAllAsRead(userId: string): number {
   })
 
   return count
+}
+
+/**
+ * 人工评论通知：通知任务负责人（不含评论者本人）
+ */
+export function createTaskCommentNotification(
+  taskId: string,
+  commentId: string,
+  operatorId: string,
+  preview: string
+): boolean {
+  const task = Task.findById(taskId) as TaskType | null
+  if (!task?.assigneeId?.trim()) {
+    return false
+  }
+  if (task.assigneeId === operatorId) {
+    return false
+  }
+
+  const operator = getUserById(operatorId)
+  if (!operator) {
+    return false
+  }
+
+  const operatorName = operator.displayName || operator.username
+  const body = preview.trim() || '（无文字内容）'
+
+  const notificationId = createNotification({
+    userId: task.assigneeId,
+    type: 'commented',
+    title: `${operatorName} 评论了任务`,
+    content: body,
+    relatedTaskId: taskId,
+    relatedCommentId: commentId,
+    source: 'human'
+  })
+
+  const notification = Notification.findById(notificationId)
+  if (notification) {
+    pushNotification(task.assigneeId, notification, task.projectId)
+  }
+
+  return true
+}
+
+/**
+ * 列表返回时：旧数据仅有「xx 评论了任务」模板时，尝试用评论正文补全预览
+ */
+function enrichNotificationPreview(item: NotificationInfo): NotificationInfo {
+  if (!item.relatedCommentId || item.type !== 'commented') {
+    return item
+  }
+  const boilerplate = /评论了任务「[^」]+」\s*$/.test(item.content.trim())
+  if (!boilerplate && item.content.trim()) {
+    return item
+  }
+  const comment = TaskComment.findById(item.relatedCommentId)
+  if (!comment) {
+    return item
+  }
+  const preview = buildCommentPreview(comment.summary, comment.content)
+  if (!preview) {
+    return item
+  }
+  return { ...item, content: preview }
 }
 
 /**
@@ -317,14 +404,16 @@ export function pushAiOperationNotification(
   action: AiOperationAction,
   resourceTitle: string,
   resourceId: string,
-  projectId?: string
+  projectId?: string,
+  options?: { commentId?: string; commentPreview?: string }
 ): void {
   const notificationId = createMCPOperationNotification(
     userId,
     action,
     resourceTitle,
     resourceId,
-    projectId
+    projectId,
+    options
   )
   const notification = Notification.findById(notificationId)
   if (notification) {
@@ -346,7 +435,8 @@ export function createMCPOperationNotification(
   action: AiOperationAction,
   resourceTitle: string,
   resourceId: string,
-  projectId?: string
+  projectId?: string,
+  options?: { commentId?: string; commentPreview?: string }
 ): string {
   const actionMap: Record<string, { title: string; content: string; type: NotificationTypeEnum }> = {
     task_created: {
@@ -360,8 +450,8 @@ export function createMCPOperationNotification(
       type: 'task_updated'
     },
     task_commented: {
-      title: 'AI 提交了任务交付',
-      content: `AI 通过 MCP 评论了任务「${resourceTitle}」`,
+      title: `AI 评论 · ${resourceTitle}`,
+      content: (options?.commentPreview || '').trim() || `（无文字内容）· 任务「${resourceTitle}」`,
       type: 'commented'
     },
     task_deleted: {
@@ -397,6 +487,7 @@ export function createMCPOperationNotification(
     title: actionInfo.title,
     content: actionInfo.content,
     relatedTaskId: action.startsWith('task_') ? resourceId : undefined,
+    relatedCommentId: action === 'task_commented' ? options?.commentId : undefined,
     source: 'ai'
   })
 }

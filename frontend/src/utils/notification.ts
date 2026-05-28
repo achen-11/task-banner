@@ -30,6 +30,36 @@ export function getNotificationActionLabel(type: NotificationType): string {
 }
 
 /** 展开行标题：AI 分配任务 · 10:00 */
+/** 旧版通知正文：仅描述「谁评论了哪条任务」、无评论摘要 */
+export function isCommentBoilerplateContent(content: string): boolean {
+  const text = content.trim()
+  if (!text) return true
+  return /^(?:AI 通过 MCP )?.+评论了任务「[^」]+」\s*$/.test(text)
+    || /^（无文字内容）· 任务「[^」]+」\s*$/.test(text)
+}
+
+/** 消息行主文案：评论类优先展示摘要/正文 */
+export function getNotificationBody(notification: Notification): string {
+  const content = (notification.content || '').trim()
+  if (notification.type === 'commented' || notification.type === 'mentioned') {
+    if (content && !isCommentBoilerplateContent(content)) {
+      return content
+    }
+    return '打开任务查看评论详情'
+  }
+  return content
+}
+
+export function extractTaskTitleFromNotification(
+  notification: Pick<Notification, 'title' | 'content'>
+): string | null {
+  const fromContent = notification.content.match(/「([^」]+)」/)
+  if (fromContent?.[1]) return fromContent[1]
+  const fromTitle = notification.title.match(/[·]\s*(.+)$/)
+  if (fromTitle?.[1]) return fromTitle[1].trim()
+  return null
+}
+
 export function formatNotificationHeadline(
   notification: Notification,
   timeLabel: string
@@ -37,6 +67,15 @@ export function formatNotificationHeadline(
   const actor = isAiNotification(notification)
     ? 'AI'
     : notification.sender?.displayName || notification.sender?.username || '系统'
+
+  if (notification.type === 'commented') {
+    const taskTitle = extractTaskTitleFromNotification(notification)
+    if (taskTitle) {
+      return `${actor} · ${taskTitle} · ${timeLabel}`
+    }
+    return `${actor} · ${timeLabel}`
+  }
+
   return `${actor} ${getNotificationActionLabel(notification.type)} · ${timeLabel}`
 }
 

@@ -18,7 +18,12 @@ import { TaskComment } from 'code/Models/TaskComment'
 import { CommentReaction } from 'code/Models/CommentReaction'
 import { pushTaskCreated, pushTaskUpdated, pushTaskDeleted } from 'code/Services/websocket'
 import { pushCommentCreated, pushCommentUpdated, pushCommentDeleted } from 'code/Services/websocket'
-import { isAiCommentType, pushAiOperationNotification } from 'code/Services/notification'
+import {
+  buildCommentPreview,
+  createTaskCommentNotification,
+  isAiCommentType,
+  pushAiOperationNotification
+} from 'code/Services/notification'
 
 // GET /api/task/list?projectId=xxx&moduleId=&status=&priority=&assigneeId=&page=1&size=20&sortField=&sortDirection=
 k.api.get("list", () => {
@@ -475,6 +480,7 @@ k.api.post("comment", (body: any) => {
       k.logger.warning('WebSocket', `Failed to push comment created message: ${wsErr}`)
     }
 
+    const commentPreview = buildCommentPreview(comment.summary, comment.content)
     const commentMeta = metadata || {}
     if (isAiCommentType(type) || commentMeta.source === 'mcp' || commentMeta.source === 'ai') {
       try {
@@ -483,10 +489,17 @@ k.api.post("comment", (body: any) => {
           'task_commented',
           task.title,
           taskId,
-          task.projectId
+          task.projectId,
+          { commentId: comment._id, commentPreview }
         )
       } catch (notifErr) {
         k.logger.warning('Notification', `Failed to create AI comment notification: ${notifErr}`)
+      }
+    } else {
+      try {
+        createTaskCommentNotification(taskId, comment._id, currentUser._id, commentPreview)
+      } catch (notifErr) {
+        k.logger.warning('Notification', `Failed to create comment notification: ${notifErr}`)
       }
     }
 

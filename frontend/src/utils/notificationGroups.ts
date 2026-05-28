@@ -1,4 +1,8 @@
 import type { Notification } from '@/types/notification'
+import {
+  extractTaskTitleFromNotification,
+  getNotificationBody
+} from '@/utils/notification'
 
 export interface NotificationGroup {
   key: string
@@ -11,9 +15,9 @@ export interface NotificationGroup {
 }
 
 export function extractTaskTitle(notification: Notification): string {
-  const match = notification.content.match(/「([^」]+)」/)
-  if (match?.[1]) return match[1]
-  return notification.title || '未关联任务'
+  return extractTaskTitleFromNotification(notification)
+    || notification.title
+    || '未关联任务'
 }
 
 export function groupNotificationsByTask(notifications: Notification[]): NotificationGroup[] {
@@ -41,7 +45,7 @@ export function groupNotificationsByTask(notifications: Notification[]): Notific
       items: sorted,
       unreadCount: sorted.filter(item => !item.isRead).length,
       latestAt: latest.createdAt,
-      latestContent: latest.content,
+      latestContent: getNotificationBody(latest),
     })
   }
 

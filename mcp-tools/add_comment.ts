@@ -39,7 +39,7 @@ import { checkProjectPermission } from 'code/Services/project'
 import { getTaskById } from 'code/Services/task'
 import { TaskComment } from 'code/Models/TaskComment'
 import { pushCommentCreated } from 'code/Services/websocket'
-import { pushAiOperationNotification } from 'code/Services/notification'
+import { buildCommentPreview, pushAiOperationNotification } from 'code/Services/notification'
 import { parseMcpRequestArgs } from 'code/Utils/mcpArgs'
 
 const args = parseMcpRequestArgs(k.request.body)
@@ -113,7 +113,11 @@ if (!currentUser) {
           'task_commented',
           task.title,
           taskId,
-          task.projectId
+          task.projectId,
+          {
+            commentId: comment._id,
+            commentPreview: buildCommentPreview(comment.summary, comment.content)
+          }
         )
       } catch (notifErr) {
         k.logger.warning('Notification', `Failed to create MCP comment notification: ${notifErr}`)

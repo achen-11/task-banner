@@ -128,7 +128,7 @@
                   class="text-sm mt-0.5 line-clamp-2"
                   :class="message.isRead ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'"
                 >
-                  {{ message.content }}
+                  {{ getNotificationBody(message) }}
                 </p>
               </div>
               <div v-if="!message.isRead" class="w-2 h-2 rounded-full bg-[#3762E3] shrink-0 mt-2" />
@@ -162,7 +162,7 @@
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                 {{ formatNotificationHeadline(message, formatNotificationTimeLabel(message.createdAt)) }}
               </p>
-              <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2">{{ message.content }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2">{{ getNotificationBody(message) }}</p>
             </div>
             <div v-if="!message.isRead" class="w-2 h-2 rounded-full bg-[#3762E3] shrink-0 mt-2" />
           </button>
@@ -197,7 +197,8 @@ import {
   formatNotificationHeadline,
   formatNotificationTimeLabel,
   formatPriorityShort,
-  formatTaskDueMeta
+  formatTaskDueMeta,
+  getNotificationBody
 } from '@/utils/notification'
 import { groupNotificationsByTask, type NotificationGroup } from '@/utils/notificationGroups'
 import { usePageTitle } from '@/composables/usePageTitle'
