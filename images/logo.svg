@@ -1,0 +1,12 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" class="lucide lucide-git-compare-arrows-icon lucide-git-compare-arrows" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="#4E81EE" fill="none">
+
+ <g>
+  <title>Layer 1</title>
+  <circle id="svg_1" r="3" cy="6" cx="5"/>
+  <path id="svg_2" d="m12,6l5,0a2,2 0 0 1 2,2l0,7"/>
+  <path id="svg_3" d="m15,9l-3,-3l3,-3"/>
+  <circle id="svg_4" r="3" cy="18" cx="19"/>
+  <path id="svg_5" d="m12,18l-5,0a2,2 0 0 1 -2,-2l0,-7"/>
+  <path id="svg_6" d="m9,15l3,3l-3,3"/>
+ </g>
+</svg>
