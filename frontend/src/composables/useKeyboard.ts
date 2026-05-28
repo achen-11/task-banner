@@ -21,7 +21,7 @@ export const shortcuts: KeyboardShortcut[] = []
 export const documentShortcuts: KeyboardShortcut[] = [
   {
     key: 'F1',
-    description: '专注模式',
+    description: '全屏看板 (F1)',
     handler: () => {
       // 将在组件中动态设置
     },

@@ -7,7 +7,7 @@
         role="status"
         aria-live="polite"
       >
-        <span>若要退出专注模式，请按</span>
+        <span>{{ boardImmersiveCopy.hintPrefix }}</span>
         <kbd class="focus-hint-key" aria-label="F1">f1</kbd>
       </div>
     </Transition>
@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
+import { boardImmersiveCopy } from '@/constants/boardImmersiveView'
 
 const uiStore = useUIStore()
 </script>

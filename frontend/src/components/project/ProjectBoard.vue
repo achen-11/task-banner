@@ -83,7 +83,7 @@
               <template #content>
                 <div class="flex items-center gap-1.5">
                   <Keyboard :size="14" />
-                  <span>{{ focusMode ? '退出专注模式 (F1)' : '专注模式 (F1)' }}</span>
+                  <span>{{ focusMode ? `${boardImmersiveCopy.exit} (F1)` : `${boardImmersiveCopy.enter} (F1)` }}</span>
                 </div>
               </template>
               <el-button
@@ -99,29 +99,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                   </svg>
                 </el-icon>
-                {{ focusMode ? '退出专注' : '专注模式' }}
+                {{ focusMode ? boardImmersiveCopy.exit : boardImmersiveCopy.enter }}
               </el-button>
             </el-tooltip>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 专注模式悬浮退出（项目 / 我的任务看板） -->
-    <div
-      v-if="focusMode"
-      class="fixed top-[4.25rem] right-4 z-50 flex items-center gap-2"
-    >
-      <el-button
-        type="primary"
-        size="small"
-        class="shadow-lg"
-        :style="{ backgroundColor: '#3762E3', borderColor: '#3762E3' }"
-        @click="toggleFocusMode"
-      >
-        退出专注
-        <span class="ml-1.5 text-xs opacity-80 font-normal">F1</span>
-      </el-button>
     </div>
 
     <!-- 看板内容 -->
@@ -312,6 +295,7 @@ import type { Task } from '@/types/task'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import ImportTaskDialog from './ImportTaskDialog.vue'
 import { importTasksFromMarkdown, importTasksFromJSON, readFromClipboard, exportTasksToMarkdown, copyToClipboard, parseAISolution, ImportService } from '@/utils/export'
+import { boardImmersiveCopy } from '@/constants/boardImmersiveView'
 
 interface Props {
   project?: Project | null

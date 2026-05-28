@@ -194,7 +194,7 @@ export function useTour() {
           return null
         },
         title: '看板视图',
-        description: '看板视图以卡片形式展示任务，支持拖拽排序。按 N 键快速创建任务，按 F1 进入专注模式。',
+        description: '看板视图以卡片形式展示任务，支持拖拽排序。按 N 键快速创建任务，按 F1 切换全屏看板。',
         placement: 'bottom',
         mask: true
       },
@@ -228,7 +228,7 @@ export function useTour() {
           return null
         },
         title: '文档管理',
-        description: '在这里可以创建和管理项目文档，支持 Markdown 格式。按 F1 进入专注模式，专注于文档编写。',
+        description: '在这里可以创建和管理项目文档，支持 Markdown 格式。按 F1 进入全屏编辑。',
         placement: 'bottom',
         mask: true
       },

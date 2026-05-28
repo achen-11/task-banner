@@ -44,7 +44,7 @@
           @click="handleExitFocus"
         >
           <Minimize2 class="w-3.5 h-3.5 mr-1 inline-block" />
-          退出专注
+          {{ boardImmersiveCopy.exitNav }}
         </el-button>
       </div>
 
@@ -73,6 +73,7 @@ import { useRoute } from 'vue-router'
 import { Keyboard, Minimize2 } from 'lucide-vue-next'
 import { useUIStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { boardImmersiveCopy } from '@/constants/boardImmersiveView'
 const emit = defineEmits<{
   toggleSidebar: []
 }>()

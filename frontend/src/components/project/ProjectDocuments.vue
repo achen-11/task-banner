@@ -13,7 +13,7 @@
           <template #content>
             <div class="flex items-center gap-1.5">
               <Keyboard :size="14" />
-              <span>{{ focusMode ? '退出专注模式 (F1)' : '专注模式 (F1)' }}</span>
+              <span>{{ focusMode ? `${boardImmersiveCopy.exitDocument} (F1)` : `${boardImmersiveCopy.enterDocument} (F1)` }}</span>
             </div>
           </template>
           <el-button type="default" @click="toggleFocusMode">
@@ -21,7 +21,7 @@
               <View v-if="!focusMode" />
               <Edit v-else />
             </el-icon>
-            {{ focusMode ? '退出专注' : '专注模式' }}
+            {{ focusMode ? boardImmersiveCopy.exitDocument : boardImmersiveCopy.enterDocument }}
           </el-button>
         </el-tooltip>
 
@@ -44,23 +44,6 @@
           </el-button>
         </el-tooltip>
       </div>
-    </div>
-
-    <!-- 专注模式悬浮按钮 -->
-    <div v-if="focusMode" class="fixed top-16 right-4 z-50 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3 border border-gray-200 dark:border-gray-700">
-      <el-tooltip>
-        <template #content>
-          <div class="flex items-center gap-1.5">
-            <Keyboard :size="14" />
-            <span>退出专注模式 (F1)</span>
-          </div>
-        </template>
-        <el-button type="default" @click="toggleFocusMode" circle size="small">
-          <el-icon>
-            <View />
-          </el-icon>
-        </el-button>
-      </el-tooltip>
     </div>
 
     <!-- 左右布局 - 同级分栏布局 -->
@@ -427,7 +410,7 @@
         </template>
         <div class="space-y-1 text-xs">
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">专注模式</span>
+            <span class="text-gray-600 dark:text-gray-400">{{ boardImmersiveCopy.enterDocument }}</span>
             <kbd class="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">{{ formatShortcut({ key: 'F1' })
               }}</kbd>
           </div>
@@ -478,6 +461,7 @@ import CreateDocumentDialog from '../document/CreateDocumentDialog.vue'
 import DocumentVersionsDialog from '../document/DocumentVersionsDialog.vue'
 import { getDocumentList, updateDocument, deleteDocument as deleteDocumentAPI, type Document as DocumentType } from '@/api/document'
 import { buildDocumentShareUrl, copyDocumentShareUrl, downloadDocumentFile } from '@/utils/documentActions'
+import { boardImmersiveCopy } from '@/constants/boardImmersiveView'
 
 // 使用 API 中导出的类型
 type Document = DocumentType
