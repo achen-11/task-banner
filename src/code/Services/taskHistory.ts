@@ -47,6 +47,21 @@ export interface Activity {
   action?: string
 }
 
+function ensureAttachmentArray(raw: unknown): NonNullable<Activity['attachments']> {
+  if (Array.isArray(raw)) {
+    return raw as NonNullable<Activity['attachments']>
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? (parsed as NonNullable<Activity['attachments']>) : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 /**
  * 获取任务的活动历史（评论 + 字段变更）
  * @param taskId - 任务 ID
@@ -84,7 +99,7 @@ export function getTaskActivities(taskId: string): Activity[] {
         summary: comment.summary || '',
         commentType: comment.type || 'user',
         mentionedUsers: comment.mentionedUsers || [],
-        attachments: comment.attachments || [],
+        attachments: ensureAttachmentArray(comment.attachments),
         metadata: comment.metadata || {},
         timestamp: comment.createdAt
       }

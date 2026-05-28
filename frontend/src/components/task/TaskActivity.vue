@@ -376,6 +376,7 @@ import { uploadAttachments } from '@/api/attachment'
 import type { Attachment } from '@/api/attachment'
 import { getTaskActivities, addTaskComment, updateTaskComment, deleteTaskComment, toggleCommentReaction, getCommentReactions, type TaskActivity as APITaskActivity } from '@/api/task'
 import { formatRelativeTime } from '@/utils/time'
+import { normalizeAttachmentList } from '@/utils/attachments'
 import { getCurrentUser } from '@/utils/auth'
 
 interface Task {
@@ -525,7 +526,7 @@ const loadActivities = async () => {
           timestamp: activity.timestamp,
           summary: activity.summary || '',
           commentType: activity.commentType || 'user',
-          attachments: (activity.attachments || []).map(a => ({
+          attachments: normalizeAttachmentList(activity.attachments).map(a => ({
             ...a,
             relatedType: 'comment' as const,
             relatedId: activity.id
@@ -759,7 +760,7 @@ const addComment = async () => {
       // 添加新评论
       const result = await addTaskComment(props.task._id, commentContent)
 
-      let attachments: Attachment[] = (result.attachments || []).map(a => ({
+      let attachments: Attachment[] = normalizeAttachmentList(result.attachments).map(a => ({
         ...a,
         relatedType: 'comment' as const,
         relatedId: result.id
