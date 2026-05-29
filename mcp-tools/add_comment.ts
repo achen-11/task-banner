@@ -27,6 +27,10 @@ export const meta = {
         type: 'array',
         items: { type: 'string' },
         description: '被 @ 的用户 _id 列表'
+      },
+      client: {
+        type: 'string',
+        description: 'MCP 客户端 id：ai | cursor | claude | deepseek | codex。优先读 mcp.json 的 X-TaskBanner-Client；网关未转发 header 时可显式传入'
       }
     },
     required: ['task_id', 'content'],
@@ -81,7 +85,7 @@ if (!currentUser) {
       type: commentType,
       mentionedUsers,
       attachments: [],
-      metadata: buildMcpMetadata()
+      metadata: buildMcpMetadata(args)
     })
 
     const comment = TaskComment.findById(commentId)
