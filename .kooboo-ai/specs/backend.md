@@ -110,12 +110,6 @@ import { Task } from 'code/Models/Task'
 | PUT | `profile` | 更新资料 |
 | POST | `change-password` | 修改密码 |
 
-### 开发/调试 API
-
-| 文件 | 路由 | 说明 |
-| --- | --- | --- |
-| `test.ts` | `GET /api/test/websocket` | 手动触发 WebSocket 广播（开发用，非生产） |
-
 ## 已废弃
 
 | 原文件 | 原路由 | 替代 |
@@ -149,6 +143,8 @@ export const Task = ksql.define('tasks', { ... }, { timestamps: true })
 | Notification | 通知 |
 
 新增 Model 时：在 `code/Models/` 创建文件，并在 `index.ts` 注册导出。
+
+ORM 自动生成字符串主键 `_id`，不额外定义 `primaryKey` 或 `autoincrement`。外键使用字符串类型并引用 `_id`；API 不对这些 ID 使用 `parseInt()`。
 
 ## WebSocket
 

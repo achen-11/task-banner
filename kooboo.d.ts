@@ -14,7 +14,6 @@ var value = k.request.form.queryname;
     net: Kooboo.Sites.Scripting.Global.NET.KNET;
     inlineEditor: Kooboo.Sites.Scripting.Global.InlineEditor.KInline;
     module: Kooboo.Sites.ScriptModules.KModule;
-    starter: Kooboo.Sites.Scripting.Global.Koobox.KKoobox;
     /** ```ts
 // a temporary storage for small interactive information. Session does not persist
 k.session.set("key", obj);
@@ -24,6 +23,7 @@ const value = k.session.key;
 ```
  */
     session: Session;
+    history: Kooboo.Sites.Scripting.Global.SiteItem.KEditLog;
     /** Shared current context storage */
     state: kState;
     account: Kooboo.Sites.Scripting.Global.KAccount;
@@ -41,6 +41,7 @@ const value = k.session.key;
     api: KScript.Api.KApi;
     utils: Kooboo.Sites.Scripting.Global.KUtils;
     media: Kooboo.Sites.Scripting.Global.KMedia;
+    sandbox: Kooboo.Sites.Scripting.Global.KSandbox;
     google: Kooboo.Sites.Scripting.Global.Google.KGoogle;
     mail: Mail;
     commerce: KCommerce;
@@ -52,14 +53,12 @@ const value = k.session.key;
     /** Analytics setting and reporting */
     analytics: Kooboo.Sites.Scripting.Global.Analytics.kAnalytics;
     integrateCommerce: Kooboo.IntegrateCommerce.KIntegrateCommerce;
-    storage: Kooboo.Sites.Storage.KStorage;
-    stapScript: Kooboo.Sites.Scripting.Extension.StapTest;
     payment: Kooboo.Sites.Payment.kPay;
     fromSite(nameOrId: any): k;
     t(value: string): string;
-    t(value: string, params: any): string;
+    t(value: string, params: Record<string, any>): string;
     label(NameOrId: string): string;
-    label(NameOrId: string, params: any): string;
+    label(NameOrId: string, params: Record<string, any>): string;
     /** return value to the caller */
     output(obj: any): void;
   }
@@ -180,7 +179,7 @@ if (k.request.files.count > 0) {
     model: any;
     /** HTTP Method like GET, POST, PUT */
     method: string;
-    /** Client Requst IP (only IPv4) */
+    /** Client Requst IP */
     clientIp: string;
     /** Client County info */
     clientCountry: Kooboo.Lib.GeoLocation.CountryLocationModel;
@@ -201,7 +200,7 @@ var value = k.request.queryname;
     resetCulture(): void;
   }
 
-  interface Session {
+  interface Session extends Record<string, any> {
     /** All keys in current session storage */
     keys: string[];
     /** All values in current session storage */
@@ -266,6 +265,8 @@ k.state.setCurrent("key", obj);
     pages: KScript.Sites.PageRepository;
     helper: Kooboo.Sites.Scripting.Global.SiteItem.SiteHelper;
     editLog: Kooboo.Sites.Scripting.Global.SiteItem.KEditLog;
+    package: Kooboo.Sites.Scripting.Global.SiteItem.KSitePackage;
+    publish: Kooboo.Sites.Scripting.Global.SiteItem.KSitePublish;
     user: KScript.SiteUser.KSiteUser;
     visitor: Kooboo.Sites.Scripting.Global.SiteItem.Visitor;
     diskSpace: Kooboo.Sites.Scripting.Global.SiteItem.DiskSpace;
@@ -318,6 +319,7 @@ k.site.importPublishUser(siteUrl,token)
     importPublishUser(siteUrl: string, bearer: string): void;
     createSite(siteName: string, fullDomain: string, Binary: number[]): kSiteDb;
     getHomeUrl(): string;
+    xCopy(sourceSiteNameOrId: string, siteName: string, fullDomain: string, published: boolean): Kooboo.Sites.ViewModel.SitePackageResult;
     runJob(name: string): void;
     getJob(name: string): SiteJobStatus;
   }
@@ -706,7 +708,7 @@ const payload = k.security.fromBase64("aGVsbG8=")
     getMeta(Name: string): MetaItem;
   }
 
-  interface KDictionary {
+  interface KDictionary extends Record<string, string> {
     keys: string[];
     values: string[];
     length: number;
@@ -744,35 +746,35 @@ k.request.files.forEach((item) => {
 var webcontent = k.net.url.get("http://www.kooboo.com",{'Authentication':'Bearer xxx'}, {'name':'value'});
 ```
  */
-    get(url: string, headers: any, cookies: any): CurlResponse;
+    get(url: string, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Post data to remote url and return a CurlResponse
 var data = "name=myname&field=value"; 
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication':'Bearer xxxx'}, {'name':'value'})););
 ```
  */
-    post(url: string, data: string, headers: any, cookies: any): CurlResponse;
+    post(url: string, data: string, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Put data to remote url and return a CurlResponse
 var data = "name=myname&field=value"; 
 k.net.url.put("http://www.kooboo.com/fakereceiver", data,{'Authentication':'Bearer xxxx'}, {'name':'value'})););
 ```
  */
-    put(url: string, data: string, headers: any, cookies: any): CurlResponse;
+    put(url: string, data: string, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Delete data to remote url and return a CurlResponse
 var data = "name=myname&field=value"; 
 k.net.url.delete("http://www.kooboo.com/fakereceiver", data,{'Authentication':'Bearer xxxx'}, {'name':'value'})););
 ```
  */
-    delete(url: string, data: string, headers: any, cookies: any): CurlResponse;
+    delete(url: string, data: string, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Patch data to remote url and return a CurlResponse
 var data = "name=myname&field=value"; 
 k.net.url.patch("http://www.kooboo.com/fakereceiver", data,{'Authentication':'Bearer xxxx'}, {'name':'value'}););
 ```
  */
-    patch(url: string, data: string, headers: any, cookies: any): CurlResponse;
+    patch(url: string, data: string, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Post form data to remote url and return a CurlResponse
 var data = {
@@ -782,7 +784,7 @@ var data = {
 k.net.url.postform("http://www.kooboo.com/fakereceiver", data,{'Authentication':'Bearer xxxx'}, {'name':'value'});
 ```
  */
-    postform(url: string, data: any, headers: any, cookies: any): CurlResponse;
+    postform(url: string, data: any, headers: Record<string, any>, cookies: Record<string, any>): CurlResponse;
     /** ```ts
 // Get data string from the url
 var webcontent = k.net.url.get("http://www.kooboo.com");
@@ -806,7 +808,7 @@ var webcontent = k.net.url.get("http://www.kooboo.com", "username", "password");
 var webcontent = k.net.url.get("http://www.kooboo.com",{'Authentication','Bearer xxx'});
 ```
  */
-    get(url: string, headers: any): string;
+    get(url: string, headers: Record<string, any>): string;
     /** ```ts
 // Get data string from the url and return JavaScript object.
 var webcontent = k.net.url.get("http://www.kooboo.com");
@@ -830,7 +832,7 @@ var webcontent = k.net.url.get("http://www.kooboo.com", "username", "password");
 var webcontent = k.net.url.get("http://www.kooboo.com",{'Authentication','Bearer xxx'});
 ```
  */
-    getAsObject(url: string, headers: any): any;
+    getAsObject(url: string, headers: Record<string, any>): any;
     /** ```ts
 // Get data string from the url and return binary.
 var binary = k.net.url.getAsBinary("http://www.kooboo.com");
@@ -854,7 +856,7 @@ var binary = k.net.url.getAsBinary("http://www.kooboo.com", "username", "passwor
 var binary = k.net.url.getAsBinary("http://www.kooboo.com",{'Authentication','Bearer xxx'});
 ```
  */
-    getAsBinary(url: string, headers: any): number[];
+    getAsBinary(url: string, headers: Record<string, any>): number[];
     /** ```ts
 // Get data string from remote url and deserialize the string as a JSON object.
 var webcontent = k.net.url.getJson("http://www.kooboo.com");
@@ -878,7 +880,7 @@ var webcontent = k.net.url.getJson("http://www.kooboo.com","admin","abc123");
 var webcontent = k.net.url.getJson("http://www.kooboo.com",{'Authentication','Bearer xxxx'});
 ```
  */
-    getJson(url: string, headers: any): any;
+    getJson(url: string, headers: Record<string, any>): any;
     /** ```ts
 // Post data to remote url
 var data = "name=myname&field=value"; 
@@ -906,7 +908,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    post(url: string, data: string, headers: any): string;
+    post(url: string, data: string, headers: Record<string, any>): string;
     /** ```ts
 // Post data to remote url and return a JsonObject
 var data = "name=myname&field=value"; 
@@ -934,7 +936,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    postAsObject(url: string, data: string, headers: any): any;
+    postAsObject(url: string, data: string, headers: Record<string, any>): any;
     /** ```ts
 // Post data to remote url and return binary
 var data = "name=myname&field=value"; 
@@ -962,7 +964,7 @@ var data = "name=myname&field=value";
 k.net.url.postAsBinary("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    postAsBinary(url: string, data: string, headers: any): any;
+    postAsBinary(url: string, data: string, headers: Record<string, any>): any;
     /** ```ts
 // Post data to remote url
 var data = {
@@ -1002,7 +1004,7 @@ var data = {
 k.net.url.postData("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'});
 ```
  */
-    postData(url: string, data: any, headers: any): string;
+    postData(url: string, data: any, headers: Record<string, any>): string;
     postDataAsObject(url: string, data: any): any;
     /** ```ts
 // Post data to remote url
@@ -1031,7 +1033,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    put(url: string, data: string, headers: any): string;
+    put(url: string, data: string, headers: Record<string, any>): string;
     /** ```ts
 // Post data to remote url and return a JsonObject
 var data = "name=myname&field=value"; 
@@ -1059,7 +1061,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    putAsObject(url: string, data: string, headers: any): any;
+    putAsObject(url: string, data: string, headers: Record<string, any>): any;
     /** ```ts
 // Post data to remote url
 var data = "name=myname&field=value"; 
@@ -1087,7 +1089,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    delete(url: string, data: string, headers: any): string;
+    delete(url: string, data: string, headers: Record<string, any>): string;
     /** ```ts
 // Post data to remote url and return a JsonObject
 var data = "name=myname&field=value"; 
@@ -1115,7 +1117,7 @@ var data = "name=myname&field=value";
 k.net.url.post("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    deleteAsObject(url: string, data: string, headers: any): any;
+    deleteAsObject(url: string, data: string, headers: Record<string, any>): any;
     /** ```ts
 // Patch data to remote url
 var data = "name=myname&field=value"; 
@@ -1143,7 +1145,7 @@ var data = "name=myname&field=value";
 k.net.url.patch("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    patch(url: string, data: string, headers: any): string;
+    patch(url: string, data: string, headers: Record<string, any>): string;
     /** ```ts
 // Patch data to remote url and return JavaScript Object.
 var data = "name=myname&field=value"; 
@@ -1171,7 +1173,7 @@ var data = "name=myname&field=value";
 k.net.url.patch("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'}););
 ```
  */
-    patchAsObject(url: string, data: string, headers: any): any;
+    patchAsObject(url: string, data: string, headers: Record<string, any>): any;
     /** ```ts
 // Patch data to remote url
 var data = {
@@ -1211,7 +1213,7 @@ var data = {
 k.net.url.patchData("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'});
 ```
  */
-    patchData(url: string, data: any, headers: any): string;
+    patchData(url: string, data: any, headers: Record<string, any>): string;
     /** ```ts
 // Post form data to remote url
 var data = '{"name":"abc", "age":23}'
@@ -1269,7 +1271,7 @@ var data = '{"name":"abc", "age":23}'
 k.net.url.postData("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'});
 ```
  */
-    postform(url: string, data: string, headers: any): string;
+    postform(url: string, data: string, headers: Record<string, any>): string;
     /** ```ts
 // Post form data to remote url
 var data = {
@@ -1279,7 +1281,7 @@ var data = {
 k.net.url.postData("http://www.kooboo.com/fakereceiver", data,{'Authentication','Bearer xxxx'});
 ```
  */
-    postform(url: string, data: any, headers: any): string;
+    postform(url: string, data: any, headers: Record<string, any>): string;
     /** ```ts
 // Download zip package by url.
 k.net.url.downloadZip("http://www.kooboo.com/fakefile.zip")
@@ -1305,7 +1307,7 @@ var data = {
 k.net.url.SendMessage(requestMessage, data);
 ```
  */
-    sendMessage(requestMessage: any, data: any): CurlResponse;
+    sendMessage(requestMessage: any, data: Record<string, any>): CurlResponse;
   }
 
   interface IDatabase {
@@ -1397,7 +1399,7 @@ k.response.write(result);
     getDatabase(db: number): RedisDatabase;
   }
 
-  interface kKeyValue {
+  interface kKeyValue extends Record<string, any> {
     keys: string[];
     values: any[];
     length: number;
@@ -1476,7 +1478,7 @@ k.response.binary(contentType,buffer,"My excel.xlsx");
 
   interface CurlResponse {
     data: number[];
-    headers: any;
+    headers: Record<string, any>;
     httpStatusCode: number;
     httpStatusCodeString: string;
     size: number;
@@ -1534,7 +1536,7 @@ const { GT } = k.DB.indexedDb.operators();
 var item = k.DB.indexedDb.tablename.find({age:{[GT]:23}});
 ```
  */
-    find(filter: any): IDynamicTableObject;
+    find(filter: Record<string, any>): IDynamicTableObject;
     /** ```ts
 // Search all items based on query condition
 // available operators: ==,  >=,  >,  <,  <=, contains, startwith 
@@ -1559,7 +1561,7 @@ const { GT } = k.DB.indexedDb.operators();
 var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
 ```
  */
-    findAll(filter: any): IDynamicTableObject[];
+    findAll(filter: Record<string, any>): IDynamicTableObject[];
     /** ```ts
 // return counter based on the query condition
 ```
@@ -1569,7 +1571,7 @@ var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
 // return counter based on the query filter
 ```
  */
-    count(filter: any): number;
+    count(filter: Record<string, any>): number;
     /** get an item based on Id or primary key */
     get(id: any): IDynamicTableObject;
     query(): ITableQuery;
@@ -1579,7 +1581,7 @@ use the same query syntax as find or findAll
 ```
  */
     query(query: string): ITableQuery;
-    query(filter: any): ITableQuery;
+    query(filter: Record<string, any>): ITableQuery;
     /** ```ts
 // update an item
 var table = k.DB.indexedDb.tablename;
@@ -1732,14 +1734,14 @@ const { GT } = k.DB.indexedDb.operators();
 var item = k.DB.indexedDb.tablename.find({age:{[GT]:23}});
 ```
  */
-    find(filter: any): IDynamicTableObject;
+    find(filter: Record<string, any>): IDynamicTableObject;
     /** ```ts
 // return the first item that has field value equal the match value
 const { GT } = k.DB.indexedDb.operators();      
 var item = k.DB.indexedDb.tablename.find({age:{[GT]:23}});
 ```
  */
-    find<T>(filter: any): T;
+    find<T>(filter: Record<string, any>): T;
     /** ```ts
 // return all items that have the field value equal the match value
 var items = k.DB.indexedDb.tablename.findAll("fieldname", "matchvalue");
@@ -1782,14 +1784,14 @@ const { GT } = k.DB.indexedDb.operators();
 var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
 ```
  */
-    findAll(filter: any): IDynamicTableObject[];
+    findAll(filter: Record<string, any>): IDynamicTableObject[];
     /** ```ts
 // Search all items based on query condition
 const { GT } = k.DB.indexedDb.operators();      
 var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
 ```
  */
-    findAll<T>(filter: any): T;
+    findAll<T>(filter: Record<string, any>): T;
     /** get an item based on Id or primary key */
     get(id: any): IDynamicTableObject;
     /** get an item based on Id or primary key */
@@ -1798,7 +1800,7 @@ var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
     /** Return the query object for further operations like paging. use the same query syntax as find or findAll */
     query(query: string): ITableQuery;
     /** Return the query object for further operations like paging. use the same query syntax as find or findAll */
-    query(filter: any): ITableQuery;
+    query(filter: Record<string, any>): ITableQuery;
     /** create additional index */
     createIndex(fieldname: string): void;
     /** Return all items */
@@ -1812,7 +1814,7 @@ var item = k.DB.indexedDb.tablename.findAll({age:{[GT]:23}});
     count(query: string): number;
     pagination(index: number, size: number): Kooboo.Sites.Scripting.Global.Models.PaginationModel;
     pagination(index: number, size: number, where: string): Kooboo.Sites.Scripting.Global.Models.PaginationModel;
-    count(filter: any): number;
+    count(filter: Record<string, any>): number;
   }
 
   interface IDynamicTableObject extends Kooboo.Data.Interface.IDynamic {
@@ -2037,7 +2039,7 @@ k.office.excel.ReadAsObjects("test.xlsx");
 k.office.excel.readAsObjects(file,'sheet1',{firstColumnIndex:0,lastColumnIndex:1,firstRowIndex:0,lastColumnIndex : 3});
 ```
  */
-    readAsObjects(fileName: string, sheetName?: string, range?: Kooboo.Sites.Scripting.Global.Office.Excel.KExcelReadRange): Record<string, any>[];
+    readAsObjects(fileName: string, sheetName?: string, range?: Kooboo.Sites.Scripting.Global.Office.Excel.KExcelReadRange): any[];
     /** ```ts
 // Read excel data. First row data as column names.
 // buffer:the file buffer
@@ -2050,7 +2052,7 @@ k.office.excel.ReadAsObjectsFromBytes(buffer,".xlsx")
 k.office.excel.readAsObjectsFromBytes(buffer,'.xlsx','Sheet1',{firstColumnIndex:0,lastColumnIndex:1,firstRowIndex:0,lastColumnIndex : 3});
 ```
  */
-    readAsObjectsFromBytes(buffer: number[], extensionName: string, sheetName?: string, range?: Kooboo.Sites.Scripting.Global.Office.Excel.KExcelReadRange): Record<string, any>[];
+    readAsObjectsFromBytes(buffer: number[], extensionName: string, sheetName?: string, range?: Kooboo.Sites.Scripting.Global.Office.Excel.KExcelReadRange): any[];
     /** ```ts
 // Read excel data. Every row readed as an array.
 // fileName:the excel file name
@@ -2086,7 +2088,7 @@ k.office.excel.readAsArraysFromBytes(buffer,'.xlsx','Sheet1',{firstColumnIndex:0
     take(count: number): IDynamicTableObject[];
     take<T>(count: number): T;
     where(searchCondition: string): ITableQuery;
-    where(filter: any): ITableQuery;
+    where(filter: Record<string, any>): ITableQuery;
     all(): IDynamicTableObject[];
     all<T>(): T;
   }
@@ -2112,7 +2114,10 @@ declare namespace KScript.AI {
   interface KAI {
     app: KAIApp;
     vectorization: KAIVectorization;
-    callFunction(name: string, arguments: any): any;
+    callFunction(name: string, arguments: Record<string, any>): any;
+    readSiteMilestones(): string;
+    readPlanningTopicReadiness(stage: string): string;
+    getModels(): Kooboo.Sites.AI.AIProviderViewModel[];
   }
 
   interface KAIApp {
@@ -2163,7 +2168,7 @@ declare namespace Kooboo.Sites.Scripting.Global.NET {
     sftpClient: KScript.Sftp.SftpClient;
     telnetClient: KScript.Telnet.TelnetClient;
     /** ```ts
-const result= k.utils.ping('baidu.com')
+const result= k.net.ping('baidu.com')
 ```
  */
     ping(command: string): PingResult;
@@ -2263,7 +2268,7 @@ declare namespace Kooboo.Sites.ScriptModules {
   interface ModuleContext {
     dbPath: string;
     module: Kooboo.Sites.Models.ScriptModule;
-    renderContext: Kooboo.Data.Context.RenderContext;
+    renderContext: Kooboo.Sites.Render.KoobooRenderContext;
     executingView: string;
     rootFolder: string;
     culture: string;
@@ -2271,7 +2276,7 @@ declare namespace Kooboo.Sites.ScriptModules {
     startView: string;
     getBaseUrl(): string;
     fromRenderContext(context: Kooboo.Sites.Render.KoobooRenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
-    createNewFromRenderContext(context: Kooboo.Data.Context.RenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
+    createNewFromRenderContext(context: Kooboo.Sites.Render.KoobooRenderContext, module: Kooboo.Sites.Models.ScriptModule): ModuleContext;
     makeModuleUrl(moduleRelativeUrl: string): string;
   }
 
@@ -2303,82 +2308,151 @@ declare namespace Kooboo.Sites.ScriptModules {
   }
 
 }
-declare namespace Kooboo.Sites.Scripting.Global.Koobox {
-  interface KKoobox {
-    favorite: KFavorite;
-    site: KSite;
-    service: KService;
-    dataCenter: KDataCenter;
-    template: KTemplate;
-    isOnlineServer: boolean;
-    cmsLang: string;
-    execute(): void;
+declare namespace Kooboo.Sites.Scripting.Global.SiteItem {
+  interface KEditLog {
+    /** List the most recent local CMS edit logs. */
+    list(top: number): Kooboo.Sites.ViewModel.SiteLogPage;
+    /** List local CMS edit logs. PageNr starts at 1 and PageSize is limited to 200. */
+    list(query: Kooboo.Sites.ViewModel.SiteLogQuery): Kooboo.Sites.ViewModel.SiteLogPage;
+    /** Get one local CMS edit log by its log ID. */
+    get(logId: number): Kooboo.Sites.ViewModel.SiteLogItem;
+    /** List all recorded versions of the object referenced by a local log ID. */
+    versions(logId: number): Kooboo.Sites.ViewModel.SiteLogVersion[];
+    /** List all recorded versions by object name or ID. Provide either a CMS store name or a dynamic table name. */
+    versions(nameOrId: string, storeName?: string, tableName?: string): Kooboo.Sites.ViewModel.SiteLogVersion[];
+    /** Compare a local version with the latest version of the same object. */
+    compare(id: number): VersionCompareViewModel;
+    /** Compare two local versions of the same object. */
+    compare(id1: number, id2: number): VersionCompareViewModel;
+    /** Undo one local CMS change. This action creates a new edit log. */
+    undo(logId: number): boolean;
+    /** Undo multiple local CMS changes. All log IDs are validated before any change is made. */
+    undoMany(logIds: number[]): boolean;
+    /** Restore the local site to the state at a log ID. This action creates new edit logs. */
+    restoreTo(logId: number): number;
+    /** Restore the local site to the last recorded state at or before a date/time. */
+    restoreTo(time: Date): number;
+    /** Create another website containing the local site's state at a historical log ID. */
+    checkOut(options: Kooboo.Sites.ViewModel.SiteCheckoutOptions): Kooboo.Sites.ViewModel.SiteCheckoutResult;
+    lastLog(pageIndex: number, pagesize: number, siteUrl: string): RemoteLastLogResult;
+    videoLog(versionId: number): string;
+    videoLog(versionId: number, siteUrl: string): string;
+    versions(keyHash: string, storeNameHash: number, tableNameHash: number, siteUrl: string): ItemVersionViewModel[];
+    compare(id1: number, id2: number, siteUrl: string): VersionCompareViewModel;
   }
 
-  interface KFavorite {
-    recommends(): RecommendFavoriteModel[];
-    list(): FavoriteModel[];
-    add(favorite: FavoriteModel): void;
-    updatePayload(id: string, payload: string): void;
-    remove(id: string): void;
-    editList(ids: string[]): void;
-    add(renderContext: Kooboo.Data.Context.RenderContext, siteId: any): void;
+  interface RemoteLastLogResult {
+    list: SiteLogViewModel[];
+    totalCount: number;
+    pageNr: number;
+    pageSize: number;
+    totalPages: number;
   }
 
-  interface KSite {
-    list(): SiteModel[];
-    domains(): Kooboo.Data.Models.Domain[];
-    sharedList(): Kooboo.Sites.Store.TemplateItemViewModel[];
-    templateModel(Id: string): Kooboo.Sites.Store.Model.TemplateModel;
-    delete(id: string): void;
-    clone(url: string, siteName: string, fullDomain: string, convertToRoot: boolean): string;
-    importFromUrl(url: string, siteName: string, fullDomain: string): string;
-    importFromBinary(binary: number[], siteName: string, fullDomain: string): string;
+  interface ItemVersionViewModel {
+    id: number;
+    lastModified: Date;
+    userName: string;
+    hasVideo: boolean;
   }
 
-  interface KService {
-    list(): ServiceModel[];
+  interface SiteHelper {
+    siteUrl(): string;
+    pagePreviewUrl(PageId: any): string;
+    pageInlineEditUrl(PageId: any): string;
   }
 
-  interface KDataCenter {
-    list(): Kooboo.Data.ViewModel.DataCenterViewModel[];
-    enable(name: string): boolean;
-    disable(name: string): boolean;
-    makeDefault(name: string): boolean;
-    currentDC(): string;
+  interface KSitePackage {
+    /** Export a whole website to a ZIP file under k.file storage. copyMode is Normal or Fast. */
+    export(siteNameOrId: string, copyMode: string, path: string): void;
+    /** Export selected Kooboo object stores and their required dependencies to a ZIP file under k.file storage. */
+    exportSelected(siteNameOrId: string, storeNames: string[], path: string): void;
+    /** Create a website by importing a Kooboo ZIP file from k.file storage. */
+    import(siteName: string, fullDomain: string, path: string, published: boolean): Kooboo.Sites.ViewModel.SitePackageResult;
+    /** Export all effective changes starting at a local site log ID to a batch ZIP file under k.file storage. */
+    exportChangesFrom(logId: number, path: string): void;
+    /** Export selected local site log items to a batch ZIP file under k.file storage. */
+    exportChanges(logIds: number[], path: string): void;
+    /** Apply a Kooboo change batch ZIP from k.file storage to the current website. */
+    importChanges(path: string): number;
+    /** Fast-copy a whole website folder, then create independent site configuration and binding for the copy. */
+    xCopy(sourceSiteNameOrId: string, siteName: string, fullDomain: string, published: boolean): Kooboo.Sites.ViewModel.SitePackageResult;
+    /** Fast-copy a whole website folder from current website, then create independent site configuration and binding for the copy. */
+    xCopy(newSiteName: string, fullDomain: string, published: boolean): Kooboo.Sites.ViewModel.SitePackageResult;
+    /** Fast-copy a whole website folder from current website, then create independent site configuration and binding for the copy, and place it in the named site folder. The folder is created when it does not exist. */
+    xCopy(newSiteName: string, fullDomain: string, published: boolean, folderName: string): Kooboo.Sites.ViewModel.SitePackageResult;
   }
 
-  interface KTemplate {
-    getByCache(ids: string[]): Kooboo.Sites.Store.Model.TemplateEditViewModel[];
+  interface KSitePublish {
+    /** List remote publish/synchronization destinations configured for the current website. */
+    list(): Kooboo.Sites.ViewModel.SitePublishSettingItem[];
+    /** Create or update a remote publish destination. Specify RemoteWebSiteId, or SiteName, FullDomain and OrgId to create the remote website. */
+    save(options: Kooboo.Sites.ViewModel.SitePublishOptions): Kooboo.Sites.ViewModel.SitePublishSettingItem;
+    /** Import a publish bearer created by k.site.createPublishUser. */
+    import(bearer: string): Kooboo.Sites.ViewModel.SitePublishSettingItem;
+    /** Delete a remote publish destination. This does not delete the remote website. */
+    delete(settingId: any): boolean;
+    /** Publish local changes to a remote destination. Stops when finished, at the batch limit, or on a conflict. */
+    push(settingId: any, maxItems?: number): Kooboo.Sites.ViewModel.SitePublishResult;
+    /** Pull remote changes into the current website. Stops when finished, at the batch limit, or on a conflict. */
+    pull(settingId: any, maxItems?: number): Kooboo.Sites.ViewModel.SitePublishResult;
   }
 
-  interface RecommendFavoriteModel {
-    type: string;
-    referenceId: string;
-    cover: string;
-    creationDate: Date;
+  interface Visitor {
+    top(count: number): Kooboo.Data.Models.VisitorLog[];
+    top500(): Kooboo.Data.Models.VisitorLog[];
+    /** Top visitor source based on last 30 days visitors */
+    topSource(): VisitorSource[];
+    top5Pages(): Kooboo.Sites.Service.ResourceCount[];
+    thisWeek(count: number): Kooboo.Data.Models.VisitorLog[];
+    /** WeekName in the format of year + week number, for example: 2020-12 */
+    byWeek(weekName: string, count: number): Kooboo.Data.Models.VisitorLog[];
+    weeks(): string[];
+    errorList(options?: ErrorListOptions): any;
   }
 
-  interface FavoriteModel {
-    id: string;
-    type: string;
-    referenceId: string;
-    cover: string;
-    payload: string;
+  interface DiskSpace {
+    getSiteSize(): Kooboo.Sites.ViewModel.DiskSize;
+    getCommonStoreSize(): TopSize;
   }
 
-  interface SiteModel {
-    id: string;
+  interface SiteLogViewModel {
+    id: number;
+    lastModified: Date;
+    userName: string;
+    itemName: string;
+    storeName: string;
+    keyHash: any;
+    storeNameHash: number;
+    tableNameHash: number;
+    tableName: string;
+    actionType: string;
+    hasVideo: boolean;
+  }
+
+  interface VisitorSource {
+    source: string;
+    counter: number;
+  }
+
+  interface ErrorListOptions {
+    weekName: string;
+    pageIndex?: number;
+    pageSize?: number;
+  }
+
+  interface TopSize {
+    storeItem: StoreItem[];
+    visitorLogSize: string;
+    totalSize: string;
+    total: number;
+  }
+
+  interface StoreItem {
     name: string;
-    url: string;
-  }
-
-  interface ServiceModel {
-    id: string;
-    cover: string;
-    name: string;
-    url: string;
-    price: number;
+    itemCount: number;
+    size: number;
+    sizeString: string;
   }
 
 }
@@ -2422,7 +2496,7 @@ var token= k.account.generateToken("username",60*60*24); //expire in 1 day
     createSite(templateId: string, SiteName: string, FullDomain: string): KScript.kSiteDb;
     upload(value: TemplateModel): void;
     share(model: ShareSiteModel): void;
-    updateMeta(model: any): boolean;
+    updateMeta(model: Record<string, any>): boolean;
     updateBinary(TemplateId: string, WebSiteId: string): boolean;
     getEdit(id: string): Kooboo.Sites.Store.Model.TemplateEditViewModel;
     getEditByIds(ids: string[]): Kooboo.Sites.Store.Model.TemplateEditViewModel[];
@@ -2454,19 +2528,14 @@ var token= k.account.generateToken("username",60*60*24); //expire in 1 day
     /** Office Operations.
             eg:excel */
     office: KScript.Office;
-    sitemap: Kooboo.Data.Sitemap.KSitemap;
+    sitemap: Kooboo.Sites.Sitemap.KSitemap;
     screenShot: Kooboo.Sites.Scripting.Global.WebUtility.ScreenShot;
     inlineHtml: Kooboo.Sites.Scripting.Global.WebUtility.KInlineHTML;
     image: Kooboo.Sites.Scripting.Global.WebUtility.KImageUtility;
-    google: Kooboo.Sites.Scripting.Global.WebUtility.Google;
     template: Kooboo.Sites.Scripting.Global.WebUtility.KTemplateEngine;
     ninjible: Kooboo.Sites.Scripting.Global.WebUtility.Ninjible;
     CRM: KScript.Utils.KCRM;
     CDN: Kooboo.Sites.Scripting.Global.WebUtility.CDNUtility;
-    IP: Kooboo.Sites.Scripting.Global.NET.KIP;
-    sshClient: KScript.Ssh.SshClient;
-    sftpClient: KScript.Sftp.SftpClient;
-    telnetClient: KScript.Telnet.TelnetClient;
     puppeteer: Kooboo.Sites.Scripting.Global.WebUtility.KPuppeteer;
     string: KText;
     /** ```ts
@@ -2476,11 +2545,6 @@ k.sleep(1000);  // 1s
     sleep(millisecondsTimeout: number): void;
     bytesToString(bytes: number[], encoding: string): string;
     stringToBytes(content: string, encoding: string): number[];
-    /** ```ts
-const result= k.utils.ping('baidu.com')
-```
- */
-    ping(command: string): PingResult;
   }
 
   interface KMedia {
@@ -2492,6 +2556,29 @@ const result= k.utils.ping('baidu.com')
     delete(IdOrFilePath: string): void;
     exists(FilePath: string): boolean;
     writeBinary(filePath: string, binary: number[], Overwrite: boolean): boolean;
+  }
+
+  interface KSandbox {
+    current?: string;
+    /** Content types to copy. Available values: Layout, View, Style, Script, Image, File, Menu, HtmlBlock, Label, Form, ContentFolder, ContentType, ContentCategory, TextContent, Code, OpenApi, Page. */
+    create(sandboxName: string): boolean;
+    delete(sandboxName: string): boolean;
+    findSite(sandBoxName: string): Kooboo.Data.Models.WebSite;
+    list(): SandBoxSite[];
+    enter(sandBoxName: string): void;
+    exit(): void;
+    copyObjects(targetSandBoxName: string, objectTypes: string[]): void;
+    /** Execute a <k-data> block and return its exported variables. */
+    evalKData(source: string): any;
+    /** Executes JavaScript in the current sandbox and returns the script result.
+
+Example:
+k.sandbox.enter("sandbox_name");
+const result = k.sandbox.evalScript("return 1 + 1;");
+k.sandbox.exit(); */
+    evalScript(code: string): any;
+    renderTemplate(templateHtml: string, models: any): string;
+    requestUrl(relativeUrl: string, HttpMethod: string, queryString: any): RequestUrlResult;
   }
 
   interface KPrivacy {
@@ -2631,12 +2718,6 @@ const connection= k.net.webSocket.get('user_1');
     setDomain(fulldomain: string): void;
   }
 
-  interface PingResult {
-    ip: string;
-    time: number;
-    success: boolean;
-  }
-
   interface Xml {
     /** Prase a XML document string into a XML document */
     parse(xml: string): Document;
@@ -2725,6 +2806,19 @@ k.clientJS.setVariable("myname", obj);
     previewUrl: string;
     fromImage(context: Kooboo.Data.Context.RenderContext, sitedb: Kooboo.Sites.Repository.SiteDb, image: Kooboo.Sites.Models.Image, baseUrl: string): MediaFileViewModel;
     fromImages(context: Kooboo.Data.Context.RenderContext, siteDb: Kooboo.Sites.Repository.SiteDb, images: Kooboo.Sites.Models.Image[], baseUrl: string): MediaFileViewModel[];
+  }
+
+  interface SandBoxSite {
+    id: any;
+    siteName: string;
+    creationDate: Date;
+  }
+
+  interface RequestUrlResult {
+    statusCode: number;
+    body?: string;
+    executionTimeMs: number;
+    headers?: any;
   }
 
   interface Document {
@@ -2862,13 +2956,13 @@ k.response.json(logs)
   interface CodeLogStore {
     weekNameFolder: string;
     isActiveWeek: boolean;
-    groupByFunctions: Record<string, (p1:System.Int32,p2:System.String,)=>Kooboo.Data.Logging.CodeLog>;
+    groupByFunctions: any;
     add(Value: Kooboo.Data.Logging.CodeLog): void;
     getDB(DayOfWeek: number): any;
     add(data: Kooboo.Data.Logging.CodeLog, time?: Date): void;
     close(): void;
-    daysTotal(): Record<number, number>;
-    daysTotal(summary: Kooboo.Data.Storage.DayLogSummary): Record<number, number>;
+    daysTotal(): any;
+    daysTotal(summary: Kooboo.Data.Storage.DayLogSummary): any;
     readSummary(): Kooboo.Data.Storage.DayLogSummary;
     take(count: number): Kooboo.Data.Logging.CodeLog[];
     list(PageNumber: number, PageSize: number): any;
@@ -2961,7 +3055,7 @@ k.site.menus.updateSubMenu(menu.id,menu.children[0].id,'newName','/newUrl');
 
   interface Multilingual {
     currentCulture: string;
-    cultures: Record<string, string>;
+    cultures: any;
     currentURLs(): SiteMultilingualInfo[];
     getURLs(relativeUrl: string): SiteMultilingualInfo[];
     getLangUrl(relativeUrl: string, culture: string): string;
@@ -3003,7 +3097,7 @@ menu.removeSubMenu(menu.children[0].id);
 ```
  */
     removeSubMenu(subMenuId: string): void;
-    getTraceInfo(): any;
+    getTraceInfo(): Record<string, string>;
   }
 
   interface SiteMultilingualInfo {
@@ -3039,7 +3133,7 @@ k.sql == k.mysql
 
   interface KeyValueObject extends Kooboo.Sites.DataTraceAndModify.ITraceability {
     source: string;
-    getTraceInfo(): any;
+    getTraceInfo(): Record<string, string>;
   }
 
 }
@@ -4020,8 +4114,15 @@ k.api.post(function (body) {
 
 }
 declare namespace Kooboo.Sites.Scripting.Global.Google {
-  interface KGoogle {
+  interface KGoogle extends Kooboo.Sites.Scripting.Global.WebUtility.Google {
     firebase: KFirebase;
+    lHRJson(AbsoluteUrl: string, MobileDevice: boolean): string;
+    lHRUrl(AbsoluteUrl: string, MobileDevice: boolean): string;
+    lHRUrlFromJson(json: string): string;
+    parseJson(json: string): Kooboo.Sites.Scripting.Global.WebUtility.FullLHRObj;
+    saveJson(json: string): any;
+    shortLhrReportUrl(json: string): string;
+    getJson(Id: any): string;
   }
 
   interface KFirebase {
@@ -4030,7 +4131,7 @@ declare namespace Kooboo.Sites.Scripting.Global.Google {
 A Firebase client app can identify itself to a trusted backend server by sending its Firebase ID Token (accessible via the getIdToken() API in the Firebase client SDK) with its requests. The backend server can then use this method to verify that the token is valid. This method ensures that the token is correctly signed, has not expired, and it was issued against the Firebase project associated with this FirebaseAuth instance.
 
 See Verify ID Tokens for code samples and detailed documentation. */
-    verifyIdToken(idToken: string): any;
+    verifyIdToken(idToken: string): Record<string, string>;
     /** Creates a Firebase custom token for the given user ID.  This token can then be sent back to a client application to be used with the signInWithCustomToken authentication API.
 
 This method attempts to generate a token using:
@@ -4067,15 +4168,442 @@ declare namespace KScript.Integration {
 }
 declare namespace Kooboo.Sites.Scripting.Global.Analytics {
   interface kAnalytics {
-    track(customName: string, parameter: any): void;
+    /** Visitor detail logs and summary reports. */
+    visitor: VisitorAnalyticsModule;
+    /** Resource detail logs and summary reports. */
+    resource: ResourceAnalyticsModule;
+    /** Error detail logs and summary reports. */
+    error: ErrorAnalyticsModule;
+    /** ```ts
+// Record a custom analytics goal event for the current request.
+k.analytics.track("pricing_view", {
+    plan: "pro",
+    source: "pricing_page"
+});
+```
+ */
+    track(customName: string, parameter?: any): void;
+  }
+
+  interface VisitorAnalyticsModule {
+    /** ```ts
+// List visitor logs.
+// Available type values: "all", "human", "bot", "error".
+const result = k.analytics.visitor.list({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    type: "human",
+    statusCode: 200,
+    isMobile: false,
+    keyword: "pricing",
+    pageIndex: 1,
+    pageSize: 20
+});
+```
+ */
+    list(filter?: VisitorLogFilter): any;
+    /** ```ts
+// Get the visitor summary. Without a filter, the range is Monday through the current analytics day.
+const currentWeek = k.analytics.visitor.summary();
+
+// Get a custom inclusive date range.
+const report = k.analytics.visitor.summary({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    top: 20,
+    includeDimensions: true
+});
+```
+ */
+    summary(filter?: AnalyticsSummaryFilter): VisitorSummary;
+  }
+
+  interface ResourceAnalyticsModule {
+    /** ```ts
+// List recent resource logs from the bounded resource ring.
+// Available type values: "all", "image", "css", "javascript", "file", "system", "unknown".
+const result = k.analytics.resource.list({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    type: "image",
+    statusCode: 404,
+    isBot: false,
+    isProtected: false,
+    pageIndex: 1,
+    pageSize: 20
+});
+```
+ */
+    list(filter?: ResourceLogFilter): any;
+    /** ```ts
+// Get the complete resource summary for an inclusive date range.
+const report = k.analytics.resource.summary({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    top: 20,
+    includeDimensions: true,
+    includeRelations: true
+});
+```
+ */
+    summary(filter?: ResourceSummaryFilter): ResourceSummary;
+  }
+
+  interface ErrorAnalyticsModule {
+    /** ```ts
+// List error logs.
+// Available type values: "all", "page", "api", "custom".
+const result = k.analytics.error.list({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    type: "api",
+    statusCode: 500,
+    isBot: false,
+    keyword: "timeout",
+    pageIndex: 1,
+    pageSize: 20
+});
+```
+ */
+    list(filter?: ErrorLogFilter): any;
+    /** ```ts
+// Get the error summary. Available error types in the report are Page, Api, and Custom.
+const report = k.analytics.error.summary({
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    top: 20,
+    includeDimensions: true
+});
+```
+ */
+    summary(filter?: AnalyticsSummaryFilter): ErrorSummary;
+  }
+
+  interface VisitorLogFilter extends PagedAnalyticsFilter {
+    /** Available values: all, human, bot, or error. */
+    type: string;
+    /** Optional mobile-device filter. */
+    isMobile?: boolean;
+    /** Page index for pagination. Default 1. */
+    pageIndex: number;
+    /** Page size for pagination. Default 20, maximum 200. */
+    pageSize: number;
+    /** Optional case-insensitive search keyword. */
+    keyword: string;
+    /** Optional exact HTTP status code. */
+    statusCode?: number;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface AnalyticsSummaryFilter extends AnalyticsDateFilter {
+    /** Maximum number of entries returned for each ranking or distribution. Default 20, maximum 200. */
+    top: number;
+    /** Include the native aggregated dimensions in addition to the named report fields. */
+    includeDimensions: boolean;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface VisitorSummary {
+    startDate: string;
+    endDate: string;
+    pageViews: number;
+    uniqueVisitors: number;
+    botVisits: number;
+    totalVisits: number;
+    humanBytes: number;
+    botBytes: number;
+    totalBytes: number;
+    errorCount: number;
+    errorRate: number;
+    humanRate: number;
+    botRate: number;
+    days: VisitorDailySummary[];
+    topReferrers: AnalyticsValueItem[];
+    topReferrerUrls: AnalyticsValueItem[];
+    topApplications: AnalyticsValueItem[];
+    topPages: AnalyticsValueItem[];
+    topPageIds: AnalyticsValueItem[];
+    topBrowsers: AnalyticsValueItem[];
+    topDevices: AnalyticsValueItem[];
+    topCountries: AnalyticsValueItem[];
+    statusCodes: AnalyticsValueItem[];
+    ipUserTypes: AnalyticsValueItem[];
+    utm: AnalyticsValueItem[];
+    dpr: AnalyticsValueItem[];
+    colorSchemes: AnalyticsValueItem[];
+    viewportWidths: AnalyticsValueItem[];
+    topErrors: VisitorErrorSummaryItem[];
+    bots: BotSummaryReport;
+    countryNetwork: NetworkCountrySummary[];
+    connectionTypes: ConnectionTypeSummary[];
+    dimensions: AnalyticsDimension[];
+  }
+
+  interface ResourceLogFilter extends PagedAnalyticsFilter {
+    /** Available values: all, image, css, javascript, file, system, or unknown. */
+    type: string;
+    /** Optional bot filter. */
+    isBot?: boolean;
+    /** Optional protected-resource filter. */
+    isProtected?: boolean;
+    /** Page index for pagination. Default 1. */
+    pageIndex: number;
+    /** Page size for pagination. Default 20, maximum 200. */
+    pageSize: number;
+    /** Optional case-insensitive search keyword. */
+    keyword: string;
+    /** Optional exact HTTP status code. */
+    statusCode?: number;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface ResourceSummaryFilter extends AnalyticsSummaryFilter {
+    /** Include the complete found, not-found, and protected resource/source relationship arrays. */
+    includeRelations: boolean;
+    /** Maximum number of entries returned for each ranking or distribution. Default 20, maximum 200. */
+    top: number;
+    /** Include the native aggregated dimensions in addition to the named report fields. */
+    includeDimensions: boolean;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface ResourceSummary {
+    startDate: string;
+    endDate: string;
+    humanRequests: number;
+    botRequests: number;
+    totalRequests: number;
+    humanBytes: number;
+    botBytes: number;
+    totalBytes: number;
+    errorCount: number;
+    errorRate: number;
+    protectedCount: number;
+    humanRate: number;
+    botRate: number;
+    days: ResourceDailySummary[];
+    requestsByFileType: AnalyticsValueItem[];
+    bandwidthByFileType: AnalyticsValueItem[];
+    statusCodes: AnalyticsValueItem[];
+    externalDomains: ResourceExternalDomainItem[];
+    topResources: ResourceRankItem[];
+    topSources: ResourceRankItem[];
+    topSystemRoutes: ResourceRankItem[];
+    notFound: ResourceNotFoundSummary;
+    protectedResources: ResourceUsageItem[];
+    foundRelations: ResourceRelationItem[];
+    notFoundRelations: ResourceRelationItem[];
+    protectedRelations: ResourceRelationItem[];
+    bots: BotSummaryReport;
+    countryNetwork: NetworkCountrySummary[];
+    connectionTypes: ConnectionTypeSummary[];
+    dimensions: AnalyticsDimension[];
+  }
+
+  interface ErrorLogFilter extends PagedAnalyticsFilter {
+    /** Available values: all, page, api, or custom. */
+    type: string;
+    /** Optional bot filter. */
+    isBot?: boolean;
+    /** Page index for pagination. Default 1. */
+    pageIndex: number;
+    /** Page size for pagination. Default 20, maximum 200. */
+    pageSize: number;
+    /** Optional case-insensitive search keyword. */
+    keyword: string;
+    /** Optional exact HTTP status code. */
+    statusCode?: number;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface ErrorSummary {
+    startDate: string;
+    endDate: string;
+    totalErrors: number;
+    errorRate: number;
+    affectedUsers: number;
+    affectedUserRate: number;
+    humanErrors: number;
+    botErrors: number;
+    humanRate: number;
+    botRate: number;
+    days: ErrorDailySummary[];
+    types: AnalyticsValueItem[];
+    highFrequencyErrors: ErrorFrequencyItem[];
+    dimensions: AnalyticsDimension[];
+  }
+
+  interface PagedAnalyticsFilter extends AnalyticsDateFilter {
+    /** Page index for pagination. Default 1. */
+    pageIndex: number;
+    /** Page size for pagination. Default 20, maximum 200. */
+    pageSize: number;
+    /** Optional case-insensitive search keyword. */
+    keyword: string;
+    /** Optional exact HTTP status code. */
+    statusCode?: number;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface AnalyticsDateFilter {
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to Monday of the current analytics week. */
+    startDate: string;
+    /** Inclusive analytics date in yyyy-MM-dd format. Defaults to the current analytics day. */
+    endDate: string;
+  }
+
+  interface VisitorDailySummary {
+    date: string;
+    pageViews: number;
+    uniqueVisitors: number;
+    botVisits: number;
+    totalVisits: number;
+    humanBytes: number;
+    botBytes: number;
+    totalBytes: number;
+  }
+
+  interface AnalyticsValueItem {
+    name: string;
+    value: number;
+    share: number;
+  }
+
+  interface VisitorErrorSummaryItem {
+    url: string;
+    statusCode: number;
+    count: number;
+  }
+
+  interface BotSummaryReport {
+    visits: number;
+    trafficShare: number;
+    goodBotRate: number;
+    badBotRate: number;
+    items: BotSummaryItem[];
+  }
+
+  interface NetworkCountrySummary {
+    countryCode: string;
+    userCount: number;
+    userShare: number;
+    averageRtt: number;
+    downloadSpeedMbps: number;
+  }
+
+  interface ConnectionTypeSummary {
+    name: string;
+    userCount: number;
+    userShare: number;
+  }
+
+  interface AnalyticsDimension {
+    name: string;
+    total: number;
+    items: AnalyticsValueItem[];
+  }
+
+  interface ResourceDailySummary {
+    date: string;
+    humanRequests: number;
+    botRequests: number;
+    totalRequests: number;
+    humanBytes: number;
+    botBytes: number;
+    totalBytes: number;
+  }
+
+  interface ResourceExternalDomainItem {
+    domain: string;
+    requests: number;
+    bytes: number;
+    blockedRequests: number;
+    blockedShare: number;
+    isBlocked: boolean;
+  }
+
+  interface ResourceRankItem {
+    url: string;
+    requests: number;
+    bytes: number;
+  }
+
+  interface ResourceNotFoundSummary {
+    resourceCount: number;
+    sourceCount: number;
+    topResources: ResourceUsageItem[];
+    topSources: ResourceReferrerItem[];
+  }
+
+  interface ResourceUsageItem {
+    resourceUrl: string;
+    requests: number;
+    topReferrers: ResourceReferrerItem[];
+  }
+
+  interface ResourceRelationItem {
+    resourceUrl: string;
+    sourceUrl: string;
+    requests: number;
+  }
+
+  interface ErrorDailySummary {
+    date: string;
+    totalErrors: number;
+    affectedUsers: number;
+    humanErrors: number;
+    botErrors: number;
+    pageErrors: number;
+    apiErrors: number;
+    customErrors: number;
+  }
+
+  interface ErrorFrequencyItem {
+    rank: number;
+    type: string;
+    statusCode: number;
+    path: string;
+    count: number;
+  }
+
+  interface BotSummaryItem {
+    name: string;
+    status: string;
+    visits: number;
+    blockedRequests: number;
+    blocked: boolean;
+    trafficShare: number;
+  }
+
+  interface ResourceReferrerItem {
+    sourceUrl: string;
+    requests: number;
   }
 
 }
 declare namespace Kooboo.IntegrateCommerce {
-  interface KIntegrateCommerce extends Kooboo.Data.Interface.IkScript {
-    tiktok: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
-    shein: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
-    amazon: Kooboo.Sites.Integration.IIntegrateCommerceProvider;
+  interface KIntegrateCommerce {
+    tiktok: Kooboo.Sites.Integration.Providers.TiktokCommerceProvider;
+    shein: Kooboo.Sites.Integration.Providers.SheinCommerceProvider;
+    amazon: Kooboo.Sites.Integration.Providers.AmazonCommerceProvider;
     getLogFiles(): SummaryFileInfo[];
     getLogDetails(name: string): string;
     setOrderDeskCredentials(storeId: string, apiKey: string, ordersCallbackCodeBlock?: string): void;
@@ -4098,22 +4626,6 @@ declare namespace Kooboo.IntegrateCommerce {
     region?: string;
   }
 
-  interface PlatformOrderListQuery {
-    from?: Date;
-    to?: Date;
-    pageNumber?: number;
-    pageSize?: number;
-    orderStatus?: string;
-    keyword?: string;
-  }
-
-  interface PlatformOrderListPage {
-    pageNumber: number;
-    pageSize: number;
-    totalCount: number;
-    items: PlatformOrderSummary[];
-  }
-
   interface PlatformOrderDetail {
     order_id?: string;
     channel_id?: string;
@@ -4131,19 +4643,23 @@ declare namespace Kooboo.IntegrateCommerce {
     comment?: string;
     store_id?: string;
     warehouses_ids?: string[];
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
-  interface PlatformOrderSummary {
-    storeId: string;
-    platformCode: string;
-    platformOrderId: string;
-    platformCreatedAt: Date;
-    platformUpdatedAt?: Date;
+  interface PlatformOrderListQuery {
+    from?: Date;
+    to?: Date;
+    pageNumber?: number;
+    pageSize?: number;
     orderStatus?: string;
-    currency?: string;
-    amountTotal?: number;
-    buyerName?: string;
+    keyword?: string;
+  }
+
+  interface PlatformOrderListPage {
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    items: PlatformOrderSummary[];
   }
 
   interface PlatformOrderDetailCustomer {
@@ -4152,7 +4668,7 @@ declare namespace Kooboo.IntegrateCommerce {
     first_name?: string;
     last_name?: string;
     phone?: string;
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
   interface PlatformOrderDetailCurrency {
@@ -4174,17 +4690,17 @@ declare namespace Kooboo.IntegrateCommerce {
 
   interface PlatformOrderDetailPaymentMethod {
     name?: string;
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
   interface PlatformOrderDetailShippingMethod {
     name?: string;
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
   interface PlatformOrderDetailStatus {
     name?: string;
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
   interface PlatformOrderDetailTotals {
@@ -4193,7 +4709,7 @@ declare namespace Kooboo.IntegrateCommerce {
     shipping?: number;
     tax?: number;
     discount?: number;
-    additional_fields?: Record<string, any>;
+    additional_fields?: any;
   }
 
   interface PlatformOrderDetailProduct {
@@ -4210,8 +4726,20 @@ declare namespace Kooboo.IntegrateCommerce {
     variant_id?: string;
     weight_unit?: string;
     weight?: number;
-    additional_fields?: Record<string, any>;
-    attachments?: Record<string, SummaryFileInfo[]>;
+    additional_fields?: any;
+    attachments?: any;
+  }
+
+  interface PlatformOrderSummary {
+    storeId: string;
+    platformCode: string;
+    platformOrderId: string;
+    platformCreatedAt: Date;
+    platformUpdatedAt?: Date;
+    orderStatus?: string;
+    currency?: string;
+    amountTotal?: number;
+    buyerName?: string;
   }
 
   interface PlatformOrderDetailCountry {
@@ -4232,215 +4760,28 @@ declare namespace Kooboo.IntegrateCommerce {
     product_option_value_id?: string;
   }
 
-  interface SummaryFileInfo {
-    name: string;
-    size: number;
-    string_size: string;
-    created_utc: Date;
-    last_modified_utc: Date;
-  }
-
-}
-declare namespace Kooboo.Sites.Storage {
-  interface KStorage extends Kooboo.Data.Interface.IkScript {
-    aliyunOSS: IStorageClient;
-    amazonS3: IStorageClient;
-    azureBlob: IStorageClient;
-    get(name: string): IStorageClient;
-  }
-
-  interface IStorageClient {
-    /** ```ts
-const path = "/media";
-const page1 = k.storage.{name}.listObjects(path);
-if (page1.hasMore) {
-    const page2 = k.storage.{name}.listObjects(path, {
-        takeCount: 10,
-        startAfter: page1.files[page1.files.length - 1].key
-    });
-}
-```
- */
-    listObjects(path: string, options?: QueryOptions): ListObjectsResponse;
-    /** ```ts
-const path = "/media";
-const keyword = "kooboo";
-const page1 = k.storage.{name}.searchObjects(path, keyword);
-if (page1.hasMore) {
-    const page2 = k.storage.{name}.searchObjects(path, keyword, {
-        takeCount: 10,
-        startAfter: page1.files[page1.files.length - 1].key
-    });
-}
-```
- */
-    searchObjects(path: string, keyword: string, options?: QueryOptions): SearchObjectsResponse;
-    /** ```ts
-const file = k.request.files[0];
-const key = `/media/my-folder/${file.fileName}`;
-const result = k.storage.{name}.putObject(key, file.bytes, {
-    alt: file.fileName
-});
-```
- */
-    putObject(key: string, bytes: number[], metas?: Record<string, any>): RawStorageObjectModel;
-    copyObject(oldKey: string, newKey: string): boolean;
-    /** ```ts
-k.storage.{name}.createFolder("/media/my-folder/")
-```
- */
-    createFolder(key: string): RawStorageFolderModel;
-    /** ```ts
-const isValidKey = k.storage.{name}.isUniqueKey(key);
-if (!isValidKey) {
-    throw new Error(`Duplicated key: ${key}`);
-}
-```
- */
-    isUniqueKey(key: string): boolean;
-    deleteObjects(keys: string[]): boolean;
-    deleteFolders(keys: string[]): boolean;
-    generateDownloadUrl(key: string): string;
-    getMetadata(key: string): Record<string, string>;
-    putMetadata(key: string, metadata: Record<string, any>): boolean;
-  }
-
-  interface MediaStorageFileModel extends StorageObjectModel {
-    thumbnail: string;
-    height: number;
-    width: number;
-    isImage: boolean;
-    type: string;
-    alt: string;
-    references: Record<string, number>;
-    folder: string;
-    previewUrl: string;
-    mimeTypeOverride: string;
-    mimeType: string;
-    id: any;
-    key: string;
-    url: string;
-    name: string;
-    size: number;
-    downloadUrl: string;
-    lastModified: Date;
-    headers: Record<string, string>;
-  }
-
-  interface QueryOptions {
-    takeCount?: number;
-    startAfter: string;
-  }
-
-  interface ListObjectsResponse extends SearchObjectsResponse {
-    folders: RawStorageFolderModel[];
-    files: RawStorageObjectModel[];
-    hasMore: boolean;
-    lastModified: Date;
-  }
-
-  interface SearchObjectsResponse {
-    files: RawStorageObjectModel[];
-    hasMore: boolean;
-    lastModified: Date;
-  }
-
-  interface RawStorageObjectModel {
-    id: any;
-    key: string;
-    url: string;
-    name: string;
-    size: number;
-    downloadUrl: string;
-    lastModified: Date;
-    headers: Record<string, string>;
-  }
-
-  interface RawStorageFolderModel {
-    key: string;
-    name: string;
-  }
-
-  interface StorageObjectModel extends RawStorageObjectModel {
-    folder: string;
-    previewUrl: string;
-    mimeTypeOverride: string;
-    mimeType: string;
-    id: any;
-    key: string;
-    url: string;
-    name: string;
-    size: number;
-    downloadUrl: string;
-    lastModified: Date;
-    headers: Record<string, string>;
-  }
-
-}
-declare namespace Kooboo.Sites.Scripting.Extension {
-  interface StapTest extends Kooboo.Data.Interface.IkScript {
-    name: string;
-    context: Kooboo.Data.Context.RenderContext;
-    appendx(input: string): string;
-    anythingOpleiding(input: string): string;
-  }
-
-  interface Converter extends Kooboo.Data.Interface.IkScript {
-    name: string;
-    context: Kooboo.Data.Context.RenderContext;
-    /** Convert html to pdf document;
-
-```
-var rsp = k.utils.converter.htmlToPdf("<div>hello</div>", [{
-    text: "current $pageIndex / total $pageCount",
-    color: { r: 255, g: 0, b: 0 },
-    location: { x: 90, y: 10, align: "right" }
-}, {
-    text: "kooboo.com",
-    color: { r: 255, g: 0, b: 0 },
-    location: { x: 10, y: 10}
-}]);
-k.file.writeBinary("1.pdf", rsp)
-``` */
-    htmlToPdf(htmlcode: string, appendTexts?: Kooboo.Data.Models.Converter.AppendText[]): number[];
-    gifToWebp(gif: number[]): number[];
-    officeToHTML(officebytes: number[], filename: string): string;
-    officeToCleanHTML(officebytes: number[], filename: string): string;
-  }
-
 }
 declare namespace Kooboo.Sites.Payment {
-  interface kPay extends Kooboo.Data.Interface.IkScript {
-    square: Kooboo.Sites.Payment.Methods.SquareCheckout;
-    wechat: Kooboo.Sites.Payment.Methods.WeChatNative;
-    wechatApp: Kooboo.Sites.Payment.Methods.wechat.WeChatApp;
-    weChatH5: Kooboo.Sites.Payment.Methods.wechat.WeChatH5;
-    wechatJsApi: Kooboo.Sites.Payment.Methods.wechat.WeChatJsApi;
+  interface kPay {
     stripeCheckout: Kooboo.Sites.Payment.Methods.Stripe.StripeCheckout;
     stripe: Kooboo.Sites.Payment.Methods.Stripe.StripePaymentIntent;
-    paynlCheckout: Kooboo.Sites.Payment.Methods.Paypal.PaynlCheckout;
     paypalCheckout: Kooboo.Sites.Payment.Methods.Paypal.PaypalCheckout;
     paypalForm: Kooboo.Sites.Payment.Methods.Paypal.PaypalForm;
-    twoCheckout: Kooboo.Sites.Payment.Methods.Paypal.TwoCheckout;
-    moneyBoxs: Kooboo.Sites.Payment.Methods.MoneyBoxs.MoneyBoxs;
-    alipayApp: Kooboo.Sites.Payment.Methods.Alipay.AlipayApp;
+    wechat: Kooboo.Sites.Payment.Methods.WeChatNative;
+    wechatApp: Kooboo.Sites.Payment.Methods.wechat.WeChatApp;
+    wechatJsApi: Kooboo.Sites.Payment.Methods.wechat.WeChatJsApi;
+    weChatH5: Kooboo.Sites.Payment.Methods.wechat.WeChatH5;
     alipayForm: Kooboo.Sites.Payment.Methods.Alipay.AlipayForm;
+    alipayApp: Kooboo.Sites.Payment.Methods.Alipay.AlipayApp;
     alipayH5: Kooboo.Sites.Payment.Methods.Alipay.AlipayH5;
-    get(PaymentMothod: string): IPaymentMethod;
+    twoCheckout: Kooboo.Sites.Payment.Methods.Paypal.TwoCheckout;
+    paynlCheckout: Kooboo.Sites.Payment.Methods.Paypal.PaynlCheckout;
+    square: Kooboo.Sites.Payment.Methods.SquareCheckout;
+    moneyBoxs: Kooboo.Sites.Payment.Methods.MoneyBoxs.MoneyBoxs;
     getRequest(requestId: string): PaymentRequest;
   }
 
-  interface IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    checkStatus(request: PaymentRequest): PaymentStatusResponse;
-  }
-
-  interface PaymentRequest extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.IGolbalObject, Kooboo.Sites.Models.CoreObject {
+  interface PaymentRequest extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.IGolbalObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     id: any;
     description: string;
     totalAmount: number;
@@ -4459,7 +4800,7 @@ declare namespace Kooboo.Sites.Payment {
     returnPath: string;
     returnUrl: string;
     cancelUrl: string;
-    additional: Record<string, any>;
+    additional: any;
     card: Kooboo.Sites.Payment.Models.Card;
     online: boolean;
     version: number;
@@ -4468,15 +4809,11 @@ declare namespace Kooboo.Sites.Payment {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
-  }
-
-  interface PaymentStatusResponse {
-    hasResult: boolean;
-    paid: boolean;
-    failed: boolean;
-    status: PaymentStatus;
-    message: string;
   }
 
   interface ChargeResponse {
@@ -4486,7 +4823,7 @@ declare namespace Kooboo.Sites.Payment {
     nextAction: NextAction;
   }
 
-  interface PaymentCallback extends Kooboo.Data.IGolbalObject, Kooboo.Data.Interface.ISiteObject {
+  interface PaymentCallback extends Kooboo.Data.IGolbalObject, Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject {
     id: any;
     requestId: any;
     responseMessage: string;
@@ -4505,9 +4842,34 @@ declare namespace Kooboo.Sites.Payment {
     creationDate: Date;
     lastModified: Date;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
-  type PaymentStatus = 'NotAvailable' | 'Authorized' | 'Pending' | 'Paid' | 'Cancelled' | 'Rejected';
+  interface PaymentStatusResponse {
+    hasResult: boolean;
+    paid: boolean;
+    failed: boolean;
+    status: PaymentStatus;
+    payload: Record<string, any>;
+    message: string;
+  }
+
+  interface IPaymentMethod {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    checkStatus(request: PaymentRequest): PaymentStatusResponse;
+  }
+
+  interface IPaymentCallbackHandler {
+    processCallback(methodName: string, context: Kooboo.Data.Context.RenderContext): PaymentCallback;
+  }
 
   interface NextAction {
     /** qrcode 3dSecure...  */
@@ -4532,7 +4894,49 @@ k.response.redirect(redirectUrl)
     redirectUrl: string;
   }
 
+  type PaymentStatus = 'NotAvailable' | 'Authorized' | 'Pending' | 'Paid' | 'Cancelled' | 'Rejected';
+
   interface IPaymentSetting extends Kooboo.Data.Interface.ISiteSetting {
+  }
+
+}
+declare namespace Kooboo.Sites.AI {
+  interface AIProviderViewModel {
+    name: string;
+    displayName: string;
+    icon: string;
+    endpoint: string;
+    chatModels: ChatModel[];
+    embeddingModels: EmbeddingModel[];
+    customApiKey: string;
+    hasCustomApiKey: boolean;
+    customEndpoint: string;
+    customModels: CustomModelConfig[];
+    enable: boolean;
+  }
+
+  interface ChatModel {
+    name: string;
+    inputPrice: number;
+    cachedInputPrice?: number;
+    outputPrice: number;
+    maxInputTokens: number;
+    maxOutTokens: number;
+    experienceTokens: number;
+  }
+
+  interface EmbeddingModel {
+    name: string;
+    inputPrice: number;
+    maxTokenLength: number;
+    defaultDimensions: number;
+    availableDimensionsList: number[];
+  }
+
+  interface CustomModelConfig {
+    name: string;
+    maxInputTokens: number;
+    maxOutTokens: number;
   }
 
 }
@@ -4546,7 +4950,7 @@ declare namespace Kooboo.Lib.GeoLocation {
 
 }
 declare namespace Kooboo.Sites.Models {
-  interface Page extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IScriptable, DomObject {
+  interface Page extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IScriptable, Kooboo.IndexedDB.Serializer.IDatabaseObject, DomObject {
     headers: HtmlHeader;
     id: any;
     layoutName: string;
@@ -4555,12 +4959,12 @@ declare namespace Kooboo.Sites.Models {
     isSecure: boolean;
     type: PageType;
     defaultStart: boolean;
-    parameters: Record<string, string>;
+    parameters: any;
     requestParas: string[];
     disableUnocss: boolean;
     enableCache: boolean;
     cacheByVersion: boolean;
-    cacheVersionType: Kooboo.Sites.Render.Type;
+    cacheVersionType: Kooboo.Sites.Render.CacheVersionType;
     cacheByDevice: boolean;
     cacheByCulture: boolean;
     cacheMinutes: number;
@@ -4575,11 +4979,15 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     dispose(): void;
     clone(): any;
   }
 
-  interface ScriptModule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface ScriptModule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     packageName: string;
     moduleVersion: string;
     relativeFolder: string;
@@ -4594,15 +5002,19 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
   interface HtmlHeader extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
-    titles: Record<string, string>;
+    titles: any;
     customHeader: string;
     metas: HtmlMeta[];
-    styles: string[];
-    scripts: string[];
+    styles: any;
+    scripts: any;
     isPwa: boolean;
     constType: number;
     creationDate: Date;
@@ -4616,6 +5028,7 @@ declare namespace Kooboo.Sites.Models {
     getSize(): number;
     writeTo(buffer: any): number;
     setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
     clone(): any;
   }
 
@@ -4652,12 +5065,12 @@ declare namespace Kooboo.Sites.Models {
     clone(): any;
   }
 
-  interface View extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, Kooboo.Data.Interface.IScriptable, DomObject {
+  interface View extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, Kooboo.Data.Interface.IScriptable, Kooboo.IndexedDB.Serializer.IDatabaseObject, DomObject {
     id: any;
     name: string;
     moduleId: any;
     extension: string;
-    parameters: Record<string, string>;
+    parameters: any;
     propDefines: Kooboo.Sites.Contents.Models.ContentProperty[];
     asPageElement: boolean;
     displayName: string;
@@ -4665,7 +5078,7 @@ declare namespace Kooboo.Sites.Models {
     requestParas: string[];
     enableCache: boolean;
     cacheByVersion: boolean;
-    cacheVersionType: Kooboo.Sites.Render.Type;
+    cacheVersionType: Kooboo.Sites.Render.CacheVersionType;
     cacheByDevice: boolean;
     cacheByCulture: boolean;
     cacheMinutes: number;
@@ -4678,11 +5091,15 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     dispose(): void;
     clone(): any;
   }
 
-  interface Layout extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, DomObject {
+  interface Layout extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, DomObject {
     id: any;
     name: string;
     extension: string;
@@ -4694,11 +5111,15 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     dispose(): void;
     clone(): any;
   }
 
-  interface Script extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, CoreObject {
+  interface Script extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     name: string;
     engine: string;
@@ -4721,10 +5142,14 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Style extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, CoreObject {
+  interface Style extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     name: string;
     engine: string;
@@ -4748,13 +5173,21 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Image extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IBinaryFile, Kooboo.Data.Interface.IExtensionable, CoreObject {
+  interface Image extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IBinaryFile, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     name: string;
     alt: string;
+    source: string;
+    sourceUrl: string;
+    author: string;
+    authorUrl: string;
     extension: string;
     isSvg: boolean;
     height: number;
@@ -4769,10 +5202,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     resetSize(): void;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface CmsFile extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IBinaryFile, Kooboo.Data.Interface.IExtensionable, CoreObject {
+  interface CmsFile extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IBinaryFile, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     extension: string;
     contentBytes: number[];
@@ -4786,6 +5223,10 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -4803,7 +5244,7 @@ declare namespace Kooboo.Sites.Models {
     name: string;
     httpequiv: string;
     property: string;
-    content: Record<string, string>;
+    content: any;
     charset: string;
     getContent(culture?: string): string;
     setContent(value: string, culture?: string): void;
@@ -4811,38 +5252,22 @@ declare namespace Kooboo.Sites.Models {
     getSize(): number;
     writeTo(buffer: any): number;
     setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
   }
 
   type CodeType = 'Event' | 'Datasource' | 'Job' | 'Api' | 'PageScript' | 'Diagnosis' | 'PaymentCallBack' | 'Authentication' | 'Authorization' | 'CodeBlock';
 
-  interface ViewDataMethod extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
-    id: any;
-    aliasName: string;
-    methodId: any;
-    viewId: any;
-    children: ViewDataMethod[];
-    hasChildren: boolean;
-    online: boolean;
-    version: number;
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-    lastModifyTick: number;
-    name: string;
-    clone(): any;
-  }
-
   interface Path {
     parentPath: Path;
     segment: string;
-    children: Record<string, Path>;
+    children: any;
     routeId: any;
     objectId: any;
     partialWildCard: boolean;
     partialParts: string[];
   }
 
-  interface SyncSetting extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface SyncSetting extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     uniqueId: any;
     orgId: any;
@@ -4858,10 +5283,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface CssClassName extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface CssClassName extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     className: string;
     ownerObjectId: any;
@@ -4871,11 +5300,15 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface CoreSetting extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
-    values: Record<string, string>;
+  interface CoreSetting extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -4884,26 +5317,35 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface SiteCluster extends Kooboo.Data.Interface.ISiteObject {
-    id: any;
-    serverId: number;
-    serverIp: string;
-    port: number;
-    isSelected: boolean;
-    dataCenter: string;
-    isRoot: boolean;
-    primaryDomain: string;
+  interface TableRelation extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
+    tableA: string;
+    fieldA: string;
+    tableB: string;
+    fieldB: string;
+    relation: EnumTableRelation;
+    online: boolean;
     version: number;
     constType: number;
     creationDate: Date;
     lastModified: Date;
+    lastModifyTick: number;
+    id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    clone(): any;
   }
 
-  interface Menu extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface Menu extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     rootId: any;
     id: any;
     template: string;
@@ -4915,8 +5357,8 @@ declare namespace Kooboo.Sites.Models {
     parent: Menu;
     parentId: any;
     dataSourceId: any;
-    mappings: Record<string, string>;
-    values: Record<string, string>;
+    mappings: any;
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -4925,10 +5367,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     name: string;
     addSubMenu(submenu: Menu): void;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Folder extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface Folder extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     objectConstType: number;
     fullPath: string;
@@ -4940,15 +5386,19 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Form extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, CoreObject {
+  interface Form extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.ITextObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     body: string;
     engine: string;
     style: string;
     id: any;
-    attributes: Record<string, string>;
+    attributes: any;
     method: string;
     fields: string;
     redirectUrl: string;
@@ -4963,7 +5413,7 @@ declare namespace Kooboo.Sites.Models {
     bodyHash: number;
     itemIndex: number;
     domTagName: string;
-    setting: Record<string, string>;
+    setting: any;
     formSubmitter: string;
     isSelfRefresh: boolean;
     formType: FormType;
@@ -4974,10 +5424,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface FormSetting extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface FormSetting extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     formId: any;
     enable: boolean;
@@ -4986,7 +5440,7 @@ declare namespace Kooboo.Sites.Models {
     allowAjax: boolean;
     successCallBack: string;
     failedCallBack: string;
-    setting: Record<string, string>;
+    setting: any;
     formSubmitter: string;
     isSelfRefresh: boolean;
     online: boolean;
@@ -4996,23 +5450,32 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface FormValue extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface FormValue extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     formId: any;
-    values: Record<string, string>;
+    values: any;
     constType: number;
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface CommerceData extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface CommerceData extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
+    name: string;
     body: string;
     bodyHash: number;
     type: CommerceDataType;
@@ -5022,14 +5485,17 @@ declare namespace Kooboo.Sites.Models {
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
-    name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface MediaMetadata extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface MediaMetadata extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     type: string;
-    values: Record<string, string>;
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -5038,10 +5504,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     name: string;
     generateId(name: string, settingName: string): any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Code extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.IExtensionable, CoreObject {
+  interface Code extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.ITextObject, Kooboo.Data.Interface.IEmbeddable, Kooboo.Data.Interface.IExtensionable, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     isDecrypted: boolean;
     isCodeEncrypted: boolean;
     lang: string;
@@ -5070,10 +5540,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface BusinessRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface BusinessRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     eventType: Kooboo.Sites.FrontEvent.enumEventType;
     rule: IFElseRule;
     online: boolean;
@@ -5084,10 +5558,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
     clone(): any;
   }
 
-  interface DownloadFailTrack extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface DownloadFailTrack extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     historyTime: Date[];
     constType: number;
@@ -5095,10 +5573,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface SiteUser extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface SiteUser extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     userId: any;
     role: Kooboo.Sites.Authorization.EnumUserRole;
@@ -5109,13 +5591,17 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface ResourceGroup extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface ResourceGroup extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     type: number;
-    children: Record<any, number>;
+    children: any;
     extension: string;
     online: boolean;
     version: number;
@@ -5124,10 +5610,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface CmsCssRule extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface CmsCssRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     id: any;
     itemIndex: number;
     tempCssRuleIndex: number;
@@ -5151,6 +5641,10 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
     clone(): any;
   }
 
@@ -5172,7 +5666,7 @@ declare namespace Kooboo.Sites.Models {
     changeInto: string;
   }
 
-  interface ExternalResource extends Kooboo.Data.Interface.ISiteObject, SiteObject {
+  interface ExternalResource extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, SiteObject {
     name: string;
     destinationObjectType: number;
     fullUrl: string;
@@ -5182,27 +5676,15 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     id: any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Thumbnail extends Kooboo.Data.Interface.ISiteObject, SiteObject {
-    id: any;
-    imageId: any;
-    height: number;
-    width: number;
-    contentBytes: number[];
-    extension: string;
-    contentType: string;
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-    lastModifyTick: number;
-    name: string;
-    clone(): any;
-  }
-
-  interface KConfig extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
-    binding: Record<string, string>;
+  interface KConfig extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
+    binding: any;
     tagName: string;
     tagHtml: string;
     online: boolean;
@@ -5213,10 +5695,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Authentication extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface Authentication extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     matcher: MatcherType;
     conditions: Kooboo.Sites.FrontEvent.Condition[];
     action: AuthenticationAction;
@@ -5233,10 +5719,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
     clone(): any;
   }
 
-  interface OpenApi extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface OpenApi extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     jsonData: string;
     url: string;
     baseUrl: string;
@@ -5246,7 +5736,7 @@ declare namespace Kooboo.Sites.Models {
     useCustomCode: boolean;
     code: string;
     useCommaArray: boolean;
-    caches: Cache[];
+    caches: OpenApiCache[];
     online: boolean;
     version: number;
     constType: number;
@@ -5255,10 +5745,14 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface SiteJob extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface SiteJob extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     startTime: Date;
     active: boolean;
@@ -5274,10 +5768,14 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface UserOptions extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface UserOptions extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     id: any;
     display: string;
     data: string;
@@ -5289,11 +5787,15 @@ declare namespace Kooboo.Sites.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface SpaMultilingual extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
-    value: Record<string, string>;
+  interface SpaMultilingual extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
+    value: any;
     defaultLang: string;
     online: boolean;
     version: number;
@@ -5303,23 +5805,33 @@ declare namespace Kooboo.Sites.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface OpenApiAuthorize extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, CoreObject {
+  interface OpenApiAuthorize extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, CoreObject {
     constType: number;
     name: string;
     openApiName: string;
     authorizeName: string;
-    securities: Record<string, Security>;
+    securities: any;
     online: boolean;
     version: number;
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
     id: any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
+
+  type EnumTableRelation = 'OneOne' | 'OneMany' | 'ManyMany' | 'ManyOne';
 
   interface TempData {
     endIndex: number;
@@ -5330,12 +5842,16 @@ declare namespace Kooboo.Sites.Models {
 
   type CommerceDataType = 'ProductType' | 'Product' | 'ProductVariant' | 'Category' | 'Discount' | 'ProductCategory' | 'Settings' | 'Shipping' | 'DigitalShipping' | 'Membership' | 'Tax';
 
-  interface IFElseRule {
+  interface IFElseRule extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     iF: Kooboo.Sites.FrontEvent.Condition[];
     then: IFElseRule[];
     else: IFElseRule[];
     do: Action[];
     id: any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
   }
 
   type RuleType = 'StyleRule' | 'MediaRule' | 'ImportRule' | 'FontFaceRule';
@@ -5346,29 +5862,23 @@ declare namespace Kooboo.Sites.Models {
 
   type FailedAction = 'None' | 'ResultCode' | 'Redirect';
 
-  interface Cache {
+  interface OpenApiCache extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     method: string;
     pattern: string;
     expiresIn: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
-  interface Security {
-    username: string;
-    password: string;
-    clientId: string;
-    clientSecret: string;
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: Date;
-    redirectUrl: string;
-    name: string;
-  }
-
-  interface Action {
-    codeId: any;
+  interface Action extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     code: string;
-    codeSettings: string;
-    setting: Record<string, string>;
+    setting: any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
   }
 
 }
@@ -5376,7 +5886,7 @@ declare namespace KScript.Net.Http {
   interface KHttpClient {
     createJsonContent(body: any): KHttpContent;
     createStringContent(body: string): KHttpContent;
-    createFormUrlEncodedContent(body: any): KHttpContent;
+    createFormUrlEncodedContent(body: Record<string, any>): KHttpContent;
     createMultipartFormDataContent(): KMultipartHttpContent;
     /** Create a batch request
 ```
@@ -5408,7 +5918,7 @@ const response = k.net.httpClient.send("https://kooboo.com", "post", content);
 var result = response.bodyString();
 k.response.write(result)
 ``` */
-    send(url: string, method: string, content?: KHttpContent, headers?: any, timeout?: number): KHttpResponse;
+    send(url: string, method: string, content?: KHttpContent, headers?: Record<string, any>, timeout?: number): KHttpResponse;
     /** Send a batch request
 ```
 var request = k.net.httpClient.createBatchRequest();
@@ -5460,7 +5970,7 @@ var fileResult= request.tasks[0].fileResult; // saved file info
     method: string;
     timeout: number;
     content: KHttpContent;
-    header: any;
+    header: Record<string, any>;
     responseType: ResponseType;
     savePath: string;
     isSuccess: boolean;
@@ -5487,7 +5997,7 @@ var fileResult= request.tasks[0].fileResult; // saved file info
 declare namespace KScript.Ssh {
   interface SshClient {
     /** ```ts
-k.utils.sshClient.passwordConnect('x.x.x.x','root','password',client=>{
+k.net.sshClient.passwordConnect('x.x.x.x','root','password',client=>{
     var result = client.RunCommand('ls')
 })
 ```
@@ -5496,7 +6006,7 @@ k.utils.sshClient.passwordConnect('x.x.x.x','root','password',client=>{
     /** ```ts
 // Generate supported keys
 // ssh-keygen -m PEM -t rsa -b 4096 -f /<save_path>/<myhost>_rsa -P \"\"
-k.utils.sshClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
+k.net.sshClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
     var result = client.RunCommand('ls')
 })
 ```
@@ -5512,7 +6022,7 @@ k.utils.sshClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
 declare namespace KScript.Sftp {
   interface SftpClient {
     /** ```ts
-k.utils.sftpClient.passwordConnect('x.x.x.x','root','password',client=>{
+k.net.sftpClient.passwordConnect('x.x.x.x','root','password',client=>{
     var result = client.Download('/root/1.txt')
 })
 ```
@@ -5521,7 +6031,7 @@ k.utils.sftpClient.passwordConnect('x.x.x.x','root','password',client=>{
     /** ```ts
 // Generate supported keys
 // ssh-keygen -m PEM -t rsa -b 4096 -f /<save_path>/<myhost>_rsa -P \"\"
-k.utils.sftpClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
+k.net.sftpClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
     var result = client.Download('/root/1.txt')
 })
 ```
@@ -5538,7 +6048,7 @@ k.utils.sftpClient.privateKeyConnect('x.x.x.x','root','privateKey',client=>{
 declare namespace KScript.Telnet {
   interface TelnetClient {
     /** ```ts
-k.utils.telnetClient.connect('x.x.x.x',25,client=>{
+k.net.telnetClient.connect('x.x.x.x',25,client=>{
     client.Read(); // 220 Kooboo Smtp Server is ready
     client.WriteLine('HELO localhost');
     client.Read(); // Hello localhost Kooboo Smtp Server
@@ -5560,7 +6070,7 @@ declare namespace Kooboo.Sites.DataTraceAndModify.Marker {
   interface ItemTraceModel {
     source: string;
     dataType: string;
-    info: Record<string, string>;
+    info: any;
     setFieldName(name: string): void;
     copy(): ItemTraceModel;
   }
@@ -5573,11 +6083,120 @@ declare namespace Kooboo.Sites.ViewModel {
     description: string;
   }
 
+  interface SiteLogPage {
+    list: SiteLogItem[];
+    totalCount: number;
+    pageNr: number;
+    pageSize: number;
+    totalPages: number;
+  }
+
+  interface SiteLogQuery {
+    pageNr: number;
+    pageSize: number;
+    actionType: string;
+    storeName: string;
+    tableName: string;
+    name: string;
+    userId?: any;
+    startDate?: Date;
+    endDate?: Date;
+  }
+
+  interface SiteLogItem {
+    id: number;
+    lastModified: Date;
+    timeTick: number;
+    userId: any;
+    userName: string;
+    itemName: string;
+    storeName: string;
+    keyHash: any;
+    storeNameHash: number;
+    tableNameHash: number;
+    tableName: string;
+    actionType: string;
+    hasVideo: boolean;
+  }
+
+  interface SiteLogVersion {
+    id: number;
+    lastModified: Date;
+    userId: any;
+    userName: string;
+    actionType: string;
+    hasVideo: boolean;
+  }
+
+  interface SiteCheckoutOptions {
+    logId: number;
+    siteName: string;
+    fullDomain: string;
+    published: boolean;
+  }
+
+  interface SiteCheckoutResult {
+    siteId: any;
+    siteName: string;
+    fullDomain: string;
+    published: boolean;
+  }
+
+  interface SitePackageResult {
+    siteId: any;
+    siteName: string;
+    fullDomain: string;
+    published: boolean;
+  }
+
   interface SimpleSiteItemViewModel {
     id: any;
     name: string;
     lastVersion: number;
     url: string;
+  }
+
+  interface SitePublishSettingItem {
+    id: any;
+    remoteServerUrl: string;
+    remoteWebSiteId: any;
+    remoteSiteName: string;
+    serverName: string;
+    orgId: any;
+    hasAccessToken: boolean;
+    ignoreOutStoreNames: string[];
+    ignoreInStoreNames: string[];
+  }
+
+  interface SitePublishOptions {
+    id: any;
+    remoteServerUrl: string;
+    remoteWebSiteId: any;
+    remoteSiteName: string;
+    serverName: string;
+    orgId: any;
+    accessToken: string;
+    ignoreOutStoreNames: string[];
+    ignoreInStoreNames: string[];
+    siteName: string;
+    fullDomain: string;
+  }
+
+  interface SitePublishResult {
+    settingId: any;
+    processed: number;
+    isFinished: boolean;
+    limitReached: boolean;
+    hasConflict: boolean;
+    isImage: boolean;
+    localLogId: number;
+    remoteVersion: number;
+    localBody: string;
+    remoteBody: string;
+    localUserName: string;
+    remoteUserName: string;
+    localTime?: Date;
+    remoteTime?: Date;
   }
 
   interface DiskSize {
@@ -5607,18 +6226,24 @@ declare namespace Kooboo.Sites.ViewModel {
     parentId: any;
     contentTypeId: any;
     order: number;
+    enableAvailableDate: boolean;
+    availableStartDate: Date;
+    availableEndDate: Date;
+    sequence: number;
     summaryField: string;
+    embedded: any;
+    textValues: any;
     usedBy: UsedByViewModel[];
     item: any;
     lastModified: Date;
     creationDate: Date;
     online: boolean;
-    values: Record<string, any>;
+    values: any;
     source: string;
     getValue(FieldName: string): any;
     setValue(FieldName: string, Value: any): void;
     getValue(FieldName: string, Context: Kooboo.Data.Context.RenderContext): any;
-    getTraceInfo(): any;
+    getTraceInfo(): Record<string, string>;
   }
 
   interface UsedByViewModel extends EmbeddedBy {
@@ -5743,8 +6368,34 @@ Result:
   }
 
 }
+  declare interface VersionCompareViewModel {
+    title1: string;
+    title2: string;
+    objectId: any;
+    constType: number;
+    id1: number;
+    id2: number;
+    source1: string;
+    source2: string;
+    dataType: VersionDataType;
+  }
+
+  declare type VersionDataType = 'String' | 'Image';
+
+  declare interface ReadSpanAction extends Function {
+    target?: any;
+    method: any;
+    invoke(span: any): void;
+    beginInvoke(span: any, callback: any, object: any): any;
+    endInvoke(result: any): void;
+    getObjectData(info: any, context: any): void;
+    getInvocationList(): any[];
+    clone(): any;
+    dynamicInvoke(args: any[]): any;
+  }
+
 declare namespace Kooboo.Data.Models {
-  interface User extends Kooboo.Data.IGolbalObject {
+  interface User extends Kooboo.Data.IGolbalObject, Kooboo.IndexedDB.Serializer.IDatabaseObject {
     id: any;
     currentOrgId: any;
     currentOrgName: string;
@@ -5774,6 +6425,10 @@ declare namespace Kooboo.Data.Models {
     throwIfNotAdmin(): void;
     getPasswordString(): string;
     clone(): User;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
   interface ThirdPartyLoginInfo {
@@ -5791,8 +6446,9 @@ declare namespace Kooboo.Data.Models {
     name: string;
     folderName: string;
     displayName: string;
-    culture: Record<string, string>;
+    culture: any;
     defaultCulture: string;
+    defaultCultureBytes: number[];
     autoDetectCulture: boolean;
     enableHrefLang: boolean;
     promoteLinksToHttpHeaders: boolean;
@@ -5806,8 +6462,11 @@ declare namespace Kooboo.Data.Models {
     enableVisitorLog: boolean;
     enableImageLog: boolean;
     enableSqlLog: boolean;
+    enableAIApplicationRuntimeLog: boolean;
+    enableCleanupReferencesOnDelete: boolean;
     enableSitePath: boolean;
     enableFullTextSearch: boolean;
+    enableContentFolderIndex: boolean;
     enableMultilingual: boolean;
     enableConstraintFixOnSave: boolean;
     enableCORS: boolean;
@@ -5828,19 +6487,14 @@ declare namespace Kooboo.Data.Models {
     enableVideoBrowserCache: boolean;
     enableSPA: boolean;
     enableResourceCDN: boolean;
-    enableVisitorCountryRestriction: boolean;
-    visitorCountryOnlyAllowIncluded: boolean;
-    visitorCountryRestrictions: Record<string, string>;
-    visitorCountryRestrictionPage: string;
     imageCacheDays: number;
     creationDate: Date;
-    continueConvert: boolean;
     previewUrl: string;
     baseUrl: string;
     lastUpdateTime: number;
     ssoLogin: boolean;
-    customErrors: Record<number, string>;
-    customSettings: Record<string, string>;
+    customErrors: any;
+    customSettings: any;
     forceSSL: boolean;
     siteType: Kooboo.Data.Definition.WebsiteType;
     whiteListPath: string[];
@@ -5857,18 +6511,17 @@ declare namespace Kooboo.Data.Models {
     pwa: Kooboo.Data.Pwa.PwaSettings;
     aI: Kooboo.Data.Models.AI.AISettings;
     codeLogSettings: Kooboo.Data.Logging.CodeLogSettings;
-    sitemapSettings: Kooboo.Data.Sitemap.SitemapSettings;
+    sitemapSettings: SitemapSettings;
     unocssSettings: Kooboo.Data.Unocss.UnocssSettings;
     canonicalURLSetting: CanonicalURLSetting;
     navigationFlowSetting: NavigationFlowSetting;
     resourceGuardianSetting: ResourceGuardianSetting;
-    rateLimitSettings: Kooboo.Data.RateLimits.RateLimitSettings;
-    accessLimitSettings: Kooboo.Data.RateLimits.AccessLimitSettings;
+    requestLimitSettings: Kooboo.Data.RateLimits.RequestLimitSettings;
     cookieConsentSetting: CookieConsentSetting;
     visibleAdvancedMenus: string[];
     enableTinymceToolbarSettings: boolean;
     tinymceToolbarSettings: string;
-    tinymceSettings: Record<string, any>;
+    tinymceSettings: any;
     codeSuggestions: string[];
     recordSiteLogVideo: boolean;
     devPassword: string;
@@ -5883,25 +6536,6 @@ declare namespace Kooboo.Data.Models {
     bindingHost(): string;
     startPages(): Kooboo.Sites.Models.Page[];
     startRoutePath(): string;
-  }
-
-  interface Domain extends Kooboo.Data.IGolbalObject {
-    id: any;
-    domainName: string;
-    organizationId: any;
-    expiration: Date;
-    isKoobooDns: boolean;
-    cMSLogin: boolean;
-    dataCenter: string;
-    nameServer: string;
-    siteCDN: boolean;
-    iCPCert: string;
-    resourceCDN: boolean;
-    mailOnly: boolean;
-    bimiLogo: string;
-    bimiVMC: string;
-    source: string;
-    sudDomainUseDash: boolean;
   }
 
   interface SubscriptionRequest {
@@ -5950,13 +6584,20 @@ declare namespace Kooboo.Data.Models {
 
   type SiteStatus = 'Published' | 'Development' | 'Auditing' | 'Forbidden' | 'Hidden';
 
+  interface SitemapSettings {
+    enable: boolean;
+    path: string;
+    autoGenerate: boolean;
+    code: string;
+  }
+
   interface CanonicalURLSetting {
     enable: boolean;
     forceHttps: boolean;
     normalizeHomePage: boolean;
     canonicalDomain: string;
     ignoreQueryStringKey: string;
-    ignoreKeys: string[];
+    ignoreKeys: any;
   }
 
   interface NavigationFlowSetting {
@@ -5977,9 +6618,9 @@ declare namespace Kooboo.Data.Models {
     enable: boolean;
     displayRule: DisplayRule;
     category: CookieCategory[];
-    cookieText: Record<string, CookieText>;
+    cookieText: any;
     resource: CategoryResource[];
-    tagCategoryResource: Record<string, CategoryResource[]>;
+    tagCategoryResource: any;
     closeButton: closeButtonAction;
     uI: CookieUI;
     createDefaultText(culture: string): CookieText;
@@ -6015,12 +6656,10 @@ declare namespace Kooboo.Data.Models {
     updateSimilarPage: boolean;
   }
 
-  interface VisitorLog extends Kooboo.Data.Storage.IWeeklyItem {
+  interface VisitorLog extends Kooboo.Data.Storage.IWeeklyItem, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.IndexedDB.Serializer.IWormDbGeneratedObject {
     id: number;
-    clientIP: string;
-    realIP: string;
-    clientIPHash: any;
-    hashSaltValidator: any;
+    iP: any;
+    originalIP: any;
     cookieConsent: string;
     sessionId: string;
     city: string;
@@ -6056,8 +6695,6 @@ declare namespace Kooboo.Data.Models {
     cartId: string;
     saltHash: any;
     begin: Date;
-    end: Date;
-    responseEnd: Date;
     size: number;
     timeSpan: number;
     millionSecondTake: number;
@@ -6068,6 +6705,12 @@ declare namespace Kooboo.Data.Models {
     statusCode: number;
     entries: VisitorLogItem[];
     addEntry(Name: string, Value: string, StartTime: Date, EndTime: Date, StatusCode: number, Detail?: string): void;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    getKey(): number;
+    setKey(id: number): void;
   }
 
   interface CookieItem {
@@ -6083,8 +6726,14 @@ declare namespace Kooboo.Data.Models {
   }
 
   interface CookieConsentState {
+  }
+
+  interface CommerceState {
+  }
+
+  interface CookieConsentState {
     mode: string;
-    categories: Record<string, boolean>;
+    categories: any;
     cookieValue: string;
   }
 
@@ -6131,7 +6780,7 @@ declare namespace Kooboo.Data.Models {
     method: ProtectMethod;
     startPath: string;
     extension: string;
-    blackListDomains: string[];
+    blackListDomains: any;
     watermark: WatermarkSetting;
     redirectUrl: string;
     matchPath(path: string): boolean;
@@ -6160,22 +6809,15 @@ declare namespace Kooboo.Data.Models {
   interface DisplayRule {
     isInclude: boolean;
     type: string;
-    countries: string[];
+    countries: any;
   }
 
   interface CookieCategory {
     id: string;
-    name: Record<string, string>;
-    description: Record<string, string>;
+    name: any;
+    description: any;
     required: boolean;
     defaultChecked: boolean;
-  }
-
-  interface CategoryResource {
-    cookieCategory: string;
-    tag: string;
-    uRL: string;
-    cookieItems: CookieDescription[];
   }
 
   interface CategoryResource {
@@ -6188,14 +6830,21 @@ declare namespace Kooboo.Data.Models {
   interface closeButtonAction {
     show: boolean;
     action: string;
-    getAction(countryCode: string): any;
+    getAction(countryCode: string): string;
   }
 
-  interface VisitorLogItem {
+  interface VisitorLogItem extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    name: string;
+    value: string;
+    statusCode: number;
     detail: string;
     startTime: Date;
     endTime: Date;
     timeSpan: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
   type DurationUnit = 'Year' | 'Month' | 'Week' | 'Day';
@@ -6208,10 +6857,10 @@ declare namespace Kooboo.Data.Models {
     url: string;
     name: string;
     remark: string;
-    extensions: any;
+    extensions: Record<string, any>;
   }
 
-  interface SiteErrorLog extends Kooboo.Data.Storage.IWeeklyItem {
+  interface SiteErrorLog extends Kooboo.Data.Storage.IWeeklyItem, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.IndexedDB.Serializer.IWormDbGeneratedObject {
     id: number;
     objId: any;
     url: string;
@@ -6221,44 +6870,15 @@ declare namespace Kooboo.Data.Models {
     startTime: Date;
     message: string;
     statusCode: number;
-  }
-
-  interface DataMethodSetting extends Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDataMethodSetting, Kooboo.Data.IGolbalObject, Kooboo.Data.Interface.ISiteObject {
-    id: any;
-    methodName: string;
-    displayName: string;
-    declareType: string;
-    declareTypeHash: any;
-    isThirdPartyType: boolean;
-    originalMethodName: string;
-    methodSignatureHash: any;
-    isStatic: boolean;
-    isVoid: boolean;
-    parameters: Record<string, string>;
-    parameterBinding: Record<string, ParameterBinding>;
-    version: number;
-    online: boolean;
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-    name: string;
-    isGlobal: boolean;
-    isPost: boolean;
-    isTask: boolean;
-    returnType: string;
-    isPagedResult: boolean;
-    description: string;
-    isPublic: boolean;
-    codeId: any;
-    isKScript: boolean;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    getKey(): number;
+    setKey(id: number): void;
   }
 
   type SearchType = 'None' | 'FullTextSearch' | 'VectorSearch';
-
-  interface SchemaMapping {
-    schemaType: string;
-    fields: Record<string, string>;
-  }
 
   type Source = 'Page' | 'Api' | 'Event' | 'Custom' | 'PageClick' | 'Others';
 
@@ -6295,11 +6915,16 @@ declare namespace Kooboo.Data.Models {
   }
 
   interface CustomTheme {
+    primaryColor: string;
+    backgroundColor: string;
+    textColor: string;
+    buttonColor: string;
+    buttonTextColor: string;
   }
 
   interface CookieDescription {
     name: string;
-    description: Record<string, string>;
+    description: any;
     expireMinutes: number;
   }
 
@@ -6315,22 +6940,12 @@ declare namespace Kooboo.Data.Models {
     defaultPortBinding: boolean;
   }
 
-  interface ParameterBinding {
-    binding: string;
-    fullTypeName: string;
-    displayName: string;
-    isCollection: boolean;
-    isDictionary: boolean;
-    isClass: boolean;
-    controlType: string;
-    isContentFolder: boolean;
-    isProductType: boolean;
-    isData: boolean;
-    isOrderBy: boolean;
-    isContentFilter: boolean;
-    keyType: string;
-    valueType: string;
-    isJsonBinding: boolean;
+  interface KoobooDomPath {
+    addPath(index: number): void;
+    domPathIndex(level: number): number;
+    asByteSpan(): any;
+    fromBytes(bytes: any): KoobooDomPath;
+    isSibling(pathB: KoobooDomPath): boolean;
   }
 
   interface StepItem {
@@ -6348,28 +6963,18 @@ declare namespace Kooboo.Data.ViewModel {
   interface RenewInfo {
     balance: number;
     currency: string;
-    membership: MembershipInfo;
-    domains: Domain[];
+    membership: RenewMembershipInfo;
+    domains: RenewInfoDomain[];
   }
 
-  interface DataCenterViewModel {
-    name: string;
-    description: string;
-    enable: boolean;
-    default: boolean;
-    primaryDomain: string;
-    navUrl: string;
-    baseUrl: string;
-  }
-
-  interface MembershipInfo {
+  interface RenewMembershipInfo {
     id: any;
     name: string;
     serverLevel: number;
     expiredIn?: Date;
   }
 
-  interface Domain {
+  interface RenewInfoDomain {
     id: any;
     name: string;
     expiredIn?: Date;
@@ -6412,7 +7017,7 @@ declare namespace Kooboo.Data.ViewModel {
     paid: boolean;
   }
 
-  interface DepartmentUser extends Kooboo.Data.IGolbalObject, Kooboo.Data.Models.User {
+  interface DepartmentUser extends Kooboo.Data.IGolbalObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Data.Models.User {
     departmentId: any;
     isManager: boolean;
     function: string;
@@ -6445,6 +7050,10 @@ declare namespace Kooboo.Data.ViewModel {
     throwIfNotAdmin(): void;
     getPasswordString(): string;
     clone(): Kooboo.Data.Models.User;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
 }
@@ -6473,7 +7082,7 @@ k.account.server.createSite('testsite','testsite.kooboo.cn',serverUrl);
 
 }
 declare namespace Kooboo.Sites.OAuth2 {
-  interface kOAuth extends Kooboo.Data.Interface.IkScript {
+  interface kOAuth {
     builtIn: OAuthSystem;
     weChat: Kooboo.Sites.OAuth2.WeChat.WeChatLogin;
     weibo: Kooboo.Sites.OAuth2.Weibo.WeiboLogin;
@@ -6507,7 +7116,7 @@ k.response.redirect(url);
   }
 
   interface IOAuth2 {
-    getAuthUrl(params: any): string;
+    getAuthUrl(params: Record<string, any>): string;
   }
 
 }
@@ -6515,9 +7124,14 @@ declare namespace KScript.Payment.Model {
   interface UserCreditCard {
     chargeNewCard(model: ChargeNewCardModel, isStaging?: boolean): Kooboo.Data.Models.CreditCard.CreditCardPaymentResult;
     charge(model: ChargeModel, isStaging?: boolean): Kooboo.Data.Models.CreditCard.CreditCardPaymentResult;
+    createCheckoutSession(amount: number, currency: string, returnUrl: string, cancelUrl: string, isStaging?: boolean): Kooboo.Data.Models.CreditCard.CheckoutSessionResult;
+    /** Returns the Stripe publishable key for initializing Elements. */
+    publishableKey(isStaging?: boolean): string;
+    /** Returns a SetupIntent client secret for binding a card to the authenticated user with Stripe Elements. Does not charge the card. */
+    createSetupIntent(isStaging?: boolean): string;
     list(isStaging?: boolean): Kooboo.Data.Models.Market.CCPaymentMethod[];
     delete(paymentMethodId: string, isStaging?: boolean): void;
-    checkStatus(paymentIntentId: string, isStaging?: boolean): boolean;
+    checkStatus(paymentId: string, isStaging?: boolean): boolean;
   }
 
   interface Ideal {
@@ -6809,28 +7423,8 @@ declare namespace Kooboo.Sites.Sync {
   type FacetSource = 'PushQueue' | 'PullIn' | 'PushOut' | 'Ignore';
 
   interface LogFacet {
-    storeNames: string[];
-    userIds: any[];
-  }
-
-  interface SyncObject {
-    objectId: any;
-    isDelete: boolean;
-    objectConstType: number;
-    jsonData: string;
-    language: string;
-    storeName: string;
-    tableName: string;
-    tableColName: string;
-    isTable: boolean;
-    sender: number;
-    senderTick: number;
-    senderVersion: number;
-    senderIdentifier: any;
-    remoteLastVersion: number;
-    remoteSiteId: any;
-    userId: any;
-    editType: Kooboo.IndexedDB.EditType;
+    storeNames: any;
+    userIds: any;
   }
 
 }
@@ -6849,7 +7443,7 @@ var view = k.site.views.get("viewname");
 ```
  */
     get(nameOrId: any): Kooboo.Sites.Models.Page;
-    getUrls(nameOrId: string): any;
+    getUrls(nameOrId: string): Record<string, string>;
     updateRoute(id: string, url: string, culture?: string): void;
     /** ```ts
 // Add a routable SiteObject, SiteObject can be page, style or others. 
@@ -7014,7 +7608,7 @@ k.site.pages.delete(page.id);
     /** Return text value of current object by current culture */
     getValue(nameOrId: any): string;
     /** Return text value of current object by current culture */
-    getValue(nameOrId: any, params: any): string;
+    getValue(nameOrId: any, params: Record<string, any>): string;
     delete(nameOrId: any): void;
     /** Add an item with default culture */
     add(name: string, value: string): void;
@@ -7035,7 +7629,7 @@ k.site.pages.delete(page.id);
     /** Return text value of current object by current culture */
     getValue(nameOrId: any): string;
     /** Return text value of current object by current culture */
-    getValue(nameOrId: any, params: any): string;
+    getValue(nameOrId: any, params: Record<string, any>): string;
     /** Add an item with default culture */
     add(name: string, value: string): void;
     add(name: string, value: string, culture: string): void;
@@ -7562,7 +8156,7 @@ k.site.views.add(view);
     /** Return text value of current object by current culture */
     getValue(nameOrId: any): string;
     /** Return text value of current object by current culture */
-    getValue(nameOrId: any, params: any): string;
+    getValue(nameOrId: any, params: Record<string, any>): string;
     delete(nameOrId: any): void;
     /** Try to get the item, if not found, insert one with default value. */
     getOrAdd(nameOrId: any, DefaultValue: string): MultilingualObject;
@@ -7683,10 +8277,10 @@ k.site.views.add(view);
     getByLog(LogId: number): Kooboo.Data.Interface.ISiteObject;
   }
 
-  interface MultilingualObject extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.Sites.Contents.Models.MultipleLanguageObject {
+  interface MultilingualObject extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Record<string, any>, Kooboo.Sites.Contents.Models.MultipleLanguageObject {
     keys: string[];
     length: number;
-    values: Record<string, any>;
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -7704,107 +8298,6 @@ k.site.views.add(view);
     /** Get the value of target culture */
     getCultureValue(culture: string): string;
     clone(): any;
-  }
-
-}
-declare namespace Kooboo.Sites.Scripting.Global.SiteItem {
-  interface SiteHelper {
-    siteUrl(): string;
-    pagePreviewUrl(PageId: any): string;
-    pageInlineEditUrl(PageId: any): string;
-  }
-
-  interface KEditLog {
-    lastLog(skip: number, takeCount: number): LastEdit[];
-    lastLog(pageIndex: number, pagesize: number, siteUrl: string): RemoteLastLogResult;
-    videoLog(versionId: number): string;
-    videoLog(versionId: number, siteUrl: string): string;
-    versions(keyHash: string, storeNameHash: number, tableNameHash: number, siteUrl: string): ItemVersionViewModel[];
-    compare(id1: number, id2: number, siteUrl: string): VersionCompareViewModel;
-    getAgo(LastModifyTick: number): string;
-  }
-
-  interface Visitor {
-    top(count: number): Kooboo.Data.Models.VisitorLog[];
-    top500(): Kooboo.Data.Models.VisitorLog[];
-    /** Top visitor source based on last 30 days visitors */
-    topSource(): VisitorSource[];
-    top5Pages(): Kooboo.Sites.Service.ResourceCount[];
-    thisWeek(count: number): Kooboo.Data.Models.VisitorLog[];
-    /** WeekName in the format of year + week number, for example: 2020-12 */
-    byWeek(weekName: string, count: number): Kooboo.Data.Models.VisitorLog[];
-    weeks(): string[];
-    errorList(options?: ErrorListOptions): any;
-  }
-
-  interface DiskSpace {
-    getSiteSize(): Kooboo.Sites.ViewModel.DiskSize;
-    getCommonStoreSize(): TopSize;
-  }
-
-  interface LastEdit {
-    logId: number;
-    ago: string;
-    lastModify: Date;
-    updateTick: number;
-    storeName: string;
-    displayName: string;
-    userName: string;
-    actionType: string;
-  }
-
-  interface RemoteLastLogResult {
-    list: SiteLogViewModel[];
-    totalCount: number;
-    pageNr: number;
-    pageSize: number;
-    totalPages: number;
-  }
-
-  interface ItemVersionViewModel {
-    id: number;
-    lastModified: Date;
-    userName: string;
-    hasVideo: boolean;
-  }
-
-  interface VisitorSource {
-    source: string;
-    counter: number;
-  }
-
-  interface ErrorListOptions {
-    weekName: string;
-    pageIndex?: number;
-    pageSize?: number;
-  }
-
-  interface TopSize {
-    storeItem: StoreItem[];
-    visitorLogSize: string;
-    totalSize: string;
-    total: number;
-  }
-
-  interface SiteLogViewModel {
-    id: number;
-    lastModified: Date;
-    userName: string;
-    itemName: string;
-    storeName: string;
-    keyHash: any;
-    storeNameHash: number;
-    tableNameHash: number;
-    tableName: string;
-    actionType: string;
-    hasVideo: boolean;
-  }
-
-  interface StoreItem {
-    name: string;
-    itemCount: number;
-    size: number;
-    sizeString: string;
   }
 
 }
@@ -7972,7 +8465,7 @@ declare namespace Kooboo.Sites.Scripting.Global.DB {
   }
 
   interface SequenceDb {
-    context: Kooboo.Data.Context.RenderContext;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
     lastKey: number;
     firstKey: number;
     /** Add one item and return the inserted key */
@@ -7980,14 +8473,14 @@ declare namespace Kooboo.Sites.Scripting.Global.DB {
     get(Id: number): any;
     /** Insert with a predefined key, key value must be incremental long value */
     add(key: number, obj: any): number;
-    range(lowBound: number, highBound: number, Ascending: boolean): Record<string, any>[];
+    range(lowBound: number, highBound: number, Ascending: boolean): any[];
     delete(key: number): void;
     update(key: number, obj: any): void;
     count(lowBound: number, highBound: number): number;
     find(js: Function): any;
-    find(js: Function, lowKey: number, highKey: number, Ascending?: boolean): Record<string, any>;
-    findAll(js: Function, lowKey: number, highKey: number, Ascending?: boolean): Record<string, any>[];
-    findAll(js: Function): Record<string, any>[];
+    find(js: Function, lowKey: number, highKey: number, Ascending?: boolean): any;
+    findAll(js: Function, lowKey: number, highKey: number, Ascending?: boolean): any[];
+    findAll(js: Function): any[];
     close(): void;
   }
 
@@ -8112,12 +8605,12 @@ declare namespace Kooboo.Sites.Scripting.Interfaces {
 
 }
 declare namespace Kooboo.Sites.Routing {
-  interface Route extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface Route extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     name: string;
     objectId: any;
     destinationConstType: number;
     culture: string;
-    parameters: Record<string, string>;
+    parameters: any;
     online: boolean;
     version: number;
     constType: number;
@@ -8125,13 +8618,18 @@ declare namespace Kooboo.Sites.Routing {
     lastModified: Date;
     lastModifyTick: number;
     id: any;
+    getParameter(key: string): string;
     copy(): Route;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
   interface PathTree {
     addOrUpdate(route: Route): void;
-    addOrUpdate(RelativeUrl: string, RouteKey: any, ObjectId: any, ConstType: number, Parameters: Record<string, string>): void;
+    addOrUpdate(RelativeUrl: string, RouteKey: any, ObjectId: any, ConstType: number, Parameters: any): void;
     del(RelativeUrl: string): void;
     findRouteId(RelativeUrl: string, EnsureObjectId: boolean): any;
     findPath(RelativeUrl: string, EnsureObjectId: boolean): Kooboo.Sites.Models.Path;
@@ -8193,6 +8691,29 @@ declare namespace Kooboo.Sites.Scripting.Global.Community {
   }
 
 }
+declare namespace Kooboo.Sites.Scripting.Extension {
+  interface Converter {
+    /** Convert html to pdf document;
+
+```
+var rsp = k.utils.converter.htmlToPdf("<div>hello</div>", [{
+    text: "current $pageIndex / total $pageCount",
+    color: { r: 255, g: 0, b: 0 },
+    location: { x: 90, y: 10, align: "right" }
+}, {
+    text: "kooboo.com",
+    color: { r: 255, g: 0, b: 0 },
+    location: { x: 10, y: 10}
+}]);
+k.file.writeBinary("1.pdf", rsp)
+``` */
+    htmlToPdf(htmlcode: string, appendTexts?: Kooboo.Data.Models.Converter.AppendText[]): number[];
+    gifToWebp(gif: number[]): number[];
+    officeToHTML(officebytes: number[], filename: string): string;
+    officeToCleanHTML(officebytes: number[], filename: string): string;
+  }
+
+}
 declare namespace Kooboo.Sites.Scripting.Global.WebUtility {
   interface KMime {
     getMimeMapping(fileName: string): string;
@@ -8249,7 +8770,7 @@ var output = k.utils.image.addWatermark(image, watermark, {
 
 k.file.writeBinary("output.jpg", output) */
     addWatermark(binary: number[], watermark: number[], option: WatermarkOptions): number[];
-    getSize(Image: number[]): Kooboo.Lib.Utilities.SizeMeasurement;
+    getSize(Image: number[]): Kooboo.Lib.Helper.ImageSize;
     /** ```ts
 const binary = k.file.readBinary("2.webp"); //support gif and webp
 const count = k.utils.image.getFrameCount(binary);
@@ -8257,16 +8778,6 @@ const count = k.utils.image.getFrameCount(binary);
  */
     getFrameCount(image: number[]): number;
     convertToTwoFramesGif(image: number[]): number[];
-  }
-
-  interface Google {
-    lHRJson(AbsoluteUrl: string, MobileDevice: boolean): string;
-    lHRUrl(AbsoluteUrl: string, MobileDevice: boolean): string;
-    lHRUrlFromJson(json: string): string;
-    parseJson(json: string): FullLHRObj;
-    saveJson(json: string): any;
-    shortLhrReportUrl(json: string): string;
-    getJson(Id: any): string;
   }
 
   interface KTemplateEngine {
@@ -8298,7 +8809,52 @@ Execute the view, and return the result as string
   }
 
   interface KPuppeteer {
+    /** ```ts
+k.utils.puppeteer.openTask(taskId, 'https://localkooboo.com/server-render/batch?task=' + taskId);
+```
+ */
+    openTask(taskId: string, url: string, timeoutSeconds?: number): string;
+    /** ```ts
+k.utils.puppeteer.keepTaskAlive(taskId);
+```
+ */
+    keepTaskAlive(taskId: string, timeoutSeconds?: number): boolean;
+    /** ```ts
+k.utils.puppeteer.closeTask(taskId);
+```
+ */
+    closeTask(taskId: string): boolean;
+    /** ```ts
+const running = k.utils.puppeteer.isTaskOpen(taskId);
+```
+ */
+    isTaskOpen(taskId: string): boolean;
+    /** ```ts
+const count = k.utils.puppeteer.openTaskCount();
+```
+ */
+    openTaskCount(): number;
+    /** ```ts
+const capacity = k.utils.puppeteer.getTaskCapacity();
+```
+ */
+    getTaskCapacity(): TaskCapacityInfo;
     screenshot(url: string, savePath: string, options?: ScreenshotOptions): void;
+  }
+
+  interface FullLHRObj {
+    lighthouseResult: lighthouseResult;
+    getSummary(): ReportSummary;
+  }
+
+  interface Google {
+    lHRJson(AbsoluteUrl: string, MobileDevice: boolean): string;
+    lHRUrl(AbsoluteUrl: string, MobileDevice: boolean): string;
+    lHRUrlFromJson(json: string): string;
+    parseJson(json: string): FullLHRObj;
+    saveJson(json: string): any;
+    shortLhrReportUrl(json: string): string;
+    getJson(Id: any): string;
   }
 
   interface WatermarkOptions {
@@ -8312,11 +8868,6 @@ Execute the view, and return the result as string
     repeat: boolean;
   }
 
-  interface FullLHRObj {
-    lighthouseResult: lighthouseResult;
-    getSummary(): ReportSummary;
-  }
-
   interface NinjibleProgress {
     isDone: boolean;
     percent: number;
@@ -8327,6 +8878,13 @@ Execute the view, and return the result as string
     newReportUrl: string;
     oldSiteScore: LightHouseScore;
     newSiteScore: LightHouseScore;
+  }
+
+  interface TaskCapacityInfo {
+    maximum: number;
+    inUse: number;
+    available: number;
+    siteOpenTasks: number;
   }
 
   interface ScreenshotOptions {
@@ -8387,7 +8945,7 @@ k.sms.aliSMS.send("your_ali_template_code", "+8615312345678", "code", "12345");
 ```
  */
     send(templateCode: string, ToPhoneNumber: string, bindingkey: string, bindingvalue: string): boolean;
-    send(templateCode: string, ToPhoneNumber: string, bindings: any): boolean;
+    send(templateCode: string, ToPhoneNumber: string, bindings: Record<string, any>): boolean;
     /** ```ts
 k.sms.aliSMS.send("your_ali_template_code", "+8115312345678", "code", "12345");
 ```
@@ -8410,16 +8968,9 @@ k.sms.aliSMS.send("your_ali_template_code", "+8115312345678", "code", "12345");
   }
 
 }
-declare namespace Kooboo.Data.Sitemap {
-  interface KSitemap extends Kooboo.Data.Interface.IkScript {
+declare namespace Kooboo.Sites.Sitemap {
+  interface KSitemap {
     create(): Sitemap;
-  }
-
-  interface SitemapSettings {
-    enable: boolean;
-    path: string;
-    autoGenerate: boolean;
-    code: string;
   }
 
   interface Sitemap {
@@ -8437,7 +8988,7 @@ declare namespace Kooboo.Data.Sitemap {
     /** ```
 {en:'https://www.kooboo.com/en',zh:'https://www.kooboo.com/zh'}
 ``` */
-    alternates: any;
+    alternates: Record<string, string>;
   }
 
   type Changefreq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
@@ -8455,7 +9006,7 @@ declare namespace Kooboo.Sites.Scripting.Global.Mail.Models {
     htmlBody: string;
     ampBody: string;
     body: string;
-    attachments: Record<string, any>;
+    attachments: any;
     addAttachment(FullFileNameOrUrl: string): void;
     addAttachment(filename: string, BinaryBytes: number[]): void;
     attachObject(filename: string, obj: any): void;
@@ -8666,17 +9217,6 @@ k.response.write(msg.html);
 }
 declare namespace Kooboo.Sites.Scripting.Global.Mail.Amazonses {
   interface Amazonses {
-    /** ```ts
-var mail = k.mail.amazonses.createEmail({accessKeyId:'YOUR_ACCESS_KEY_ID' ,secretAccessKey:'YOUR_SECRET_ACCESS_KEY',region:'EUCentral1'});
-var from = 'me@gmail.com';
-var to = ['to-someone@gmail.com','to-someone2@gmail.com'];
-var subject = 'my subject';
-var htmlBody = 'html body';
-var textBody = 'text body';
-var res = mail.send({from,to,subject,htmlBody,textBody});
-k.response.json(res);
-```
- */
     createEmail(setting: AwsMailSetting): AwsEmail;
   }
 
@@ -8688,39 +9228,7 @@ k.response.json(res);
   }
 
   interface AwsEmail {
-    /** ```ts
-var mail = k.mail.amazonses.createEmail({accessKeyId:'YOUR_ACCESS_KEY_ID' ,secretAccessKey:'YOUR_SECRET_ACCESS_KEY',region:'EUCentral1'});
-var from = 'me@gmail.com';
-var to = ['to-someone@gmail.com','to-someone2@gmail.com'];
-var subject = 'my subject';
-var htmlBody = 'html body';
-var textBody = 'text body';
-var res = mail.send({from,to,subject,htmlBody,textBody});
-k.response.json(res);
-```
- */
     send(mailParam: AwsMailParam): Amazon.SimpleEmail.Model.SendEmailResponse;
-    /** ```ts
-var msg = k.mail.createMessage();
-msg.to = 'test@qq.com';
-msg.from = 'sender@qq.com';
-msg.cc = 'cc@qq.com'
-msg.bcc = 'czh2<test@qq.com>'
-msg.subject = 'Subject';
-msg.htmlBody = '<html> <body><div>Hello World!</div></body></html>';
-msg.addAttachment('https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png');
-var pdfHtml = `<!DOCTYPE html>
-<html>
-<body>
-	<div> test test</div>
-</body>
-</html>`;
-var pdf = k.utils.converter.htmlToPdf('fileName.pdf', pdfHtml);
-msg.addAttachment('test.pdf', pdf.zipEntries[0].binary);
-var mail = k.mail.amazonses.createEmail({ accessKeyId: 'YOUR_ACCESS_KEY_ID', secretAccessKey: 'YOUR_SECRET_ACCESS_KEY', region: 'EUCentral1' });
-mail.SendRaw(msg);
-```
- */
     sendRaw(msg: Kooboo.Sites.Scripting.Global.Mail.Models.MailMessage): Amazon.SimpleEmail.Model.SendEmailResponse;
   }
 
@@ -9109,7 +9617,7 @@ var token= k.security.jwt.encode({
 k.response.write(token)
 ```
  */
-    encode(claims: any): string;
+    encode(claims: Record<string, any>): string;
     /** ```ts
 // This method will get token in http request authorization header 
 
@@ -9121,20 +9629,11 @@ var result= k.security.jwt.decode()
 ```
 #### Success example:
 ```json
-{
-  "code": 0,
-  "value": {
-    "name": "alex",
-    "id": "xxxx"
-  }
-}
+{"code":0,"value":{"name":"alex","id":"xxxx"}}
 ```
 #### Error example:
 ```json
-{
-  "code": 1,
-  "value": "error message"
-}
+{"code":1,"value":"error message"}
 ```
  */
     decode(): string;
@@ -9143,24 +9642,15 @@ var result= k.security.jwt.decode()
 // site=>system=>settings=>JwtSetting,set jwtsecret exp and enableExp
 
 // 2.Example
-const result= k.security.jwt.dncode('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiaHVhbmVudCIsImV4cCI6MTYwMjIxNTM4OH0.ZunonM2w-3PJURhW9eBD90zdnw9NCDDIZbCMM6Izsb4');
+const result= k.security.jwt.decode('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiaHVhbmVudCIsImV4cCI6MTYwMjIxNTM4OH0.ZunonM2w-3PJURhW9eBD90zdnw9NCDDIZbCMM6Izsb4');
 ```
 #### Success example:
 ```json
-{
-  "code": 0,
-  "value": {
-    "name": "alex",
-    "id": "xxxx"
-  }
-}
+{"code":0,"value":{"name":"alex","id":"xxxx"}}
 ```
 #### Error example:
 ```json
-{
-  "code": 1,
-  "value": "error message"
-}
+{"code":1,"value":"error message"}
 ```
  */
     decode(token: string): string;
@@ -9174,18 +9664,18 @@ result :
 
 ```
 {
-    code :0,
-    value :{
-        name:""alex"",
-        id:""xxxx""
+    "code" :0,
+    "value" :{
+        "name":"alex",
+        "id":"xxxx"
     }
 }
 ```
 or
 ```
 {
-    code :1,
-    value :""error message""
+    "code" :1,
+    "value" :"error message"
 }
 ```
 ```
@@ -9248,575 +9738,49 @@ declare namespace Kooboo.Sites.Scripting.Global.Privacy {
   }
 
 }
-declare namespace Kooboo.Data.Interface {
-  interface IkScript {
-  }
-
-  interface ISiteObject {
-    constType: number;
-    creationDate: Date;
-    lastModified: Date;
-    id: any;
-    name: string;
-  }
-
-  interface ICoreObject {
-    online: boolean;
-    version: number;
-  }
-
-  interface ITextObject extends ISiteObject {
-    body: string;
-  }
-
-  interface IScriptable {
-    requestParas: string[];
-  }
-
-  interface IDataSource {
-  }
-
-  interface IDynamic {
-    values: Record<string, any>;
-    getValue(FieldName: string): any;
-    getValue(FieldName: string, Context: Kooboo.Data.Context.RenderContext): any;
-    setValue(FieldName: string, Value: any): void;
-  }
-
-  interface IRepository {
-    modelType: any;
-    storeName: string;
-    store: Kooboo.IndexedDB.IObjectStore;
-    addOrUpdate(value: any, UserId?: any): boolean;
-    delete(id: any, UserId?: any): number;
-    get(id: any, getColumnDataOnly?: boolean): ISiteObject;
-    getByNameOrId(NameOrId: string): ISiteObject;
-    all(UseColumnData?: boolean): ISiteObject[];
-    getByLog(log: Kooboo.IndexedDB.LogEntry): ISiteObject;
-    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
-    getLastEntryFromLog(ObjectId: any): ISiteObject;
-    checkOut(VersionId: number, DestinationRepository: IRepository, SelfIncluded: boolean): void;
-    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-  }
-
-  interface IExtensionable extends ISiteObject {
-    extension: string;
-  }
-
-  interface IEmbeddable extends ITextObject, ISiteObject {
-    ownerObjectId: any;
-    ownerConstType: number;
-    isEmbedded: boolean;
-    bodyHash: number;
-    koobooOpenTag: string;
-    engine: string;
-    itemIndex: number;
-    domTagName: string;
-  }
-
-  interface IBinaryFile extends IExtensionable, ISiteObject {
-    contentBytes: number[];
-    size: number;
-  }
-
-  interface ISiteSetting {
-    name: string;
-  }
-
-  interface ISettingDescription {
-    group: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-  }
-
-  interface SettingFile {
-    name: string;
-    base64: string;
-    bytes: number[];
-    stream: any;
-  }
-
-  interface IDataMethodSetting extends Kooboo.Data.IGolbalObject, ICoreObject {
-    methodName: string;
-    displayName: string;
-    description: string;
-    declareType: string;
-    declareTypeHash: any;
-    isThirdPartyType: boolean;
-    returnType: string;
-    isPagedResult: boolean;
-    originalMethodName: string;
-    methodSignatureHash: any;
-    isStatic: boolean;
-    isVoid: boolean;
-    isGlobal: boolean;
-    isPost: boolean;
-    isTask: boolean;
-    isPublic: boolean;
-    codeId: any;
-    isKScript: boolean;
-    parameters: Record<string, string>;
-    parameterBinding: Record<string, ParameterBinding>;
-  }
-
-}
-declare namespace Kooboo.Sites.Integration {
-  interface IIntegrateCommerceProvider {
+declare namespace Kooboo.Sites.Integration.Providers {
+  interface TiktokCommerceProvider extends Kooboo.Sites.Integration.IIntegrateCommerceProvider, Kooboo.Sites.Integration.BaseIntegrateCommerceProvider {
+    providerName: string;
+    setOrdersCallbackCode(codeBlockName: string): void;
     getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
-    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
     getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
     setStoreStatus(storeId: string, enable: boolean): string;
     removeStore(storeIds: string[]): string;
-    getStores(): Record<string, string>;
+    getStores(): any;
     getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
     readAttachment(key: string, fileName: string, contentType?: string): void;
+  }
+
+  interface SheinCommerceProvider extends Kooboo.Sites.Integration.IIntegrateCommerceProvider, Kooboo.Sites.Integration.BaseIntegrateCommerceProvider {
+    providerName: string;
     setOrdersCallbackCode(codeBlockName: string): void;
+    getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
+    getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
+    setStoreStatus(storeId: string, enable: boolean): string;
+    removeStore(storeIds: string[]): string;
+    getStores(): any;
+    getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
+    readAttachment(key: string, fileName: string, contentType?: string): void;
   }
 
-}
-declare namespace Kooboo.Data.Context {
-  interface RenderContext {
-    httpContext: any;
-    logInfo: Kooboo.Data.Context.RenderCompleted.LogInfo;
-    responseSent: boolean;
-    request: HttpRequest;
-    response: HttpResponse;
-    outputContext: OutputContext;
-    enableTextGZip: boolean;
-    dataContext: DataContext;
-    webSite: Kooboo.Data.Models.WebSite;
-    sessionId: string;
-    sessionGuid: any;
-    user: Kooboo.Data.Models.User;
-    culture: string;
-    placeholderContents: Record<string, string>;
-    schemaFieldValues: Record<string, SchemaFieldValue>;
-    items: Record<string, any>;
-    headerBindings: HeaderBindings[];
-    isSiteBinding: boolean;
-    isBackendView: boolean;
-    hasLayoutSet: boolean;
-    mockData: boolean;
-    isMobile: boolean;
-    compressionStore: Kooboo.Data.Server.SiteCompressionStore;
-    renderCancelled: boolean;
-    defaultDetectDifferentCulture: boolean;
-    cookieConsentState: Kooboo.Data.Models.CookieConsentState;
-    eCommerceState: Kooboo.Data.Models.CommerceState;
-    country: Kooboo.Lib.GeoLocation.CountryLocationModel;
-    allowCompression: boolean;
-    counter: Record<any, number>;
-    getHeader(preferredKey: string, fallbackKey?: string): string;
-    addPlaceHolderContent(Key: string, value: string): void;
-    setItem(value: any, KeyName?: string): void;
-    getItem(KeyName?: string): any;
-    getItem(keyName: string, Setter: any): any;
-    hasItem(KeyName?: string): boolean;
-    getOrgId(): any;
-    clone(): RenderContext;
-    copyTo(type: any): any;
-    getSetting(type: any): any;
-    findContext(query: string): any;
-    enableCORS(SetOriginWildcard?: boolean): void;
-    isOptionsRequest(): boolean;
-    writeBody(text: string): void;
-    writeBody(binaryBytes: number[]): void;
-  }
-
-  interface HttpRequest {
-    context: RenderContext;
-    queryString: Record<string, string>;
-    forms: any;
-    files: Kooboo.Lib.NETMultiplePart.File[];
-    cookies: Record<string, string>;
-    path: string;
-    url: string;
-    contentType: string;
-    ifNoneMatch: string;
-    relativeUrl: string;
-    rawRelativeUrl: string;
-    method: string;
-    host: string;
-    binding: Kooboo.Data.Config.SiteBinding;
-    scheme: string;
-    postData: number[];
-    body: string;
-    bodyStream: any;
-    model: any;
-    iP: string;
-    altervativeViews: number[];
-    culture: string;
-    sitePath: string;
-    channel: RequestChannel;
-    port: number;
-    traceIdentifier: string;
-    clientHint: Kooboo.Data.Server.AcceptCH;
-    getQueryString(key: string): string;
-    getValue(name: string, needDecode?: boolean): string;
-    get(name: string): string;
-    getValue(names: string[]): string;
-    getValue(name: string): any;
-    clone(): HttpRequest;
-  }
-
-  interface HttpResponse {
-    contentType: string;
-    body: number[];
-    stream: any;
-    filePart: Kooboo.IndexedDB.FileIO.FilePart;
-    handleByHttpContext: boolean;
-    headers: Record<string, string>;
-    deletedCookieNames: string[];
-    appendedCookies: any[];
-    statusCode: number;
-    end: boolean;
-    redirectLocation: string;
-    segmentResult: RenderSegmentResult;
-    renderOutput: RenderOutputBase;
-    appendString(output: string): void;
-    appendCookie(CookieName: string, CookieValue: string, days?: number): void;
-    appendCookie(CookieName: string, CookieValue: string, expires: Date): void;
-    addCookie(cookie: any): void;
-    deleteCookie(CookieName: string): void;
-    redirect(StatusCode: number, url: string, absolute?: boolean): void;
-    hasResponse(): boolean;
-  }
-
-  interface OutputContext {
-    activeIfResult: ActiveIf;
-    slot: SlotManager;
-  }
-
-  interface DataContext {
-    stack: any[];
-    inlineTraceId: any;
-    repeatCounter: RepeatCondition;
-    onDataPush: (p1:System.Collections.IDictionary,)=>void;
-    getValueByObjectType(FullPropertyName: string): any;
-    getValueByMemberName(MemberName: string): any;
-    getValueFromStackItem(StackItem: any, query: GetValueQuery): any;
-    getValue(FullPropertyName: string, excludeJsScopeValue?: boolean): any;
-    getValue(query: GetValueQuery, excludeJsScopeValue: boolean): any;
-    push(key: string, value: any): void;
-    push(data: any): void;
-    pop(): void;
-  }
-
-  interface HeaderBindings {
-    metaName: string;
-    isTitle: boolean;
-    isCustomHeader: boolean;
-    isHeaderStyle: boolean;
-    isHeaderScript: boolean;
-    url: string;
-    content: string;
-    charSet: string;
-    property: string;
-    httpEquiv: string;
-    requireBinding: boolean;
-    valueQuery: HeaderValueQuery;
-    getContent(context: RenderContext): string;
-  }
-
-  type RequestChannel = 'Default' | 'InlineDesign' | 'Draft' | 'API' | 'Markdown';
-
-  interface RenderSegmentResult {
-    compressType: Kooboo.Data.Server.CompressionType;
-    originalLength: number;
-    addString(output: string): void;
-    addFile(file: Kooboo.IndexedDB.FileIO.CompressionBlobFile): void;
-    addEncoded(bytes: number[]): void;
-    getPlaceholderIndex(): number;
-    replacePlaceholder(Index: number, value: string): void;
-  }
-
-  interface RenderOutputBase {
-    beforeHeadLength: number;
-    headLength: number;
-    bodyLength: number;
-    hasResposne(): boolean;
-    write(data: string): void;
-    write(charSpan: any): void;
-    write(data: any): void;
-    write(data: number): void;
-    writeNumberAsString(value: number): void;
-    writeToNetwork(writer: any, res: any, compressType: Kooboo.Data.Server.CompressionType, ct: any): any;
-    freezeState(): FrozenState;
-    getWrittenData(frozenState: FrozenState): any;
-  }
-
-  interface ActiveIf {
-    itemCount: number;
-    push(result: IFCheckResult): void;
-    canContinue(currentType: EnumIfConditionType, ParentId?: any): boolean;
-  }
-
-  interface SlotManager {
-    stack: SlotContent[];
-    push(result: string, name?: string): void;
-    popOff(): void;
-    get(name?: string): string;
-  }
-
-  interface GetValueQuery {
-    fullPropertyName: string;
-    key: string;
-    subProperty: string;
-    isMember: boolean;
-    memberName: string;
-    partialMerge: boolean;
-    originalMergeField: string;
-    originalValue: string;
-  }
-
-  interface RepeatCondition {
-    currentCounter: RepeaterCounter;
-    push(Total: number): void;
-    pop(): void;
-    check(condition: string): boolean;
-  }
-
-  interface HeaderValueQuery {
-    isExpression: boolean;
-    isString: boolean;
-    itemValues: ItemQuery[];
-    requireRender: boolean;
-    render(context: RenderContext): string;
-    tryAssignValue(data: any, context: RenderContext): void;
-    initValue(context: RenderContext): void;
-  }
-
-  interface FrozenState {
-    beforeHeadOffset: number;
-    headOffset: number;
-    bodyOffset: number;
-  }
-
-  interface IFCheckResult {
-    type: EnumIfConditionType;
-    result: boolean;
-    parentId: any;
-  }
-
-  type EnumIfConditionType = 'IF' | 'ElseIf' | 'Else';
-
-  interface SlotContent {
-    name: string;
-    value: string;
-  }
-
-  interface RepeaterCounter {
-    total: number;
-    current: number;
-  }
-
-  interface ItemQuery {
-    value: string;
-    query: GetValueQuery;
-  }
-
-}
-declare namespace Kooboo.Sites.Payment.Methods {
-  interface SquareCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: SquareSetting;
-    /** ```
-var result = k.payment.squareCheckout.charge({
-    currency: 'USD',
-    totalAmount: 0.01;
-    name: 'order summary',
-    returnUrl: '/order/1234'
-})
-k.response.redirect(charge.nextAction.redirectUrl)
-``` */
-    charge(params: KScript.Payment.Square.SquareCheckoutParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    notify(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
-    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
-    checkStatus(requestId: string): any;
-  }
-
-  interface WeChatNative extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    supportedCurrency: string[];
-    iconType: string;
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: Kooboo.Sites.Payment.Methods.wechat.WeChatV3Setting;
-    /** Pay by wechat barcode scan. Example:
-```
-<script env='server'>
-var response = k.payment.wechat.charge({
-    currency: 'CNY',
-    name: `kooboo order:xxx`,
-    totalAmount: 1.50,
-    redirectUrl:'/'
-})
-</script>
-<div k-content='response.nextAction.renderHtml'></div>
-```
-Or use 'response.nextAction.responseData' render your self qrcode.
- */
-    charge(params: KScript.Payment.Wechat.WeChatNativeParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface SquareSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    name: string;
-    useSandBox: boolean;
-    applicationId: string;
-    accessToken: string;
-    locationId: string;
-    baseURL: string;
-    group: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-  }
-
-  interface PaynlSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    paynlUrl: string;
-    testMode: boolean;
-    salesLocationCode: string;
-    salesLocationSecret: string;
-    code: string;
-    token: string;
-    name: string;
-    group: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-  }
-
-  interface PaypalSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    paypalUrl: string;
-    useSandBox: boolean;
-    clientId: string;
-    secret: string;
-    name: string;
-    group: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-  }
-
-  interface PaypalFormSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    paypalUrl: string;
-    iPNUrl: string;
-    emailAddress: string;
-    logoImage: string;
-    useSandBox: boolean;
-    name: string;
-    group: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-  }
-
-}
-declare namespace Kooboo.Sites.Payment.Methods.wechat {
-  interface WeChatApp extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: WeChatV3Setting;
-    /** ```ts
-const result = k.payment.wechatApp.charge({
-    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
-    totalAmount: 0.01,
-    currency: 'CNY',
-    name: 'tea',
-    description: 'Tea description',
-});
-```
- */
-    charge(chargeParams: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface WeChatH5 extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: WeChatV3Setting;
-    /** ```ts
-const result = k.payment.wechatH5.charge({
-    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
-    totalAmount: 0.01,
-    currency: 'CNY',
-    name: 'tea',
-    description: 'Tea description',
-});
-```
- */
-    charge(chargeParams: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface WeChatJsApi extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: WeChatV3Setting;
-    /** ```ts
-// Server side
-const result = k.payment.wechatJsApi.charge({
-    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
-    totalAmount: 0.01,
-    currency: 'CNY',
-    name: 'tea',
-    description: 'Tea description',
-    openId:"<wechat_openid>"
-});
-
-// Client side
-WeixinJSBridge.invoke('getBrandWCPayRequest',
-    JSON.parse(result.nextAction.responseData),
-    function(res) {
-        if (res.err_msg == "get_brand_wcpay_request:ok") {
-            // 使用以上方式判断前端返回,微信团队郑重提示：
-            //res.err_msg将在用户支付成功后返回ok，但并不保证它绝对可靠。
-        }
-    }
-);
-```
- */
-    charge(chargeParams: KScript.Payment.Model.WeChatJsApiChargeParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface WeChatV3Setting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    name: string;
-    group: string;
-    appId: string;
-    merchantId: string;
-    aPIV3Key: string;
-    certificatePrivateKey: Kooboo.Data.Interface.SettingFile;
-    certificate: Kooboo.Data.Interface.SettingFile;
-    getNotifyUrl(): string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
-    validate(): void;
+  interface AmazonCommerceProvider extends Kooboo.Sites.Integration.IIntegrateCommerceProvider, Kooboo.Sites.Integration.BaseIntegrateCommerceProvider {
+    providerName: string;
+    setOrdersCallbackCode(codeBlockName: string): void;
+    getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
+    getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
+    setStoreStatus(storeId: string, enable: boolean): string;
+    removeStore(storeIds: string[]): string;
+    getStores(): any;
+    getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
+    readAttachment(key: string, fileName: string, contentType?: string): void;
   }
 
 }
 declare namespace Kooboo.Sites.Payment.Methods.Stripe {
-  interface StripeCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface StripeCheckout extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     supportedCurrency: string[];
@@ -9825,7 +9789,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Stripe {
     context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: StripeCheckoutSetting;
-    /** 
+    /**
 ```
 <script env='server'>
   var res = k.payment.stripeCheckout.charge({
@@ -9844,7 +9808,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Stripe {
     checkStatus(requestId: string): any;
   }
 
-  interface StripePaymentIntent extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface StripePaymentIntent extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     supportedCurrency: string[];
@@ -9883,35 +9847,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Stripe {
 
 }
 declare namespace Kooboo.Sites.Payment.Methods.Paypal {
-  interface PaynlCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: Kooboo.Sites.Payment.Methods.PaynlSetting;
-    /** 
-```
-<script env='server'>
-  var res = k.payment.paynl.charge({
-    returnUrl: '/order/xxx',
-    cancelUrl: '/',
-    name: 'T-shirt',
-    totalAmount: 1.50,
-    currency: 'eur'
-  });
-</script>
-<div k-content='res.nextAction.renderHtml'></div>
-``` */
-    charge(params: KScript.Payment.Stripe.PaynlCheckoutParams): Kooboo.Sites.Payment.ChargeResponse;
-    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
-    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface PaypalCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface PaypalCheckout extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     icon: string;
@@ -9920,7 +9856,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.PaypalSetting;
-    /** 
+    /**
 ```
 <script env='server'>
   var res = k.payment.stripeCheckout.charge({
@@ -9939,7 +9875,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     checkStatus(requestId: string): any;
   }
 
-  interface PaypalForm extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface PaypalForm extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     icon: string;
@@ -9948,7 +9884,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     context: Kooboo.Sites.Render.KoobooRenderContext;
     /** Account settings to be used for this payment method */
     setting: Kooboo.Sites.Payment.Methods.PaypalFormSetting;
-    /** 
+    /**
 ```
 <script env='server'>
   var res = k.payment.stripeCheckout.charge({
@@ -9967,7 +9903,7 @@ declare namespace Kooboo.Sites.Payment.Methods.Paypal {
     checkStatus(requestId: string): any;
   }
 
-  interface TwoCheckout extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface TwoCheckout extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     icon: string;
@@ -10016,9 +9952,328 @@ if(result.nextAction?.redirectUrl){
     checkStatus(requestId: string): any;
   }
 
+  interface PaynlCheckout extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: Kooboo.Sites.Payment.Methods.PaynlSetting;
+    /**
+```
+<script env='server'>
+  var res = k.payment.paynl.charge({
+    returnUrl: '/order/xxx',
+    cancelUrl: '/',
+    name: 'T-shirt',
+    totalAmount: 1.50,
+    currency: 'eur'
+  });
+</script>
+<div k-content='res.nextAction.renderHtml'></div>
+``` */
+    charge(params: KScript.Payment.Stripe.PaynlCheckoutParams): Kooboo.Sites.Payment.ChargeResponse;
+    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+}
+declare namespace Kooboo.Sites.Payment.Methods {
+  interface WeChatNative extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    supportedCurrency: string[];
+    iconType: string;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: Kooboo.Sites.Payment.Methods.wechat.WeChatV3Setting;
+    /** Pay by wechat barcode scan. Example:
+```
+<script env='server'>
+var response = k.payment.wechat.charge({
+    currency: 'CNY',
+    name: `kooboo order:xxx`,
+    totalAmount: 1.50,
+    redirectUrl:'/'
+})
+</script>
+<div k-content='response.nextAction.renderHtml'></div>
+```
+Or use 'response.nextAction.responseData' render your self qrcode.
+ */
+    charge(params: KScript.Payment.Wechat.WeChatNativeParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface SquareCheckout extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: SquareSetting;
+    /** ```
+var result = k.payment.squareCheckout.charge({
+    currency: 'USD',
+    totalAmount: 0.01;
+    name: 'order summary',
+    returnUrl: '/order/1234'
+})
+k.response.redirect(charge.nextAction.redirectUrl)
+``` */
+    charge(params: KScript.Payment.Square.SquareCheckoutParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    notify(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
+    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
+    checkStatus(requestId: string): any;
+  }
+
+  interface PaypalSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    paypalUrl: string;
+    useSandBox: boolean;
+    clientId: string;
+    secret: string;
+    name: string;
+    group: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
+  interface PaypalFormSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    paypalUrl: string;
+    iPNUrl: string;
+    emailAddress: string;
+    logoImage: string;
+    useSandBox: boolean;
+    name: string;
+    group: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
+  interface PaynlSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    paynlUrl: string;
+    testMode: boolean;
+    salesLocationCode: string;
+    salesLocationSecret: string;
+    code: string;
+    token: string;
+    name: string;
+    group: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
+  interface SquareSetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    name: string;
+    useSandBox: boolean;
+    applicationId: string;
+    accessToken: string;
+    locationId: string;
+    baseURL: string;
+    group: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
+}
+declare namespace Kooboo.Sites.Payment.Methods.wechat {
+  interface WeChatApp extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: WeChatV3Setting;
+    /** ```ts
+const result = k.payment.wechatApp.charge({
+    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
+    totalAmount: 0.01,
+    currency: 'CNY',
+    name: 'tea',
+    description: 'Tea description',
+});
+```
+ */
+    charge(chargeParams: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface WeChatJsApi extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: WeChatV3Setting;
+    /** ```ts
+// Server side
+const result = k.payment.wechatJsApi.charge({
+    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
+    totalAmount: 0.01,
+    currency: 'CNY',
+    name: 'tea',
+    description: 'Tea description',
+    openId:"<wechat_openid>"
+});
+
+// Client side
+WeixinJSBridge.invoke('getBrandWCPayRequest',
+    JSON.parse(result.nextAction.responseData),
+    function(res) {
+        if (res.err_msg == "get_brand_wcpay_request:ok") {
+            // 使用以上方式判断前端返回,微信团队郑重提示：
+            //res.err_msg将在用户支付成功后返回ok，但并不保证它绝对可靠。
+        }
+    }
+);
+```
+ */
+    charge(chargeParams: KScript.Payment.Model.WeChatJsApiChargeParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface WeChatH5 extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: WeChatV3Setting;
+    /** ```ts
+const result = k.payment.wechatH5.charge({
+    order: '1307d2c7-c5f6-4957-9766-92e485b007b2', // order ID
+    totalAmount: 0.01,
+    currency: 'CNY',
+    name: 'tea',
+    description: 'Tea description',
+});
+```
+ */
+    charge(chargeParams: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface WeChatV3Setting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    name: string;
+    group: string;
+    appId: string;
+    merchantId: string;
+    aPIV3Key: string;
+    certificatePrivateKey: Kooboo.Data.Interface.SettingFile;
+    certificate: Kooboo.Data.Interface.SettingFile;
+    getNotifyUrl(): string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+    validate(): void;
+  }
+
+}
+declare namespace Kooboo.Sites.Payment.Methods.Alipay {
+  interface AlipayForm extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    supportedCurrency: string[];
+    iconType: string;
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: AlipaySetting;
+    /** ```ts
+<script env="server">
+    const res = k.payment.alipayForm.charge({
+        totalAmount: 1.5,
+        name: 'Test Alipay form',
+        currency: 'CNY',
+        returnUrl: '/success',
+    })
+</script>
+<div env="server">
+    {{{res.nextAction.renderHtml}}}
+</div>
+```
+ */
+    charge(params: KScript.Payment.Alipay.AlipayFormParams): Kooboo.Sites.Payment.ChargeResponse;
+    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
+    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface AlipayApp extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: AlipaySetting;
+    /** ```ts
+const res = k.payment.alipayApp.charge({
+    name: 'Test Alipay App',
+    totalAmount: 1.5,
+    currency: 'CNY'
+});
+```
+ */
+    charge(params: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface AlipayH5 extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
+    name: string;
+    displayName: string;
+    icon: string;
+    iconType: string;
+    supportedCurrency: string[];
+    context: Kooboo.Sites.Render.KoobooRenderContext;
+    /** Account settings to be used for this payment method */
+    setting: AlipaySetting;
+    /** ```ts
+<script env="server">
+    const rsp = k.payment.alipayH5.charge({
+        name: 'Test Alipay H5',
+        totalAmount: 1.5,
+        currency: 'CNY',
+        returnUrl: '/success'
+    })
+</script>
+<div env="server">{{{rsp.nextAction.renderHtml}}}</div>
+```
+ */
+    charge(params: KScript.Payment.Alipay.AlipayFormParams): Kooboo.Sites.Payment.ChargeResponse;
+    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
+    checkStatus(requestId: string): any;
+  }
+
+  interface AlipaySetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
+    name: string;
+    group: string;
+    useSandBox: boolean;
+    appId: string;
+    appPrivateKey: string;
+    alipayPublicKey: string;
+    signType: string;
+    charset: string;
+    serverUrl: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
 }
 declare namespace Kooboo.Sites.Payment.Methods.MoneyBoxs {
-  interface MoneyBoxs extends Kooboo.Sites.Payment.IPaymentMethod {
+  interface MoneyBoxs extends Kooboo.Sites.Payment.IPaymentMethod, Kooboo.Sites.Payment.IPaymentCallbackHandler {
     name: string;
     displayName: string;
     icon: string;
@@ -10072,7 +10327,7 @@ if(result.nextAction?.redirectUrl){
     card: Kooboo.Sites.Payment.Models.Card;
     billingAddress: Kooboo.Sites.Payment.Models.Address;
     shipAddress: Kooboo.Sites.Payment.Models.Address;
-    goods: Good[];
+    goods: MoneyBoxsGood[];
     /** Order total amount Example: 1.50 */
     totalAmount: number;
     /** Order name Example: 'tea' */
@@ -10099,102 +10354,10 @@ if(result.nextAction?.redirectUrl){
     getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
   }
 
-  interface Good {
+  interface MoneyBoxsGood {
     goodsName: string;
     quantity: string;
     goodsPrice: string;
-  }
-
-}
-declare namespace Kooboo.Sites.Payment.Methods.Alipay {
-  interface AlipayApp extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: AlipaySetting;
-    /** ```ts
-const res = k.payment.alipayApp.charge({
-    name: 'Test Alipay App',
-    totalAmount: 1.5,
-    currency: 'CNY'
-});
-```
- */
-    charge(params: KScript.Payment.Model.ChargeParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface AlipayForm extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    supportedCurrency: string[];
-    iconType: string;
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: AlipaySetting;
-    /** ```ts
-<script env="server">
-    const res = k.payment.alipayForm.charge({
-        totalAmount: 1.5,
-        name: 'Test Alipay form',
-        currency: 'CNY',
-        returnUrl: '/success',
-    })
-</script>
-<div env="server">
-    {{{res.nextAction.renderHtml}}}
-</div>
-```
- */
-    charge(params: KScript.Payment.Alipay.AlipayFormParams): Kooboo.Sites.Payment.ChargeResponse;
-    updateOrder(context: Kooboo.Data.Context.RenderContext): Kooboo.Sites.Payment.PaymentCallback;
-    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface AlipayH5 extends Kooboo.Sites.Payment.IPaymentMethod {
-    name: string;
-    displayName: string;
-    icon: string;
-    iconType: string;
-    supportedCurrency: string[];
-    context: Kooboo.Sites.Render.KoobooRenderContext;
-    /** Account settings to be used for this payment method */
-    setting: AlipaySetting;
-    /** ```ts
-<script env="server">
-    const rsp = k.payment.alipayH5.charge({
-        name: 'Test Alipay H5',
-        totalAmount: 1.5,
-        currency: 'CNY',
-        returnUrl: '/success'
-    })
-</script>
-<div env="server">{{{rsp.nextAction.renderHtml}}}</div>
-```
- */
-    charge(params: KScript.Payment.Alipay.AlipayFormParams): Kooboo.Sites.Payment.ChargeResponse;
-    checkStatus(request: string): Kooboo.Sites.Payment.PaymentStatusResponse;
-    checkStatus(requestId: string): any;
-  }
-
-  interface AlipaySetting extends Kooboo.Sites.Payment.IPaymentSetting, Kooboo.Data.Interface.ISiteSetting, Kooboo.Data.Interface.ISettingDescription {
-    name: string;
-    group: string;
-    useSandBox: boolean;
-    appId: string;
-    appPrivateKey: string;
-    alipayPublicKey: string;
-    signType: string;
-    charset: string;
-    serverUrl: string;
-    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
   }
 
 }
@@ -10412,25 +10575,29 @@ declare namespace Kooboo.Sites.AI.Vectorization {
 
 }
 declare namespace Kooboo.Sites.Render {
-  type Type = 'All' | 'Development' | 'Content' | 'Commerce' | 'Route' | 'RenderPlan' | 'WithVersion' | 'Image' | 'Self';
+  type CacheVersionType = 'All' | 'Development' | 'Content' | 'Commerce' | 'Route' | 'RenderPlan' | 'WithVersion' | 'Image' | 'Self';
 
   interface KoobooRenderContext extends Kooboo.Data.Context.RenderContext {
     siteCacheFile: Kooboo.Sites.Render.StoreCache.SiteCacheFile;
-    startTime: Date;
     siteDb: Kooboo.Sites.Repository.SiteDb;
     moduleContext: Kooboo.Sites.ScriptModules.ModuleContext;
     headerRenderOperation: Kooboo.Sites.Render.HeaderRender.HeaderRenderOperation;
-    scriptEnvironment: Kooboo.Sites.Render.Utility.ScriptEnvironment;
+    ignoreKoobooId: boolean;
     route: Kooboo.Sites.Routing.Route;
     page: Kooboo.Sites.Models.Page;
     logFileSize: number;
     logConstType: number;
-    viewDataMethods: Kooboo.Sites.Models.ViewDataMethod[];
     views: Kooboo.Sites.Models.View[];
     executingView: Kooboo.Sites.Models.View;
-    alternativeViews: number[];
+    alternativeViews: any;
     log: Kooboo.Data.Models.VisitorLog;
     isProtected: boolean;
+    k: KScript.k;
+    session: KScript.Session;
+    engine: any;
+    startTime: Date;
+    stopWatchStart: number;
+    enableLog: boolean;
     httpContext: any;
     logInfo: Kooboo.Data.Context.RenderCompleted.LogInfo;
     responseSent: boolean;
@@ -10444,9 +10611,9 @@ declare namespace Kooboo.Sites.Render {
     sessionGuid: any;
     user: Kooboo.Data.Models.User;
     culture: string;
-    placeholderContents: Record<string, string>;
-    schemaFieldValues: Record<string, SchemaFieldValue>;
-    items: Record<string, any>;
+    placeholderContents: any;
+    schemaFieldValues: any;
+    items: any;
     headerBindings: Kooboo.Data.Context.HeaderBindings[];
     isSiteBinding: boolean;
     isBackendView: boolean;
@@ -10460,17 +10627,23 @@ declare namespace Kooboo.Sites.Render {
     eCommerceState: Kooboo.Data.Models.CommerceState;
     country: Kooboo.Lib.GeoLocation.CountryLocationModel;
     allowCompression: boolean;
-    counter: Record<any, number>;
+    counter: any;
     addLogEntry(Name: string, Value: string, StartTime: Date, StatusCode: number, detail?: string): void;
+    createJsEngine(timeout: any): any;
+    getDebugJsEngine(session: Kooboo.Sites.ScriptDebugger.DebugSession): any;
+    clone(): KoobooRenderContext;
     copyContex(Context: Kooboo.Data.Context.RenderContext): KoobooRenderContext;
     getHeader(preferredKey: string, fallbackKey?: string): string;
+    getExistingSessionId(): string;
     addPlaceHolderContent(Key: string, value: string): void;
     setItem(value: any, KeyName?: string): void;
     getItem(KeyName?: string): any;
     getItem(keyName: string, Setter: any): any;
     hasItem(KeyName?: string): boolean;
+    tryGetExistingIsMobile(isMobile: any): boolean;
+    tryGetExistingCookieConsentState(state: Kooboo.Data.Models.CookieConsentState): boolean;
+    tryGetExistingCommerceState(state: Kooboo.Data.Models.CommerceState): boolean;
     getOrgId(): any;
-    clone(): Kooboo.Data.Context.RenderContext;
   }
 
   interface CacheVersion {
@@ -10483,15 +10656,16 @@ declare namespace Kooboo.Sites.Render {
     withVersion: number;
     image: number;
     increase(type: number): void;
-    increase(type: Type): void;
-    getKey(type: Type, self?: number): string;
-    getVersionByType(type: Type): number;
+    increase(type: CacheVersionType): void;
+    getKey(type: CacheVersionType, self?: number): string;
+    getVersionByType(type: CacheVersionType): number;
   }
 
 }
 declare namespace Kooboo.Dom {
   interface Document extends Node {
     baseURI: string;
+    baseTag: Element;
     isQuirksMode: boolean;
     body: Element;
     head: Element;
@@ -10872,6 +11046,107 @@ declare namespace Kooboo.Dom {
   type TraverseType = 'First' | 'Last' | 'Previous' | 'Next';
 
 }
+declare namespace Kooboo.Data.Interface {
+  interface ISiteObject {
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    id: any;
+    name: string;
+  }
+
+  interface ICoreObject {
+    online: boolean;
+    version: number;
+  }
+
+  interface ITextObject extends ISiteObject {
+    body: string;
+  }
+
+  interface IScriptable {
+    requestParas: string[];
+  }
+
+  interface IDataSource {
+  }
+
+  interface IDynamic {
+    values: any;
+    getValue(fieldName: string): any;
+    getValue(fieldName: string, context: Kooboo.Data.Context.RenderContext): any;
+    setValue(fieldName: string, value: any): void;
+  }
+
+  interface IRepository {
+    modelType: any;
+    storeName: string;
+    store: Kooboo.IndexedDB.IObjectStore;
+    addOrUpdate(value: any, UserId?: any): boolean;
+    delete(id: any, UserId?: any): number;
+    get(id: any, getColumnDataOnly?: boolean): ISiteObject;
+    getByNameOrId(NameOrId: string): ISiteObject;
+    all(UseColumnData?: boolean): ISiteObject[];
+    getByLog(log: Kooboo.IndexedDB.LogEntry): ISiteObject;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(loglist: Kooboo.IndexedDB.LogEntry[]): void;
+    getLastEntryFromLog(ObjectId: any): ISiteObject;
+    checkOut(VersionId: number, DestinationRepository: IRepository, SelfIncluded: boolean): void;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+  }
+
+  interface IExtensionable extends ISiteObject {
+    extension: string;
+  }
+
+  interface IEmbeddable extends ITextObject, ISiteObject {
+    ownerObjectId: any;
+    ownerConstType: number;
+    isEmbedded: boolean;
+    bodyHash: number;
+    koobooOpenTag: string;
+    engine: string;
+    itemIndex: number;
+    domTagName: string;
+  }
+
+  interface IBinaryFile extends IExtensionable, ISiteObject {
+    contentBytes: number[];
+    size: number;
+  }
+
+  interface ISiteSetting {
+    name: string;
+  }
+
+  interface ISettingDescription {
+    group: string;
+    getAlert(renderContext: Kooboo.Data.Context.RenderContext): string;
+  }
+
+  interface SettingFile {
+    name: string;
+    base64: string;
+    bytes: number[];
+    stream: any;
+  }
+
+}
+declare namespace Kooboo.IndexedDB.Serializer {
+  interface IDatabaseObject {
+    toBytes(): number[];
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  interface IWormDbGeneratedObject {
+    getKey(): number;
+    setKey(id: number): void;
+  }
+
+}
 declare namespace Kooboo.Data.GeoLocation {
   interface IPInfo {
     city: string;
@@ -10913,6 +11188,269 @@ declare namespace Kooboo.Data.GeoLocation {
   }
 
   type IpUserType = 'Unknown' | 'Residential' | 'Hosting' | 'Education' | 'Business' | 'Government';
+
+}
+declare namespace Kooboo.Data.Context {
+  interface RenderContext {
+    startTime: Date;
+    stopWatchStart: number;
+    enableLog: boolean;
+    httpContext: any;
+    logInfo: Kooboo.Data.Context.RenderCompleted.LogInfo;
+    responseSent: boolean;
+    request: HttpRequest;
+    response: HttpResponse;
+    outputContext: OutputContext;
+    enableTextGZip: boolean;
+    dataContext: DataContext;
+    webSite: Kooboo.Data.Models.WebSite;
+    sessionId: string;
+    sessionGuid: any;
+    user: Kooboo.Data.Models.User;
+    culture: string;
+    placeholderContents: any;
+    schemaFieldValues: any;
+    items: any;
+    headerBindings: HeaderBindings[];
+    isSiteBinding: boolean;
+    isBackendView: boolean;
+    hasLayoutSet: boolean;
+    mockData: boolean;
+    isMobile: boolean;
+    compressionStore: Kooboo.Data.Server.SiteCompressionStore;
+    renderCancelled: boolean;
+    defaultDetectDifferentCulture: boolean;
+    cookieConsentState: Kooboo.Data.Models.CookieConsentState;
+    eCommerceState: Kooboo.Data.Models.CommerceState;
+    country: Kooboo.Lib.GeoLocation.CountryLocationModel;
+    allowCompression: boolean;
+    counter: any;
+    getHeader(preferredKey: string, fallbackKey?: string): string;
+    getExistingSessionId(): string;
+    addPlaceHolderContent(Key: string, value: string): void;
+    setItem(value: any, KeyName?: string): void;
+    getItem(KeyName?: string): any;
+    getItem(keyName: string, Setter: any): any;
+    hasItem(KeyName?: string): boolean;
+    tryGetExistingIsMobile(isMobile: any): boolean;
+    tryGetExistingCookieConsentState(state: Kooboo.Data.Models.CookieConsentState): boolean;
+    tryGetExistingCommerceState(state: Kooboo.Data.Models.CommerceState): boolean;
+    getOrgId(): any;
+  }
+
+  interface HttpRequest {
+    context: RenderContext;
+    queryString: any;
+    forms: any;
+    files: Kooboo.Lib.NETMultiplePart.File[];
+    cookies: any;
+    hasCookies: boolean;
+    path: string;
+    url: string;
+    contentType: string;
+    ifNoneMatch: string;
+    relativeUrl: string;
+    rawRelativeUrl: string;
+    method: string;
+    host: string;
+    binding: Kooboo.Data.Config.SiteBinding;
+    scheme: string;
+    postData: number[];
+    body: string;
+    bodyStream: any;
+    model: any;
+    clientIp: any;
+    clientIpKey: any;
+    altervativeViews: any;
+    culture: string;
+    sitePath: string;
+    channel: RequestChannel;
+    port: number;
+    traceIdentifier: string;
+    clientHint: Kooboo.Data.Server.AcceptCH;
+    getQueryString(key: string): string;
+    getForm(key: string): string;
+    getFormValues(key: string): string[];
+    addForm(key: string, value: string): void;
+    setForm(key: string, value: string): void;
+    tryGetCookie(name: string, value: any): boolean;
+    getValue(name: string, needDecode?: boolean): string;
+    get(name: string): string;
+    getValue(names: string[]): string;
+    getValue(name: string): any;
+    clone(): HttpRequest;
+  }
+
+  interface HttpResponse {
+    contentType: string;
+    body: number[];
+    stream: any;
+    filePart: Kooboo.IndexedDB.FileIO.FilePart;
+    isPhysicalFilePart: boolean;
+    handleByHttpContext: boolean;
+    headers: any;
+    deletedCookieNames: string[];
+    appendedCookies: any[];
+    statusCode: number;
+    end: boolean;
+    redirectLocation: string;
+    segmentResult: RenderSegmentResult;
+    renderOutput: RenderOutputBase;
+    appendString(output: string): void;
+    hasDeletedCookies(): boolean;
+    hasAppendedCookies(): boolean;
+    appendCookie(cookieName: string, cookieValue: string, days?: number): void;
+    appendCookie(cookieName: string, cookieValue: string, expires: Date): void;
+    addCookie(cookie: any): void;
+    deleteCookie(cookieName: string): void;
+    redirect(statusCode: number, url: string, absolute?: boolean): void;
+    hasResponse(): boolean;
+  }
+
+  interface OutputContext {
+    activeIfResult: ActiveIf;
+    slot: SlotManager;
+  }
+
+  interface DataContext {
+    stack: any;
+    inlineTraceId: any;
+    repeatCounter: RepeatCondition;
+    onDataPush: (p1:System.Collections.IDictionary,)=>void;
+    getValueByObjectType(FullPropertyName: string): any;
+    getValueByMemberName(MemberName: string): any;
+    getFromStack(propName: string): any;
+    tryGetFromStack(propName: string, value: any): boolean;
+    getValueFromStackItem(StackItem: any, query: GetValueQuery): any;
+    getValue(FullPropertyName: string, excludeJsScopeValue?: boolean): any;
+    getValue(query: GetValueQuery, excludeJsScopeValue: boolean): any;
+    push(key: string, value: any): void;
+    push(data: any): void;
+    pop(): void;
+  }
+
+  interface HeaderBindings {
+    metaName: string;
+    isTitle: boolean;
+    isCustomHeader: boolean;
+    isHeaderStyle: boolean;
+    isHeaderScript: boolean;
+    url: string;
+    content: string;
+    charSet: string;
+    property: string;
+    httpEquiv: string;
+    requireBinding: boolean;
+    valueQuery: HeaderValueQuery;
+    getContent(context: RenderContext): string;
+  }
+
+  type RequestChannel = 'Default' | 'InlineDesign' | 'Draft' | 'API' | 'Markdown';
+
+  interface RenderSegmentResult {
+    compressType: Kooboo.Data.Server.CompressionType;
+    originalLength: number;
+    addString(output: string): void;
+    addFile(file: Kooboo.IndexedDB.FileIO.CompressionBlobFile): void;
+    addEncoded(bytes: number[]): void;
+    getPlaceholderIndex(): number;
+    replacePlaceholder(Index: number, value: string): void;
+  }
+
+  interface RenderOutputBase {
+    consumeOutput: OutputConsumer;
+    beforeHeadLength: number;
+    headLength: number;
+    bodyLength: number;
+    outputLength: number;
+    hasResposne(): boolean;
+    write(data: string): void;
+    write(charSpan: any): void;
+    write(data: any): void;
+    getMemory(sizeHint?: number): any;
+    getSpan(sizeHint?: number): any;
+    advance(count: number): void;
+    write(data: number): void;
+    writeNumberAsString(value: number): void;
+    writeToNetwork(writer: any, res: any, compressType: Kooboo.Data.Server.CompressionType, ct: any): any;
+    freezeState(): FrozenState;
+    getWrittenData(frozenState: FrozenState): any;
+  }
+
+  interface ActiveIf {
+    itemCount: number;
+    push(result: IFCheckResult, OwnerObjectId: any): void;
+    canContinue(currentType: EnumIfConditionType, ownerObjectId: any, koobooPath: Kooboo.Data.Models.KoobooDomPath): boolean;
+  }
+
+  interface SlotManager {
+    stack: any;
+    push(result: string, name?: string): void;
+    popOff(): void;
+    get(name?: string): string;
+  }
+
+  interface GetValueQuery {
+    fullPropertyName: string;
+    key: string;
+    subProperty: string;
+    isMember: boolean;
+    memberName: string;
+    partialMerge: boolean;
+    originalMergeField: string;
+    originalValue: string;
+  }
+
+  interface RepeatCondition {
+    currentCounter: RepeaterCounter;
+    push(Total: number): void;
+    pop(): void;
+    check(condition: string): boolean;
+  }
+
+  interface HeaderValueQuery {
+    isExpression: boolean;
+    isString: boolean;
+    itemValues: ItemQuery[];
+    requireRender: boolean;
+    render(context: RenderContext): string;
+    initValue(context: RenderContext): void;
+  }
+
+  interface FrozenState {
+    beforeHeadOffset: number;
+    headOffset: number;
+    bodyOffset: number;
+  }
+
+  interface OutputConsumer extends Function {
+    target?: any;
+    method: any;
+    invoke(data: any): void;
+    beginInvoke(data: any, callback: any, object: any): any;
+    endInvoke(result: any): void;
+    getObjectData(info: any, context: any): void;
+    getInvocationList(): any[];
+    clone(): any;
+    dynamicInvoke(args: any[]): any;
+  }
+
+  interface IFCheckResult {
+    type: EnumIfConditionType;
+    result: boolean;
+  }
+
+  type EnumIfConditionType = 'IF' | 'ElseIf' | 'Else';
+
+  interface RepeaterCounter {
+    total: number;
+    current: number;
+  }
+
+  interface ItemQuery {
+    value: string;
+    query: GetValueQuery;
+  }
 
 }
 declare namespace Kooboo.Data.WebSocket {
@@ -11014,7 +11552,7 @@ k.response.write(k.request.body)
 </div>
 ```
  */
-    getAuthUrl(params: any): string;
+    getAuthUrl(params: Record<string, any>): string;
     /** 
 1.Config
 site=>system=>settings=>WeChatLoginSetting
@@ -11074,7 +11612,7 @@ k.response.write(k.request.body)
     </script>
 </div>
  */
-    getAuthJson(params: any): string;
+    getAuthJson(params: Record<string, any>): string;
   }
 
 }
@@ -11136,7 +11674,7 @@ k.response.write(k.request.body)
 </div>
 ```
  */
-    getAuthUrl(params: any): string;
+    getAuthUrl(params: Record<string, any>): string;
     /** 
 1.Config
 site=>system=>settings=>GoogleLoginSetting
@@ -11194,7 +11732,7 @@ k.response.write(k.request.body)
 </div>
 ```
  */
-    getAuthUrl(params: any): string;
+    getAuthUrl(params: Record<string, any>): string;
     /** 
 1.Config
 site=>system=>settings=>FacebookLoginSetting
@@ -11255,7 +11793,7 @@ k.response.write(k.request.body)
 </div>
 ```
  */
-    getAuthUrl(params: any): string;
+    getAuthUrl(params: Record<string, any>): string;
     /** 
 1.Config
 site=>system=>settings=>AppleLoginSetting
@@ -11268,8 +11806,8 @@ callbackCodeName:applecallback
 
 ```
  */
-    getToken(params: any): any;
-    callback(query: any): string;
+    getToken(params: Record<string, any>): any;
+    callback(query: Record<string, any>): string;
   }
 
 }
@@ -11290,6 +11828,13 @@ declare namespace Kooboo.Data.Models.CreditCard {
     success: boolean;
     redirectUrl: string;
     paymentIntentId: string;
+    message: string;
+  }
+
+  interface CheckoutSessionResult {
+    success: boolean;
+    redirectUrl: string;
+    checkoutSessionId: string;
     message: string;
   }
 
@@ -11327,7 +11872,7 @@ declare namespace Kooboo.Data.Models.Ideal {
 declare namespace KScript.Commerce.Models {
   interface FacetResult {
     name: string;
-    labels: Label[];
+    labels: FacetResultLabel[];
   }
 
   interface CategoryQueryOptions {
@@ -11393,6 +11938,7 @@ declare namespace KScript.Commerce.Models {
     imageMetas: string;
     active: boolean;
     isDigital: boolean;
+    price: number;
     seoName: string;
     tags: string[];
     attributes: any[];
@@ -11412,6 +11958,7 @@ declare namespace KScript.Commerce.Models {
     featuredImage: string;
     active: boolean;
     isDigital: boolean;
+    price: number;
     images: string[];
     imageMetas: string;
     seoName: string;
@@ -11460,7 +12007,7 @@ declare namespace KScript.Commerce.Models {
     image: string;
     price: number;
     active: boolean;
-    selectedOptions: Kooboo.Sites.Commerce.Entities.Option[];
+    selectedOptions: Kooboo.Sites.Commerce.Entities.ProductVariantOption[];
     weight: number;
     inventory: number;
     tags: string[];
@@ -11641,7 +12188,7 @@ declare namespace KScript.Commerce.Models {
   interface Country {
     code: string;
     name: string;
-    nameTranslations: Record<string, string>;
+    nameTranslations: any;
     currency: string;
     currencySymbol: string;
     emojiFlag: string;
@@ -11650,14 +12197,14 @@ declare namespace KScript.Commerce.Models {
   interface Province {
     country: string;
     name: string;
-    nameTranslations: Record<string, string>;
+    nameTranslations: any;
   }
 
   interface City {
     country: string;
     province: string;
     name: string;
-    nameTranslations: Record<string, string>;
+    nameTranslations: any;
   }
 
   interface CurrencyItem {
@@ -11668,7 +12215,7 @@ declare namespace KScript.Commerce.Models {
     exchangeRate: number;
   }
 
-  interface Label {
+  interface FacetResultLabel {
     name: string;
     count: number;
   }
@@ -11684,14 +12231,14 @@ declare namespace KScript.Commerce.Models {
     imageMeta: string;
     price: number;
     active: boolean;
-    selectedOptions: Kooboo.Sites.Commerce.Entities.Option[];
+    selectedOptions: Kooboo.Sites.Commerce.Entities.ProductVariantOption[];
     weight: number;
     inventory: number;
     order: number;
     sales: number;
     tags: string[];
     digitals: Kooboo.Sites.Commerce.Entities.DigitalItem[];
-    getSelectedOptions(selectedOptions: Kooboo.Sites.Commerce.Entities.Option[], lang: string, options: Kooboo.Sites.Commerce.Entities.VariantOption[]): Kooboo.Sites.Commerce.Entities.Option[];
+    getSelectedOptions(selectedOptions: Kooboo.Sites.Commerce.Entities.ProductVariantOption[], lang: string, options: Kooboo.Sites.Commerce.Entities.VariantOption[]): Kooboo.Sites.Commerce.Entities.ProductVariantOption[];
   }
 
   interface VariantOption extends VariantOptionItem {
@@ -11710,7 +12257,7 @@ declare namespace KScript.Commerce.Models {
     variantId: string;
     productId: string;
     title: string;
-    options: Kooboo.Sites.Commerce.Entities.Option[];
+    options: Kooboo.Sites.Commerce.Entities.ProductVariantOption[];
     sku: string;
     image: string;
     originalPrice: number;
@@ -11757,21 +12304,22 @@ declare namespace Kooboo.Sites.Repository {
     cacheVersion: Kooboo.Sites.Render.CacheVersion;
     layouts: LayoutRepository;
     continueConverter: ContinueConvertRepository;
-    dataMethodSettings: DataMethodSettingRepository;
     syncSettings: SyncSettingRepository;
     syncLog: Kooboo.Sites.Sync.SiteSync;
     abTestStore: Kooboo.Sites.Analytics.ABTest.AbTestStore;
     aIAppStore: Kooboo.Sites.AIBuilder.Application.AppBuilderStore;
+    aIApplicationStore: Kooboo.Sites.AI.Application.Storage.AIApplicationStore;
+    aIApplicationLogStore: Kooboo.Sites.AI.Application.Storage.AIApplicationLogStore;
     aICommerceStore: any;
     cssClassName: CssClassNameRepository;
     scriptModule: ScriptModuleRepository;
     coreSetting: CoreSettingRepository;
-    siteCluster: SiteClusterRepository;
-    clusterManager: Kooboo.Sites.Sync.SiteClusterSync.SiteClusterManager;
+    tableRelation: TableRelationRepository;
+    rolePermission: Kooboo.Sites.Authorization.Model.RolePermissionRepository;
     menus: MenuRepository;
     transferTasks: TransferTaskRepository;
     transferPages: TransferPageRepository;
-    siteRepos: Record<string, IRepository>;
+    siteRepos: any;
     files: CmsFileRepository;
     codeLog: Kooboo.Sites.Scripting.Global.Logging.CodeLogStore;
     folders: FolderRepository;
@@ -11792,7 +12340,9 @@ declare namespace Kooboo.Sites.Repository {
     relations: RelationRepository;
     searchIndex: SearchIndexRepository;
     vectorSearch: Kooboo.Sites.AI.Vectorization.SiteVectorSearchService;
-    viewDataMethods: ViewDataMethodRepository;
+    paymentCallBack: Kooboo.Sites.Payment.Repository.PaymentCallBackRepository;
+    paymentRequest: Kooboo.Sites.Payment.Repository.PaymentRequestRepository;
+    paymentCustomer: Kooboo.Sites.Payment.Repository.PaymentCustomerRepository;
     downloadFailedLog: DownloadFailTrackRepository;
     siteUser: SiteUserRepository;
     shopifyFolder: string;
@@ -11806,7 +12356,6 @@ declare namespace Kooboo.Sites.Repository {
     resourceGroups: ResourceGroupRepository;
     cssRules: CmsCssRuleRepository;
     externalResource: ExternalResourceRepository;
-    thumbnails: ThumbnailRepository;
     labels: LabelRepository;
     kConfig: kConfigRepository;
     htmlBlocks: HtmlBlockRepository;
@@ -11817,9 +12366,11 @@ declare namespace Kooboo.Sites.Repository {
     authentication: AuthenticationRepository;
     openApi: OpenApiRepository;
     job: JobRepository;
+    aITaskJob: Kooboo.Sites.AI.Tasks.AITaskJobRepository;
     userOptions: UserOptionsRepository;
     spaMultilingual: SpaMultilingualRepository;
     openApiAuthorize: OpenApiAuthorizeRepository;
+    getLastLogId(): number;
     getSize(): Kooboo.Sites.ViewModel.DiskSize;
     getRepository(ModelType: any): Kooboo.Data.Interface.IRepository;
     getRepository(ConstType: number): Kooboo.Data.Interface.IRepository;
@@ -11833,7 +12384,7 @@ declare namespace Kooboo.Sites.Repository {
     getSiteRepositoryByModelType(ModelType: any): Kooboo.Data.Interface.IRepository;
     isStoreExists(ModelType: any): boolean;
     routeTree(ConstType?: number): Kooboo.Sites.Routing.PathTree;
-    getFolder(name: string): string;
+    getFolder(names: string[]): string;
     errorLogByWeek(weekName: string): Kooboo.Data.Storage.ErrorLogStore;
     clearLog(storeNames: string[]): void;
   }
@@ -11855,7 +12406,7 @@ declare namespace Kooboo.Sites.Repository {
     object: any;
     summary: string;
     url: string;
-    additional: Record<string, any>;
+    additional: any;
     scope: number;
   }
 
@@ -11869,19 +12420,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Layout): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Layout, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Layout, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Layout): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Layout;
-    getFromCache(id: any): Kooboo.Sites.Models.Layout;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Layout;
+    syncToCache(value: Kooboo.Sites.Models.Layout, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Layout;
-    getWithEvent(id: any): Kooboo.Sites.Models.Layout;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Layout;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Layout;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Layout;
@@ -11911,19 +12459,16 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     addConverter(ConvertType: string, OriginalPageId: any, ConvertedTag: string, ObjectNameOrId: string, KoobooId: string, ElementPaths: string[], ElementTag: string): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
-    getFromCache(id: any): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
+    syncToCache(value: Kooboo.Sites.SiteTransfer.Model.ContinueConverter, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
-    getWithEvent(id: any): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.Model.ContinueConverter;
@@ -11942,48 +12487,6 @@ declare namespace Kooboo.Sites.Repository {
     rebuild(): void;
   }
 
-  interface DataMethodSettingRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
-    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
-    siteDb: SiteDb;
-    siteObjectType: any;
-    useCache: boolean;
-    webSite: Kooboo.Data.Models.WebSite;
-    storeName: string;
-    store: any;
-    query: any;
-    tableScan: any;
-    getByFolder(FolderId: any): Kooboo.Data.Models.DataMethodSetting[];
-    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    init(): void;
-    isEqualTo(value: Kooboo.Data.Models.DataMethodSetting): boolean;
-    addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting, UserId: any, betweenEvent: ()=>void): boolean;
-    addOrUpdate(value: Kooboo.Data.Models.DataMethodSetting): boolean;
-    delete(id: any): number;
-    delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
-    getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Data.Models.DataMethodSetting;
-    getFromCache(id: any): Kooboo.Data.Models.DataMethodSetting;
-    get(nameorid: string): Kooboo.Data.Models.DataMethodSetting;
-    getWithEvent(id: any): Kooboo.Data.Models.DataMethodSetting;
-    getByUrl(relativeUrl: string): Kooboo.Data.Models.DataMethodSetting;
-    getMetaByUrl(relativeUrl: string): Kooboo.Data.Models.DataMethodSetting;
-    getByNameOrId(NameOrGuid: string): Kooboo.Data.Models.DataMethodSetting;
-    parseID(NameOrGuid: string): any;
-    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    count(): number;
-    all(UseColumnData: boolean): Kooboo.Data.Models.DataMethodSetting[];
-    all(): Kooboo.Data.Models.DataMethodSetting[];
-    list(UseColumnData?: boolean): Kooboo.Data.Models.DataMethodSetting[];
-    isEqual(x: Kooboo.Data.Models.DataMethodSetting, y: Kooboo.Data.Models.DataMethodSetting): boolean;
-    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
-    checkBeingUsed(SiteObject: Kooboo.Data.Models.DataMethodSetting): Kooboo.Sites.Relation.ObjectRelation[];
-    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
-    rebuild(): void;
-  }
-
   interface SyncSettingRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
     siteDb: SiteDb;
     siteObjectType: any;
@@ -11998,19 +12501,16 @@ declare namespace Kooboo.Sites.Repository {
     removeIgnorePushStore(SyncSettingId: any, storeName: string): void;
     ignorePullStore(SyncSettingId: any, storeName: string): void;
     removeIgnorePullStore(SyncSettingId: any, storeName: string): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.SyncSetting): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.SyncSetting, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SyncSetting, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SyncSetting): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SyncSetting;
-    getFromCache(id: any): Kooboo.Sites.Models.SyncSetting;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.SyncSetting;
+    syncToCache(value: Kooboo.Sites.Models.SyncSetting, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.SyncSetting;
-    getWithEvent(id: any): Kooboo.Sites.Models.SyncSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SyncSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SyncSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SyncSetting;
@@ -12039,19 +12539,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.CssClassName): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.CssClassName, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.CssClassName, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CssClassName): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CssClassName;
-    getFromCache(id: any): Kooboo.Sites.Models.CssClassName;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.CssClassName;
+    syncToCache(value: Kooboo.Sites.Models.CssClassName, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.CssClassName;
-    getWithEvent(id: any): Kooboo.Sites.Models.CssClassName;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CssClassName;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CssClassName;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CssClassName;
@@ -12082,17 +12579,14 @@ declare namespace Kooboo.Sites.Repository {
     tableScan: any;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.ScriptModule): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.ScriptModule, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ScriptModule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ScriptModule): boolean;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ScriptModule;
-    getFromCache(id: any): Kooboo.Sites.Models.ScriptModule;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.ScriptModule;
+    syncToCache(value: Kooboo.Sites.Models.ScriptModule, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.ScriptModule;
-    getWithEvent(id: any): Kooboo.Sites.Models.ScriptModule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.ScriptModule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ScriptModule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ScriptModule;
@@ -12128,15 +12622,12 @@ declare namespace Kooboo.Sites.Repository {
     getSetting(): any;
     getSiteSetting(siteSettingType: any): any;
     addOrUpdate(setting: Kooboo.Data.Interface.ISiteSetting): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.CoreSetting): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.CoreSetting, UserId: any, betweenEvent: ()=>void): boolean;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
+    initCache(): void;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CoreSetting;
-    getFromCache(id: any): Kooboo.Sites.Models.CoreSetting;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.CoreSetting;
+    syncToCache(value: Kooboo.Sites.Models.CoreSetting, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.CoreSetting;
-    getWithEvent(id: any): Kooboo.Sites.Models.CoreSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CoreSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CoreSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CoreSetting;
@@ -12155,7 +12646,7 @@ declare namespace Kooboo.Sites.Repository {
     rebuild(): void;
   }
 
-  interface SiteClusterRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+  interface TableRelationRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
     storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
     siteDb: SiteDb;
     siteObjectType: any;
@@ -12165,37 +12656,31 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    getByIp(ip: string): Kooboo.Sites.Models.SiteCluster;
-    updateVersion(SiteClusterId: any, newversion: number): void;
-    addOrUpdate(value: Kooboo.Sites.Models.SiteCluster): boolean;
-    add(newcluster: Kooboo.Sites.Models.SiteCluster): boolean;
-    update(oldvalue: Kooboo.Sites.Models.SiteCluster, newvalue: Kooboo.Sites.Models.SiteCluster): boolean;
+    getRelation(currentTableName: string, key: string): Kooboo.Sites.Models.TableRelation;
+    initCache(): void;
+    addOrUpdate(value: Kooboo.Sites.Models.TableRelation, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Models.TableRelation): boolean;
     delete(id: any): number;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.SiteCluster): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SiteCluster, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SiteCluster, UserId: any, betweenEvent: ()=>void): boolean;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteCluster;
-    getFromCache(id: any): Kooboo.Sites.Models.SiteCluster;
-    get(nameorid: string): Kooboo.Sites.Models.SiteCluster;
-    getWithEvent(id: any): Kooboo.Sites.Models.SiteCluster;
-    getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteCluster;
-    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteCluster;
-    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteCluster;
+    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.TableRelation;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.TableRelation;
+    syncToCache(value: Kooboo.Sites.Models.TableRelation, IsDelete: boolean): void;
+    get(nameorid: string): Kooboo.Sites.Models.TableRelation;
+    getByUrl(relativeUrl: string): Kooboo.Sites.Models.TableRelation;
+    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.TableRelation;
+    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.TableRelation;
     parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     count(): number;
-    all(UseColumnData: boolean): Kooboo.Sites.Models.SiteCluster[];
-    all(): Kooboo.Sites.Models.SiteCluster[];
-    list(UseColumnData?: boolean): Kooboo.Sites.Models.SiteCluster[];
-    isEqual(x: Kooboo.Sites.Models.SiteCluster, y: Kooboo.Sites.Models.SiteCluster): boolean;
+    all(UseColumnData: boolean): Kooboo.Sites.Models.TableRelation[];
+    all(): Kooboo.Sites.Models.TableRelation[];
+    list(UseColumnData?: boolean): Kooboo.Sites.Models.TableRelation[];
+    isEqual(x: Kooboo.Sites.Models.TableRelation, y: Kooboo.Sites.Models.TableRelation): boolean;
     rollBack(log: Kooboo.IndexedDB.LogEntry): void;
     rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
-    checkBeingUsed(SiteObject: Kooboo.Sites.Models.SiteCluster): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(SiteObject: Kooboo.Sites.Models.TableRelation): Kooboo.Sites.Relation.ObjectRelation[];
     checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
     rebuild(): void;
   }
@@ -12216,17 +12701,14 @@ declare namespace Kooboo.Sites.Repository {
     isNameAvailable(MenuName: string): boolean;
     getNewMenuName(): string;
     swap(RootId: any, IdA: any, IdB: any, UserId?: any): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Menu): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Menu, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Menu;
-    getFromCache(id: any): Kooboo.Sites.Models.Menu;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Menu;
+    syncToCache(value: Kooboo.Sites.Models.Menu, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Menu;
-    getWithEvent(id: any): Kooboo.Sites.Models.Menu;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Menu;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Menu;
     parseID(NameOrGuid: string): any;
@@ -12246,7 +12728,7 @@ declare namespace Kooboo.Sites.Repository {
 
   interface TransferTaskRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
     storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
-    continueDownloading: Record<string, DownloadingTask>;
+    continueDownloading: any;
     siteDb: SiteDb;
     siteObjectType: any;
     useCache: boolean;
@@ -12260,25 +12742,22 @@ declare namespace Kooboo.Sites.Repository {
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferTask, UserId?: any): boolean;
     cancelDownload(): void;
     firstImportHost(): string;
-    history(): HistoryItem[];
+    history(): any;
     updateCookie(taskid: any, cookiecontainer: any): void;
     getCookieContainer(TaskId: any): any;
     getCookieContainer(Domain: string): any;
     getCookieContainerByFullUrl(fullurl: string): any;
     canStartDownload(relativeUrl: string): any;
     releaseDownload(relativeUrl: string): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.SiteTransfer.TransferTask): boolean;
-    addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferTask, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferTask): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.TransferTask;
-    getFromCache(id: any): Kooboo.Sites.SiteTransfer.TransferTask;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.SiteTransfer.TransferTask;
+    syncToCache(value: Kooboo.Sites.SiteTransfer.TransferTask, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.TransferTask;
-    getWithEvent(id: any): Kooboo.Sites.SiteTransfer.TransferTask;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferTask;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferTask;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.TransferTask;
@@ -12307,19 +12786,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.SiteTransfer.TransferPage): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.SiteTransfer.TransferPage): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.SiteTransfer.TransferPage;
-    getFromCache(id: any): Kooboo.Sites.SiteTransfer.TransferPage;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.SiteTransfer.TransferPage;
+    syncToCache(value: Kooboo.Sites.SiteTransfer.TransferPage, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.SiteTransfer.TransferPage;
-    getWithEvent(id: any): Kooboo.Sites.SiteTransfer.TransferPage;
     getByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferPage;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.SiteTransfer.TransferPage;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.SiteTransfer.TransferPage;
@@ -12349,20 +12825,16 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     upload(contentBytes: number[], fullName: string, UserId: any): Kooboo.Sites.Models.CmsFile;
-    getVersion(Id: any): number;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.CmsFile): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.CmsFile, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.CmsFile, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CmsFile): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CmsFile;
-    getFromCache(id: any): Kooboo.Sites.Models.CmsFile;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.CmsFile;
+    syncToCache(value: Kooboo.Sites.Models.CmsFile, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.CmsFile;
-    getWithEvent(id: any): Kooboo.Sites.Models.CmsFile;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsFile;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsFile;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CmsFile;
@@ -12400,19 +12872,16 @@ declare namespace Kooboo.Sites.Repository {
     getFolderObjects(FolderPath: string, ConstObjectType: number, UseColumnDataOnly?: boolean, Recursive?: boolean): Kooboo.Sites.Models.SiteObject[];
     getFolderObjectRouteIds(FolderPath: string, ConstType: number, Recursive?: boolean): any[];
     delete(FolderFullPath: string, ConstType: number, UserId?: any): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Folder): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Folder, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Folder, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Folder): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Folder;
-    getFromCache(id: any): Kooboo.Sites.Models.Folder;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Folder;
+    syncToCache(value: Kooboo.Sites.Models.Folder, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Folder;
-    getWithEvent(id: any): Kooboo.Sites.Models.Folder;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Folder;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Folder;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Folder;
@@ -12457,15 +12926,12 @@ declare namespace Kooboo.Sites.Repository {
     delete(id: any): number;
     getObjectPrimaryRelativeUrl(objectId: any): string;
     validate(RouteName: string, ObjectId: any): boolean;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Routing.Route): boolean;
-    addOrUpdate(value: Kooboo.Sites.Routing.Route, UserId: any, betweenEvent: ()=>void): boolean;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
+    initCache(): void;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Routing.Route;
-    getFromCache(id: any): Kooboo.Sites.Routing.Route;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Routing.Route;
+    syncToCache(value: Kooboo.Sites.Routing.Route, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Routing.Route;
-    getWithEvent(id: any): Kooboo.Sites.Routing.Route;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Routing.Route;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Routing.Route;
     parseID(NameOrGuid: string): any;
@@ -12510,17 +12976,14 @@ declare namespace Kooboo.Sites.Repository {
     getSameEmbedded(BodyHash: number): Kooboo.Sites.Models.Form[];
     getByOwnerId(OwnerId: any, OwnerConstType: number): Kooboo.Sites.Models.Form[];
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Form,)=>void): Kooboo.Sites.Models.Form;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Form): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Form, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Form): boolean;
     delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Form;
-    getFromCache(id: any): Kooboo.Sites.Models.Form;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Form;
+    syncToCache(value: Kooboo.Sites.Models.Form, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Form;
-    getWithEvent(id: any): Kooboo.Sites.Models.Form;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Form;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Form;
     parseID(NameOrGuid: string): any;
@@ -12548,19 +13011,16 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     getByFormId(FormId: any): Kooboo.Sites.Models.FormSetting;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.FormSetting): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.FormSetting, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.FormSetting, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormSetting): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.FormSetting;
-    getFromCache(id: any): Kooboo.Sites.Models.FormSetting;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.FormSetting;
+    syncToCache(value: Kooboo.Sites.Models.FormSetting, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.FormSetting;
-    getWithEvent(id: any): Kooboo.Sites.Models.FormSetting;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.FormSetting;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.FormSetting;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.FormSetting;
@@ -12589,19 +13049,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.FormValue): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.FormValue, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.FormValue, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.FormValue): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.FormValue;
-    getFromCache(id: any): Kooboo.Sites.Models.FormValue;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.FormValue;
+    syncToCache(value: Kooboo.Sites.Models.FormValue, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.FormValue;
-    getWithEvent(id: any): Kooboo.Sites.Models.FormValue;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.FormValue;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.FormValue;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.FormValue;
@@ -12633,26 +13090,22 @@ declare namespace Kooboo.Sites.Repository {
     listUsedBy(ConstType: number): Kooboo.Sites.Models.Image[];
     addOrUpdate(value: Kooboo.Sites.Models.Image, UserId: any): boolean;
     listUsedByRelation(image: Kooboo.Sites.Models.Image, constType?: number): Kooboo.Sites.Relation.ObjectRelation[];
-    uploadImage(contentBytes: number[], fullName: string, UserId: any, alt?: string): Kooboo.Sites.Models.Image;
+    uploadImage(contentBytes: number[], fullName: string, UserId: any, alt?: string, source?: string, sourceUrl?: string, author?: string, authorUrl?: string): Kooboo.Sites.Models.Image;
     listUsedByPage(PageId: any, UseColumnData?: boolean): Kooboo.Sites.Models.Image[];
     listUsedByObjects(objectIds: any[]): Kooboo.Sites.Models.Image[];
     listUsedByPageStyle(PageId: any): Kooboo.Sites.Models.Image[];
     search(keyword: string, skip?: number, count?: number): Kooboo.Sites.Models.Image[];
-    getImageVersion(Id: any): number;
     getBinaryView(Id: any): Kooboo.Sites.Models.BinaryView.ImageBinaryView;
     getBinaryView(BlockPosition: number): Kooboo.Sites.Models.BinaryView.ImageBinaryView;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Image): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Image, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Image): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Image;
-    getFromCache(id: any): Kooboo.Sites.Models.Image;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Image;
+    syncToCache(value: Kooboo.Sites.Models.Image, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Image;
-    getWithEvent(id: any): Kooboo.Sites.Models.Image;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Image;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Image;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Image;
@@ -12681,28 +13134,24 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
+    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Page;
     getRelatedObjectIds(page: Kooboo.Sites.Models.Page): any[];
     getStyles(page: Kooboo.Sites.Models.Page): any[];
     getRelatedOwnerObjectIds(PageId: any): any[];
     getRelatedOwnerObjectIds(page: Kooboo.Sites.Models.Page): any[];
-    getAllMethodIds(PageId: any): any[];
-    getRelatedObject(ObjectId: any, DestinationConstTypes: number[]): Record<number, any>;
+    getRelatedObject(ObjectId: any, DestinationConstTypes: number[]): any;
     addOrUpdate(value: Kooboo.Sites.Models.Page): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Page, UserId: any): boolean;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Page): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Page, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Page;
-    getFromCache(id: any): Kooboo.Sites.Models.Page;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Page;
+    syncToCache(value: Kooboo.Sites.Models.Page, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Page;
-    getWithEvent(id: any): Kooboo.Sites.Models.Page;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Page;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Page;
-    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Page;
     parseID(NameOrGuid: string): any;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
     getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
@@ -12728,20 +13177,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    updateDataSources(ViewId: any, ViewDataMethods: Kooboo.Sites.Models.ViewDataMethod[], UserId?: any): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.View): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.View, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.View, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.View): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.View;
-    getFromCache(id: any): Kooboo.Sites.Models.View;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.View;
+    syncToCache(value: Kooboo.Sites.Models.View, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.View;
-    getWithEvent(id: any): Kooboo.Sites.Models.View;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.View;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.View;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.View;
@@ -12786,17 +13231,14 @@ declare namespace Kooboo.Sites.Repository {
     getByOwnerId(OwnerId: any, OwnerConstType: number): Kooboo.Sites.Models.Script[];
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Script,)=>void): Kooboo.Sites.Models.Script;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Script): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Script, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Script): boolean;
     delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Script;
-    getFromCache(id: any): Kooboo.Sites.Models.Script;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Script;
+    syncToCache(value: Kooboo.Sites.Models.Script, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Script;
-    getWithEvent(id: any): Kooboo.Sites.Models.Script;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Script;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Script;
     parseID(NameOrGuid: string): any;
@@ -12823,19 +13265,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.CommerceData): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.CommerceData, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.CommerceData, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.CommerceData): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CommerceData;
-    getFromCache(id: any): Kooboo.Sites.Models.CommerceData;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.CommerceData;
+    syncToCache(value: Kooboo.Sites.Models.CommerceData, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.CommerceData;
-    getWithEvent(id: any): Kooboo.Sites.Models.CommerceData;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CommerceData;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CommerceData;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CommerceData;
@@ -12864,19 +13303,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.MediaMetadata): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.MediaMetadata): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.MediaMetadata;
-    getFromCache(id: any): Kooboo.Sites.Models.MediaMetadata;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.MediaMetadata;
+    syncToCache(value: Kooboo.Sites.Models.MediaMetadata, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.MediaMetadata;
-    getWithEvent(id: any): Kooboo.Sites.Models.MediaMetadata;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.MediaMetadata;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.MediaMetadata;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.MediaMetadata;
@@ -12925,16 +13361,13 @@ declare namespace Kooboo.Sites.Repository {
     getByOwnerId(OwnerId: any, OwnerConstType: number): Kooboo.Sites.Models.Code[];
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Code,)=>void): Kooboo.Sites.Models.Code;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Code): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Code, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Code): boolean;
     delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
-    getFromCache(id: any): Kooboo.Sites.Models.Code;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Code;
+    syncToCache(value: Kooboo.Sites.Models.Code, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Code;
-    getWithEvent(id: any): Kooboo.Sites.Models.Code;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Code;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Code;
     parseID(NameOrGuid: string): any;
@@ -12960,19 +13393,16 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     listByEventType(eventType: Kooboo.Sites.FrontEvent.enumEventType): Kooboo.Sites.Models.BusinessRule[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.BusinessRule): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.BusinessRule, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.BusinessRule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.BusinessRule): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.BusinessRule;
-    getFromCache(id: any): Kooboo.Sites.Models.BusinessRule;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.BusinessRule;
+    syncToCache(value: Kooboo.Sites.Models.BusinessRule, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.BusinessRule;
-    getWithEvent(id: any): Kooboo.Sites.Models.BusinessRule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.BusinessRule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.BusinessRule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.BusinessRule;
@@ -13009,19 +13439,16 @@ declare namespace Kooboo.Sites.Repository {
     getReferredBy(SiteObject: Kooboo.Sites.Models.SiteObject, ConstTypeX?: number): Kooboo.Sites.Relation.ObjectRelation[];
     getReferredBy(siteObjectType: any, ObjectId: any, ConstTypeX?: number): Kooboo.Sites.Relation.ObjectRelation[];
     getExternalRelations(objectXId: any, DestinationObjectType: number): Kooboo.Sites.Relation.ObjectRelation[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Relation.ObjectRelation): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Relation.ObjectRelation): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Relation.ObjectRelation;
-    getFromCache(id: any): Kooboo.Sites.Relation.ObjectRelation;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Relation.ObjectRelation;
+    syncToCache(value: Kooboo.Sites.Relation.ObjectRelation, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Relation.ObjectRelation;
-    getWithEvent(id: any): Kooboo.Sites.Relation.ObjectRelation;
     getByUrl(relativeUrl: string): Kooboo.Sites.Relation.ObjectRelation;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Relation.ObjectRelation;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Relation.ObjectRelation;
@@ -13049,60 +13476,18 @@ declare namespace Kooboo.Sites.Repository {
     getLog(weektime: Date): any;
     getLog(weekname: string): any;
     getWeekNames(): string[];
-    searchCount(WeekName: string): Record<string, number>;
+    searchCount(WeekName: string): any;
     lastestSearch(count: number): SearchLog[];
     getMetaKey(siteobject: Kooboo.Data.Interface.ISiteObject): string;
     getBody(siteobject: Kooboo.Data.Interface.ISiteObject, siteDb: SiteDb): string;
     addOrUpdate(siteobject: Kooboo.Data.Interface.ISiteObject, siteDb: SiteDb, searchType: Kooboo.Data.Models.SearchType, updateReference?: boolean): void;
     delete(siteobject: Kooboo.Data.Interface.ISiteObject, searchType: Kooboo.Data.Models.SearchType): void;
-    search(keywords: string, options?: SearchOptions, context?: Kooboo.Data.Context.RenderContext): SearchResult[];
-    setData(recordSet: SearchResult[], keywords: string, context: Kooboo.Data.Context.RenderContext, options: SearchOptions): void;
+    search(keywords: string, options?: SearchOptions, context?: Kooboo.Sites.Render.KoobooRenderContext): SearchResult[];
+    setData(recordSet: SearchResult[], keywords: string, context: Kooboo.Sites.Render.KoobooRenderContext, options: SearchOptions): void;
     sync(SiteDb: SiteDb, Value: Kooboo.Data.Interface.ISiteObject, ChangeType: Kooboo.ChangeType, StoreName: string, searchType: Kooboo.Data.Models.SearchType): void;
     rebuild(): void;
     closeLuceneServices(): void;
     delSelf(): void;
-  }
-
-  interface ViewDataMethodRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
-    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
-    siteDb: SiteDb;
-    siteObjectType: any;
-    useCache: boolean;
-    webSite: Kooboo.Data.Models.WebSite;
-    storeName: string;
-    store: any;
-    query: any;
-    tableScan: any;
-    flatListByView(ViewId: any): Kooboo.Sites.Models.ViewDataMethod[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.ViewDataMethod): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod, UserId: any, betweenEvent: ()=>void): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ViewDataMethod): boolean;
-    delete(id: any): number;
-    delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
-    getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ViewDataMethod;
-    getFromCache(id: any): Kooboo.Sites.Models.ViewDataMethod;
-    get(nameorid: string): Kooboo.Sites.Models.ViewDataMethod;
-    getWithEvent(id: any): Kooboo.Sites.Models.ViewDataMethod;
-    getByUrl(relativeUrl: string): Kooboo.Sites.Models.ViewDataMethod;
-    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ViewDataMethod;
-    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ViewDataMethod;
-    parseID(NameOrGuid: string): any;
-    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    count(): number;
-    all(UseColumnData: boolean): Kooboo.Sites.Models.ViewDataMethod[];
-    all(): Kooboo.Sites.Models.ViewDataMethod[];
-    list(UseColumnData?: boolean): Kooboo.Sites.Models.ViewDataMethod[];
-    isEqual(x: Kooboo.Sites.Models.ViewDataMethod, y: Kooboo.Sites.Models.ViewDataMethod): boolean;
-    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
-    checkBeingUsed(SiteObject: Kooboo.Sites.Models.ViewDataMethod): Kooboo.Sites.Relation.ObjectRelation[];
-    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
-    rebuild(): void;
   }
 
   interface DownloadFailTrackRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
@@ -13115,19 +13500,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.DownloadFailTrack): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.DownloadFailTrack): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.DownloadFailTrack;
-    getFromCache(id: any): Kooboo.Sites.Models.DownloadFailTrack;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.DownloadFailTrack;
+    syncToCache(value: Kooboo.Sites.Models.DownloadFailTrack, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.DownloadFailTrack;
-    getWithEvent(id: any): Kooboo.Sites.Models.DownloadFailTrack;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.DownloadFailTrack;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.DownloadFailTrack;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.DownloadFailTrack;
@@ -13160,15 +13542,12 @@ declare namespace Kooboo.Sites.Repository {
     addOrUpdate(value: Kooboo.Sites.Models.SiteUser, UserId: any): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.SiteUser): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SiteUser, UserId: any, betweenEvent: ()=>void): boolean;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
+    initCache(): void;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteUser;
-    getFromCache(id: any): Kooboo.Sites.Models.SiteUser;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.SiteUser;
+    syncToCache(value: Kooboo.Sites.Models.SiteUser, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.SiteUser;
-    getWithEvent(id: any): Kooboo.Sites.Models.SiteUser;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteUser;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteUser;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteUser;
@@ -13216,17 +13595,14 @@ declare namespace Kooboo.Sites.Repository {
     getSameEmbedded(BodyHash: number): Kooboo.Sites.Models.Style[];
     getByOwnerId(OwnerId: any, OwnerConstType: number): Kooboo.Sites.Models.Style[];
     upload(contentBytes: number[], fullName: string, UserId: any, modelHandler?: (p1:Kooboo.Sites.Models.Style,)=>void): Kooboo.Sites.Models.Style;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Style): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Style, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Style): boolean;
     delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Style;
-    getFromCache(id: any): Kooboo.Sites.Models.Style;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Style;
+    syncToCache(value: Kooboo.Sites.Models.Style, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Style;
-    getWithEvent(id: any): Kooboo.Sites.Models.Style;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Style;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Style;
     parseID(NameOrGuid: string): any;
@@ -13257,19 +13633,16 @@ declare namespace Kooboo.Sites.Repository {
     getScriptGroups(): Kooboo.Sites.Models.ResourceGroup[];
     isUniqueName(name: string, consttype: number): boolean;
     getByNameOrId(name: string, consttype?: number): Kooboo.Sites.Models.ResourceGroup;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.ResourceGroup): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ResourceGroup): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ResourceGroup;
-    getFromCache(id: any): Kooboo.Sites.Models.ResourceGroup;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.ResourceGroup;
+    syncToCache(value: Kooboo.Sites.Models.ResourceGroup, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.ResourceGroup;
-    getWithEvent(id: any): Kooboo.Sites.Models.ResourceGroup;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.ResourceGroup;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ResourceGroup;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ResourceGroup;
@@ -13320,17 +13693,14 @@ declare namespace Kooboo.Sites.Repository {
     showRelations(cssrule: Kooboo.Sites.Models.CmsCssRule): Kooboo.Data.Models.UsedByRelation[];
     cleanUp(): Kooboo.Sites.Models.CmsCssRule[];
     listUsedByPage(PageId: any): Kooboo.Sites.Models.CmsCssRule[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.CmsCssRule): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.CmsCssRule, UserId: any, betweenEvent: ()=>void): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.CmsCssRule): boolean;
     delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.CmsCssRule;
-    getFromCache(id: any): Kooboo.Sites.Models.CmsCssRule;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.CmsCssRule;
+    syncToCache(value: Kooboo.Sites.Models.CmsCssRule, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.CmsCssRule;
-    getWithEvent(id: any): Kooboo.Sites.Models.CmsCssRule;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsCssRule;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.CmsCssRule;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.CmsCssRule;
@@ -13362,19 +13732,16 @@ declare namespace Kooboo.Sites.Repository {
     addOrUpdate(FullUrl: string, DestinationObjectType: number): void;
     getByUrl(Url: string): Kooboo.Sites.Models.ExternalResource;
     changeUrl(Id: any, NewUrl: string): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.ExternalResource): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.ExternalResource, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.ExternalResource, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.ExternalResource): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.ExternalResource;
-    getFromCache(id: any): Kooboo.Sites.Models.ExternalResource;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.ExternalResource;
+    syncToCache(value: Kooboo.Sites.Models.ExternalResource, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.ExternalResource;
-    getWithEvent(id: any): Kooboo.Sites.Models.ExternalResource;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.ExternalResource;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.ExternalResource;
     parseID(NameOrGuid: string): any;
@@ -13392,49 +13759,6 @@ declare namespace Kooboo.Sites.Repository {
     rebuild(): void;
   }
 
-  interface ThumbnailRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
-    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
-    siteDb: SiteDb;
-    siteObjectType: any;
-    useCache: boolean;
-    webSite: Kooboo.Data.Models.WebSite;
-    storeName: string;
-    store: any;
-    query: any;
-    tableScan: any;
-    getThumbnail(imageid: any, width: number, height: number): Kooboo.Sites.Models.Thumbnail;
-    deleteByImageId(ImageId: any): void;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Thumbnail): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Thumbnail, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Thumbnail, UserId: any, betweenEvent: ()=>void): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Thumbnail): boolean;
-    delete(id: any): number;
-    delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
-    getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Thumbnail;
-    getFromCache(id: any): Kooboo.Sites.Models.Thumbnail;
-    get(nameorid: string): Kooboo.Sites.Models.Thumbnail;
-    getWithEvent(id: any): Kooboo.Sites.Models.Thumbnail;
-    getByUrl(relativeUrl: string): Kooboo.Sites.Models.Thumbnail;
-    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Thumbnail;
-    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Thumbnail;
-    parseID(NameOrGuid: string): any;
-    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    count(): number;
-    all(UseColumnData: boolean): Kooboo.Sites.Models.Thumbnail[];
-    all(): Kooboo.Sites.Models.Thumbnail[];
-    list(UseColumnData?: boolean): Kooboo.Sites.Models.Thumbnail[];
-    isEqual(x: Kooboo.Sites.Models.Thumbnail, y: Kooboo.Sites.Models.Thumbnail): boolean;
-    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
-    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
-    checkBeingUsed(SiteObject: Kooboo.Sites.Models.Thumbnail): Kooboo.Sites.Relation.ObjectRelation[];
-    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
-    rebuild(): void;
-  }
-
   interface LabelRepository extends ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
     storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
     siteDb: SiteDb;
@@ -13447,19 +13771,16 @@ declare namespace Kooboo.Sites.Repository {
     tableScan: any;
     updateLabel(LabelGuid: any, culture: string, Value: string): void;
     getOrAdd(LabelKey: string, DefaultValue: string, DefaultCulture: string): Kooboo.Sites.Contents.Models.Label;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.Label): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.Label, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.Label, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.Label): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.Label;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.Label;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Contents.Models.Label;
+    syncToCache(value: Kooboo.Sites.Contents.Models.Label, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Contents.Models.Label;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.Label;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.Label;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.Label;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.Label;
@@ -13491,21 +13812,18 @@ declare namespace Kooboo.Sites.Repository {
     getOrAdd(key: string, TagName: string, TagHtml: string): Kooboo.Sites.Models.KConfig;
     getOrAdd(key: string, El: Kooboo.Dom.Element): Kooboo.Sites.Models.KConfig;
     getOrAddOrUpdate(key: string, El: Kooboo.Dom.Element): Kooboo.Sites.Models.KConfig;
-    getBindings(El: Kooboo.Dom.Element): Record<string, string>;
+    getBindings(El: Kooboo.Dom.Element): any;
     isIgnoreAttribute(name: string): boolean;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.KConfig): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.KConfig, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.KConfig, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.KConfig): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.KConfig;
-    getFromCache(id: any): Kooboo.Sites.Models.KConfig;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.KConfig;
+    syncToCache(value: Kooboo.Sites.Models.KConfig, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.KConfig;
-    getWithEvent(id: any): Kooboo.Sites.Models.KConfig;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.KConfig;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.KConfig;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.KConfig;
@@ -13534,21 +13852,18 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    addOrUpdate(name: string, values: Record<string, string>, HtmlBlockId?: any): void;
+    addOrUpdate(name: string, values: any, HtmlBlockId?: any): void;
     get(nameOrId: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getOrAdd(blockName: string, DefaultValue: string, DefaultCulture: string): Kooboo.Sites.Contents.Models.HtmlBlock;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.HtmlBlock): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.HtmlBlock): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.HtmlBlock;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.HtmlBlock;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.HtmlBlock;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Contents.Models.HtmlBlock;
+    syncToCache(value: Kooboo.Sites.Contents.Models.HtmlBlock, IsDelete: boolean): void;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.HtmlBlock;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.HtmlBlock;
@@ -13579,26 +13894,20 @@ declare namespace Kooboo.Sites.Repository {
     tableScan: any;
     getColumns(folder: Kooboo.Sites.Contents.Models.ContentFolder): Kooboo.Sites.Contents.Models.ContentProperty[];
     getColumn(folder: Kooboo.Sites.Contents.Models.ContentFolder, columnName: string): Kooboo.Sites.Contents.Models.ContentProperty;
-    getByName(FolderName: string): Kooboo.Sites.Contents.Models.ContentFolder;
     isFolderNameExists(FolderName: string): boolean;
     isTreeStyleFolder(folder: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
     getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
-    getViewDataMethods(methodId: any): Kooboo.Sites.Models.ViewDataMethod[];
-    cleanRelation(input: Kooboo.Sites.Relation.ObjectRelation[]): Kooboo.Sites.Relation.ObjectRelation[];
     getEmbeddedBy(FolderId: any): Kooboo.Sites.ViewModel.EmbeddedBy[];
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Contents.Models.ContentFolder;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentFolder): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentFolder;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentFolder;
+    syncToCache(value: Kooboo.Sites.Contents.Models.ContentFolder, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentFolder;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentFolder;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentFolder;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentFolder;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentFolder;
@@ -13636,17 +13945,14 @@ declare namespace Kooboo.Sites.Repository {
     isNameExists(contentTypeName: string): boolean;
     getTitleColumns(contentTypeId: any): string[];
     getByFolder(FolderId: any): Kooboo.Sites.Contents.Models.ContentType;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.ContentType): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentType, UserId: any, betweenEvent: ()=>void): boolean;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Contents.Models.ContentType;
+    initCache(): void;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentType;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentType;
+    syncToCache(value: Kooboo.Sites.Contents.Models.ContentType, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentType;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentType;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentType;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentType;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentType;
@@ -13675,22 +13981,21 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    getCategories(folderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
-    fastGetCategories(CategoryFolderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
     updateCategory(ContentId: any, FolderId: any, CategoryIds: any[], UserId: any): void;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
+    initCache(): void;
+    getFromCache(id: any, clone: boolean): Kooboo.Sites.Contents.Models.ContentCategory;
+    syncToCache(value: Kooboo.Sites.Contents.Models.ContentCategory, isDelete: boolean): void;
+    getContentIdsByCategory(categoryId: any): any;
+    getObjectIdByCategoryFolder(categoryFolder: any): any;
+    allContentIds(): any;
+    getCategories(folderId: any, contentId: any): Kooboo.Sites.Contents.Models.ContentCategory[];
     addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.ContentCategory): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.ContentCategory, UserId: any, betweenEvent: ()=>void): boolean;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.ContentCategory;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.ContentCategory;
     get(nameorid: string): Kooboo.Sites.Contents.Models.ContentCategory;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.ContentCategory;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentCategory;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.ContentCategory;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.ContentCategory;
@@ -13720,27 +14025,28 @@ declare namespace Kooboo.Sites.Repository {
     query: any;
     tableScan: any;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Contents.Models.TextContent;
+    getMetaView(Id: any): Kooboo.Sites.Models.ObjectReader.TextContentMetaView;
     ensureUserKey(content: Kooboo.Sites.Contents.Models.TextContent): void;
     getView(id: any, lang: string): Kooboo.Sites.ViewModel.TextContentViewModel;
     getView(content: Kooboo.Sites.Contents.Models.TextContent, lang: string): Kooboo.Sites.ViewModel.TextContentViewModel;
     getDefaultContentFromFolder(FolderId: any, CurrentCulture?: string): Kooboo.Sites.ViewModel.TextContentViewModel;
     generateUserKey(content: Kooboo.Sites.Contents.Models.TextContent): string;
-    getSortedTextContentsByFolder(folder: Kooboo.Sites.Contents.Models.ContentFolder, includeOfflineData: boolean, sortField?: string, ascending?: boolean, categories?: Record<any, any>): Kooboo.Sites.Contents.Models.TextContent[];
+    getSortedTextContentsByFolder(folder: Kooboo.Sites.Contents.Models.ContentFolder, includeOfflineData: boolean, sortField?: string, ascending?: boolean, categories?: any): Kooboo.Sites.Contents.Models.TextContent[];
     sortTextContentsByFolder(textContents: Kooboo.Sites.Contents.Models.TextContent[], folder: Kooboo.Sites.Contents.Models.ContentFolder): Kooboo.Sites.Contents.Models.TextContent[];
-    eusureNonLangContent(content: Kooboo.Sites.Contents.Models.TextContent, contenttype?: Kooboo.Sites.Contents.Models.ContentType): void;
+    normalizeFieldsBySchema(content: Kooboo.Sites.Contents.Models.TextContent): void;
+    normalizeFieldsBySchema(content: Kooboo.Sites.Contents.Models.TextContent, schema: Kooboo.Sites.Contents.Models.ContentType): void;
     delete(id: any, UserId: any): number;
-    addOrUpdate(textContent: Kooboo.Sites.Contents.Models.TextContent, UserId?: any): boolean;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Contents.Models.TextContent): boolean;
-    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent, UserId: any, betweenEvent: ()=>void): boolean;
+    addOrUpdate(textContent: Kooboo.Sites.Contents.Models.TextContent, UserId: any): boolean;
     addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent): boolean;
-    delete(id: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
-    getLatestVersion(Id: any): number;
-    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.TextContent;
-    getFromCache(id: any): Kooboo.Sites.Contents.Models.TextContent;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent, contentType: Kooboo.Sites.Contents.Models.ContentType): boolean;
+    addOrUpdate(value: Kooboo.Sites.Contents.Models.TextContent, contentType: Kooboo.Sites.Contents.Models.ContentType, userId: any): boolean;
     get(nameorid: string): Kooboo.Sites.Contents.Models.TextContent;
-    getWithEvent(id: any): Kooboo.Sites.Contents.Models.TextContent;
+    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Contents.Models.TextContent;
+    initCache(): void;
+    delete(id: any): number;
+    getLatestVersion(Id: any): number;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Contents.Models.TextContent;
+    syncToCache(value: Kooboo.Sites.Contents.Models.TextContent, IsDelete: boolean): void;
     getByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.TextContent;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Contents.Models.TextContent;
     parseID(NameOrGuid: string): any;
@@ -13768,19 +14074,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.Authentication): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.Authentication, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.Authentication, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.Authentication): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.Authentication;
-    getFromCache(id: any): Kooboo.Sites.Models.Authentication;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.Authentication;
+    syncToCache(value: Kooboo.Sites.Models.Authentication, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.Authentication;
-    getWithEvent(id: any): Kooboo.Sites.Models.Authentication;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.Authentication;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.Authentication;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.Authentication;
@@ -13809,19 +14112,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.OpenApi): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApi, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.OpenApi, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApi): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.OpenApi;
-    getFromCache(id: any): Kooboo.Sites.Models.OpenApi;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.OpenApi;
+    syncToCache(value: Kooboo.Sites.Models.OpenApi, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.OpenApi;
-    getWithEvent(id: any): Kooboo.Sites.Models.OpenApi;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApi;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApi;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.OpenApi;
@@ -13850,19 +14150,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.SiteJob): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.SiteJob, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SiteJob, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SiteJob): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SiteJob;
-    getFromCache(id: any): Kooboo.Sites.Models.SiteJob;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.SiteJob;
+    syncToCache(value: Kooboo.Sites.Models.SiteJob, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.SiteJob;
-    getWithEvent(id: any): Kooboo.Sites.Models.SiteJob;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteJob;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SiteJob;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SiteJob;
@@ -13891,19 +14188,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.UserOptions): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.UserOptions, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.UserOptions, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.UserOptions): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.UserOptions;
-    getFromCache(id: any): Kooboo.Sites.Models.UserOptions;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.UserOptions;
+    syncToCache(value: Kooboo.Sites.Models.UserOptions, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.UserOptions;
-    getWithEvent(id: any): Kooboo.Sites.Models.UserOptions;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.UserOptions;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.UserOptions;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.UserOptions;
@@ -13932,19 +14226,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.SpaMultilingual): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.SpaMultilingual): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.SpaMultilingual;
-    getFromCache(id: any): Kooboo.Sites.Models.SpaMultilingual;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.SpaMultilingual;
+    syncToCache(value: Kooboo.Sites.Models.SpaMultilingual, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.SpaMultilingual;
-    getWithEvent(id: any): Kooboo.Sites.Models.SpaMultilingual;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.SpaMultilingual;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.SpaMultilingual;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.SpaMultilingual;
@@ -13973,19 +14264,16 @@ declare namespace Kooboo.Sites.Repository {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: Kooboo.Sites.Models.OpenApiAuthorize): boolean;
+    initCache(): void;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize, UserId: any): boolean;
-    addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: Kooboo.Sites.Models.OpenApiAuthorize): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Models.OpenApiAuthorize;
-    getFromCache(id: any): Kooboo.Sites.Models.OpenApiAuthorize;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Models.OpenApiAuthorize;
+    syncToCache(value: Kooboo.Sites.Models.OpenApiAuthorize, IsDelete: boolean): void;
     get(nameorid: string): Kooboo.Sites.Models.OpenApiAuthorize;
-    getWithEvent(id: any): Kooboo.Sites.Models.OpenApiAuthorize;
     getByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApiAuthorize;
     getMetaByUrl(relativeUrl: string): Kooboo.Sites.Models.OpenApiAuthorize;
     getByNameOrId(NameOrGuid: string): Kooboo.Sites.Models.OpenApiAuthorize;
@@ -14005,33 +14293,27 @@ declare namespace Kooboo.Sites.Repository {
   }
 
   interface ISiteRepositoryBase {
+    webSite: Kooboo.Data.Models.WebSite;
     siteDb: SiteDb;
-    init(): void;
+    initCache(): void;
     rebuild(): void;
-  }
-
-  interface HistoryItem {
-    domain: string;
-    relativeToRoot: string;
-    headless: boolean;
-  }
-
-  interface DownloadingTask {
-    startTime: Date;
-    isCompleted: boolean;
   }
 
   interface IEmbeddableRepository {
     getSameEmbedded(BodyHash: number): any[];
   }
 
-  interface SearchLog {
+  interface SearchLog extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     time: Date;
     iP: string;
     keywords: string;
     resultCount: number;
     skip: number;
     docFound: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
 }
@@ -14054,6 +14336,7 @@ declare namespace Kooboo.Data.Pwa {
 }
 declare namespace Kooboo.Data.Models.AI {
   interface AISettings {
+    llmsAutoGenerate: boolean;
     mcpServer: McpServerOptions;
     vectorSearch: VectorSearchOptions;
     payPerCrawl: PayPerCrawlOptions;
@@ -14087,7 +14370,7 @@ declare namespace Kooboo.Data.Models.AI {
 
   interface JsonLDOptions {
     enable: boolean;
-    schemaMappings: Record<string, SchemaMapping>;
+    schemaMappings: any;
   }
 
   interface CrawlRule {
@@ -14112,9 +14395,10 @@ declare namespace Kooboo.Data.Logging {
 
   type ColorScheme = 'Unknown' | 'Light' | 'Dark';
 
-  interface CodeLog extends Kooboo.Data.Storage.IWeeklyItem {
+  interface CodeLog extends Kooboo.Data.Storage.IWeeklyItem, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.IndexedDB.Serializer.IWormDbGeneratedObject {
     message: string;
     level: string;
+    statusCode: number;
     category: string;
     traceId: string;
     constType: number;
@@ -14122,6 +14406,12 @@ declare namespace Kooboo.Data.Logging {
     lastModified: Date;
     name: string;
     id: number;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    getKey(): number;
+    setKey(id: number): void;
   }
 
 }
@@ -14135,17 +14425,26 @@ declare namespace Kooboo.Data.Unocss {
 
 }
 declare namespace Kooboo.Data.RateLimits {
+  interface RequestLimitSettings {
+    rateLimitSettings: RateLimitSettings;
+    accessLimitSettings: AccessLimitSettings;
+    enableVisitorCountryRestriction: boolean;
+    visitorCountryOnlyAllowIncluded: boolean;
+    visitorCountryRestrictions: any;
+    visitorCountryRestrictionPage: string;
+  }
+
   interface RateLimitSettings {
     enable: boolean;
     limitAllRequest: boolean;
     allRequestRateSettings: RateSettings;
-    ipLimits: Record<string, RateSettings>;
-    userAgentLimits: Record<string, RateSettings>;
+    ipLimits: any;
+    userAgentLimits: any;
   }
 
   interface AccessLimitSettings {
     enable: boolean;
-    ipBlacklist: string[];
+    ipBlacklist: any;
     blockUserAgentKeywords: string[];
   }
 
@@ -14155,32 +14454,6 @@ declare namespace Kooboo.Data.RateLimits {
   }
 
 }
-  declare interface VersionCompareViewModel {
-    title1: string;
-    title2: string;
-    objectId: any;
-    constType: number;
-    id1: number;
-    id2: number;
-    source1: string;
-    source2: string;
-    dataType: VersionDataType;
-  }
-
-  declare type VersionDataType = 'String' | 'Image';
-
-  declare interface ReadSpanAction extends Function {
-    target?: any;
-    method: any;
-    invoke(span: any): void;
-    beginInvoke(span: any, callback: any, object: any): any;
-    endInvoke(result: any): void;
-    getObjectData(info: any, context: any): void;
-    getInvocationList(): any[];
-    clone(): any;
-    dynamicInvoke(args: any[]): any;
-  }
-
 declare namespace Kooboo.Sites.Service {
   interface ResourceCount {
     name: string;
@@ -14192,10 +14465,10 @@ declare namespace Kooboo.Sites.Service {
 
 }
 declare namespace Kooboo.Sites.Contents.Models {
-  interface HtmlBlock extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.Sites.Models.IDomObject, Kooboo.Data.Interface.ITextObject, MultipleLanguageObject {
+  interface HtmlBlock extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.Sites.Models.IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, MultipleLanguageObject {
     body: string;
     dom: Kooboo.Dom.Document;
-    values: Record<string, any>;
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -14204,11 +14477,15 @@ declare namespace Kooboo.Sites.Contents.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface Label extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, MultipleLanguageObject {
-    values: Record<string, any>;
+  interface Label extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.IndexedDB.Serializer.IDatabaseObject, MultipleLanguageObject {
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -14217,11 +14494,16 @@ declare namespace Kooboo.Sites.Contents.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
   interface ContentProperty extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     name: string;
+    nameHash: number;
     displayName: string;
     controlType: string;
     dataType: Kooboo.Data.Definition.DataTypes;
@@ -14239,13 +14521,15 @@ declare namespace Kooboo.Sites.Contents.Models {
     settings: string;
     autoGeneratedFrom: string;
     isMedia(): boolean;
+    clone(): ContentProperty;
     getSize(): number;
     writeTo(buffer: any): number;
     setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
   }
 
   interface MultipleLanguageObject extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Data.Interface.IDynamic, Kooboo.Sites.Models.CoreObject {
-    values: Record<string, any>;
+    values: any;
     online: boolean;
     version: number;
     constType: number;
@@ -14257,7 +14541,7 @@ declare namespace Kooboo.Sites.Contents.Models {
     clone(): any;
   }
 
-  interface ContentFolder extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface ContentFolder extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     parentFolderId: any;
     displayName: string;
     contentTypeId: any;
@@ -14281,10 +14565,14 @@ declare namespace Kooboo.Sites.Contents.Models {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface ContentType extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface ContentType extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     isNested: boolean;
     properties: ContentProperty[];
     online: boolean;
@@ -14296,10 +14584,14 @@ declare namespace Kooboo.Sites.Contents.Models {
     id: any;
     name: string;
     getProperty(propertyName: string): ContentProperty;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface ContentCategory extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface ContentCategory extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     id: any;
     categoryFolder: any;
     categoryId: any;
@@ -14312,10 +14604,14 @@ declare namespace Kooboo.Sites.Contents.Models {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface TextContent extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.Sites.Models.CoreObject {
+  interface TextContent extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.IDomObject, Kooboo.Data.Interface.ITextObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     name: string;
     id: any;
     userKey: string;
@@ -14325,45 +14621,125 @@ declare namespace Kooboo.Sites.Contents.Models {
     order: number;
     dragAndDrop: number;
     summaryText: string;
-    embedded: Record<any, any>;
+    embedded: any;
+    properties: any;
+    serializerVersion: number;
     contents: MultilingualContent[];
     dom: Kooboo.Dom.Document;
     body: string;
     enableAvailableDate: boolean;
     availableStartDate: Date;
     availableEndDate: Date;
-    offlineCultures: string[];
+    offlineCultures: any;
     online: boolean;
     version: number;
     constType: number;
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
+    isSystemField(fieldHash: number): boolean;
+    isSystemField(FieldName: string): boolean;
     onAvailableDate(): boolean;
+    getFieldValues(culture: string): any;
     getValue(FieldName: string, Lang?: string): any;
+    setProperty(fieldName: string, value: string): void;
     setValue(FieldName: string, Value: string, Lang?: string): void;
     deepCopy(): TextContent;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
     clone(): any;
   }
 
-  interface EmbeddedFolder {
+  interface EmbeddedFolder extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     alias: string;
     folderId: any;
     display: string;
     group: string;
+    multiple: boolean;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
-  interface CategoryFolder {
+  interface CategoryFolder extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     alias: string;
     display: string;
     folderId: any;
     multiple: boolean;
+    getSize(): number;
+    getIndexValue(fieldHash: number): any;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
   }
 
-  interface MultilingualContent {
+  interface MultilingualContent extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     lang: string;
-    fieldValues: Record<string, string>;
+    online: boolean;
+    serializerVersion: number;
+    fieldValues: any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+    scanLangListPointer(ListSpan: any, fieldProvider: Kooboo.Sites.Contents.QueryPlan.ContentFieldProvider, currentCulture: any, defaultCulture: any, startPos: number, excludeEmpty: boolean): void;
     clone(): MultilingualContent;
+  }
+
+}
+declare namespace Kooboo.Sites.Storage {
+  interface MediaStorageFileModel extends StorageObjectModel {
+    thumbnail: string;
+    height: number;
+    width: number;
+    isImage: boolean;
+    type: string;
+    alt: string;
+    source: string;
+    sourceUrl: string;
+    author: string;
+    authorUrl: string;
+    references: any;
+    folder: string;
+    previewUrl: string;
+    mimeTypeOverride: string;
+    mimeType: string;
+    id: any;
+    key: string;
+    url: string;
+    name: string;
+    size: number;
+    downloadUrl: string;
+    lastModified: Date;
+    headers: any;
+  }
+
+  interface StorageObjectModel extends RawStorageObjectModel {
+    folder: string;
+    previewUrl: string;
+    mimeTypeOverride: string;
+    mimeType: string;
+    id: any;
+    key: string;
+    url: string;
+    name: string;
+    size: number;
+    downloadUrl: string;
+    lastModified: Date;
+    headers: any;
+  }
+
+  interface RawStorageObjectModel {
+    id: any;
+    key: string;
+    url: string;
+    name: string;
+    size: number;
+    downloadUrl: string;
+    lastModified: Date;
+    headers: any;
   }
 
 }
@@ -14498,10 +14874,10 @@ declare namespace Kooboo.Data.Models.Converter {
   }
 
 }
-declare namespace Kooboo.Lib.Utilities {
-  interface SizeMeasurement {
-    height: number;
+declare namespace Kooboo.Lib.Helper {
+  interface ImageSize {
     width: number;
+    height: number;
   }
 
 }
@@ -14593,10 +14969,6 @@ declare namespace Kooboo.Mail {
     hasAttachment: boolean;
     inviteConfirm: number;
     clone(): Message;
-    getFlags(): string[];
-    addFlags(flags: string[]): void;
-    replaceFlags(flags: string[]): void;
-    removeFlags(flags: string[]): void;
   }
 
   interface MailDb {
@@ -14640,17 +15012,17 @@ declare namespace Kooboo.Mail {
     closeActiveConnection(): void;
     getColumns(tableName: string): SqliteColumn[];
     getTables(): string[];
-    update(TableName: string, KeyName: string, Id: any, Values: Record<string, any>): void;
+    update(TableName: string, KeyName: string, Id: any, Values: any): void;
     update(value: any, tableName: string, keyname: string): void;
-    insert(TableName: string, Values: Record<string, any>): void;
+    insert(TableName: string, Values: any): void;
     objToString(obj: any): string;
     add(Value: any, tableName: string): void;
     addGetId(Value: any, tableName: string, IDColName: string): number;
     addOrUpdate(value: any, TableName: string, keyName: string): boolean;
-    addOrUpdate(Id: any, TableName: string, KeyName: string, values: Record<string, any>): boolean;
+    addOrUpdate(Id: any, TableName: string, KeyName: string, values: any): boolean;
     delete(TableName: string, KeyName: string, id: any): void;
     get(TableName: string, KeyName: string, Id: any): any;
-    get(TableName: string, criteria: Record<string, any>): any;
+    get(TableName: string, criteria: any): any;
     getAsync(TableName: string, KeyName: string, Id: any): any;
     findAll(tableName: string, FieldName: string, CompareValue: any): any[];
     find(tableName: string, FieldName: string, CompareValue: any): any;
@@ -14681,7 +15053,7 @@ declare namespace Kooboo.Mail {
   }
 
   interface Folder extends IMailObject {
-    reservedFolder: Record<number, string>;
+    reservedFolder: any;
     id: number;
     name: string;
     subscribed: boolean;
@@ -14874,7 +15246,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     parentId: string;
     tags: string[];
     dragAndDrop: number;
-    customData: Record<string, MultilingualValue>;
+    customData: any;
     id: string;
     createdAt: Date;
     updatedAt: Date;
@@ -14896,7 +15268,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     maxDownloadCount?: number;
     maxDownloadDay?: number;
     variantOptions: VariantOption[];
-    customData: Record<string, MultilingualValue>;
+    customData: any;
     id: string;
     createdAt: Date;
     updatedAt: Date;
@@ -14913,7 +15285,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     country: string;
     discountCodes: string[];
     note: string;
-    lines: Line[];
+    lines: CartLine[];
     extensionButton: ExtensionButton;
     shippingId: string;
     digitalShippingId: string;
@@ -15044,7 +15416,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     image: string;
   }
 
-  interface Option {
+  interface ProductVariantOption {
     name: string;
     value: string;
   }
@@ -15054,7 +15426,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     url: string;
   }
 
-  interface Line {
+  interface CartLine {
     quantity: number;
     variantId: string;
     groupName: string;
@@ -15095,7 +15467,7 @@ declare namespace Kooboo.Sites.Commerce.Entities {
     variantId: string;
     sku: string;
     orderId: string;
-    options: Option[];
+    options: ProductVariantOption[];
     discountAllocations: Kooboo.Sites.Commerce.Calculate.DiscountAllocation[];
     groupName: string;
     isMain: boolean;
@@ -15306,17 +15678,29 @@ declare namespace Kooboo.Sites.Commerce.CustomData {
     tooltip: string;
     embedded: boolean;
     group: string;
-    options: Record<string, any>;
+    options: any;
     validations: FieldValidation[];
     selectionOptions: any[];
     settings: string;
+  }
+
+  type FieldType = 'TextBox' | 'TextArea' | 'RichEditor' | 'Selection' | 'CheckBox' | 'RadioBox' | 'Switch' | 'Number' | 'Content' | 'MediaFile' | 'File' | 'DateTime' | 'ColorPicker' | 'KeyValues' | 'ValueList' | 'AdvancedMediaFile';
+
+  interface FieldValidation {
+    name: string;
+    type: string;
+    min?: number;
+    max?: number;
+    pattern: string;
+    value: number;
+    msg: string;
   }
 
   interface MultilingualValue extends Record<string, any> {
     comparer: any;
     count: number;
     capacity: number;
-    keys: string[];
+    keys: any;
     values: any;
     item?: any;
     add(key: string, value: any): void;
@@ -15336,18 +15720,6 @@ declare namespace Kooboo.Sites.Commerce.CustomData {
     trimExcess(capacity: number): void;
   }
 
-  type FieldType = 'TextBox' | 'TextArea' | 'RichEditor' | 'Selection' | 'CheckBox' | 'RadioBox' | 'Switch' | 'Number' | 'Content' | 'MediaFile' | 'File' | 'DateTime' | 'ColorPicker' | 'KeyValues' | 'ValueList' | 'AdvancedMediaFile';
-
-  interface FieldValidation {
-    name: string;
-    type: string;
-    min?: number;
-    max?: number;
-    pattern: string;
-    value: number;
-    msg: string;
-  }
-
 }
 declare namespace Kooboo.Sites.Commerce.Notification {
   interface EmailNotification {
@@ -15365,71 +15737,44 @@ declare namespace Kooboo.Sites.Commerce.Notification {
   }
 
 }
-declare namespace Kooboo.Data.Context.RenderCompleted {
-  interface LogInfo {
-    type: LogType;
-    size: number;
-    startTime: Date;
-    executionEndTime: Date;
-    responseEndTime: Date;
-    isApiCall: boolean;
-    objectId: any;
-    constType: number;
-    errorMessage: string;
-    visitorLog: Kooboo.Data.Models.VisitorLog;
-    blockErrors: CodeBlockError[];
-    hasBlockError(): boolean;
+declare namespace Kooboo.Sites.Integration {
+  interface IIntegrateCommerceProvider {
+    getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
+    getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    setStoreStatus(storeId: string, enable: boolean): string;
+    removeStore(storeIds: string[]): string;
+    getStores(): any;
+    getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
+    readAttachment(key: string, fileName: string, contentType?: string): void;
+    setOrdersCallbackCode(codeBlockName: string): void;
   }
 
-  type LogType = 'Unknown' | 'Visitor' | 'ResourceLog' | 'CodeError' | 'NotFound';
-
-  interface CodeBlockError {
-    constType: number;
-    objectId: any;
-    errorMessage: string;
+  interface BaseIntegrateCommerceProvider extends IIntegrateCommerceProvider {
+    providerName: string;
+    setOrdersCallbackCode(codeBlockName: string): void;
+    getAuthUrl(state?: Kooboo.IntegrateCommerce.PlatformAuthState): string;
+    getOrderDetails(storeId: string, id: string): Kooboo.IntegrateCommerce.PlatformOrderDetail;
+    getOrderList(storeId: string, query?: Kooboo.IntegrateCommerce.PlatformOrderListQuery): Kooboo.IntegrateCommerce.PlatformOrderListPage;
+    setStoreStatus(storeId: string, enable: boolean): string;
+    removeStore(storeIds: string[]): string;
+    getStores(): any;
+    getAttachments(key: string): Kooboo.IntegrateCommerce.SummaryFileInfo[];
+    readAttachment(key: string, fileName: string, contentType?: string): void;
   }
-
-}
-declare namespace Kooboo.Data.Models.JsonLD {
-  interface SchemaFieldValue {
-    id: string;
-    type: string;
-    name: string;
-    value: any;
-    getKey(): string;
-  }
-
-}
-declare namespace Kooboo.Data.Server {
-  interface SiteCompressionStore {
-    fileName: string;
-    getOriginal(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
-    getZstd(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
-    writeBlobSpan(ObjectId: any, Version: number, OriginalValue: any, ZstdValue: any): Kooboo.IndexedDB.FileIO.CompressionBlobFile;
-    readSpan(position: number, length: number, func: any): any;
-    readSpan(position: number, length: number, action: ReadSpanAction): void;
-    close(): void;
-  }
-
-  interface AcceptCH {
-    eCT: number;
-    downlink: number;
-    rTT: number;
-    dPR: number;
-    colorScheme: Kooboo.Data.Logging.ColorScheme;
-    viewportWidth: number;
-  }
-
-  type CompressionType = 'None' | 'Gzip' | 'Zstd';
 
 }
 declare namespace Kooboo.Sites.Payment.Models {
-  interface Card {
+  interface Card extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     number: string;
     cvc: string;
     expMonth: string;
     expYear: string;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
   interface Address {
@@ -15444,42 +15789,23 @@ declare namespace Kooboo.Sites.Payment.Models {
     phone: string;
   }
 
-}
-declare namespace KScript.Payment.Square {
-  interface SquareCheckoutParams extends KScript.Payment.Model.ChargeParams {
-    /** Stripe checkout success will redirect to this url */
-    returnUrl: string;
-    /** Order total amount Example: 1.50 */
-    totalAmount: number;
-    /** Order name Example: 'tea' */
+  interface PaymentCustomer extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
+    id: any;
+    paymentMethod: string;
+    customer: string;
+    referenceId: string;
+    online: boolean;
+    version: number;
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    lastModifyTick: number;
     name: string;
-    /** Order detail Example: 'Green tea x2, Black tea x1...' */
-    description: string;
-    /** USD CNY... */
-    currency: string;
-    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
-    order: string;
-    /** If this value is set, the callback code will execute after the payment is finished */
-    callbackCodeName: string;
-  }
-
-}
-declare namespace KScript.Payment.Wechat {
-  interface WeChatNativeParams extends KScript.Payment.Model.ChargeParams {
-    /** If next action using renderHtml,page will redirect to RedirectUrl */
-    redirectUrl: string;
-    /** Order total amount Example: 1.50 */
-    totalAmount: number;
-    /** Order name Example: 'tea' */
-    name: string;
-    /** Order detail Example: 'Green tea x2, Black tea x1...' */
-    description: string;
-    /** USD CNY... */
-    currency: string;
-    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
-    order: string;
-    /** If this value is set, the callback code will execute after the payment is finished */
-    callbackCodeName: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    clone(): any;
   }
 
 }
@@ -15510,28 +15836,6 @@ declare namespace KScript.Payment.Stripe {
     card: Kooboo.Sites.Payment.Models.Card;
     paymentMethodId: string;
     customer: string;
-    /** Order total amount Example: 1.50 */
-    totalAmount: number;
-    /** Order name Example: 'tea' */
-    name: string;
-    /** Order detail Example: 'Green tea x2, Black tea x1...' */
-    description: string;
-    /** USD CNY... */
-    currency: string;
-    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
-    order: string;
-    /** If this value is set, the callback code will execute after the payment is finished */
-    callbackCodeName: string;
-  }
-
-  interface PaynlCheckoutParams extends KScript.Payment.Model.ChargeParams {
-    /** Paynl checkout success will redirect to this url */
-    returnUrl: string;
-    /** The URL where we exchange the status of a transaction. */
-    exchangeUrl: string;
-    /** Expiration time, in seconds, default value 86400 */
-    expire: number;
-    statsData: StatsData;
     /** Order total amount Example: 1.50 */
     totalAmount: number;
     /** Order name Example: 'tea' */
@@ -15587,10 +15891,70 @@ declare namespace KScript.Payment.Stripe {
     callbackCodeName: string;
   }
 
+  interface PaynlCheckoutParams extends KScript.Payment.Model.ChargeParams {
+    /** Paynl checkout success will redirect to this url */
+    returnUrl: string;
+    /** The URL where we exchange the status of a transaction. */
+    exchangeUrl: string;
+    /** Expiration time, in seconds, default value 86400 */
+    expire: number;
+    statsData: StatsData;
+    /** Order total amount Example: 1.50 */
+    totalAmount: number;
+    /** Order name Example: 'tea' */
+    name: string;
+    /** Order detail Example: 'Green tea x2, Black tea x1...' */
+    description: string;
+    /** USD CNY... */
+    currency: string;
+    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
+    order: string;
+    /** If this value is set, the callback code will execute after the payment is finished */
+    callbackCodeName: string;
+  }
+
   interface StatsData {
     extra1: string;
     extra2: string;
     extra3: string;
+  }
+
+}
+declare namespace KScript.Payment.Wechat {
+  interface WeChatNativeParams extends KScript.Payment.Model.ChargeParams {
+    /** If next action using renderHtml,page will redirect to RedirectUrl */
+    redirectUrl: string;
+    /** Order total amount Example: 1.50 */
+    totalAmount: number;
+    /** Order name Example: 'tea' */
+    name: string;
+    /** Order detail Example: 'Green tea x2, Black tea x1...' */
+    description: string;
+    /** USD CNY... */
+    currency: string;
+    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
+    order: string;
+    /** If this value is set, the callback code will execute after the payment is finished */
+    callbackCodeName: string;
+  }
+
+}
+declare namespace KScript.Payment.Alipay {
+  interface AlipayFormParams extends KScript.Payment.Model.ChargeParams {
+    /** Alipay checkout success will redirect to this url */
+    returnUrl: string;
+    /** Order total amount Example: 1.50 */
+    totalAmount: number;
+    /** Order name Example: 'tea' */
+    name: string;
+    /** Order detail Example: 'Green tea x2, Black tea x1...' */
+    description: string;
+    /** USD CNY... */
+    currency: string;
+    /** If pay for a kooboo commerce order, provide this value,commerce order will update to paid when payment success */
+    order: string;
+    /** If this value is set, the callback code will execute after the payment is finished */
+    callbackCodeName: string;
   }
 
 }
@@ -15631,9 +15995,9 @@ declare namespace Kooboo.Sites.Payment.Methods.TwoCheckout {
   }
 
 }
-declare namespace KScript.Payment.Alipay {
-  interface AlipayFormParams extends KScript.Payment.Model.ChargeParams {
-    /** Alipay checkout success will redirect to this url */
+declare namespace KScript.Payment.Square {
+  interface SquareCheckoutParams extends KScript.Payment.Model.ChargeParams {
+    /** Stripe checkout success will redirect to this url */
     returnUrl: string;
     /** Order total amount Example: 1.50 */
     totalAmount: number;
@@ -15647,15 +16011,6 @@ declare namespace KScript.Payment.Alipay {
     order: string;
     /** If this value is set, the callback code will execute after the payment is finished */
     callbackCodeName: string;
-  }
-
-}
-declare namespace Kooboo.IndexedDB.Serializer {
-  interface IDatabaseObject {
-    toBytes(): number[];
-    getSize(): number;
-    writeTo(buffer: any): number;
-    setValues(values: any): void;
   }
 
 }
@@ -15724,6 +16079,54 @@ declare namespace Kooboo.Dom.CSS {
   type enumCSSRuleType = 'reserved' | 'STYLE_RULE' | 'CHARSET_RULE' | 'IMPORT_RULE' | 'MEDIA_RULE' | 'FONT_FACE_RULE' | 'PAGE_RULE' | 'KEYFRAMES_RULE' | 'KEYFRAME_RULE' | 'MARGIN_RULE' | 'NAMESPACE_RULE' | 'COUNTER_STYLE_RULE' | 'SUPPORTS_RULE' | 'DOCUMENT_RULE' | 'FONT_FEATURE_VALUES_RULE' | 'VIEWPORT_RULE' | 'REGION_STYLE_RULE' | 'CUSTOM_MEDIA_RULE';
 
 }
+declare namespace Kooboo.Data.Context.RenderCompleted {
+  interface LogInfo {
+    type: LogType;
+    size: number;
+    startTime: Date;
+    executionDuration: number;
+    executionEndTime: Date;
+    isApiCall: boolean;
+    objectId: any;
+    constType: number;
+    errorMessage: string;
+    visitorLog: Kooboo.Data.Models.VisitorLog;
+    blockErrors: CodeBlockError[];
+    hasBlockError(): boolean;
+  }
+
+  type LogType = 'Unknown' | 'Visitor' | 'ResourceLog' | 'CodeError' | 'NotFound';
+
+  interface CodeBlockError {
+    constType: number;
+    objectId: any;
+    errorMessage: string;
+  }
+
+}
+declare namespace Kooboo.Data.Server {
+  interface SiteCompressionStore {
+    fileName: string;
+    getOriginal(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
+    getZstd(ObjectId: any, version: number): Kooboo.IndexedDB.FileIO.FilePart;
+    writeBlobSpan(ObjectId: any, Version: number, OriginalValue: any, ZstdValue: any): Kooboo.IndexedDB.FileIO.CompressionBlobFile;
+    readSpan(position: number, length: number, func: any): any;
+    readSpan(position: number, length: number, action: ReadSpanAction): void;
+    close(): void;
+  }
+
+  interface AcceptCH {
+    eCT: number;
+    downlink: number;
+    rTT: number;
+    dPR: number;
+    colorScheme: Kooboo.Data.Logging.ColorScheme;
+    viewportWidth: number;
+  }
+
+  type CompressionType = 'None' | 'Gzip' | 'Zstd';
+
+}
 declare namespace Kooboo.Sites.ScriptModules.Render {
   interface ModuleRequest {
     resourceType: Kooboo.Sites.ScriptModules.Models.ResourceType;
@@ -15753,11 +16156,11 @@ k.response.redirect(url);
 }
 declare namespace Kooboo.Data.Storage {
   interface ErrorLogStore {
-    groupByFunctions: Record<string, (p1:System.String,)=>Kooboo.Data.Models.SiteErrorLog>;
-    topStatusCode: Record<string, number>;
-    topErrorUrl: Record<string, number>;
+    groupByFunctions: any;
+    topStatusCode: any;
+    topErrorUrl: any;
     typeName: string;
-    collection: Kooboo.Data.Models.SiteErrorLog[];
+    collection: any;
     byStatusCode(statusCode: number, take: number): Kooboo.Data.Models.SiteErrorLog[];
     byObjId(ObjectId: any, take: number): Kooboo.Data.Models.SiteErrorLog[];
     add(Value: Kooboo.Data.Models.SiteErrorLog): void;
@@ -15772,14 +16175,14 @@ declare namespace Kooboo.Data.Storage {
 
   interface WeekLogSummary {
     total: number;
-    groupBy: Record<string, Record<string, number>>;
+    groupBy: any;
     currentReadId: number;
     addGroupBy(GroupKey: string, ObjectValue: string): void;
   }
 
   interface DayLogSummary {
-    daysTotal: Record<number, number>;
-    groupBy: Record<string, Record<string, number>>;
+    daysTotal: any;
+    groupBy: any;
     readDay: number;
     readDayId: number;
     isFinished: boolean;
@@ -15797,15 +16200,20 @@ declare namespace Kooboo.IndexedDB {
     name: string;
     absolutePath: string;
     exists: boolean;
+    clearEditLog(minimumVersion?: number): number;
     hasObjectStore(objectStoreName: string): boolean;
     hasTable(talbeName: string): boolean;
     getOrCreateObjectStore(StoreName: string, Parameters?: ObjectStoreParameters): any;
+    getOrCreateDatabaseObjectStore(StoreName: string, Parameters?: ObjectStoreParameters): any;
+    rebuildDatabaseObjectStore(currentStore: any, newParas: ObjectStoreParameters): any;
     getOrCreateTable(name: string, setting?: Kooboo.IndexedDB.Dynamic.Setting): Kooboo.IndexedDB.Dynamic.Table;
     getTable(name: string): Kooboo.IndexedDB.Dynamic.Table;
     deleteTable(name: string): void;
     getSequence(name: string): any;
+    getGeneratedSequence(name: string): any;
     getSequenceOld(name: string): any;
     getObjectStore(name: string): any;
+    getDatabaseObjectStore(name: string): any;
     getReadingStore(name: string, paras?: ObjectStoreParameters): any;
     rebuildObjectStore(currentStore: any, newParas: ObjectStoreParameters): any;
     restoreFromDisk(StoreName: string): void;
@@ -15820,10 +16228,13 @@ declare namespace Kooboo.IndexedDB {
   }
 
   interface EditLog {
+    lastVersion: number;
     getNewLogId(): number;
     setLogId(id: number): void;
+    preserveCurrentVersion(minimumVersion?: number): number;
     add(entry: LogEntry): void;
     delSelf(): void;
+    getNext(afterVersion: number): LogEntry;
     list(take: number, skip?: number, ascending?: boolean): LogEntry[];
     get(VersionId: number): LogEntry;
     getByStoreName(StoreName: string, take: number, skip?: number, ascending?: boolean): LogEntry[];
@@ -15844,7 +16255,7 @@ declare namespace Kooboo.IndexedDB {
 
   type EditType = 'Add' | 'Update' | 'Delete';
 
-  interface LogEntry {
+  interface LogEntry extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     id: number;
     storeName: string;
     storeNameHash: number;
@@ -15861,6 +16272,10 @@ declare namespace Kooboo.IndexedDB {
     oldBlockPosition: number;
     newBlockPosition: number;
     toHashGuid(bytes: number[]): any;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
   interface IObjectStore {
@@ -15872,6 +16287,7 @@ declare namespace Kooboo.IndexedDB {
     delSelf(): void;
     flush(): void;
     add(key: any, value: any): boolean;
+    add(key: any, value: any, enableLog: boolean): boolean;
     update(key: any, value: any): boolean;
     delete(key: any): void;
     get(key: any): any;
@@ -15891,8 +16307,6 @@ declare namespace Kooboo.IndexedDB {
     enableLog: boolean;
     enableVersion: boolean;
     useDefaultNETBinaryFormater: boolean;
-    useMsgPackSerializer: boolean;
-    maxCacheLevel: number;
     addColumn(FieldOrPropertyName: string, maxlength: number): void;
     addColumn(FieldOrPropertyName: string): void;
     addColumn(expression: any): void;
@@ -15909,9 +16323,12 @@ declare namespace Kooboo.Sites.Analytics.ABTest {
   interface AbTestStore {
     assignmentStore: DailyUserAssignmentStore;
     getStatStore(TestName: string): AbTestStatStore;
+    tryMarkMinSampleReached(testName: string, reachedAt: Date): boolean;
     hasObjectId(ObjectId: any): boolean;
     getActiveTests(objectType: number, objectId: any): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel[];
+    getTestsByGoal(goalId: number): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel[];
     addOrUpdate(test: Kooboo.Sites.Analytics.ABTest.Models.AbTestModel): void;
+    tryAdd(test: Kooboo.Sites.Analytics.ABTest.Models.AbTestModel): boolean;
     delete(testName: string): void;
     getAll(): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel[];
     get(TestName: string): Kooboo.Sites.Analytics.ABTest.Models.AbTestModel;
@@ -15948,7 +16365,7 @@ declare namespace Kooboo.Sites.AIBuilder.Application {
     factsByEntityId(entityId: any): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
     factsByEntity(entity: Kooboo.Sites.AIBuilder.Application.Model.Entity): Kooboo.Sites.AIBuilder.Application.Model.Fact[];
     entitiesByFact(factId: any): Kooboo.Sites.AIBuilder.Application.Model.Entity[];
-    entitiesByFacts(factIds: any[]): Record<any, any>;
+    entitiesByFacts(factIds: any[]): any;
     entityUsedBy(entityId: any): Kooboo.Sites.AIBuilder.Application.ViewModel.EntityUsedBy[];
     entityUsedBy(entity: Kooboo.Sites.AIBuilder.Application.Model.Entity): Kooboo.Sites.AIBuilder.Application.ViewModel.EntityUsedBy[];
     acceptFactSplit(model: Kooboo.Sites.AIBuilder.Application.Response.FactSplitResponse): void;
@@ -15959,44 +16376,106 @@ declare namespace Kooboo.Sites.AIBuilder.Application {
     buildDomainContextInfo(): string;
     addOrUpdateFact(fact: Kooboo.Sites.AIBuilder.Application.Model.Fact): void;
     entitiesFilterByFacts(AllEntities: Kooboo.Sites.AIBuilder.Application.Model.Entity[], Facts: Kooboo.Sites.AIBuilder.Application.Model.Fact[]): Kooboo.Sites.AIBuilder.Application.Model.Entity[];
-    listScenarioViews(scenarioNames: string[], IncludeFacts?: boolean): Kooboo.Sites.AIBuilder.Application.ViewModel.ScenarioViewModel[];
-    wireFrameByPage(pageUrl: string): Kooboo.Sites.AIBuilder.Application.Model.WireFrame;
   }
 
 }
-declare namespace Kooboo.Sites.Sync.SiteClusterSync {
-  interface SiteClusterManager {
-    control: ControlFlow;
-    isRunning: boolean;
-    pushQueue: PushTask[];
-    siteCluster: Kooboo.Sites.Models.SiteCluster[];
-    addTask(repo: Kooboo.Data.Interface.IRepository, value: Kooboo.Data.Interface.ISiteObject, changetype: Kooboo.ChangeType): void;
-    addTask(inTask: PushTask): void;
-    peekTask(): PushTask;
-    resetCluster(): void;
-    setClusterVersion(ClusterId: any, Version: number): void;
-    getSyncObject(task: PushTask): Kooboo.Sites.Sync.SyncObject;
-    receive(SyncObject: Kooboo.Sites.Sync.SyncObject, ClientIp: string): void;
-    receive(SyncObject: Kooboo.Sites.Sync.SyncObject, FromNode: Kooboo.Sites.Models.SiteCluster): void;
-    initStart(): void;
-    ensureStart(): void;
-    getLogItems(clusterId: any): Kooboo.IndexedDB.LogEntry[];
-    getLogItems(cluster: Kooboo.Sites.Models.SiteCluster): Kooboo.IndexedDB.LogEntry[];
+declare namespace Kooboo.Sites.AI.Application.Storage {
+  interface AIApplicationStore {
+    getBlueprint(): Kooboo.Sites.AI.Application.Model.Blueprint;
+    getAppPlan(): Kooboo.Sites.AI.Application.Model.AppPlan;
+    getAppDeliveryProgress(): Kooboo.Sites.AI.Application.Model.AppDeliveryProgress;
+    updateAppDeliveryProgress(update: (p1:Kooboo.Sites.AI.Application.Model.AppDeliveryProgress,)=>Kooboo.Sites.AI.Application.Model.AppDeliveryProgress): Kooboo.Sites.AI.Application.Model.AppDeliveryProgress;
+    saveBlueprint(blueprint: Kooboo.Sites.AI.Application.Model.Blueprint): void;
+    saveAppPlan(plan: Kooboo.Sites.AI.Application.Model.AppPlan): void;
+    updateAppPlan(update: (p1:Kooboo.Sites.AI.Application.Model.AppPlan,)=>Kooboo.Sites.AI.Application.Model.AppPlan): Kooboo.Sites.AI.Application.Model.AppPlan;
+    addOrUpdate(model: any): void;
+    get(id: string): any;
+    list(): any[];
+    synchronizeAcceptedFacts(userId: string): Kooboo.Sites.AI.Application.Delivery.EntityDatabaseSynchronizationResult;
+    synchronizeBusinessObjects(userId: string): Kooboo.Sites.AI.Application.Delivery.EntityDatabaseSynchronizationResult;
+    getVersion(id: string): number;
+    delete(id: string): void;
+    addOrUpdate(relation: Kooboo.Sites.AI.Application.Model.ModelRelation): void;
+    getRelation(id: any): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    linkGoalToUserStory(goalId: string, userStoryId: string): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    linkGoalToActor(goalId: string, actorId: string): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    linkBlueprintToModule(blueprintId: string, moduleId: string): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    linkModuleToScenario(moduleId: string, scenarioId: string): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    listModuleScenarios(moduleId: string): Kooboo.Sites.AI.Application.Model.Scenario[];
+    listScenarioModules(scenarioId: string): Kooboo.Sites.AI.Application.Model.Module[];
+    listGoalActors(goalId: string): Kooboo.Sites.AI.Application.Model.Actor[];
+    listActorGoals(actorId: string): Kooboo.Sites.AI.Application.Model.Goal[];
+    linkUserStoryToScenario(userStoryId: string, scenarioId: string): Kooboo.Sites.AI.Application.Model.ModelRelation;
+    listRelationsFrom(sourceId: string, targetType?: Kooboo.Sites.AI.Application.Model.ApplicationModelType): Kooboo.Sites.AI.Application.Model.ModelRelation[];
+    listRelationsTo(targetId: string, sourceType?: Kooboo.Sites.AI.Application.Model.ApplicationModelType): Kooboo.Sites.AI.Application.Model.ModelRelation[];
+    listRelationsByType(sourceType?: Kooboo.Sites.AI.Application.Model.ApplicationModelType, targetType?: Kooboo.Sites.AI.Application.Model.ApplicationModelType): Kooboo.Sites.AI.Application.Model.ModelRelation[];
+    deleteRelation(id: any): void;
   }
 
-  interface PushTask {
-    isDelete: boolean;
-    objectId: any;
+  interface AIApplicationLogStore {
+    storageFilePath: string;
+    addAction(action: Kooboo.Sites.AI.Application.Model.ActionLog): number;
+    getAction(id: number): Kooboo.Sites.AI.Application.Model.ActionLog;
+    count(): number;
+    close(): void;
+  }
+
+}
+declare namespace Kooboo.Sites.Authorization.Model {
+  interface RolePermissionRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
     storeName: string;
-    clusterId: any;
-    version: number;
-    compareTo(other: PushTask): number;
+    store: any;
+    query: any;
+    tableScan: any;
+    get(nameorid: string): RolePermission;
+    getByNameOrId(NameOrGuid: string): RolePermission;
+    getFromCache(id: any, clone?: boolean): RolePermission;
+    addOrUpdate(value: RolePermission, UserId: any): boolean;
+    addOrUpdate(value: RolePermission): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    initCache(): void;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): RolePermission;
+    syncToCache(value: RolePermission, IsDelete: boolean): void;
+    getByUrl(relativeUrl: string): RolePermission;
+    getMetaByUrl(relativeUrl: string): RolePermission;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): RolePermission[];
+    all(): RolePermission[];
+    list(UseColumnData?: boolean): RolePermission[];
+    isEqual(x: RolePermission, y: RolePermission): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: RolePermission): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
   }
 
-  interface ControlFlow {
-    lockItem(ClusterId: any, ObjectId: any): void;
-    unlockItem(ClusterId: any, ObjectId: any): void;
-    hasLock(ClusterId: any, ObjectId: any): boolean;
+  interface RolePermission extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
+    permissions: Kooboo.Sites.Permission.PermissionItem[];
+    permission: string[];
+    online: boolean;
+    version: number;
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    lastModifyTick: number;
+    id: any;
+    name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    clone(): any;
   }
 
 }
@@ -16011,19 +16490,16 @@ declare namespace Kooboo.Sites.AI.Functions.Custom {
     store: any;
     query: any;
     tableScan: any;
-    init(): void;
-    isEqualTo(value: SiteAIFunction): boolean;
+    initCache(): void;
     addOrUpdate(value: SiteAIFunction, UserId: any): boolean;
-    addOrUpdate(value: SiteAIFunction, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: SiteAIFunction): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): SiteAIFunction;
-    getFromCache(id: any): SiteAIFunction;
+    getFromCache(id: any, Clone?: boolean): SiteAIFunction;
+    syncToCache(value: SiteAIFunction, IsDelete: boolean): void;
     get(nameorid: string): SiteAIFunction;
-    getWithEvent(id: any): SiteAIFunction;
     getByUrl(relativeUrl: string): SiteAIFunction;
     getMetaByUrl(relativeUrl: string): SiteAIFunction;
     getByNameOrId(NameOrGuid: string): SiteAIFunction;
@@ -16042,7 +16518,7 @@ declare namespace Kooboo.Sites.AI.Functions.Custom {
     rebuild(): void;
   }
 
-  interface SiteAIFunction extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface SiteAIFunction extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     id: any;
     function: string;
     inputSchema: string;
@@ -16056,6 +16532,10 @@ declare namespace Kooboo.Sites.AI.Functions.Custom {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -16072,19 +16552,16 @@ declare namespace Kooboo.Sites.BackendEvent {
     query: any;
     tableScan: any;
     listByEventType(eventType: EventType): BackendRule[];
-    init(): void;
-    isEqualTo(value: BackendRule): boolean;
+    initCache(): void;
     addOrUpdate(value: BackendRule, UserId: any): boolean;
-    addOrUpdate(value: BackendRule, UserId: any, betweenEvent: ()=>void): boolean;
     addOrUpdate(value: BackendRule): boolean;
     delete(id: any): number;
     delete(id: any, UserId: any): number;
-    delete(id: any, UserId: any, betweenEvent: ()=>void): number;
     getLatestVersion(Id: any): number;
     get(id: any, getColumnDataOnly?: boolean): BackendRule;
-    getFromCache(id: any): BackendRule;
+    getFromCache(id: any, Clone?: boolean): BackendRule;
+    syncToCache(value: BackendRule, IsDelete: boolean): void;
     get(nameorid: string): BackendRule;
-    getWithEvent(id: any): BackendRule;
     getByUrl(relativeUrl: string): BackendRule;
     getMetaByUrl(relativeUrl: string): BackendRule;
     getByNameOrId(NameOrGuid: string): BackendRule;
@@ -16105,7 +16582,7 @@ declare namespace Kooboo.Sites.BackendEvent {
 
   type EventType = 'ImageUploading' | 'ImageUpload' | 'ImageUpdating' | 'ImageUpdated' | 'ImageDeleting' | 'ImageDelete' | 'PageCreating' | 'PageCreated' | 'PageUpdating' | 'PageUpdated' | 'PageDeleting' | 'PageDeleted' | 'ViewCreating' | 'ViewCreated' | 'ViewUpdating' | 'ViewUpdated' | 'ViewDeleting' | 'ViewDeleted' | 'LayoutCreating' | 'LayoutCreated' | 'LayoutUpdating' | 'LayoutUpdated' | 'LayoutDeleting' | 'LayoutDeleted' | 'CodeCreating' | 'CodeCreated' | 'CodeUpdating' | 'CodeUpdated' | 'CodeDeleting' | 'CodeDeleted' | 'MenuCreating' | 'MenuCreated' | 'MenuUpdating' | 'MenuUpdated' | 'MenuDeleting' | 'MenuDeleted' | 'HtmlBlockCreating' | 'HtmlBlockCreated' | 'HtmlBlockUpdating' | 'HtmlBlockUpdated' | 'HtmlBlockDeleting' | 'HtmlBlockDeleted' | 'ContentCreating' | 'ContentCreated' | 'ContentUpdating' | 'ContentUpdated' | 'ContentDeleting' | 'ContentDeleted' | 'LabelCreating' | 'LabelCreated' | 'LabelUpdating' | 'LabelUpdated' | 'LabelDeleting' | 'LabelDeleted' | 'ScriptCreating' | 'ScriptCreated' | 'ScriptUpdating' | 'ScriptUpdated' | 'ScriptDeleting' | 'ScriptDeleted' | 'StyleCreating' | 'StyleCreated' | 'StyleUpdating' | 'StyleUpdated' | 'StyleDeleting' | 'StyleDeleted' | 'ProductCreating' | 'ProductCreated' | 'ProductUpdating' | 'ProductUpdated' | 'ProductDeleting' | 'ProductDeleted' | 'ProductCopied' | 'ProductCategoryCreating' | 'ProductCategoryCreated' | 'ProductCategoryUpdating' | 'ProductCategoryUpdated' | 'ProductCategoryDeleting' | 'ProductCategoryDeleted' | 'OrderConfirmed' | 'OrderDelivered' | 'OrderCancelled';
 
-  interface BackendRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.Sites.Models.CoreObject {
+  interface BackendRule extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
     eventType: EventType;
     rule: Kooboo.Sites.Models.IFElseRule;
     online: boolean;
@@ -16116,6 +16593,194 @@ declare namespace Kooboo.Sites.BackendEvent {
     lastModifyTick: number;
     id: any;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
+    clone(): any;
+  }
+
+}
+declare namespace Kooboo.Sites.Payment.Repository {
+  interface PaymentCallBackRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
+    storeName: string;
+    store: any;
+    query: any;
+    tableScan: any;
+    initCache(): void;
+    addOrUpdate(value: Kooboo.Sites.Payment.PaymentCallback, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Payment.PaymentCallback): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Payment.PaymentCallback;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Payment.PaymentCallback;
+    syncToCache(value: Kooboo.Sites.Payment.PaymentCallback, IsDelete: boolean): void;
+    get(nameorid: string): Kooboo.Sites.Payment.PaymentCallback;
+    getByUrl(relativeUrl: string): Kooboo.Sites.Payment.PaymentCallback;
+    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Payment.PaymentCallback;
+    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Payment.PaymentCallback;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): Kooboo.Sites.Payment.PaymentCallback[];
+    all(): Kooboo.Sites.Payment.PaymentCallback[];
+    list(UseColumnData?: boolean): Kooboo.Sites.Payment.PaymentCallback[];
+    isEqual(x: Kooboo.Sites.Payment.PaymentCallback, y: Kooboo.Sites.Payment.PaymentCallback): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: Kooboo.Sites.Payment.PaymentCallback): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
+  }
+
+  interface PaymentRequestRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
+    storeName: string;
+    store: any;
+    query: any;
+    tableScan: any;
+    updatePaid(ReqeustId: any): boolean;
+    updateCancel(ReqeustId: any): boolean;
+    initCache(): void;
+    addOrUpdate(value: Kooboo.Sites.Payment.PaymentRequest, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Payment.PaymentRequest): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Payment.PaymentRequest;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Payment.PaymentRequest;
+    syncToCache(value: Kooboo.Sites.Payment.PaymentRequest, IsDelete: boolean): void;
+    get(nameorid: string): Kooboo.Sites.Payment.PaymentRequest;
+    getByUrl(relativeUrl: string): Kooboo.Sites.Payment.PaymentRequest;
+    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Payment.PaymentRequest;
+    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Payment.PaymentRequest;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): Kooboo.Sites.Payment.PaymentRequest[];
+    all(): Kooboo.Sites.Payment.PaymentRequest[];
+    list(UseColumnData?: boolean): Kooboo.Sites.Payment.PaymentRequest[];
+    isEqual(x: Kooboo.Sites.Payment.PaymentRequest, y: Kooboo.Sites.Payment.PaymentRequest): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: Kooboo.Sites.Payment.PaymentRequest): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
+  }
+
+  interface PaymentCustomerRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
+    storeName: string;
+    store: any;
+    query: any;
+    tableScan: any;
+    getReferenceId(identity: string, paymentMethod: string): string;
+    initCache(): void;
+    addOrUpdate(value: Kooboo.Sites.Payment.Models.PaymentCustomer, UserId: any): boolean;
+    addOrUpdate(value: Kooboo.Sites.Payment.Models.PaymentCustomer): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    getFromCache(id: any, Clone?: boolean): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    syncToCache(value: Kooboo.Sites.Payment.Models.PaymentCustomer, IsDelete: boolean): void;
+    get(nameorid: string): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    getByUrl(relativeUrl: string): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    getMetaByUrl(relativeUrl: string): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    getByNameOrId(NameOrGuid: string): Kooboo.Sites.Payment.Models.PaymentCustomer;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): Kooboo.Sites.Payment.Models.PaymentCustomer[];
+    all(): Kooboo.Sites.Payment.Models.PaymentCustomer[];
+    list(UseColumnData?: boolean): Kooboo.Sites.Payment.Models.PaymentCustomer[];
+    isEqual(x: Kooboo.Sites.Payment.Models.PaymentCustomer, y: Kooboo.Sites.Payment.Models.PaymentCustomer): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: Kooboo.Sites.Payment.Models.PaymentCustomer): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
+  }
+
+}
+declare namespace Kooboo.Sites.AI.Tasks {
+  interface AITaskJobRepository extends Kooboo.Sites.Repository.ISiteRepositoryBase, Kooboo.Data.Interface.IRepository {
+    storeParameters: Kooboo.IndexedDB.ObjectStoreParameters;
+    siteDb: Kooboo.Sites.Repository.SiteDb;
+    siteObjectType: any;
+    useCache: boolean;
+    webSite: Kooboo.Data.Models.WebSite;
+    storeName: string;
+    store: any;
+    query: any;
+    tableScan: any;
+    initCache(): void;
+    addOrUpdate(value: AITaskJob, UserId: any): boolean;
+    addOrUpdate(value: AITaskJob): boolean;
+    delete(id: any): number;
+    delete(id: any, UserId: any): number;
+    getLatestVersion(Id: any): number;
+    get(id: any, getColumnDataOnly?: boolean): AITaskJob;
+    getFromCache(id: any, Clone?: boolean): AITaskJob;
+    syncToCache(value: AITaskJob, IsDelete: boolean): void;
+    get(nameorid: string): AITaskJob;
+    getByUrl(relativeUrl: string): AITaskJob;
+    getMetaByUrl(relativeUrl: string): AITaskJob;
+    getByNameOrId(NameOrGuid: string): AITaskJob;
+    parseID(NameOrGuid: string): any;
+    getUsedBy(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    getUsedByForCount(ObjectId: any): Kooboo.Data.Models.UsedByRelation[];
+    count(): number;
+    all(UseColumnData: boolean): AITaskJob[];
+    all(): AITaskJob[];
+    list(UseColumnData?: boolean): AITaskJob[];
+    isEqual(x: AITaskJob, y: AITaskJob): boolean;
+    rollBack(log: Kooboo.IndexedDB.LogEntry): void;
+    rollBack(logList: Kooboo.IndexedDB.LogEntry[]): void;
+    checkBeingUsed(SiteObject: AITaskJob): Kooboo.Sites.Relation.ObjectRelation[];
+    checkBeingUsed(ObjectId: any): Kooboo.Sites.Relation.ObjectRelation[];
+    rebuild(): void;
+  }
+
+  interface AITaskJob extends Kooboo.Data.Interface.ISiteObject, Kooboo.Data.Interface.ICoreObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.CoreObject {
+    id: any;
+    startTime: Date;
+    active: boolean;
+    finish: boolean;
+    repeat: boolean;
+    frequence: Kooboo.IndexedDB.Schedule.RepeatFrequence;
+    frequenceUnit: number;
+    prompt: string;
+    model: string;
+    provider: string;
+    online: boolean;
+    version: number;
+    constType: number;
+    creationDate: Date;
+    lastModified: Date;
+    lastModifyTick: number;
+    name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -16164,7 +16829,7 @@ declare namespace Kooboo.Sites.Scripting.Global.SiteItem.TypeDefinition {
 declare namespace Kooboo.Sites.DataTraceAndModify {
   interface ITraceability {
     source: string;
-    getTraceInfo(): any;
+    getTraceInfo(): Record<string, string>;
   }
 
 }
@@ -16223,7 +16888,7 @@ If LastColumnIndex is null, the (row.LastCellNum -1) will instead it. row.LastCe
 sheet.getObjectData({firstColumnIndex:0,lastColumnIndex:1,firstRowIndex:0,lastRowIndex:3})
 ```
  */
-    getObjectData(range?: KExcelReadRange): Record<string, any>[];
+    getObjectData(range?: KExcelReadRange): any[];
     /** ```ts
 // Read the sheet data as arrays.
 // range:Specify the range of the rows and columns to read.
@@ -16257,6 +16922,50 @@ arrays example:[["Id","Name","Age","CreationTime"],["1","My Name","12","2022-12-
   interface KExcelCell {
     value: any;
     type: string;
+  }
+
+}
+declare namespace Kooboo.Sites.ScriptDebugger {
+  interface DebugSession {
+    expireTimeSpan: any;
+    breakpoints: Breakpoint[];
+    jsEngine: any;
+    end: boolean;
+    stopped: boolean;
+    currentCode: string;
+    lastRefreshTime: Date;
+    debugInfo: DebugInfo;
+    exception: any;
+    stepMode: any;
+    debuggingContext: Kooboo.Data.Context.RenderContext;
+    currentContext: Kooboo.Data.Context.RenderContext;
+    cancellationTokenSource: any;
+    next(stepMode: any): void;
+    clear(): void;
+    stop(): void;
+    isExpired(): boolean;
+    onBreak(sender: any, e: any): any;
+    onStep(sender: any, e: any): any;
+    syncBreakpoints(currentCode?: string): void;
+  }
+
+  interface Breakpoint {
+    source: string;
+    line: number;
+    column: number;
+    generatedCodeLine: number;
+    generatedCodeColumn: number;
+  }
+
+  interface DebugInfo {
+    currentLine: number;
+    variables: DebugVariables;
+  }
+
+  interface DebugVariables {
+    local: any;
+    module: any;
+    global: any;
   }
 
 }
@@ -16297,14 +17006,6 @@ declare namespace Kooboo.Sites.Render.HeaderRender {
   }
 
 }
-declare namespace Kooboo.Sites.Render.Utility {
-  interface ScriptEnvironment {
-    setValue(key: string, value: any): void;
-    remove(key: string): void;
-    getValue(key: string): any;
-  }
-
-}
 declare namespace Kooboo.IndexedDB.WORM.MetaObject {
   interface IMetaObject {
     metaByteLen: number;
@@ -16338,10 +17039,10 @@ declare namespace Kooboo.Mail.Events {
 declare namespace Kooboo.Sites.Commerce.Condition {
   interface Define {
     isAny: boolean;
-    items: Item[];
+    items: DefineItem[];
   }
 
-  interface Item {
+  interface DefineItem {
     option: string;
     method: string;
     value: string;
@@ -16407,6 +17108,8 @@ declare namespace Kooboo.IndexedDB.FileIO {
     length: number;
     fieldName: string;
     fileType: FileType;
+    toStream(): any;
+    toBytes(): number[];
   }
 
   interface CompressionBlobFile {
@@ -16418,6 +17121,7 @@ declare namespace Kooboo.IndexedDB.FileIO {
     fullFileName: string;
     length: number;
     add(bytes: number[], totalByteLen: number): number;
+    addSpan(bytes: any, totalByteLen: number): number;
     get(position: number): number[];
     getPartial(position: number, offset: number, count: number): number[];
     updatePart(diskPosition: number, parts: number[]): boolean;
@@ -16426,6 +17130,9 @@ declare namespace Kooboo.IndexedDB.FileIO {
     getLength(position: number): number;
     getCol(position: number, relativePos: number, len: number): number[];
     getAllCols(position: number, ColumnLen: number): number[];
+    processField(position: number, fieldIDHash: number, funct: any): any;
+    processSpan(position: number, len: number, func: any): any;
+    readSpan(position: number, len: number, action: ReadSpanAction): void;
     flush(): void;
     close(): void;
     delSelf(): void;
@@ -16434,6 +17141,7 @@ declare namespace Kooboo.IndexedDB.FileIO {
     readFile(position: number): any;
     readObject(position: number): any;
     readToObject(position: number, Value: any): void;
+    updateField(position: number, fieldIDHash: number, NewValue: number[]): boolean;
   }
 
   type FileType = 'Undefined' | 'GZIP' | 'ZSTD';
@@ -16447,11 +17155,21 @@ declare namespace Kooboo.IndexedDB.FileIO {
     isBinaryField(FieldHash: number): boolean;
   }
 
+  type FieldProcessingStrategy = 'Skip' | 'Buffer' | 'Reference' | 'End';
+
+  interface IObjectReader {
+    getStrategy(fieldHash: number): FieldProcessingStrategy;
+    onFieldData(fieldHash: number, data: any, spanStart: number): void;
+    onFieldReference(fieldHash: number, offset: number, length: number): void;
+    readObject(span: any, blockPosition: number): any;
+    readToObject(span: any, blockPosition: number, obj: any): void;
+  }
+
 }
 declare namespace Kooboo.IndexedDB.Dynamic {
   interface Setting {
     enableLog: boolean;
-    columns: TableColumn[];
+    columns: any;
     addIndex(FieldName: string, DataType: any, length?: number, IsUnique?: boolean): void;
     addIndex(expression: any, len?: number): void;
     setPrimaryKey(expression: any, len?: number): void;
@@ -16480,22 +17198,22 @@ declare namespace Kooboo.IndexedDB.Dynamic {
     query: Query;
     rebuildTable(newSetting: Setting): void;
     updateSetting(newSetting: Setting): void;
-    prepareData(dataObj: any, Update?: boolean): Record<string, any>;
+    prepareData(dataObj: any, Update?: boolean): any;
     add(Value: any, CheckCol?: boolean, result?: TableActionResult): any;
-    getLogData(log: Kooboo.IndexedDB.LogEntry): Record<string, any>;
-    getLogData(LogId: number, DiskPosition: number): Record<string, any>;
-    get(key: any): any;
+    getLogData(log: Kooboo.IndexedDB.LogEntry): any;
+    getLogData(LogId: number, DiskPosition: number): any;
+    get(key: any): Record<string, any>;
     getDiskPos(key: any): number;
     getDiskPos(key: any): number;
-    getValue(diskposition: number): any;
-    get(key: any): any;
+    getValue(diskposition: number): Record<string, any>;
+    get(key: any): Record<string, any>;
     get(key: any): any;
     delete(key: any): number;
     updateOrAdd(newValue: any): boolean;
     update(key: any, newValue: any, result?: TableActionResult): boolean;
     update(newValue: any): boolean;
     update(key: any, newValue: any): void;
-    all(): any[];
+    all(): Record<string, any>[];
     all(): any[];
     updateColumn(key: any, ColumnName: string, value: any): boolean;
     updateColumn(key: any, expression: any, newvalue: any): void;
@@ -16593,20 +17311,20 @@ declare namespace Kooboo.IndexedDB.Dynamic {
     orderByDescending(): Query;
     orderByDescending(FieldOrPropertyName: string): Query;
     skip(count: number): Query;
-    firstOrDefault(): any;
+    firstOrDefault(): Record<string, any>;
     firstOrDefault(): any;
     exists(): boolean;
+    findAll(searchtext: string): Record<string, any>[];
+    findAll(node: Kooboo.IndexedDB.Condition.Expression.Node): Record<string, any>[];
     findAll(searchtext: string): any[];
-    findAll(node: Kooboo.IndexedDB.Condition.Expression.Node): any[];
-    findAll(searchtext: string): any[];
-    find(searchtext: string): any;
-    find(node: Kooboo.IndexedDB.Condition.Expression.Node): any;
+    find(searchtext: string): Record<string, any>;
+    find(node: Kooboo.IndexedDB.Condition.Expression.Node): Record<string, any>;
     find(searchtext: string): any;
     parserFilter(conditiontext: string): Kooboo.IndexedDB.Condition.Expression.Node;
     valueNodeHandle(expression: Kooboo.IndexedDB.Condition.Expression.Node): void;
+    take(count: number): Record<string, any>[];
     take(count: number): any[];
-    take(count: number): any[];
-    selectAll(): any[];
+    selectAll(): Record<string, any>[];
     selectAll(): any[];
     count(): number;
   }
@@ -16626,29 +17344,28 @@ declare namespace Kooboo.IndexedDB.Dynamic {
 
 }
 declare namespace Kooboo.Sites.Relation {
-  interface ObjectRelation extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.BPlusTree.IBPlusTreeObject, Kooboo.Sites.Models.SiteObject {
+  interface ObjectRelation extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.SiteObject {
     id: any;
     objectXId: any;
     objectYId: any;
     constTypeX: number;
     constTypeY: number;
-    combineId: number[];
     routeDestinationType: number;
-    bPlusTreeLen: number;
-    skipValueBlock: boolean;
     constType: number;
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
     name: string;
-    setBPlusBytes(bytes: number[]): void;
-    getBPlusBytes(): number[];
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
 }
 declare namespace Kooboo.Sites.SiteTransfer.Model {
-  interface ContinueConverter extends Kooboo.Data.Interface.ISiteObject, Kooboo.Sites.Models.SiteObject {
+  interface ContinueConverter extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.SiteObject {
     id: any;
     convertType: string;
     originalPageId: any;
@@ -16663,6 +17380,10 @@ declare namespace Kooboo.Sites.SiteTransfer.Model {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -16674,7 +17395,6 @@ declare namespace Kooboo.Api {
     webSite: Kooboo.Data.Models.WebSite;
     objectId: any;
     nameOrId: string;
-    isFake: boolean;
     getValue(name: string): string;
     getValue(name: string, DefaultValue: any): any;
     getValue(name: string): any;
@@ -16707,6 +17427,7 @@ declare namespace Kooboo.Sites.Analytics.ABTest.Models {
     createdAt: Date;
     startAt: Date;
     endAt: Date;
+    minSampleReachedAt?: Date;
     userCondition: AbTestCondition;
     variants: AbVariant[];
     goalId: number;
@@ -16770,7 +17491,7 @@ declare namespace Kooboo.Sites.AIBuilder.Application.Response {
   }
 
   interface FactAnalysis {
-    factId: any;
+    factId: string;
     originalFactExpression: string;
     originalSentence: string;
     shouldSplit: boolean;
@@ -16792,26 +17513,385 @@ declare namespace Kooboo.Sites.AIBuilder.Application.ViewModel {
     role: string;
   }
 
-  interface ScenarioViewModel {
+}
+declare namespace Kooboo.Sites.AI.Application.Model {
+  interface Blueprint extends IAIApplicationModel {
+    id: string;
     name: string;
     description: string;
-    facts: FactView[];
   }
 
-  interface FactView {
-    factExpression: string;
-    factSentence: string;
+  interface AppPlan extends IAIApplicationModel {
+    id: string;
+    blueprintId: string;
+    settings?: PlanSettings;
+    deliverySlices: PlanDeliverySlice[];
+    screens: PlanScreen[];
+    dataContracts: PlanDataContract[];
+    services: PlanService[];
+    sourceFiles: PlanSourceFile[];
   }
+
+  interface AppDeliveryProgress extends IAIApplicationModel {
+    id: string;
+    sourceFiles: SourceFileProgress[];
+    deliverySlices: DeliverySliceProgress[];
+  }
+
+  interface ModelRelation {
+    id: any;
+    sourceId: string;
+    targetId: string;
+    sourceType: ApplicationModelType;
+    targetType: ApplicationModelType;
+    create(sourceType: ApplicationModelType, sourceId: string, targetType: ApplicationModelType, targetId: string): ModelRelation;
+  }
+
+  interface Scenario extends IAIApplicationModel {
+    id: string;
+    name: string;
+    description: string;
+  }
+
+  interface Module extends IAIApplicationModel {
+    id: string;
+    name: string;
+    description: string;
+  }
+
+  interface Actor extends IAIApplicationModel {
+    id: string;
+    name: string;
+    description: string;
+    type: ActorType;
+    boundary: ActorBoundary;
+  }
+
+  interface Goal extends IAIApplicationModel {
+    id: string;
+    name: string;
+    description: string;
+  }
+
+  type ApplicationModelType = 'Unknown' | 'Blueprint' | 'Goal' | 'Actor' | 'Scenario' | 'Fact' | 'Trigger' | 'UserStory' | 'AcceptanceCriterion' | 'Relation' | 'BusinessObject' | 'Module' | 'AppPlan' | 'BusinessRule' | 'AppDeliveryProgress';
+
+  interface ActionLog extends Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.IndexedDB.Serializer.IWormDbGeneratedObject {
+    id: number;
+    sqlStatements: SqlStatementInfo[];
+    codeId: any;
+    isEmbedded: boolean;
+    renderContextId: any;
+    uIScreen: string;
+    uISource: string;
+    uIService: string;
+    uIRoute: string;
+    userId: any;
+    requestUrl: string;
+    httpMethod: string;
+    queryString: string;
+    contentType: string;
+    statusCode: number;
+    getKey(): number;
+    setKey(id: number): void;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  interface IAIApplicationModel {
+    id: string;
+  }
+
+  interface PlanSettings {
+    designSystem: PlanDesignSystem;
+    layout: PlanLayout;
+    navigation: PlanNavigationItem[];
+  }
+
+  interface PlanDeliverySlice {
+    id: string;
+    name: string;
+    goal: string;
+    scenarioIds: string[];
+    screenIds: string[];
+    serviceIds: string[];
+    sourceFileIds: string[];
+  }
+
+  interface PlanScreen {
+    id: string;
+    name: string;
+    purpose: string;
+    routePath?: string;
+    scenarioIds: string[];
+    dataContractIds: string[];
+    sourceFileIds: string[];
+    accessRuleIds: string[];
+    blocks: PlanScreenBlock[];
+    actions: PlanScreenAction[];
+  }
+
+  interface PlanDataContract {
+    id: string;
+    name: string;
+    description: string;
+    fields: PlanDataField[];
+  }
+
+  interface PlanService {
+    id: string;
+    name: string;
+    description: string;
+    sourceFileIds: string[];
+    operations: PlanServiceOperation[];
+  }
+
+  interface PlanSourceFile {
+    id: string;
+    type: PlanSourceFileType;
+    fileName: string;
+    url?: string;
+  }
+
+  interface SourceFileProgress {
+    sourceFileId: string;
+    contentHash: string;
+  }
+
+  interface DeliverySliceProgress {
+    deliverySliceId: string;
+    runtimeCheck?: SliceCheck;
+    businessCheck?: SliceCheck;
+  }
+
+  interface EntityDatabasePlan {
+    schemaVersion: number;
+    status: DatabasePlanStatus;
+    tables: DatabaseTablePlan[];
+    relations: DatabaseRelationPlan[];
+    issues: DatabasePlanIssue[];
+  }
+
+  interface DatabaseMaterializationResult {
+    materializedTableNames: string[];
+    warnings: string[];
+  }
+
+  type ActorType = 'Human' | 'System';
+
+  type ActorBoundary = 'Internal' | 'External';
+
+  interface SqlStatementInfo extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    statementIndex: number;
+    sql: string;
+    parametersJson: string;
+    durationMicroseconds: number;
+    mutations: DataMutation[];
+    operation: SqlOperation;
+    targetTable: string;
+    tables: string[];
+    fields: string[];
+    whereFields: string[];
+    orderByFields: string[];
+    fieldValues: SqlFieldValue[];
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  interface PlanDesignSystem {
+    id: string;
+    name: string;
+  }
+
+  interface PlanLayout {
+    pattern: string;
+  }
+
+  interface PlanNavigationItem {
+    id: string;
+    label: string;
+    screenId?: string;
+    children: PlanNavigationItem[];
+  }
+
+  interface PlanScreenBlock {
+    id: string;
+    kind: PlanScreenBlockKind;
+    title?: string;
+    description: string;
+    dataContractId?: string;
+    fieldIds: string[];
+    actionIds: string[];
+  }
+
+  interface PlanScreenAction {
+    id: string;
+    label: string;
+    description: string;
+    scenarioIds: string[];
+    serviceOperationId?: string;
+    targetBlockId?: string;
+    targetScreenId?: string;
+    presentation?: PlanActionPresentation;
+    confirmationMessage?: string;
+  }
+
+  interface PlanDataField {
+    id: string;
+    name: string;
+    description?: string;
+    type: PlanDataFieldType;
+    required: boolean;
+    nullable: boolean;
+    objectContractId?: string;
+    sourceRefs: PlanSourceRef[];
+  }
+
+  interface PlanServiceOperation {
+    id: string;
+    name: string;
+    description: string;
+    scenarioIds: string[];
+    businessRuleIds: string[];
+    inputContractId?: string;
+    outputContractId?: string;
+    api?: PlanOperationApi;
+  }
+
+  type PlanSourceFileType = 'Script' | 'Style' | 'Api' | 'CodeBlock';
+
+  interface SliceCheck {
+    passed: boolean;
+    contentHash: string;
+  }
+
+  type DatabasePlanStatus = 'Proposed' | 'Confirmed';
+
+  interface DatabaseTablePlan {
+    entityId: string;
+    tableName: string;
+    columns: DatabaseColumnPlan[];
+    indexes: DatabaseIndexPlan[];
+    foreignKeys: DatabaseForeignKeyPlan[];
+  }
+
+  interface DatabaseRelationPlan {
+    relationId: string;
+    name: string;
+    sourceFactId: string;
+    strategy: DatabaseRelationStrategy;
+    joinTableName?: string;
+    ends: DatabaseRelationEndPlan[];
+  }
+
+  interface DatabasePlanIssue {
+    code: string;
+    itemId: string;
+    message: string;
+  }
+
+  interface DataMutation extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    table: string;
+    rowKey: string;
+    operation: DataMutationOperation;
+    changes: FieldChange[];
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  type SqlOperation = 'Unknown' | 'Select' | 'Insert' | 'Update' | 'Delete' | 'Ddl' | 'Other';
+
+  interface SqlFieldValue extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    rowIndex: number;
+    field: string;
+    valueSql: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  type PlanScreenBlockKind = 'Filter' | 'Table' | 'Form' | 'Detail' | 'Chart' | 'Custom';
+
+  type PlanActionPresentation = 'Page' | 'Drawer' | 'Modal' | 'Inline';
+
+  type PlanDataFieldType = 'Text' | 'Integer' | 'Decimal' | 'Boolean' | 'Date' | 'DateTime' | 'Object' | 'TextArray' | 'IntegerArray' | 'DecimalArray' | 'BooleanArray' | 'DateArray' | 'DateTimeArray' | 'ObjectArray';
+
+  interface PlanSourceRef {
+    type: PlanSourceRefType;
+    id: string;
+  }
+
+  interface PlanOperationApi {
+    method: string;
+    path: string;
+  }
+
+  interface DatabaseColumnPlan {
+    fieldId: string;
+    columnName: string;
+    type: DatabaseColumnType;
+    required: boolean;
+    primaryKey: boolean;
+    unique: boolean;
+    system: boolean;
+    sourceFactIds: string[];
+  }
+
+  interface DatabaseIndexPlan {
+    unique: boolean;
+    columnNames: string[];
+  }
+
+  interface DatabaseForeignKeyPlan {
+    relationId: string;
+    columnName: string;
+    referencedTableName: string;
+    referencedColumnName: string;
+  }
+
+  type DatabaseRelationStrategy = 'Unresolved' | 'ForeignKey' | 'JoinTable' | 'NotMaterialized';
+
+  interface DatabaseRelationEndPlan {
+    roleId: string;
+    entityId: string;
+    tableName: string;
+    minFrequency: number;
+    maxFrequency?: number;
+  }
+
+  type DataMutationOperation = 'Unknown' | 'Insert' | 'Update' | 'Delete';
+
+  interface FieldChange extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    field: string;
+    value?: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+  type PlanSourceRefType = 'BusinessField' | 'StateDimension' | 'State' | 'Fact' | 'BusinessRule';
+
+  type DatabaseColumnType = 'String' | 'Integer' | 'Number' | 'DateTime' | 'Bool';
 
 }
-declare namespace Kooboo {
-  type ChangeType = 'Add' | 'Update' | 'Delete';
+declare namespace Kooboo.Sites.AI.Application.Delivery {
+  interface EntityDatabaseSynchronizationResult {
+    plan: Kooboo.Sites.AI.Application.Model.EntityDatabasePlan;
+    materialization: Kooboo.Sites.AI.Application.Model.DatabaseMaterializationResult;
+  }
 
 }
 declare namespace Kooboo.Sites.SiteTransfer {
-  interface TransferTask extends Kooboo.Data.Interface.ISiteObject, Kooboo.Sites.Models.SiteObject {
+  interface TransferTask extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.SiteObject {
     id: any;
-    domains: string[];
+    domains: any;
     taskType: EnumTransferTaskType;
     fullStartUrl: string;
     levels: number;
@@ -16821,16 +17901,20 @@ declare namespace Kooboo.Sites.SiteTransfer {
     totalPages: number;
     relativeName: string;
     userId: any;
-    cookies: Record<string, string>;
+    cookies: any;
     constType: number;
     creationDate: Date;
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
-  interface TransferPage extends Kooboo.Data.Interface.ISiteObject, Kooboo.Sites.Models.SiteObject {
+  interface TransferPage extends Kooboo.Data.Interface.ISiteObject, Kooboo.IndexedDB.Serializer.IDatabaseObject, Kooboo.Sites.Models.SiteObject {
     id: any;
     taskid: any;
     pageId: any;
@@ -16841,6 +17925,10 @@ declare namespace Kooboo.Sites.SiteTransfer {
     lastModified: Date;
     lastModifyTick: number;
     name: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
     clone(): any;
   }
 
@@ -16868,10 +17956,27 @@ declare namespace Kooboo.Sites.Models.BinaryView {
 declare namespace Kooboo.Sites.FrontEvent {
   type enumEventType = 'RouteFinding' | 'RouteFound' | 'RouteNotFound' | 'ViewFinding' | 'ViewFound' | 'ViewNotFound' | 'PageFinding' | 'PageFound';
 
-  interface Condition {
+  interface Condition extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
     left: string;
     operator: string;
     right: string;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    setValues(values: any): void;
+    getIndexValue(fieldHash: number): any;
+  }
+
+}
+declare namespace Kooboo {
+  type ChangeType = 'Add' | 'Update' | 'Delete';
+
+}
+declare namespace Kooboo.Sites.Models.ObjectReader {
+  interface TextContentMetaView extends Kooboo.IndexedDB.FileIO.IObjectReader {
+    getStrategy(FieldHash: number): Kooboo.IndexedDB.FileIO.FieldProcessingStrategy;
+    onFieldData(FieldHash: number, segment: any, spanStart: number): void;
+    onFieldReference(FieldHash: number, offset: number, length: number): void;
+    toTextContent(): Kooboo.Sites.Contents.Models.TextContent;
   }
 
 }
@@ -16914,7 +18019,7 @@ declare namespace Kooboo.Mail.Repositories.Sqlite {
     appendReport(currentReport: Kooboo.Mail.Models.SmtpReport, Incoming: Kooboo.Mail.Models.SmtpReportIn): void;
     getReports(messageid: string, To: string, CC: string, BCC: string, UtcCreationTime: Date): SmtpReportViewModel;
     getRcptToList(ToLine: string, CCLine: string, BccLine: string): string[];
-    getAddressFromLine(AddressLine: string): string[];
+    getAddressFromLine(AddressLine: string): any;
     getAddress(add: MimeKit.MailboxAddress): string;
     trimAddress(singleAddress: string): string;
     deserializeDelivery(json: string): SingleDelivery[];
@@ -16981,7 +18086,7 @@ declare namespace Kooboo.Mail.Repositories.Sqlite {
     add(job: Kooboo.Mail.Models.MailMigrationJob): void;
     get(id: any): Kooboo.Mail.Models.MailMigrationJob;
     get(emailAddress: string, addressId: number): Kooboo.Mail.Models.MailMigrationJob;
-    update(job: Kooboo.Mail.Models.MailMigrationJob, values: Record<string, any>): void;
+    update(job: Kooboo.Mail.Models.MailMigrationJob, values: any): void;
     delete(job: Kooboo.Mail.Models.MailMigrationJob): void;
     deleteByAddressId(addressId: number): void;
   }
@@ -16989,7 +18094,7 @@ declare namespace Kooboo.Mail.Repositories.Sqlite {
   interface MailMigrationProgressRepo {
     getActiveProgressByFolder(folderId: number): Kooboo.Mail.Models.MailMigrationProgress[];
     getOrAdd(jobId: any, folder: string, addressId: number): Kooboo.Mail.Models.MailMigrationProgress;
-    update(progress: Kooboo.Mail.Models.MailMigrationProgress, values: Record<string, any>): void;
+    update(progress: Kooboo.Mail.Models.MailMigrationProgress, values: any): void;
   }
 
   interface SmtpReportViewModel {
@@ -17081,7 +18186,6 @@ declare namespace MimeKit {
     load(fileName: string, cancellationToken?: any): MimeMessage;
     loadAsync(fileName: string, cancellationToken?: any): any;
     createFromMailMessage(message: any): MimeMessage;
-    toMessageText(): string;
   }
 
   interface MailboxAddress extends InternetAddress {
@@ -17127,7 +18231,7 @@ declare namespace MimeKit {
     maxLineLength: number;
     newLineFormat: NewLineFormat;
     ensureNewLine: boolean;
-    hiddenHeaders: HeaderId[];
+    hiddenHeaders: any;
     international: boolean;
     allowMixedHeaderCharsets: boolean;
     parameterEncodingMethod: ParameterEncodingMethod;
@@ -17296,8 +18400,6 @@ declare namespace MimeKit {
     loadAsync(options: ParserOptions, contentType: ContentType, content: any, cancellationToken?: any): any;
     load(contentType: ContentType, content: any, cancellationToken?: any): MimeEntity;
     loadAsync(contentType: ContentType, content: any, cancellationToken?: any): any;
-    getText(): string;
-    isAttachment(): boolean;
   }
 
   interface InternetAddress {
@@ -17343,8 +18445,6 @@ declare namespace MimeKit {
 
   type NewLineFormat = 'Unix' | 'Dos' | 'Mixed';
 
-  type HeaderId = 'AcceptLanguage' | 'AdHoc' | 'AlternateRecipient' | 'ApparentlyTo' | 'Approved' | 'ArcAuthenticationResults' | 'ArcMessageSignature' | 'ArcSeal' | 'Archive' | 'ArchivedAt' | 'Article' | 'AuthenticationResults' | 'Autocrypt' | 'AutocryptGossip' | 'AutocryptSetupMessage' | 'Autoforwarded' | 'AutoSubmitted' | 'Autosubmitted' | 'Base' | 'Bcc' | 'Body' | 'Bytes' | 'Cc' | 'Comments' | 'ContentAlternative' | 'ContentBase' | 'ContentClass' | 'ContentDescription' | 'ContentDisposition' | 'ContentDuration' | 'ContentFeatures' | 'ContentId' | 'ContentIdentifier' | 'ContentLanguage' | 'ContentLength' | 'ContentLocation' | 'ContentMd5' | 'ContentReturn' | 'ContentTransferEncoding' | 'ContentTranslationType' | 'ContentType' | 'Control' | 'Conversion' | 'ConversionWithLoss' | 'Date' | 'DateReceived' | 'DeferredDelivery' | 'DeliveryDate' | 'DiscloseRecipients' | 'DispositionNotificationOptions' | 'DispositionNotificationTo' | 'Distribution' | 'DkimSignature' | 'DomainKeySignature' | 'Encoding' | 'Encrypted' | 'Expires' | 'ExpiryDate' | 'FollowupTo' | 'From' | 'GenerateDeliveryReport' | 'Importance' | 'InjectionDate' | 'InjectionInfo' | 'InReplyTo' | 'Keywords' | 'Language' | 'LatestDeliveryTime' | 'Lines' | 'ListArchive' | 'ListHelp' | 'ListId' | 'ListOwner' | 'ListPost' | 'ListSubscribe' | 'ListUnsubscribe' | 'ListUnsubscribePost' | 'MessageId' | 'MimeVersion' | 'Newsgroups' | 'NntpPostingHost' | 'Organization' | 'OriginalFrom' | 'OriginalMessageId' | 'OriginalRecipient' | 'OriginalReturnAddress' | 'OriginalSubject' | 'Path' | 'Precedence' | 'PreventNonDeliveryReport' | 'Priority' | 'Received' | 'ReceivedSPF' | 'References' | 'RelayVersion' | 'ReplyBy' | 'ReplyTo' | 'RequireRecipientValidSince' | 'ResentBcc' | 'ResentCc' | 'ResentDate' | 'ResentFrom' | 'ResentMessageId' | 'ResentReplyTo' | 'ResentSender' | 'ResentTo' | 'ReturnPath' | 'ReturnReceiptTo' | 'SeeAlso' | 'Sender' | 'Sensitivity' | 'Solicitation' | 'Status' | 'Subject' | 'Summary' | 'Supersedes' | 'TLSRequired' | 'To' | 'UserAgent' | 'X400ContentIdentifier' | 'X400ContentReturn' | 'X400ContentType' | 'X400MTSIdentifier' | 'X400Originator' | 'X400Received' | 'X400Recipients' | 'X400Trace' | 'XMailer' | 'XMSMailPriority' | 'XPriority' | 'XStatus' | 'Unknown';
-
   type ParameterEncodingMethod = 'Default' | 'Rfc2231' | 'Rfc2047';
 
   interface MimePart extends MimeEntity {
@@ -17387,6 +18487,8 @@ declare namespace MimeKit {
   }
 
   type RfcComplianceMode = 'Loose' | 'Strict' | 'Looser';
+
+  type HeaderId = 'AcceptLanguage' | 'AdHoc' | 'AlternateRecipient' | 'ApparentlyTo' | 'Approved' | 'ArcAuthenticationResults' | 'ArcMessageSignature' | 'ArcSeal' | 'Archive' | 'ArchivedAt' | 'Article' | 'AuthenticationResults' | 'Autocrypt' | 'AutocryptGossip' | 'AutocryptSetupMessage' | 'Autoforwarded' | 'AutoSubmitted' | 'Autosubmitted' | 'Base' | 'Bcc' | 'Body' | 'Bytes' | 'Cc' | 'Comments' | 'ContentAlternative' | 'ContentBase' | 'ContentClass' | 'ContentDescription' | 'ContentDisposition' | 'ContentDuration' | 'ContentFeatures' | 'ContentId' | 'ContentIdentifier' | 'ContentLanguage' | 'ContentLength' | 'ContentLocation' | 'ContentMd5' | 'ContentReturn' | 'ContentTransferEncoding' | 'ContentTranslationType' | 'ContentType' | 'Control' | 'Conversion' | 'ConversionWithLoss' | 'Date' | 'DateReceived' | 'DeferredDelivery' | 'DeliveryDate' | 'DiscloseRecipients' | 'DispositionNotificationOptions' | 'DispositionNotificationTo' | 'Distribution' | 'DkimSignature' | 'DomainKeySignature' | 'Encoding' | 'Encrypted' | 'Expires' | 'ExpiryDate' | 'FollowupTo' | 'From' | 'GenerateDeliveryReport' | 'Importance' | 'InjectionDate' | 'InjectionInfo' | 'InReplyTo' | 'Keywords' | 'Language' | 'LatestDeliveryTime' | 'Lines' | 'ListArchive' | 'ListHelp' | 'ListId' | 'ListOwner' | 'ListPost' | 'ListSubscribe' | 'ListUnsubscribe' | 'ListUnsubscribePost' | 'MessageId' | 'MimeVersion' | 'Newsgroups' | 'NntpPostingHost' | 'Organization' | 'OriginalFrom' | 'OriginalMessageId' | 'OriginalRecipient' | 'OriginalReturnAddress' | 'OriginalSubject' | 'Path' | 'Precedence' | 'PreventNonDeliveryReport' | 'Priority' | 'Received' | 'ReceivedSPF' | 'References' | 'RelayVersion' | 'ReplyBy' | 'ReplyTo' | 'RequireRecipientValidSince' | 'ResentBcc' | 'ResentCc' | 'ResentDate' | 'ResentFrom' | 'ResentMessageId' | 'ResentReplyTo' | 'ResentSender' | 'ResentTo' | 'ReturnPath' | 'ReturnReceiptTo' | 'SeeAlso' | 'Sender' | 'Sensitivity' | 'Solicitation' | 'Status' | 'Subject' | 'Summary' | 'Supersedes' | 'TLSRequired' | 'To' | 'UserAgent' | 'X400ContentIdentifier' | 'X400ContentReturn' | 'X400ContentType' | 'X400MTSIdentifier' | 'X400Originator' | 'X400Received' | 'X400Recipients' | 'X400Trace' | 'XMailer' | 'XMSMailPriority' | 'XPriority' | 'XStatus' | 'Unknown';
 
   interface Header {
     offset?: number;
@@ -17542,7 +18644,7 @@ declare namespace MimeKit {
 declare namespace Amazon.Runtime {
   interface ResponseMetadata {
     requestId: string;
-    metadata: any;
+    metadata: Record<string, string>;
   }
 
   interface AmazonWebServiceResponse {
@@ -17555,8 +18657,8 @@ declare namespace Amazon.Runtime {
 declare namespace Kooboo.IndexedDB.Dynamic.Converter {
   interface ObjectConverter {
     fields: Kooboo.IndexedDB.Dynamic.FieldConverter[];
-    toBytes(preData: Record<string, any>): number[];
-    fromBytes(bytes: number[]): any;
+    toBytes(preData: any): number[];
+    fromBytes(bytes: number[]): Record<string, any>;
     fromBytes(bytes: number[]): any;
   }
 
@@ -17567,6 +18669,18 @@ declare namespace Kooboo.IndexedDB.BPlusTree {
     skipValueBlock: boolean;
     setBPlusBytes(bytes: number[]): void;
     getBPlusBytes(): number[];
+  }
+
+}
+declare namespace Kooboo.Sites.Permission {
+  interface PermissionItem extends Kooboo.IndexedDB.Serializer.IDatabaseObject {
+    feature: string;
+    action: string;
+    access: boolean;
+    getSize(): number;
+    writeTo(buffer: any): number;
+    getIndexValue(fieldHash: number): any;
+    setValues(values: any): void;
   }
 
 }
@@ -17674,7 +18788,7 @@ declare namespace Kooboo.IndexedDB.BTree {
 
 }
 declare namespace Kooboo.IndexedDB.Query {
-  type Comparer = 'EqualTo' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual' | 'NotEqualTo' | 'StartWith' | 'Contains';
+  type Comparer = 'EqualTo' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual' | 'NotEqualTo' | 'StartWith' | 'Contains' | 'ContainsIgnoreCase';
 
   type DateTimeScope = 'nondefined' | 'day' | 'month' | 'year' | 'minute' | 'second' | 'millionSecond';
 
@@ -17704,6 +18818,11 @@ declare namespace Kooboo.IndexedDB.Condition.Expression {
     timeScope: Kooboo.IndexedDB.Query.DateTimeScope;
     boolean: boolean;
     getNodes(): Node[];
+  }
+
+}
+declare namespace Kooboo.Sites.Contents.QueryPlan {
+  interface ContentFieldProvider {
   }
 
 }
@@ -17825,7 +18944,7 @@ This value will be a non-null string if one of your custom stop sequences was ge
     /** Provide when type is tool_use */
     id?: string;
     /** Provide when type is tool_use */
-    input?: any;
+    input: any;
     /** Provide when type is tool_use */
     name?: string;
     /** Provide when type is text */
@@ -17840,7 +18959,7 @@ This value will be a non-null string if one of your custom stop sequences was ge
     /** Optional, but strongly-recommended description of the tool. */
     description?: string;
     /** JSON schema for the tool input shape that the model will produce in tool_use output content blocks. */
-    inputSchema?: any;
+    inputSchema: any;
   }
 
   interface Anthropic_ToolChoice {
@@ -18003,7 +19122,7 @@ Defaults to false. If set to true, the model will output at most one tool use. *
   interface Kooboo_ApiMarket_BaiduServer_Function {
     description?: string;
     name?: string;
-    parameters?: any;
+    parameters: any;
   }
 
   interface Kooboo_ApiMarket_BaiduServer_Message {
@@ -18210,7 +19329,7 @@ Defaults to false. If set to true, the model will output at most one tool use. *
     /** deepseek-chat deepseek-reasoner */
     model?: string;
     tools?: any[];
-    tool_choice?: any;
+    tool_choice: any;
   }
 
   interface Kooboo_ApiMarket_DeepSeek_ToolCall {
@@ -18829,7 +19948,7 @@ Defaults to false. If set to true, the model will output at most one tool use. *
     /** gpt-4 and dated model releases, gpt-4-turbo-preview and dated model releases, gpt-4-vision-preview, gpt-4-32k and dated model releases, gpt-3.5-turbo and dated model releases, gpt-3.5-turbo-16k and dated model releases, fine-tuned versions of gpt-3.5-turbo */
     model?: string;
     tools?: any[];
-    tool_choice?: any;
+    tool_choice: any;
   }
 
   interface Kooboo_ApiMarket_OpenAI_ResponseDTO_AudioResDTO {
@@ -20208,15 +21327,26 @@ declare namespace Kooboo.KContent {
   }
 
   interface queryOptions {
+    /** Include unpublished or offline content. Default is false. */
     includeOfflineData?: boolean;
     excludeEmpty?: boolean;
+    /** Maximum number of items to return. */
+    take?: number;
+    /** Number of items to skip before returning results. */
+    skip?: number;
+    /** Field name used for ascending sort. */
+    orderBy?: string;
+    /** Field name used for descending sort. */
+    orderByDescending?: string;
+    /** Fields to retrieve. Selecting only required fields can significantly improve query performance. */
+    select?: string[];
   }
 
   interface contentTypeBase {
     /** Build in property id */
     id?: string;
-    /** Build in property userKey */
-    userKey?: string;
+    /** Build in property slug */
+    slug?: string;
     /** Build in property sequence */
     sequence?: number;
     /** Build in property online */

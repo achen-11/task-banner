@@ -22,9 +22,11 @@
 
 ## 认证
 
-- 依赖 Kooboo 内置账号（`k.account`），不自建 JWT 签发
-- 生产环境用户信息通过 `k.utils.clientJS.setVariable('__USER_INFO__', userInfo)` 注入
-- 开发环境通过 Vite proxy + Cookie `jwt_token` 对接远端
+- 应用账号通过 `code/Services/auth` 签发 JWT，支持账号密码登录、注册及 Kooboo 账号登录
+- 前端通过 `X-Task-Banner-Token` 请求头传递应用 token；后端也支持 Cookie `task_banner_auth_token`
+- `getCurrentAuthUser()` 优先解析应用 JWT，再尝试 Kooboo 会话（`k.account`）
+- Page 服务端脚本在有登录态时注入 `__USER_INFO__`；未登录由前端 Hash 路由守卫处理
+- 开发环境经 Vite proxy 请求远端，token 由前端认证工具从内存、localStorage 或 Cookie 获取
 
 ## 数据层
 

@@ -3,7 +3,7 @@
  * 参考客服系统的实现方式
  */
 
-import mitt from './mitt'
+import mitt from 'code/Utils/mitt'
 
 type Events = 'enter' | 'ping' | 'pong' | 'heartbeat' | 'subscribe' | 'task_created' | 'task_updated' | 'task_deleted' | 'comment_created' | 'comment_updated' | 'comment_deleted' | 'notification'
 
@@ -70,7 +70,7 @@ export function useSocket(sid: string) {
   }
 
   return {
-    on: (event: Events, callback: (ctx: SocketMessage) => void) => {
+    on: (event: Events, callback: (message: SocketMessage) => void) => {
       return emitter.on(event, callback)
     },
     off: emitter.off,

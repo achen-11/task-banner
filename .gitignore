@@ -160,4 +160,6 @@ tests
 !.cursor/mcp.json.example
 .cursor/mcp.json
 .build-manifest.json
-.DS_Store
+
+# Local recovery snapshots created during workspace cleanup
+.cleanup-backups/

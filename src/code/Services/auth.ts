@@ -73,15 +73,12 @@ function getTokenFromRequest(): string | null {
       const headers = request.headers
       let token: string | undefined
       if (typeof headers.get === 'function') {
-        token = headers.get('Authorization') ?? headers.get('authorization')
+        token = headers.get('X-Task-Banner-Token') ?? headers.get('x-task-banner-token')
       } else if (typeof headers === 'object') {
         const h = headers as Record<string, string>
-        token = h.Authorization ?? h.authorization
+        token = h['X-Task-Banner-Token'] ?? h['x-task-banner-token']
       }
-      if (token) {
-        if (token.startsWith('Bearer ')) token = token.slice(7)
-        return token
-      }
+      if (token) return token
     }
   } catch {
     // MCP 等场景下 k.request 可能不可用

@@ -5,7 +5,7 @@
 import { Document, type DocumentType } from 'code/Models/Document'
 import { DocumentVersion, type DocumentVersionType } from 'code/Models/DocumentVersion'
 import { checkProjectPermission } from 'code/Services/project'
-import { getUserById } from './user'
+import { getUserById } from 'code/Services/user'
 
 /**
  * 文档信息接口

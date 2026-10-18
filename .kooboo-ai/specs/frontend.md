@@ -81,13 +81,14 @@ pnpm build:push
 
 | 环境 | 认证方式 | API 基址 |
 | --- | --- | --- |
-| 开发 | Cookie `jwt_token` + Vite proxy | `VITE_API_BASE_URL=`（空，走 proxy） |
-| 生产 | Page 服务端脚本注入 `__USER_INFO__` | `VITE_API_BASE_URL=https://ai_task_manage.localkooboo.com` |
+| 开发 | 应用 JWT 请求头 + Vite proxy | `/`（同源请求，走 proxy） |
+| 生产 | 应用 JWT / Cookie，Page 可注入 `__USER_INFO__` | `/`（同源请求） |
 
-- 站点 URL：`https://ai_task_manage.localkooboo.com`
-- 开发代理目标：同上（`/api`、`/__kb/kfile`）
-- 生产未登录：Page 脚本重定向 `/_Admin/login?permission=u&returnurl=/`
-- 退出登录：`/__logout__`（`src/api/__logout.ts`）
+- API 基址以 `frontend/src/utils/request.ts` 为准，当前为 `/`，未读取 `VITE_API_BASE_URL`
+- 开发代理当前目标：`https://ai_task_v2.redev.cn`，配置见 `frontend/vite.config.ts`
+- 前端请求头：`X-Task-Banner-Token`；token 来源为内存、localStorage 或 Cookie `task_banner_auth_token`
+- Page 服务端脚本仅在有登录态时注入用户；未登录由前端守卫跳转 `/#/login`
+- 退出登录：清除前端 token，再访问 `/__logout__`（`src/api/__logout.ts`）
 
 ### 样式
 
@@ -100,4 +101,4 @@ pnpm build:push
 - 不要在 CLI 本地开发中引入 `<k-data>`
 - 不要直接修改 `src/js/`、`src/css/` 中的 build 产物，改 `frontend/` 后重新 build
 - 不要将 Vue Router 改为 History 模式（Kooboo 单 Page 入口需 Hash 路由）
-- 不要在生产前端硬编码 API 域名，使用 `VITE_API_BASE_URL`
+- API 保持同源相对路径；调整开发代理时修改 `vite.config.ts`

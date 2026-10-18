@@ -19,7 +19,7 @@ request.interceptors.request.use(
   (config) => {
     const token = getAuthToken()
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers['X-Task-Banner-Token'] = token
     }
     return config
   },
